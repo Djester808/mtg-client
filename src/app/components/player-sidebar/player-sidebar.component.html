@@ -1,0 +1,49 @@
+<div class="sidebar" *ngIf="player">
+  <div class="player-name" [class.active]="isActive">
+    {{ player.name }}<span class="active-dot" *ngIf="isActive"> ◆</span>
+  </div>
+
+  <div class="life-display">
+    <div class="life-number">{{ player.life }}</div>
+    <div class="life-label">Life</div>
+    <div class="life-controls" *ngIf="isLocal">
+      <button class="life-btn">−</button>
+      <button class="life-btn">+</button>
+    </div>
+    <div class="poison-row" *ngIf="player.poisonCounters > 0">
+      <span class="poison-count">☠ {{ player.poisonCounters }}</span>
+    </div>
+  </div>
+
+  <div class="mana-pool">
+    <div class="mana-label">Mana Pool</div>
+    <div class="mana-pips" *ngIf="hasMana; else emptyPool">
+      <ng-container *ngFor="let entry of manaEntries; trackBy: manaTrack">
+        <div
+          class="mana-pip"
+          [ngClass]="entry.color"
+          *ngFor="let n of [].constructor(entry.count)">
+          {{ entry.color }}
+        </div>
+      </ng-container>
+    </div>
+    <ng-template #emptyPool>
+      <div class="mana-pip empty">◯</div>
+    </ng-template>
+  </div>
+
+  <div class="zone-counts">
+    <div class="zone-row library">
+      <span class="zone-name">Library</span>
+      <span class="zone-num">{{ player.libraryCount }}</span>
+    </div>
+    <div class="zone-row grave" (click)="openGraveyard()">
+      <span class="zone-name">Graveyard</span>
+      <span class="zone-num">{{ player.graveyardCount }}</span>
+    </div>
+    <div class="zone-row exile" (click)="openExile()">
+      <span class="zone-name">Exile</span>
+      <span class="zone-num">{{ player.exileCount }}</span>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,139 @@
+<div class="board" *ngIf="vm$ | async as vm">
+
+  <!-- ====================================================
+       TOP BAR
+  ==================================================== -->
+  <header class="top-bar">
+    <div class="logo">MTG Engine</div>
+
+    <div class="center-controls">
+      <app-phase-track></app-phase-track>
+    </div>
+
+    <div class="right-controls">
+      <app-priority-indicator></app-priority-indicator>
+    </div>
+  </header>
+
+  <!-- ====================================================
+       OPPONENT SIDEBAR
+  ==================================================== -->
+  <aside class="sidebar-col opponent-sidebar">
+    <app-player-sidebar
+      *ngIf="vm.opponent"
+      [player]="vm.opponent"
+      [isLocal]="false"
+      [isActive]="!vm.isActive">
+    </app-player-sidebar>
+  </aside>
+
+  <!-- ====================================================
+       OPPONENT BATTLEFIELD
+  ==================================================== -->
+  <main class="battlefield-col opponent-field">
+    <app-zones
+      [permanents]="vm.opponentPerms"
+      [isOpponent]="true"
+      label="Opponent Battlefield">
+    </app-zones>
+  </main>
+
+  <!-- ====================================================
+       STACK PANEL (spans both halves)
+  ==================================================== -->
+  <aside class="stack-col">
+    <app-stack></app-stack>
+  </aside>
+
+  <!-- ====================================================
+       YOUR BATTLEFIELD
+  ==================================================== -->
+  <main class="battlefield-col self-field">
+    <app-zones
+      [permanents]="vm.localPerms"
+      [isOpponent]="false"
+      label="Your Battlefield">
+    </app-zones>
+  </main>
+
+  <!-- ====================================================
+       YOUR SIDEBAR
+  ==================================================== -->
+  <aside class="sidebar-col self-sidebar">
+    <app-player-sidebar
+      *ngIf="vm.localPlayer"
+      [player]="vm.localPlayer"
+      [isLocal]="true"
+      [isActive]="vm.isActive">
+    </app-player-sidebar>
+  </aside>
+
+  <!-- ====================================================
+       STATUS BAR
+  ==================================================== -->
+  <div class="status-bar">
+    <div class="status-message" [innerHTML]="vm.statusMessage"></div>
+
+    <div class="status-actions">
+      <!-- Declare attackers -->
+      <button
+        *ngIf="vm.showDeclareAttackersBtn"
+        class="action-btn combat"
+        (click)="enterAttackMode()">
+        Declare Attackers
+      </button>
+
+      <!-- Confirm / cancel attackers -->
+      <ng-container *ngIf="vm.showConfirmAttackersBtn">
+        <button class="action-btn confirm" (click)="confirmAttackers()">
+          Confirm ({{ vm.pendingAttackers.length }})
+        </button>
+        <button class="action-btn cancel" (click)="cancelAttackMode()">Cancel</button>
+      </ng-container>
+
+      <!-- Declare blockers -->
+      <button
+        *ngIf="vm.showDeclareBlockersBtn"
+        class="action-btn combat"
+        (click)="enterBlockMode()">
+        Declare Blockers
+      </button>
+
+      <!-- Confirm / cancel blockers -->
+      <ng-container *ngIf="vm.showConfirmBlockersBtn">
+        <button class="action-btn confirm" (click)="confirmBlockers()">Confirm Blockers</button>
+        <button class="action-btn cancel" (click)="cancelBlockMode()">Cancel</button>
+      </ng-container>
+
+      <button class="action-btn concede" (click)="concede()">Concede</button>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       HAND
+  ==================================================== -->
+  <div class="hand-row">
+    <app-hand></app-hand>
+  </div>
+
+  <!-- ====================================================
+       HOVERED CARD PREVIEW
+  ==================================================== -->
+  <div class="card-preview" *ngIf="vm.hoveredCard">
+    <app-card [card]="vm.hoveredCard"></app-card>
+  </div>
+
+  <!-- ====================================================
+       ATTACK ARROWS
+  ==================================================== -->
+  <app-attack-arrows></app-attack-arrows>
+
+  <!-- ====================================================
+       ZONE VIEWER MODAL
+  ==================================================== -->
+  <app-zone-viewer *ngIf="vm.zoneViewerOpen"></app-zone-viewer>
+
+</div>
+
+<!-- Toast notifications (outside board grid) -->
+<app-toast-container></app-toast-container>

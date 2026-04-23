@@ -1,59 +1,102 @@
-# MtgEngineUI
+# mtg-client — Angular 17 Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.
+MTG Engine game board UI. Connects to the .NET Web API + SignalR hub.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- **Angular 17** (standalone components, OnPush everywhere)
+- **NgRx 17** (Store, Effects, Devtools)
+- **@microsoft/signalr** (WebSocket real-time connection)
+- **SCSS** with CSS custom properties for the design system
+
+## Setup
 
 ```bash
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Runs on `http://localhost:4200`. The dev proxy forwards:
+- `/api/*` → `https://localhost:7001/api`
+- `/hubs/*` → `https://localhost:7001/hubs` (WebSocket)
 
-## Code scaffolding
+Start the .NET API before the Angular dev server.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Project Structure
 
-```bash
-ng generate component component-name
+```
+src/app/
+├── models/
+│   └── game.models.ts        # All TypeScript DTOs + enums (mirrors C# domain)
+│
+├── store/
+│   ├── game/
+│   │   ├── game.actions.ts   # All game + connection actions
+│   │   ├── game.reducer.ts   # Handles state sync + incremental diffs
+│   │   └── game.effects.ts   # Wires actions to SignalR / REST API
+│   ├── ui/
+│   │   ├── ui.actions.ts     # Selection, targeting, attack/block declaration
+│   │   └── ui.reducer.ts     # UI state machine
+│   ├── selectors.ts          # 30+ memoized selectors
+│   └── index.ts              # AppState, appReducers, re-exports
+│
+├── services/
+│   ├── signalr.service.ts    # Hub connection, auto-reconnect, all invoke methods
+│   └── game-api.service.ts   # REST: create/join game, card search
+│
+├── components/
+│   ├── card/                 # Card component (Scryfall art, tapped, counters, states)
+│   ├── hand/                 # Fanned hand with castability highlighting
+│   ├── stack/                # LIFO stack panel + Pass Priority button
+│   ├── zones/                # Battlefield half (creatures + lands rows)
+│   ├── player-sidebar/       # Life, mana pool, zone counts
+│   ├── phase-track/          # Phase pip track with current step
+│   └── priority-indicator/   # Animated gold indicator
+│
+└── board/
+    └── game-board.component  # Root layout (5-row CSS grid), status bar, combat buttons
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## State Flow
 
-```bash
-ng generate --help
+```
+User click
+  → dispatch UIAction / GameAction
+  → GameEffects picks up GameAction
+  → SignalRService.invoke(...)
+  → .NET hub processes
+  → SignalR pushes GameStateDiff
+  → store.dispatch(GameActions.stateDiff)
+  → game.reducer applies diff
+  → selectors recompute
+  → components re-render (OnPush)
 ```
 
-## Building
+## Key Design Decisions
 
-To build the project run:
+- **OnPush everywhere** — all components use `ChangeDetectionStrategy.OnPush` and consume `Observable` slices via `async` pipe
+- **Incremental diffs** — `GameStateDiffDto` only contains what changed; the reducer merges it into the current state
+- **UI state machine** — the `UIState.mode` field drives what happens on card click (`idle` → select, `declaring-attackers` → toggle attacker, etc.)
+- **Card cache** — Scryfall card data is cached in the store by `oracleId` after first load, never re-fetched
 
-```bash
-ng build
+## Connecting a Game
+
+In `GameBoardComponent.ngOnInit`, dispatch:
+
+```typescript
+this.store.dispatch(GameActions.joinGame({
+  gameId: 'your-game-id',
+  playerToken: 'your-player-token',
+}));
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+In production these come from route params after the lobby flow.
 
-## Running unit tests
+## Next Steps (Phase 4 completion)
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [ ] Lobby / game creation screen
+- [ ] Zone viewer modal (graveyard, exile)
+- [ ] Drag-and-drop blocker assignment
+- [ ] Attack arrow SVG overlay
+- [ ] Toast notifications for game events
+- [ ] Sound effects on cast / damage / death

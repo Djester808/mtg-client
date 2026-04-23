@@ -1,0 +1,186 @@
+:host { display: block; height: 100%; }
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 14px;
+  height: 100%;
+}
+
+.player-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+
+  .active-dot { color: var(--gold); font-size: 10px; }
+}
+
+// ---- Life display -----------------------------------------
+
+.life-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 10px 8px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center top, rgba(201,168,76,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+}
+
+.life-number {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  position: relative;
+}
+
+.life-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  margin-top: 3px;
+}
+
+.life-controls {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.life-btn {
+  width: 22px;
+  height: 22px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  line-height: 1;
+
+  &:hover {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border-color: var(--border-lit);
+  }
+}
+
+.poison-row {
+  margin-top: 4px;
+}
+
+.poison-count {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: #9b59b6;
+}
+
+// ---- Mana pool --------------------------------------------
+
+.mana-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mana-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.mana-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mana-pip {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: default;
+  transition: transform 0.1s;
+
+  &:hover { transform: scale(1.1); }
+
+  &.W { background: #3a3528; color: var(--mana-W); }
+  &.U { background: #1a2a3a; color: var(--mana-U); }
+  &.B { background: #2a1a3a; color: var(--mana-B); }
+  &.R { background: #3a1a1a; color: var(--mana-R); }
+  &.G { background: #1a3a1a; color: var(--mana-G); }
+  &.empty { background: var(--bg-surface); color: var(--text-dim); opacity: 0.4; }
+}
+
+// ---- Zone counts ------------------------------------------
+
+.zone-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: auto;
+}
+
+.zone-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: var(--bg-hover); }
+}
+
+.zone-name {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+}
+
+.zone-num {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.zone-row.library .zone-num { color: var(--mana-U); }
+.zone-row.grave   .zone-num { color: var(--text-secondary); }
+.zone-row.exile   .zone-num { color: #e67e22; }

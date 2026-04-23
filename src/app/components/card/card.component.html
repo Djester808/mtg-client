@@ -1,0 +1,84 @@
+<div
+  class="card"
+  [class.tapped]="isTapped"
+  [class.selected]="isSelected"
+  [class.attacking]="isAttacking"
+  [class.blocking]="isBlocking"
+  [class.targeted]="isTargeted"
+  [class.pending-attacker]="isPendingAttacker"
+  [class.castable]="isCastable"
+  [class.card-back]="showBack"
+  (click)="onClick()"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()">
+
+  <!-- CARD BACK -->
+  <ng-container *ngIf="showBack">
+    <div class="card-frame">
+      <div class="card-back-pattern"></div>
+    </div>
+  </ng-container>
+
+  <!-- CARD FACE -->
+  <ng-container *ngIf="!showBack && cardData">
+    <div class="card-frame">
+
+      <!-- Art -->
+      <div class="card-art">
+        <div class="card-art-bg" [ngClass]="artColorClass">
+          <!-- Use Scryfall image if available, fall back to emoji -->
+          <img
+            *ngIf="cardData.imageUriSmall"
+            [src]="cardData.imageUriSmall"
+            [alt]="cardData.name"
+            class="card-img"
+            loading="lazy">
+          <span *ngIf="!cardData.imageUriSmall" class="card-emoji">{{ artEmoji }}</span>
+        </div>
+      </div>
+
+      <!-- Type line -->
+      <div class="card-type">{{ cardData.subtypes.length ? cardData.cardTypes.join(' ') + ' — ' + cardData.subtypes.join(' ') : cardData.cardTypes.join(' ') }}</div>
+
+      <!-- Name bar -->
+      <div class="card-name-bar">
+        <span class="card-name">{{ cardData.name }}</span>
+        <span class="card-cost">{{ cardData.manaCost }}</span>
+      </div>
+
+      <!-- P/T -->
+      <div class="card-pt" *ngIf="isCreature">
+        {{ effectivePower }}/{{ effectiveToughness }}
+      </div>
+
+      <!-- Damage indicator -->
+      <div class="card-damage" *ngIf="damageMarked > 0">
+        {{ damageMarked }}
+      </div>
+
+      <!-- Counters -->
+      <div class="card-counters" *ngIf="counters.length">
+        <div
+          *ngFor="let c of counters"
+          class="counter-badge"
+          [ngClass]="c.cls">
+          {{ c.label }}
+        </div>
+      </div>
+
+      <!-- Color identity dots -->
+      <div class="color-dot">
+        <div
+          *ngFor="let color of colorDots"
+          class="cdot"
+          [ngClass]="color">
+        </div>
+      </div>
+
+      <!-- Summoning sickness overlay -->
+      <div class="sick-overlay" *ngIf="isCreature && hasSummoningSickness"></div>
+
+    </div>
+  </ng-container>
+
+</div>

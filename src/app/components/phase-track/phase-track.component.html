@@ -1,0 +1,16 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <div class="turn-badge">
+    Turn <span class="gold">{{ vm.turn }}</span>
+    &nbsp;|&nbsp;
+    <span class="gold">{{ vm.activePlayerName }}</span>'s Turn
+  </div>
+  <div class="phase-track">
+    <div
+      *ngFor="let pip of vm.pips; trackBy: trackByPip"
+      class="phase-pip"
+      [ngClass]="pip.state"
+      [title]="pip.label">
+      <span class="pip-label">{{ pip.label }}</span>
+    </div>
+  </div>
+</ng-container>

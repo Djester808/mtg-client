@@ -1,0 +1,88 @@
+<div class="lobby-shell">
+  <div class="lobby-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+  </div>
+
+  <div class="lobby-card">
+    <div class="lobby-header">
+      <div class="logo-mark">✦</div>
+      <h1 class="lobby-title">MTG Engine</h1>
+      <p class="lobby-subtitle">Pragmatic Edition</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="startGame()" class="lobby-form" autocomplete="off">
+
+      <!-- Player names -->
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Player 1</label>
+          <input
+            class="field-input"
+            type="text"
+            formControlName="player1Name"
+            placeholder="Enter name">
+          <div class="field-accent left"></div>
+        </div>
+
+        <div class="vs-divider">VS</div>
+
+        <div class="field">
+          <label class="field-label">Player 2</label>
+          <input
+            class="field-input"
+            type="text"
+            formControlName="player2Name"
+            placeholder="Enter name">
+          <div class="field-accent right"></div>
+        </div>
+      </div>
+
+      <!-- Deck preset -->
+      <div class="deck-section">
+        <label class="field-label">Starting Deck Preset</label>
+        <div class="deck-grid">
+          <label
+            *ngFor="let preset of DECK_PRESETS"
+            class="deck-option"
+            [class.selected]="form.value.deckPreset === preset.value">
+            <input
+              type="radio"
+              formControlName="deckPreset"
+              [value]="preset.value"
+              style="display:none">
+            <div class="deck-colors">
+              <span
+                *ngFor="let c of preset.colors"
+                class="color-pip"
+                [ngClass]="colorClass(c)">{{ c }}</span>
+            </div>
+            <span class="deck-name">{{ preset.label }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-msg" *ngIf="error$ | async as err">
+        {{ err }}
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="start-btn"
+        [disabled]="form.invalid || (loading$ | async)">
+        <span *ngIf="!(loading$ | async)">Begin Game</span>
+        <span *ngIf="loading$ | async" class="loading-dots">
+          <span></span><span></span><span></span>
+        </span>
+      </button>
+
+    </form>
+
+    <div class="lobby-footer">
+      Phase 1 engine · Angular 17 · .NET 8 · SignalR
+    </div>
+  </div>
+</div>

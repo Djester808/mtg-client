@@ -1,0 +1,18 @@
+<div class="hand-zone" *ngIf="vm$ | async as vm">
+  <div class="hand-label">Hand — {{ vm.count }} cards</div>
+  <div class="hand-cards">
+    <div
+      *ngFor="let hc of vm.cards; trackBy: trackByCard; let i = index"
+      class="hand-card-wrapper"
+      [ngClass]="'rot-' + i">
+      <app-card
+        [card]="hc.card"
+        [isSelected]="hc.isSelected"
+        [isCastable]="hc.isCastable"
+        (clicked)="onCardClick(hc.card)"
+        (hoverEnter)="onCardHover($event)"
+        (hoverLeave)="onCardHoverLeave()">
+      </app-card>
+    </div>
+  </div>
+</div>

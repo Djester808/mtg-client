@@ -1,0 +1,66 @@
+:host { display: block; }
+
+.hand-zone {
+  background: var(--bg-deep);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 20px 8px;
+  position: relative;
+  overflow: hidden;
+  height: 110px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    opacity: 0.4;
+  }
+}
+
+.hand-label {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.hand-cards {
+  display: flex;
+  align-items: flex-end;
+  padding-left: 60px;
+}
+
+// Each wrapper provides the fan rotation
+.hand-card-wrapper {
+  margin-left: -22px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
+  transform-origin: bottom center;
+
+  // Fan rotations for up to 8 cards
+  &.rot-0 { transform: rotate(-10deg) translateY(6px); }
+  &.rot-1 { transform: rotate(-7deg)  translateY(3px); }
+  &.rot-2 { transform: rotate(-4deg)  translateY(1px); }
+  &.rot-3 { transform: rotate(-1.5deg) translateY(0); }
+  &.rot-4 { transform: rotate(1.5deg)  translateY(0); }
+  &.rot-5 { transform: rotate(4deg)    translateY(1px); }
+  &.rot-6 { transform: rotate(7deg)    translateY(3px); }
+  &.rot-7 { transform: rotate(10deg)   translateY(6px); }
+
+  &:hover {
+    transform: rotate(0deg) translateY(-24px) scale(1.08) !important;
+    z-index: 100;
+  }
+
+  // Override card host size for hand
+  app-card {
+    width: var(--card-w-hand);
+    height: var(--card-h-hand);
+  }
+}

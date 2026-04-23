@@ -1,0 +1,127 @@
+// ============================================================
+// MTG ENGINE — Global Styles
+// ============================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+// ---- Design Tokens ----------------------------------------
+:root {
+  // Backgrounds
+  --bg-void:        #080808;
+  --bg-deep:        #0e0e0f;
+  --bg-surface:     #141416;
+  --bg-raised:      #1c1c20;
+  --bg-hover:       #242428;
+
+  // Borders
+  --border-dim:     rgba(255, 255, 255, 0.06);
+  --border-subtle:  rgba(255, 255, 255, 0.10);
+  --border-lit:     rgba(255, 255, 255, 0.18);
+
+  // Accent colors
+  --gold:           #c9a84c;
+  --gold-dim:       #8a6f2e;
+  --gold-glow:      rgba(201, 168, 76, 0.15);
+  --red-accent:     #c0392b;
+  --red-glow:       rgba(192, 57, 43, 0.2);
+
+  // Mana colors
+  --mana-W:         #f0e6c8;
+  --mana-U:         #4a90d9;
+  --mana-B:         #9b59b6;
+  --mana-R:         #e74c3c;
+  --mana-G:         #27ae60;
+  --mana-C:         #95a5a6;
+
+  // Text
+  --text-primary:   #e8e0d0;
+  --text-secondary: #9a9080;
+  --text-dim:       #5a5248;
+
+  // Card dimensions
+  --card-w:         100px;
+  --card-h:         140px;
+  --card-w-hand:    88px;
+  --card-h-hand:    123px;
+  --card-radius:    8px;
+
+  // Glow effects
+  --glow-priority:  0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
+  --glow-attack:    0 0 0 2px #e74c3c, 0 0 18px rgba(231, 76, 60, 0.45);
+  --glow-select:    0 0 0 2px #4a90d9, 0 0 16px rgba(74, 144, 217, 0.35);
+  --glow-castable:  0 0 0 1px rgba(39, 174, 96, 0.5), 0 0 12px rgba(39, 174, 96, 0.2);
+
+  // Typography
+  --font-display:   'Cinzel', serif;
+  --font-body:      'Crimson Pro', Georgia, serif;
+}
+
+// ---- Reset ------------------------------------------------
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+// ---- Film-grain overlay -----------------------------------
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+// ---- Scrollbars -------------------------------------------
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
+// ---- Utilities --------------------------------------------
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-dim       { color: var(--text-dim); }
+.text-gold      { color: var(--gold); }
+
+// ---- Animations -------------------------------------------
+@keyframes pulse-gold {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.85); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
