@@ -71,6 +71,7 @@
         <div class="ci-type">{{ typeLineText }}</div>
         <div class="ci-text" *ngIf="cardData.oracleText">{{ cardData.oracleText }}</div>
         <div class="ci-pt" *ngIf="isCreature">{{ effectivePower }}/{{ effectiveToughness }}</div>
+        <div class="ci-artist" *ngIf="cardData.artist">&#9998; {{ cardData.artist }}</div>
       </div>
 
     </div>

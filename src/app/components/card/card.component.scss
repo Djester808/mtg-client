@@ -385,6 +385,19 @@
   flex-shrink: 0;
 }
 
+.ci-artist {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.38);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 2px;
+  font-style: italic;
+}
+
 // ---- Hover tooltip ----------------------------------------
 
 .card-tooltip {
