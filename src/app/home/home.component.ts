@@ -28,4 +28,8 @@ export class HomeComponent {
   openKb(): void {
     this.router.navigate(['/kb']);
   }
+
+  openCollection(): void {
+    this.router.navigate(['/collection']);
+  }
 }

@@ -64,9 +64,9 @@ export class GameApiService {
   /**
    * Search cards by name (proxied to Scryfall).
    */
-  searchCards(query: string): Observable<CardDto[]> {
+  searchCards(query: string, limit = 20): Observable<CardDto[]> {
     return this.http.get<CardDto[]>(`${this.base}/cards/search`, {
-      params: { q: query },
+      params: { q: query, limit },
     });
   }
 }

@@ -1,0 +1,92 @@
+<div class="list-shell">
+
+  <div class="list-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="list-header">
+    <button class="back-btn" (click)="goHome()">← Home</button>
+    <div class="header-title">
+      <span class="header-mark">✦</span>
+      <h1>My Collections</h1>
+    </div>
+    <button class="create-btn" (click)="openCreateForm()">+ New Collection</button>
+  </header>
+
+  <!-- Content -->
+  <main class="list-content">
+
+    <div class="loading-state" *ngIf="loading$ | async">Loading collections…</div>
+
+    <ng-container *ngIf="!(loading$ | async)">
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="(collections$ | async)?.length === 0">
+        <div class="empty-icon">◈</div>
+        <p class="empty-title">No collections yet</p>
+        <p class="empty-sub">Create your first collection to start tracking your cards.</p>
+        <button class="create-btn" (click)="openCreateForm()">+ New Collection</button>
+      </div>
+
+      <!-- Grid -->
+      <div class="collection-grid" *ngIf="(collections$ | async)?.length">
+        <div
+          class="collection-card"
+          *ngFor="let col of (collections$ | async)"
+          (click)="openCollection(col.id)"
+        >
+          <div class="collection-card-body">
+            <div class="collection-icon">◈</div>
+            <div class="collection-info">
+              <h3 class="collection-name">{{ col.name }}</h3>
+              <p class="collection-desc" *ngIf="col.description">{{ col.description }}</p>
+            </div>
+          </div>
+          <div class="collection-card-footer">
+            <span class="card-count">{{ col.cardCount }} card{{ col.cardCount !== 1 ? 's' : '' }}</span>
+            <button class="delete-btn" (click)="deleteCollection($event, col.id)" title="Delete">✕</button>
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+  </main>
+
+  <!-- Create modal -->
+  <div class="modal-overlay" *ngIf="showCreateForm" (click)="closeCreateForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>New Collection</h2>
+        <button class="modal-close" (click)="closeCreateForm()">✕</button>
+      </div>
+      <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="modal-body">
+        <div class="form-field">
+          <label class="form-label">Name</label>
+          <input
+            class="form-input"
+            type="text"
+            formControlName="name"
+            placeholder="e.g. Modern Staples"
+          />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Description <span class="optional">(optional)</span></label>
+          <textarea
+            class="form-input form-textarea"
+            formControlName="description"
+            placeholder="What's in this collection?"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeCreateForm()">Cancel</button>
+          <button type="submit" class="submit-btn" [disabled]="createForm.invalid">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>

@@ -8,6 +8,7 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { routes } from './app.routes';
 import { appReducers } from './store';
 import { GameEffects } from './store/game/game.effects';
+import { CollectionEffects } from './store/collection/collection.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
     provideAnimations(),
     provideStore(appReducers),
-    provideEffects([GameEffects]),
+    provideEffects([GameEffects, CollectionEffects]),
     provideStoreDevtools({
       maxAge: 50,
       logOnly: false,

@@ -1,0 +1,262 @@
+<div class="detail-shell">
+
+  <div class="detail-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="detail-header">
+    <button class="back-btn" (click)="goBack()">← Collections</button>
+
+    <ng-container *ngIf="collection$ | async as col; else loadingHeader">
+      <div class="header-center">
+        <h1 class="header-name">{{ col.name }}</h1>
+        <p class="header-desc" *ngIf="col.description">{{ col.description }}</p>
+      </div>
+      <div class="header-right">
+        <span class="header-count">{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span>
+        <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+          {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-template #loadingHeader>
+      <div class="header-center">
+        <h1 class="header-name is-loading">Loading…</h1>
+      </div>
+    </ng-template>
+  </header>
+
+  <!-- Body: grid + optional search panel -->
+  <div class="detail-body">
+
+    <!-- Card grid area -->
+    <main class="grid-area">
+
+      <!-- Filter bar (only when cards exist) -->
+      <div class="filter-bar" *ngIf="(collection$ | async)?.cards?.length">
+        <div class="filter-wrap">
+          <span class="filter-icon">⌕</span>
+          <input
+            class="filter-input"
+            type="text"
+            [(ngModel)]="filterQuery"
+            placeholder="Filter cards in collection…"
+          />
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend" *ngIf="(collection$ | async)?.cards?.length">
+        <span class="legend-item"><span class="legend-dot">◈</span> Normal</span>
+        <span class="legend-sep">·</span>
+        <span class="legend-item legend-item-foil"><span class="legend-dot">✦</span> Foil</span>
+        <span class="legend-sep">·</span>
+        <span class="legend-item legend-item-hint">Set dropdown selects which printing</span>
+      </div>
+
+      <!-- Loading skeleton -->
+      <div class="loading-state" *ngIf="loading$ | async">Loading…</div>
+
+      <!-- Empty collection -->
+      <div class="empty-state" *ngIf="!(loading$ | async) && (collection$ | async)?.cards?.length === 0">
+        <div class="empty-icon">⊕</div>
+        <p class="empty-title">No cards yet</p>
+        <p class="empty-sub">Click "Add Cards" to search and add cards from Scryfall.</p>
+        <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
+      </div>
+
+      <!-- Card grid -->
+      <ng-container *ngIf="collection$ | async as col">
+        <div class="card-grid" *ngIf="col.cards.length > 0">
+
+          <div
+            class="card-wrap"
+            *ngFor="let card of filteredCards(col)"
+            (mouseenter)="onCardHover(card)"
+            (mouseleave)="onCardLeave()"
+          >
+            <!-- Visual tile -->
+            <div class="card-tile" [class.is-foil]="card.quantityFoil > 0">
+
+              <!-- Card image -->
+              <div
+                class="card-art"
+                [style.backgroundImage]="card.cardDetails?.imageUriNormal
+                  ? 'url(' + card.cardDetails!.imageUriNormal + ')'
+                  : 'none'"
+              >
+                <div class="art-placeholder" *ngIf="!card.cardDetails?.imageUriNormal">◈</div>
+                <div class="foil-badge" *ngIf="card.quantityFoil > 0">✦</div>
+                <div class="qty-badge">
+                  <ng-container *ngIf="card.quantity > 0">×{{ card.quantity }}</ng-container>
+                  <span class="qty-foil" *ngIf="card.quantityFoil > 0">
+                    <ng-container *ngIf="card.quantity > 0"> </ng-container>✦{{ card.quantityFoil }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Set selector dropdown -->
+              <select
+                class="set-select"
+                [ngModel]="card.scryfallId"
+                [title]="currentSetTooltip(card)"
+                (focus)="onSelectFocus(card)"
+                (ngModelChange)="onSetChange(card, $event)"
+              >
+                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else noprints">
+                  <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                    {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                  </option>
+                </ng-container>
+                <ng-template #noprints>
+                  <option [value]="card.scryfallId">
+                    {{ card.cardDetails?.setCode?.toUpperCase() ?? '···' }}
+                  </option>
+                </ng-template>
+              </select>
+
+              <!-- Two-row controls: normal / foil -->
+              <div class="card-controls">
+                <div class="ctrl-row">
+                  <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
+                  <span class="ctrl-label">◈ {{ card.quantity }}</span>
+                  <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
+                </div>
+                <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
+                  <button class="ctrl-btn ctrl-dec" (click)="decrementFoil(card)" title="Remove foil">−</button>
+                  <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
+                  <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hover info panel — sibling to tile, overflows card-wrap -->
+            <div class="card-info-panel" *ngIf="hoveredCard?.id === card.id">
+
+              <div class="info-header">
+                <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                <span class="info-mana" *ngIf="card.cardDetails?.manaCost">{{ card.cardDetails!.manaCost }}</span>
+              </div>
+
+              <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
+
+              <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">{{ card.cardDetails!.oracleText }}</div>
+
+              <div class="info-stats"
+                   *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
+                <span class="info-pt" *ngIf="card.cardDetails?.power != null">
+                  {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
+                </span>
+                <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
+                  ◆ {{ card.cardDetails!.startingLoyalty }}
+                </span>
+              </div>
+
+              <div class="info-artist" *ngIf="card.cardDetails?.artist">
+                Illus. {{ card.cardDetails!.artist }}
+              </div>
+
+            </div>
+          </div>
+
+          <!-- No filter results -->
+          <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filterQuery">
+            No cards match "{{ filterQuery }}"
+          </div>
+        </div>
+      </ng-container>
+    </main>
+
+    <!-- Search panel (slides in from right) -->
+    <aside class="search-panel" [class.is-open]="showSearchPanel">
+      <div class="panel-header">
+        <span class="panel-title">Add Cards</span>
+        <button class="panel-close" (click)="toggleSearchPanel()">✕</button>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon-inner">⌕</span>
+        <input
+          class="search-input"
+          type="text"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchInput($event)"
+          placeholder="Search Scryfall…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="search-hint" *ngIf="searchQuery.length < 2 && !searchLoading">
+        {{ searchQuery.length === 0 ? 'Type a card name to search' : 'Keep typing…' }}
+      </div>
+
+      <div class="search-spinner" *ngIf="searchLoading">Searching…</div>
+
+      <div class="search-empty" *ngIf="!searchLoading && searchQuery.length >= 2 && searchResults.length === 0">
+        No cards matching "{{ searchQuery }}"
+      </div>
+
+      <div class="results-count"
+           *ngIf="!searchLoading && searchResults.length > 0">
+        {{ searchResults.length }} result{{ searchResults.length !== 1 ? 's' : '' }}
+        <span *ngIf="searchResults.length === 20"> (showing first 20)</span>
+      </div>
+
+      <div class="results-list">
+        <ng-container *ngIf="collection$ | async as col">
+          <div class="result-row" *ngFor="let card of searchResults">
+            <div
+              class="result-art"
+              [style.backgroundImage]="card.imageUriSmall
+                ? 'url(' + card.imageUriSmall + ')'
+                : 'none'"
+            >
+              <div class="art-placeholder sm" *ngIf="!card.imageUriSmall">◈</div>
+            </div>
+
+            <div class="result-info">
+              <span class="result-name">
+                <ng-container *ngFor="let part of highlightParts(card.name, searchQuery)">
+                  <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
+                  <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
+                </ng-container>
+              </span>
+            </div>
+
+            <div class="result-set-wrap">
+              <select
+                class="result-set-select"
+                [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+                [title]="searchSetTooltip(card.oracleId)"
+                [class.has-error]="addErrors.has(card.oracleId)"
+                (focus)="onSearchSelectFocus(card.oracleId)"
+                (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
+              >
+                <option value="" disabled>SET</option>
+                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints">
+                  <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                    {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                  </option>
+                </ng-container>
+              </select>
+              <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
+            </div>
+
+            <div class="result-action">
+              <span class="owned-qty" *ngIf="ownedEntry(col, card.oracleId) as owned">
+                ×{{ owned.quantity }}<ng-container *ngIf="owned.quantityFoil > 0"> ✦{{ owned.quantityFoil }}</ng-container>
+              </span>
+              <button class="add-result-btn" (click)="addCard(card)">
+                {{ ownedEntry(col, card.oracleId) ? '+1' : 'Add' }}
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </aside>
+  </div>
+
+</div>
