@@ -110,7 +110,7 @@ export class GameBoardComponent implements OnInit {
   private previewDragOriginTop  = 0;
 
   get gridRows(): string {
-    return `44px 1fr 1fr 44px ${this.handHeight}px`;
+    return `64px 1fr 1fr 44px ${this.handHeight}px`;
   }
 
   startHandResize(e: MouseEvent): void {

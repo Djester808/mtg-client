@@ -1,12 +1,13 @@
 :host {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 6px;
 }
 
 .turn-badge {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -18,13 +19,13 @@
 .phase-track {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
 }
 
 .phase-pip {
-  width: 28px;
-  height: 5px;
-  border-radius: 3px;
+  width: 44px;
+  height: 9px;
+  border-radius: 4px;
   background: var(--bg-raised);
   border: 1px solid var(--border-dim);
   position: relative;
@@ -39,21 +40,26 @@
   &.active {
     background: var(--gold);
     border-color: var(--gold);
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.5);
+    animation: phase-glow 1.4s ease-in-out infinite;
 
-    .pip-label { color: var(--gold); }
+    .pip-label { color: var(--gold); font-weight: 600; }
   }
 }
 
 .pip-label {
   position: absolute;
-  bottom: -14px;
+  bottom: -18px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 7px;
+  font-size: 9px;
   color: var(--text-dim);
   white-space: nowrap;
   font-family: var(--font-display);
   letter-spacing: 0.05em;
   pointer-events: none;
+}
+
+@keyframes phase-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(201, 168, 76, 0.5), 0 0 14px rgba(201, 168, 76, 0.25); }
+  50%       { box-shadow: 0 0 12px 3px rgba(201, 168, 76, 0.85), 0 0 28px rgba(201, 168, 76, 0.5); }
 }

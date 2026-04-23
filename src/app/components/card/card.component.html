@@ -69,8 +69,7 @@
       <!-- Bottom info panel (hand cards) -->
       <div class="card-info" *ngIf="showInfo">
         <div class="ci-type">{{ typeLineText }}</div>
-        <div class="ci-text" *ngIf="cardData.oracleText">{{ cardData.oracleText }}</div>
-        <div class="ci-pt" *ngIf="isCreature">{{ effectivePower }}/{{ effectiveToughness }}</div>
+        <div class="ci-text" *ngIf="cardData.oracleText" [innerHTML]="cardData.oracleText | oracleSymbols"></div>
         <div class="ci-artist" *ngIf="cardData.artist">&#9998; {{ cardData.artist }}</div>
       </div>
 
@@ -83,7 +82,7 @@
         <app-mana-cost *ngIf="cardData.manaCost" [cost]="cardData.manaCost" class="tooltip-cost"></app-mana-cost>
       </div>
       <div class="tooltip-type">{{ typeLineText }}</div>
-      <div class="tooltip-text" *ngIf="cardData.oracleText">{{ cardData.oracleText }}</div>
+      <div class="tooltip-text" *ngIf="cardData.oracleText" [innerHTML]="cardData.oracleText | oracleSymbols"></div>
       <div class="tooltip-pt" *ngIf="isCreature">
         {{ effectivePower }}/{{ effectiveToughness }}
       </div>

@@ -1,23 +1,17 @@
-<div class="stack-panel">
+<div class="stack-panel" *ngIf="!(isEmpty$ | async)">
   <div class="stack-panel-title">The Stack</div>
 
   <div class="stack-items">
     <ng-container *ngIf="stack$ | async as stack">
-      <ng-container *ngIf="stack.length; else emptyStack">
-        <div
-          *ngFor="let obj of stack; trackBy: trackByStackObj; let i = index"
-          class="stack-item"
-          [class.stack-item-top]="isTopOfStack(i, stack)">
-          <div class="stack-item-index">#{{ i + 1 }}{{ isTopOfStack(i, stack) ? ' (top)' : '' }}</div>
-          <div class="stack-item-type">{{ typeLabel(obj) }}</div>
-          <div class="stack-item-name">{{ obj.sourceCardName }}</div>
-          <div class="stack-item-controller">{{ obj.description }}</div>
-        </div>
-      </ng-container>
-
-      <ng-template #emptyStack>
-        <div class="stack-empty">Stack is empty</div>
-      </ng-template>
+      <div
+        *ngFor="let obj of stack; trackBy: trackByStackObj; let i = index"
+        class="stack-item"
+        [class.stack-item-top]="isTopOfStack(i, stack)">
+        <div class="stack-item-index">#{{ i + 1 }}{{ isTopOfStack(i, stack) ? ' (top)' : '' }}</div>
+        <div class="stack-item-type">{{ typeLabel(obj) }}</div>
+        <div class="stack-item-name">{{ obj.sourceCardName }}</div>
+        <div class="stack-item-controller">{{ obj.description }}</div>
+      </div>
     </ng-container>
   </div>
 

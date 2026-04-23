@@ -5,11 +5,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { PermanentDto, CardDto, ManaColor, CardType } from '../../models/game.models';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
+import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 
 @Component({
   selector: 'app-card',
   standalone: true,
-  imports: [CommonModule, ManaCostComponent],
+  imports: [CommonModule, ManaCostComponent, OracleSymbolsPipe],
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,11 +50,11 @@ export class CardComponent implements OnChanges {
   }
 
   get effectivePower(): number | null {
-    return this.permanent?.effectivePower ?? null;
+    return this.permanent?.effectivePower ?? this.cardData?.power ?? null;
   }
 
   get effectiveToughness(): number | null {
-    return this.permanent?.effectiveToughness ?? null;
+    return this.permanent?.effectiveToughness ?? this.cardData?.toughness ?? null;
   }
 
   get damageMarked(): number {

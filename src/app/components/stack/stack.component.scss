@@ -79,20 +79,6 @@
   font-style: italic;
 }
 
-.stack-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  color: var(--text-dim);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: var(--font-display);
-  font-style: italic;
-  opacity: 0.5;
-}
-
 .stack-actions {
   display: flex;
   flex-direction: column;
