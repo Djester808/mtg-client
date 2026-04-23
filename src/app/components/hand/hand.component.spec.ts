@@ -57,6 +57,10 @@ describe('HandComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    document.body.classList.remove('is-dragging-card');
+  });
+
   // ---- Initial state ----------------------------------------
 
   it('creates the component', () => {
@@ -144,90 +148,189 @@ describe('HandComponent', () => {
     expect(component.orderedCards[0].isCastable).toBeFalse();
   });
 
-  // ---- Drag handlers ----------------------------------------
+  // ---- Mouse drag — cursor & state ----------------------------------------
 
-  it('sets draggingId on dragStart', () => {
-    const dt = new DataTransfer();
-    const event = new DragEvent('dragstart', { dataTransfer: dt });
-    component.onDragStart(event, 'card-1', false);
+  it('adds is-dragging-card class to body on mousedown', () => {
+    const e = new MouseEvent('mousedown', { clientX: 100 });
+    component.onWrapperMouseDown(e, 'c1');
 
-    expect(component.draggingId).toBe('card-1');
+    expect(document.body.classList.contains('is-dragging-card')).toBeTrue();
   });
 
-  it('records isLand in dataTransfer on dragStart', () => {
-    const dt = new DataTransfer();
-    const event = new DragEvent('dragstart', { dataTransfer: dt });
-    component.onDragStart(event, 'land-1', true);
+  it('does not add body class when mousedown target is an anchor', () => {
+    const anchor = document.createElement('a');
+    const e = new MouseEvent('mousedown', { clientX: 100 });
+    Object.defineProperty(e, 'target', { value: anchor, configurable: true });
+    component.onWrapperMouseDown(e, 'c1');
 
-    expect(dt.getData('isLand')).toBe('1');
+    expect(document.body.classList.contains('is-dragging-card')).toBeFalse();
   });
 
-  it('stores cardId in dataTransfer on dragStart', () => {
-    const dt = new DataTransfer();
-    const event = new DragEvent('dragstart', { dataTransfer: dt });
-    component.onDragStart(event, 'card-xyz', false);
+  it('removes is-dragging-card class from body on mouseup', () => {
+    const e = new MouseEvent('mousedown', { clientX: 100 });
+    component.onWrapperMouseDown(e, 'c1');
+    component.onDocumentMouseUp();
 
-    expect(dt.getData('cardId')).toBe('card-xyz');
+    expect(document.body.classList.contains('is-dragging-card')).toBeFalse();
   });
 
-  it('clears drag state on dragEnd', () => {
-    component.draggingId = 'card-1';
-    component.dragOverId = 'card-2';
-    component.onDragEnd();
+  it('does not set draggingId for mouse movement below 5px threshold', () => {
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 103 }));
 
     expect(component.draggingId).toBeNull();
-    expect(component.dragOverId).toBeNull();
   });
 
-  it('reorders cards when dragging over a different card', () => {
+  it('sets draggingId once movement exceeds 5px threshold', () => {
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 106 }));
+
+    expect(component.draggingId).toBe('c1');
+  });
+
+  it('clears draggingId on mouseup', () => {
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 110 }));
+    component.onDocumentMouseUp();
+
+    expect(component.draggingId).toBeNull();
+  });
+
+  it('ignores mousemove when no mousedown was recorded', () => {
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 200 }));
+
+    expect(component.draggingId).toBeNull();
+  });
+
+  it('ignores mouseup when no mousedown was recorded', () => {
+    expect(() => component.onDocumentMouseUp()).not.toThrow();
+    expect(document.body.classList.contains('is-dragging-card')).toBeFalse();
+  });
+
+  // ---- Mouse drag — reorder ----------------------------------------
+
+  it('reorders cards when drag crosses into adjacent slot', () => {
     const card1 = makeCard('c1');
     const card2 = makeCard('c2');
     store.overrideSelector(selectLocalPlayer, makePlayer([card1, card2]));
     store.refreshState();
 
-    // Start dragging c1 over c2 → c1 should move after c2
-    component.draggingId = 'c1';
-    const event = new DragEvent('dragover');
-    Object.defineProperty(event, 'dataTransfer', { value: new DataTransfer() });
-    component.onDragOver(event, 'c2');
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 10 }), 'c1');
+    (component as any).mouseDragging = true;
+    (component as any).draggingId = 'c1';
+
+    const mockWrappers = [
+      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },  // c1 center=50
+      { getBoundingClientRect: () => ({ left: 150, width: 100 }) },  // c2 center=200
+    ];
+    spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 200 }));
 
     expect(component.orderedCards[0].card.cardId).toBe('c2');
     expect(component.orderedCards[1].card.cardId).toBe('c1');
   });
 
-  it('does not reorder when dragging over itself', () => {
+  it('does not reorder when dragging over the same card', () => {
     const card1 = makeCard('c1');
     const card2 = makeCard('c2');
     store.overrideSelector(selectLocalPlayer, makePlayer([card1, card2]));
     store.refreshState();
 
-    component.draggingId = 'c1';
-    const event = new DragEvent('dragover');
-    Object.defineProperty(event, 'dataTransfer', { value: new DataTransfer() });
-    component.onDragOver(event, 'c1');
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 10 }), 'c1');
+    (component as any).mouseDragging = true;
+    (component as any).draggingId = 'c1';
+
+    const mockWrappers = [
+      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },  // c1 center=50
+      { getBoundingClientRect: () => ({ left: 150, width: 100 }) },  // c2 center=200
+    ];
+    spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
+    // Move toward c1's own center (x=50)
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 50 }));
 
     expect(component.orderedCards[0].card.cardId).toBe('c1');
     expect(component.orderedCards[1].card.cardId).toBe('c2');
   });
 
-  it('preserves new order through subsequent store updates', () => {
+  it('preserves reorder through subsequent store updates', () => {
     const card1 = makeCard('c1');
     const card2 = makeCard('c2');
     store.overrideSelector(selectLocalPlayer, makePlayer([card1, card2]));
     store.refreshState();
 
-    // Reorder: c2, c1
-    component.draggingId = 'c1';
-    const event = new DragEvent('dragover');
-    Object.defineProperty(event, 'dataTransfer', { value: new DataTransfer() });
-    component.onDragOver(event, 'c2');
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 10 }), 'c1');
+    (component as any).mouseDragging = true;
+    (component as any).draggingId = 'c1';
 
-    // Simulate a store refresh (e.g. mana changes) without card changes
+    const mockWrappers = [
+      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },
+      { getBoundingClientRect: () => ({ left: 150, width: 100 }) },
+    ];
+    spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 200 }));
+
     store.overrideSelector(selectHasPriority, false);
     store.refreshState();
 
     expect(component.orderedCards[0].card.cardId).toBe('c2');
     expect(component.orderedCards[1].card.cardId).toBe('c1');
+  });
+
+  // ---- Click suppression after drag ----------------------------------------
+
+  it('suppresses next card click after a completed drag', () => {
+    spyOn(store, 'dispatch');
+    const card = makeCard('c1');
+
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 110 }));
+    component.onDocumentMouseUp();
+    component.onCardClick(card);
+
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('allows card click after suppression token is consumed', () => {
+    spyOn(store, 'dispatch');
+    const card = makeCard('c1');
+
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 110 }));
+    component.onDocumentMouseUp();
+    component.onCardClick(card); // consumes suppression
+    component.onCardClick(card); // should dispatch
+
+    expect(store.dispatch).toHaveBeenCalledOnceWith(UIActions.selectCard({ cardId: 'c1' }));
+  });
+
+  it('does not suppress click when mousedown was released without dragging', () => {
+    spyOn(store, 'dispatch');
+    const card = makeCard('c1');
+
+    component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
+    component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 102 })); // below threshold
+    component.onDocumentMouseUp();
+    component.onCardClick(card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(UIActions.selectCard({ cardId: 'c1' }));
+  });
+
+  // ---- Hover suppression during drag ----------------------------------------
+
+  it('does not dispatch hoverCard while dragging', () => {
+    spyOn(store, 'dispatch');
+    (component as any).mouseDragging = true;
+    component.onCardHover(makeCard('c1'));
+
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('dispatches hoverCard when not dragging', () => {
+    spyOn(store, 'dispatch');
+    const card = makeCard('c1');
+    component.onCardHover(card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(UIActions.hoverCard({ card }));
   });
 
   // ---- Click/double-click dispatches ----------------------------------------

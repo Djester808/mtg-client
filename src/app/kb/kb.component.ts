@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 export interface KbKeyword {
   name: string;
@@ -73,15 +73,23 @@ export class KbComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    const kwParam = this.route.snapshot.queryParamMap.get('kw');
     this.http.get<KbDto>('/api/rules').subscribe({
       next: data => {
         this.kb = data;
-        // auto-select first keyword on load
-        if (data.keywords.length) this.selected = { kind: 'keyword', data: data.keywords[0] };
+        if (kwParam) {
+          const match = data.keywords.find(k => k.name.toLowerCase() === kwParam.toLowerCase());
+          this.selected = match
+            ? { kind: 'keyword', data: match }
+            : { kind: 'keyword', data: data.keywords[0] };
+        } else if (data.keywords.length) {
+          this.selected = { kind: 'keyword', data: data.keywords[0] };
+        }
         this.cdr.markForCheck();
       },
       error: () => { this.cdr.markForCheck(); },

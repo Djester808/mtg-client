@@ -75,7 +75,7 @@
           <app-mana-cost *ngIf="vm.previewCard.manaCost" [cost]="vm.previewCard.manaCost" class="ps-cost"></app-mana-cost>
         </div>
         <div class="ps-type">{{ previewTypeLine(vm.previewCard) }}</div>
-        <div class="ps-text" *ngIf="vm.previewCard.oracleText">{{ vm.previewCard.oracleText }}</div>
+        <div class="ps-text" *ngIf="vm.previewCard.oracleText" [innerHTML]="vm.previewCard.oracleText | oracleSymbols"></div>
         <div class="ps-flavor" *ngIf="vm.previewCard.flavorText">{{ vm.previewCard.flavorText }}</div>
         <div class="ps-pt" *ngIf="vm.previewCard.power !== null">
           {{ vm.previewCard.power }}/{{ vm.previewCard.toughness }}

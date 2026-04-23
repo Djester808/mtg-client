@@ -105,6 +105,17 @@ body::before {
 .text-dim       { color: var(--text-dim); }
 .text-gold      { color: var(--gold); }
 
+// ---- Keyword links (injected via innerHTML — not reachable by scoped styles) --
+a.kw-link {
+  cursor: pointer;
+}
+
+// ---- Card drag cursor (set via class during HTML5 dragstart/dragend) ----------
+body.is-dragging-card,
+body.is-dragging-card * {
+  cursor: grabbing !important;
+}
+
 // ---- Animations -------------------------------------------
 @keyframes pulse-gold {
   0%, 100% { opacity: 1; transform: scale(1); }

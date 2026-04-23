@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { combineLatest, map } from 'rxjs';
@@ -40,7 +40,12 @@ export class HandComponent {
   count = 0;
   orderedCards: HandCardVm[] = [];
   draggingId: string | null = null;
-  dragOverId: string | null = null;
+  private dragOverId: string | null = null;
+
+  private mouseDownCardId: string | null = null;
+  private mouseDownStartX = 0;
+  private mouseDragging = false;
+  private suppressNextCardClick = false;
 
   private cardOrder: string[] = [];
   private latestCards: HandCardVm[] = [];
@@ -134,52 +139,75 @@ export class HandComponent {
     return vm.card.cardId;
   }
 
-  // ---- Drag (reorder in hand) ----------------------------------------
+  // ---- Mouse drag (reorder in hand) ----------------------------------------
+  // Pure mouse-based reorder so the browser's native DnD system never takes
+  // OS-level cursor control (which overrides CSS cursor even with !important).
 
-  onDragStart(event: DragEvent, cardId: string, isLandCard: boolean): void {
-    event.dataTransfer!.setData('cardId', cardId);
-    event.dataTransfer!.setData('isLand', isLandCard ? '1' : '0');
-    event.dataTransfer!.effectAllowed = 'move';
-    this.draggingId = cardId;
+  onWrapperMouseDown(e: MouseEvent, cardId: string): void {
+    if ((e.target as Element)?.closest('a')) return;
+    e.preventDefault();
+    this.mouseDownCardId = cardId;
+    this.mouseDownStartX = e.clientX;
+    this.mouseDragging = false;
+    document.body.classList.add('is-dragging-card');
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(e: MouseEvent): void {
+    if (!this.mouseDownCardId) return;
+    if (!this.mouseDragging) {
+      if (Math.abs(e.clientX - this.mouseDownStartX) < 5) return;
+      this.mouseDragging = true;
+      this.draggingId = this.mouseDownCardId;
+      this.cdr.markForCheck();
+    }
+    this.updateDragPosition(e.clientX);
+  }
+
+  @HostListener('document:mouseup')
+  onDocumentMouseUp(): void {
+    if (!this.mouseDownCardId && !this.mouseDragging) return;
+    document.body.classList.remove('is-dragging-card');
+    if (this.mouseDragging) this.suppressNextCardClick = true;
+    this.mouseDownCardId = null;
+    this.mouseDragging = false;
+    this.draggingId = null;
+    this.dragOverId = null;
     this.cdr.markForCheck();
   }
 
-  onDragOver(event: DragEvent, targetId: string): void {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer!.dropEffect = 'move';
-    if (!this.draggingId || this.draggingId === targetId || this.dragOverId === targetId) return;
+  private updateDragPosition(clientX: number): void {
+    const wrappers = Array.from(
+      document.querySelectorAll('.hand-card-wrapper')
+    ) as HTMLElement[];
+    let targetId: string | null = null;
+    let minDist = Infinity;
+    wrappers.forEach((el, i) => {
+      const rect = el.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const dist = Math.abs(clientX - center);
+      if (dist < minDist) {
+        minDist = dist;
+        targetId = this.orderedCards[i]?.card.cardId ?? null;
+      }
+    });
+    if (!targetId || targetId === this.draggingId || targetId === this.dragOverId) return;
     this.dragOverId = targetId;
-    const fromIdx = this.cardOrder.indexOf(this.draggingId);
+    const fromIdx = this.cardOrder.indexOf(this.draggingId!);
     const toIdx   = this.cardOrder.indexOf(targetId);
     if (fromIdx === -1 || toIdx === -1) return;
     const order = [...this.cardOrder];
     order.splice(fromIdx, 1);
-    order.splice(toIdx, 0, this.draggingId);
+    order.splice(toIdx, 0, this.draggingId!);
     this.cardOrder = order;
     this.rebuildOrderedCards();
-    this.cdr.markForCheck();
-  }
-
-  onDragLeave(): void {
-    this.dragOverId = null;
-  }
-
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    // Reorder already applied live via dragover
-  }
-
-  onDragEnd(): void {
-    this.draggingId = null;
-    this.dragOverId = null;
     this.cdr.markForCheck();
   }
 
   // ---- Click / double-click / hover ----------------------------------------
 
   onCardClick(card: CardDto): void {
+    if (this.suppressNextCardClick) { this.suppressNextCardClick = false; return; }
     this.store.dispatch(UIActions.selectCard({ cardId: card.cardId }));
   }
 
@@ -194,6 +222,7 @@ export class HandComponent {
   }
 
   onCardHover(card: CardDto): void {
+    if (this.mouseDragging) return;
     this.store.dispatch(UIActions.hoverCard({ card }));
   }
 

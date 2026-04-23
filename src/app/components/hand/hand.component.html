@@ -6,12 +6,7 @@
       class="hand-card-wrapper"
       [ngClass]="'rot-' + i"
       [class.is-dragging]="hc.card.cardId === draggingId"
-      draggable="true"
-      (dragstart)="onDragStart($event, hc.card.cardId, isLand(hc))"
-      (dragover)="onDragOver($event, hc.card.cardId)"
-      (dragleave)="onDragLeave()"
-      (drop)="onDrop($event)"
-      (dragend)="onDragEnd()">
+      (mousedown)="onWrapperMouseDown($event, hc.card.cardId)">
       <app-card
         [card]="hc.card"
         [isSelected]="hc.isSelected"

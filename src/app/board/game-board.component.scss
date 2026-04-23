@@ -305,7 +305,6 @@ $rc: 18px;
   gap: 9px;
   opacity: 0;
   transition: opacity 0.18s ease;
-  pointer-events: none;
   overflow-y: auto;
 }
 
@@ -350,6 +349,20 @@ $rc: 18px;
   color: rgba(255,255,255,0.9);
   line-height: 1.55;
   white-space: pre-line;
+
+  .kw-link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-decoration-color: rgba(201,168,76,0.45);
+    text-underline-offset: 2px;
+    cursor: pointer;
+    transition: color 0.15s, text-decoration-color 0.15s;
+
+    &:hover {
+      color: #dbb954;
+      text-decoration-color: rgba(219,185,84,0.85);
+    }
+  }
 }
 
 .ps-flavor {

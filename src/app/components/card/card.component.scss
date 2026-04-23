@@ -52,6 +52,11 @@
     animation: target-pulse 1s ease-in-out infinite;
   }
 
+  &.hand-card {
+    cursor: grab;
+    &:active { cursor: grabbing; }
+  }
+
   &.castable {
     .card-frame {
       border-color: rgba(39, 174, 96, 0.7);
@@ -373,6 +378,21 @@
   min-height: 0;
 
   .ms { font-size: 10px; vertical-align: middle; }
+
+  .kw-link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-decoration-color: rgba(201,168,76,0.4);
+    text-underline-offset: 2px;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color 0.15s, text-decoration-color 0.15s;
+
+    &:hover {
+      color: #dbb954;
+      text-decoration-color: rgba(219,185,84,0.8);
+    }
+  }
 }
 
 .ci-artist {
@@ -401,16 +421,27 @@
   border-radius: 8px;
   padding: 9px 11px;
   z-index: 300;
-  pointer-events: none;
   opacity: 0;
   transition: opacity 0.12s ease;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
   gap: 5px;
+
+  // Invisible bridge fills the gap between tooltip bottom and card top
+  // so the cursor never hits a dead zone when moving between them.
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+  }
 }
 
-.card:hover .card-tooltip {
+.card:hover .card-tooltip,
+.card-tooltip:hover {
   opacity: 1;
 }
 
@@ -420,6 +451,15 @@
   bottom: auto;
   top: 50%;
   transform: translateY(-50%) rotate(-90deg);
+
+  // Bridge the gap on the left side for tapped orientation
+  &::before {
+    bottom: auto;
+    left: -10px;
+    top: 0;
+    width: 10px;
+    height: 100%;
+  }
 }
 
 .tooltip-header {
@@ -464,6 +504,20 @@
   overflow: hidden;
 
   .ms { font-size: 7.5px; vertical-align: middle; }
+
+  .kw-link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-decoration-color: rgba(201,168,76,0.4);
+    text-underline-offset: 1px;
+    cursor: pointer;
+    transition: color 0.15s, text-decoration-color 0.15s;
+
+    &:hover {
+      color: #dbb954;
+      text-decoration-color: rgba(219,185,84,0.8);
+    }
+  }
 }
 
 .tooltip-pt {

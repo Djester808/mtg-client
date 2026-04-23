@@ -27,6 +27,7 @@ import { PriorityIndicatorComponent } from '../components/priority-indicator/pri
 import { ZoneViewerComponent } from '../components/zone-viewer/zone-viewer.component';
 import { ToastContainerComponent } from '../components/toast/toast-container.component';
 import { AttackArrowsComponent } from '../components/attack-arrows/attack-arrows.component';
+import { OracleSymbolsPipe } from '../pipes/oracle-symbols.pipe';
 
 @Component({
   selector: 'app-game-board',
@@ -44,6 +45,7 @@ import { AttackArrowsComponent } from '../components/attack-arrows/attack-arrows
     ZoneViewerComponent,
     ToastContainerComponent,
     AttackArrowsComponent,
+    OracleSymbolsPipe,
   ],
   templateUrl: './game-board.component.html',
   styleUrls: ['./game-board.component.scss'],
@@ -121,6 +123,10 @@ export class GameBoardComponent implements OnInit {
   }
 
   startPreviewDrag(e: MouseEvent): void {
+    // Let clicks on keyword links through — preventDefault() on the preceding
+    // mousedown causes browsers to treat the subsequent target="_blank" click
+    // as an untrusted gesture and block the navigation.
+    if ((e.target as Element).closest('a')) return;
     this.previewDragging = true;
     this.previewDragStartX = e.clientX;
     this.previewDragStartY = e.clientY;
