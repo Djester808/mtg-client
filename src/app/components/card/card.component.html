@@ -9,6 +9,7 @@
   [class.castable]="isCastable"
   [class.card-back]="showBack"
   (click)="onClick()"
+  (dblclick)="onDblClick()"
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()">
 
@@ -23,27 +24,23 @@
   <ng-container *ngIf="!showBack && cardData">
     <div class="card-frame">
 
-      <!-- Art -->
+      <!-- Name pill floats over the art -->
+      <div class="card-name-bar">
+        <span class="card-name">{{ cardData.name }}</span>
+        <app-mana-cost *ngIf="cardData.manaCost" [cost]="cardData.manaCost" class="card-cost"></app-mana-cost>
+      </div>
+
+      <!-- Art fills full frame -->
       <div class="card-art">
         <div class="card-art-bg" [ngClass]="artColorClass">
-          <!-- Use Scryfall image if available, fall back to emoji -->
           <img
-            *ngIf="cardData.imageUriSmall"
-            [src]="cardData.imageUriSmall"
+            *ngIf="artCropUri"
+            [src]="artCropUri"
             [alt]="cardData.name"
             class="card-img"
             loading="lazy">
-          <span *ngIf="!cardData.imageUriSmall" class="card-emoji">{{ artEmoji }}</span>
+          <span *ngIf="!artCropUri" class="card-emoji">{{ artEmoji }}</span>
         </div>
-      </div>
-
-      <!-- Type line -->
-      <div class="card-type">{{ cardData.subtypes.length ? cardData.cardTypes.join(' ') + ' — ' + cardData.subtypes.join(' ') : cardData.cardTypes.join(' ') }}</div>
-
-      <!-- Name bar -->
-      <div class="card-name-bar">
-        <span class="card-name">{{ cardData.name }}</span>
-        <span class="card-cost">{{ cardData.manaCost }}</span>
       </div>
 
       <!-- P/T -->
@@ -66,19 +63,31 @@
         </div>
       </div>
 
-      <!-- Color identity dots -->
-      <div class="color-dot">
-        <div
-          *ngFor="let color of colorDots"
-          class="cdot"
-          [ngClass]="color">
-        </div>
-      </div>
-
       <!-- Summoning sickness overlay -->
       <div class="sick-overlay" *ngIf="isCreature && hasSummoningSickness"></div>
 
+      <!-- Bottom info panel (hand cards) -->
+      <div class="card-info" *ngIf="showInfo">
+        <div class="ci-type">{{ typeLineText }}</div>
+        <div class="ci-text" *ngIf="cardData.oracleText">{{ cardData.oracleText }}</div>
+        <div class="ci-pt" *ngIf="isCreature">{{ effectivePower }}/{{ effectiveToughness }}</div>
+      </div>
+
     </div>
+
+    <!-- Hover tooltip (battlefield only) -->
+    <div class="card-tooltip" *ngIf="!showInfo">
+      <div class="tooltip-header">
+        <span class="tooltip-name">{{ cardData.name }}</span>
+        <app-mana-cost *ngIf="cardData.manaCost" [cost]="cardData.manaCost" class="tooltip-cost"></app-mana-cost>
+      </div>
+      <div class="tooltip-type">{{ typeLineText }}</div>
+      <div class="tooltip-text" *ngIf="cardData.oracleText">{{ cardData.oracleText }}</div>
+      <div class="tooltip-pt" *ngIf="isCreature">
+        {{ effectivePower }}/{{ effectiveToughness }}
+      </div>
+    </div>
+
   </ng-container>
 
 </div>

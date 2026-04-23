@@ -103,6 +103,17 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-raised);
+  transition: border-color 0.3s, box-shadow 0.3s;
+
+  &.has-mana {
+    border-color: rgba(201, 168, 76, 0.4);
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
+    animation: mana-glow 2s ease-in-out infinite;
+  }
 }
 
 .mana-label {
@@ -112,37 +123,26 @@
   text-transform: uppercase;
   font-family: var(--font-display);
   width: 100%;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .mana-pips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
 }
 
-.mana-pip {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  border: 1px solid rgba(255,255,255,0.15);
+.mana-pip-icon {
+  font-size: 22px;
   cursor: default;
-  transition: transform 0.1s;
+  transition: transform 0.15s;
+  &:hover { transform: scale(1.15); }
+  &.empty { opacity: 0.3; }
+}
 
-  &:hover { transform: scale(1.1); }
-
-  &.W { background: #3a3528; color: var(--mana-W); }
-  &.U { background: #1a2a3a; color: var(--mana-U); }
-  &.B { background: #2a1a3a; color: var(--mana-B); }
-  &.R { background: #3a1a1a; color: var(--mana-R); }
-  &.G { background: #1a3a1a; color: var(--mana-G); }
-  &.empty { background: var(--bg-surface); color: var(--text-dim); opacity: 0.4; }
+@keyframes mana-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(201, 168, 76, 0.08); }
+  50%       { box-shadow: 0 0 18px rgba(201, 168, 76, 0.2); }
 }
 
 // ---- Zone counts ------------------------------------------

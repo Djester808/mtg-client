@@ -136,3 +136,17 @@ export const selectIsDeclaringBlockers = createSelector(
 export const selectIsTargeting = createSelector(
   selectUIMode, mode => mode === 'targeting'
 );
+
+export const selectPreviewCard = createSelector(
+  selectLocalPlayer, selectSelectedCardId,
+  selectBattlefield, selectSelectedPermId,
+  (player, cardId, battlefield, permId) => {
+    if (cardId) {
+      return player?.hand.find(c => c.cardId === cardId) ?? null;
+    }
+    if (permId) {
+      return battlefield.find(p => p.permanentId === permId)?.sourceCard ?? null;
+    }
+    return null;
+  }
+);

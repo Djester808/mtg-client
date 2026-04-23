@@ -1,15 +1,26 @@
-<div class="hand-zone" *ngIf="vm$ | async as vm">
-  <div class="hand-label">Hand — {{ vm.count }} cards</div>
-  <div class="hand-cards">
+<div class="hand-zone">
+  <div class="hand-label">Hand — {{ count }} cards</div>
+  <div class="hand-cards" (click)="$event.stopPropagation()">
     <div
-      *ngFor="let hc of vm.cards; trackBy: trackByCard; let i = index"
+      *ngFor="let hc of orderedCards; trackBy: trackByCard; let i = index"
       class="hand-card-wrapper"
-      [ngClass]="'rot-' + i">
+      [ngClass]="'rot-' + i"
+      [class.is-dragging]="hc.card.cardId === draggingId"
+      draggable="true"
+      (dragstart)="onDragStart($event, hc.card.cardId, isLand(hc))"
+      (dragover)="onDragOver($event, hc.card.cardId)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)"
+      (dragend)="onDragEnd()">
       <app-card
         [card]="hc.card"
         [isSelected]="hc.isSelected"
         [isCastable]="hc.isCastable"
+        [showInfo]="true"
+        [style.width.px]="cardDims.w"
+        [style.height.px]="cardDims.h"
         (clicked)="onCardClick(hc.card)"
+        (dblClicked)="onCardDblClick(hc)"
         (hoverEnter)="onCardHover($event)"
         (hoverLeave)="onCardHoverLeave()">
       </app-card>

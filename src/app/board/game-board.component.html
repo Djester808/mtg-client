@@ -1,4 +1,4 @@
-<div class="board" *ngIf="vm$ | async as vm">
+<div class="board" [style.grid-template-rows]="gridRows" *ngIf="vm$ | async as vm">
 
   <!-- ====================================================
        TOP BAR
@@ -39,10 +39,53 @@
   </main>
 
   <!-- ====================================================
-       STACK PANEL (spans both halves)
+       STACK PANEL + CARD PREVIEW (spans both halves)
   ==================================================== -->
   <aside class="stack-col">
     <app-stack></app-stack>
+
+    <div class="card-preview-panel" *ngIf="vm.previewCard"
+         [style.width.px]="previewWidth"
+         [style.height.px]="previewHeight"
+         [style.left.px]="previewLeft"
+         [style.top.px]="previewTop"
+         [class.is-interacting]="isInteracting"
+         (mousedown)="startPreviewDrag($event)"
+         (click)="$event.stopPropagation()">
+      <!-- Corner resize handles -->
+      <div class="rh ne" (mousedown)="startPreviewResize($event,'ne')"></div>
+      <div class="rh nw" (mousedown)="startPreviewResize($event,'nw')"></div>
+      <div class="rh se" (mousedown)="startPreviewResize($event,'se')"></div>
+      <div class="rh sw" (mousedown)="startPreviewResize($event,'sw')"></div>
+      <!-- Close button floats over the image -->
+      <button class="preview-close-btn" (mousedown)="$event.stopPropagation()" (click)="closePreview()">✕</button>
+      <img
+        *ngIf="vm.previewCard.imageUriNormal"
+        [src]="vm.previewCard.imageUriNormal"
+        [alt]="vm.previewCard.name"
+        class="preview-img"
+        draggable="false">
+      <div class="preview-card-fallback" *ngIf="!vm.previewCard.imageUriNormal">
+        <app-card [card]="vm.previewCard"></app-card>
+      </div>
+      <!-- Stats overlay — fades in on hover -->
+      <div class="preview-stats">
+        <div class="ps-header">
+          <span class="ps-name">{{ vm.previewCard.name }}</span>
+          <app-mana-cost *ngIf="vm.previewCard.manaCost" [cost]="vm.previewCard.manaCost" class="ps-cost"></app-mana-cost>
+        </div>
+        <div class="ps-type">{{ previewTypeLine(vm.previewCard) }}</div>
+        <div class="ps-text" *ngIf="vm.previewCard.oracleText">{{ vm.previewCard.oracleText }}</div>
+        <div class="ps-flavor" *ngIf="vm.previewCard.flavorText">{{ vm.previewCard.flavorText }}</div>
+        <div class="ps-pt" *ngIf="vm.previewCard.power !== null">
+          {{ vm.previewCard.power }}/{{ vm.previewCard.toughness }}
+        </div>
+        <div class="ps-footer">
+          <span *ngIf="vm.previewCard.setCode" class="ps-set">{{ vm.previewCard.setCode | uppercase }}</span>
+          <span *ngIf="vm.previewCard.artist" class="ps-artist">Illus. {{ vm.previewCard.artist }}</span>
+        </div>
+      </div>
+    </div>
   </aside>
 
   <!-- ====================================================
@@ -105,6 +148,13 @@
         <button class="action-btn cancel" (click)="cancelBlockMode()">Cancel</button>
       </ng-container>
 
+      <button
+        *ngIf="vm.hasPriority && vm.uiMode === 'idle'"
+        class="action-btn pass"
+        (click)="passPriority()">
+        Pass Priority
+      </button>
+
       <button class="action-btn concede" (click)="concede()">Concede</button>
     </div>
   </div>
@@ -113,14 +163,10 @@
        HAND
   ==================================================== -->
   <div class="hand-row">
-    <app-hand></app-hand>
-  </div>
-
-  <!-- ====================================================
-       HOVERED CARD PREVIEW
-  ==================================================== -->
-  <div class="card-preview" *ngIf="vm.hoveredCard">
-    <app-card [card]="vm.hoveredCard"></app-card>
+    <div class="hand-resize-handle" (mousedown)="startHandResize($event)">
+      <div class="hand-resize-grip"></div>
+    </div>
+    <app-hand [handHeight]="handHeight"></app-hand>
   </div>
 
   <!-- ====================================================
@@ -137,3 +183,19 @@
 
 <!-- Toast notifications (outside board grid) -->
 <app-toast-container></app-toast-container>
+
+<!-- Concede confirmation modal -->
+<div class="concede-overlay" *ngIf="showConcedeModal"
+     (click)="cancelConcede()"
+     (keydown.escape)="cancelConcede()">
+  <div class="concede-dialog" role="dialog" aria-modal="true"
+       (click)="$event.stopPropagation()">
+    <div class="concede-skull">☠</div>
+    <h2 class="concede-title">Concede?</h2>
+    <p class="concede-body">You will lose the game and return to the lobby.</p>
+    <div class="concede-actions">
+      <button class="action-btn cancel" (click)="cancelConcede()">Cancel</button>
+      <button class="action-btn concede-confirm" (click)="confirmConcede()">Concede</button>
+    </div>
+  </div>
+</div>

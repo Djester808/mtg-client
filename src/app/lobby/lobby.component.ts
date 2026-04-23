@@ -56,9 +56,10 @@ export class LobbyComponent {
       finalize(() => this.loading$.next(false)),
     ).subscribe({
       next: (res) => {
-        // Store token for player 1 (local player)
-        sessionStorage.setItem(`mtg_token_${res.gameId}`, res.player1Token);
-        sessionStorage.setItem(`mtg_player_id`, res.player1Token); // simplified
+        localStorage.setItem('mtg_session', JSON.stringify({
+          gameId: res.gameId,
+          playerToken: res.player1Token,
+        }));
 
         this.store.dispatch(GameActions.joinGame({
           gameId: res.gameId,

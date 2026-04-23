@@ -94,8 +94,12 @@ export interface CardDto {
   keywords: string[];
   imageUriNormal: string | null;
   imageUriSmall: string | null;
+  imageUriArtCrop: string | null;
   colorIdentity: ManaColor[];
   ownerId: string;
+  flavorText: string | null;
+  artist: string | null;
+  setCode: string | null;
 }
 
 export interface PermanentDto {

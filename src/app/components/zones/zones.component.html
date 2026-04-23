@@ -1,4 +1,11 @@
-<div class="battlefield" [class.opponent]="isOpponent" *ngIf="ui$ | async as ui">
+<div class="battlefield"
+  [class.opponent]="isOpponent"
+  [class.drop-target]="!isOpponent && dropActive"
+  *ngIf="ui$ | async as ui"
+  (click)="onBattlefieldClick()"
+  (dragover)="onZoneDragOver($event)"
+  (dragleave)="onZoneDragLeave()"
+  (drop)="onZoneDrop($event)">
   <div class="zone-label">{{ label }}</div>
 
   <!-- Creatures + non-land permanents -->
@@ -10,6 +17,7 @@
         [isAttacking]="isAttacking(p.permanentId, ui.combat)"
         [isBlocking]="isBlocking(p.permanentId, ui.combat)"
         [isPendingAttacker]="isPendingAttacker(p.permanentId, ui.pendingAttackers)"
+        (click)="$event.stopPropagation()"
         (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
         (hoverEnter)="onCardHover($event)"
         (hoverLeave)="onCardHoverLeave()">
@@ -23,6 +31,7 @@
         [isAttacking]="isAttacking(p.permanentId, ui.combat)"
         [isBlocking]="isBlocking(p.permanentId, ui.combat)"
         [isPendingAttacker]="isPendingAttacker(p.permanentId, ui.pendingAttackers)"
+        (click)="$event.stopPropagation()"
         (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
         (hoverEnter)="onCardHover($event)"
         (hoverLeave)="onCardHoverLeave()">
@@ -38,6 +47,7 @@
       <app-card
         [permanent]="p"
         [isSelected]="ui.selectedPermId === p.permanentId"
+        (click)="$event.stopPropagation()"
         (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
         (hoverEnter)="onCardHover($event)"
         (hoverLeave)="onCardHoverLeave()">

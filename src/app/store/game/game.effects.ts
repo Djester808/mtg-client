@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { Router } from '@angular/router';
 import { tap, switchMap, map, catchError, of, withLatestFrom } from 'rxjs';
 import { GameActions } from './game.actions';
 import { UIActions } from '../ui/ui.actions';
 import { AppState } from '..';
+import { GameResult } from '../../models/game.models';
 import { SignalRService } from '../../services/signalr.service';
 import { GameApiService } from '../../services/game-api.service';
 import {
@@ -73,6 +75,15 @@ export class GameEffects {
     { dispatch: false }
   );
 
+  // Untap land (undo mana activation)
+  untapLand$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(GameActions.untapLand),
+      tap(({ permanentId }) => this.signalr.untapLand(permanentId)),
+    ),
+    { dispatch: false }
+  );
+
   // Declare attackers — pull pending list from UI state
   declareAttackers$ = createEffect(() =>
     this.actions$.pipe(
@@ -119,10 +130,38 @@ export class GameEffects {
     { dispatch: false }
   );
 
+  // If the game is already over when we join (reconnect to a finished game),
+  // clear the session and send the player back to the lobby.
+  gameOverOnJoin$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(GameActions.gameJoined),
+      tap(({ gameState }) => {
+        if (gameState.result !== GameResult.InProgress) {
+          localStorage.removeItem('mtg_session');
+          this.router.navigate(['/']);
+        }
+      }),
+    ),
+    { dispatch: false }
+  );
+
+  // Connection error (invalid token, game not found, etc.) → back to lobby.
+  connectionError$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(GameActions.connectionError),
+      tap(() => {
+        localStorage.removeItem('mtg_session');
+        this.router.navigate(['/']);
+      }),
+    ),
+    { dispatch: false }
+  );
+
   constructor(
     private actions$: Actions,
     private store: Store<AppState>,
     private signalr: SignalRService,
     private api: GameApiService,
+    private router: Router,
   ) {}
 }

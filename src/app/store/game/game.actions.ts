@@ -25,6 +25,7 @@ export const GameActions = createActionGroup({
     'Play Land':        props<{ cardId: string }>(),
     'Cast Spell':       props<{ cardId: string; targetIds: string[] }>(),
     'Activate Mana':    props<{ permanentId: string }>(),
+    'Untap Land':       props<{ permanentId: string }>(),
     'Pass Priority':    emptyProps(),
     'Declare Attackers':props<{ attackerIds: string[] }>(),
     'Declare Blockers': props<{ blockerToAttacker: Record<string, string> }>(),

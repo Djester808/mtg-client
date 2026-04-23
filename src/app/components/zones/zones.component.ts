@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { combineLatest, map, Observable } from 'rxjs';
@@ -35,7 +35,9 @@ export class ZonesComponent {
     }))
   );
 
-  constructor(private store: Store<AppState>) {}
+  dropActive = false;
+
+  constructor(private store: Store<AppState>, private cdr: ChangeDetectorRef) {}
 
   get creatures(): PermanentDto[] {
     return this.permanents.filter(p =>
@@ -74,6 +76,12 @@ export class ZonesComponent {
       this.store.dispatch(UIActions.toggleAttacker({ permanentId: permanent.permanentId }));
     } else if (mode === 'declaring-blockers' && this.isOpponent) {
       // clicking an opponent creature while declaring blockers — handled by board
+    } else if (!this.isOpponent && permanent.sourceCard.cardTypes.includes(CardType.Land)) {
+      if (!permanent.isTapped) {
+        this.store.dispatch(GameActions.activateMana({ permanentId: permanent.permanentId }));
+      } else {
+        this.store.dispatch(GameActions.untapLand({ permanentId: permanent.permanentId }));
+      }
     } else {
       this.store.dispatch(UIActions.selectCard({ permanentId: permanent.permanentId }));
     }
@@ -85,6 +93,40 @@ export class ZonesComponent {
 
   onCardHoverLeave(): void {
     this.store.dispatch(UIActions.hoverCard({ card: null }));
+  }
+
+  onBattlefieldClick(): void {
+    this.store.dispatch(UIActions.deselectCard());
+  }
+
+  onZoneDragOver(event: DragEvent): void {
+    if (this.isOpponent) return;
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'move';
+    if (!this.dropActive) {
+      this.dropActive = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onZoneDragLeave(): void {
+    this.dropActive = false;
+    this.cdr.markForCheck();
+  }
+
+  onZoneDrop(event: DragEvent): void {
+    if (this.isOpponent) return;
+    event.preventDefault();
+    this.dropActive = false;
+    const cardId = event.dataTransfer?.getData('cardId');
+    const isLand = event.dataTransfer?.getData('isLand') === '1';
+    if (!cardId) return;
+    if (isLand) {
+      this.store.dispatch(GameActions.playLand({ cardId }));
+    } else {
+      this.store.dispatch(GameActions.castSpell({ cardId, targetIds: [] }));
+    }
+    this.cdr.markForCheck();
   }
 
   trackByPermanent(_: number, p: PermanentDto): string {

@@ -54,11 +54,14 @@
 
   &.castable {
     .card-frame {
-      border-color: rgba(39, 174, 96, 0.45);
+      border-color: rgba(39, 174, 96, 0.7);
+      box-shadow: 0 0 0 1px rgba(39, 174, 96, 0.4), 0 0 14px rgba(39, 174, 96, 0.25);
+      animation: castable-pulse 2s ease-in-out infinite;
     }
     &:hover .card-frame {
       border-color: var(--mana-G);
-      box-shadow: var(--glow-castable);
+      box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.8), 0 0 22px rgba(39, 174, 96, 0.45);
+      animation: none;
     }
   }
 }
@@ -66,6 +69,11 @@
 @keyframes target-pulse {
   0%, 100% { box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.5); }
   50%       { box-shadow: 0 0 0 2px rgba(231, 76, 60, 1), 0 0 20px rgba(231, 76, 60, 0.4); }
+}
+
+@keyframes castable-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(39, 174, 96, 0.4), 0 0 10px rgba(39, 174, 96, 0.15); }
+  50%       { box-shadow: 0 0 0 1px rgba(39, 174, 96, 0.7), 0 0 20px rgba(39, 174, 96, 0.35); }
 }
 
 // ---- Card Frame -------------------------------------------
@@ -89,6 +97,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  min-height: 0; // art fills full frame now that type bar is gone
 }
 
 .card-art-bg {
@@ -122,6 +131,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
   display: block;
 }
 
@@ -134,7 +144,7 @@
 
 .card-type {
   padding: 1px 5px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   font-size: 6px;
   color: var(--text-dim);
   font-family: var(--font-display);
@@ -143,45 +153,53 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
-// ---- Name bar ---------------------------------------------
+// ---- Name bar (pill, floats over art) ---------------------
 
 .card-name-bar {
-  padding: 3px 5px 2px;
-  background: rgba(0, 0, 0, 0.7);
-  border-top: 1px solid var(--border-dim);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2px;
-  backdrop-filter: blur(4px);
+  gap: 4px;
+  padding: 4px 8px 4px 9px;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
 }
 
 .card-name {
   font-family: var(--font-display);
-  font-size: 7.5px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  min-width: 0;
 }
 
 .card-cost {
-  font-size: 7px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
   flex-shrink: 0;
+  .ms { font-size: 9px; }
 }
 
 // ---- P/T --------------------------------------------------
 
 .card-pt {
   position: absolute;
-  bottom: 26px;
+  bottom: 4px;
   right: 4px;
   background: rgba(0, 0, 0, 0.85);
   border: 1px solid var(--border-subtle);
@@ -198,7 +216,7 @@
 
 .card-damage {
   position: absolute;
-  bottom: 26px;
+  bottom: 4px;
   left: 4px;
   background: rgba(192, 57, 43, 0.85);
   border: 1px solid rgba(231, 76, 60, 0.5);
@@ -304,4 +322,152 @@
     color: var(--gold-dim);
     opacity: 0.4;
   }
+}
+
+// ---- Bottom info panel (hand cards) -----------------------
+
+.card-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.82);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(6px);
+  padding: 5px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 55%;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.card:hover .card-info {
+  opacity: 1;
+}
+
+.ci-type {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 3px;
+}
+
+.ci-text {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.ci-pt {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: right;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+// ---- Hover tooltip ----------------------------------------
+
+.card-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 190px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-lit);
+  border-radius: 8px;
+  padding: 9px 11px;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.card:hover .card-tooltip {
+  opacity: 1;
+}
+
+// Counter-rotate tooltip for tapped cards so text reads upright
+.card.tapped .card-tooltip {
+  left: calc(100% + 8px);
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.tooltip-name {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-cost {
+  flex-shrink: 0;
+  .ms { font-size: 9px; }
+}
+
+.tooltip-type {
+  font-family: var(--font-display);
+  font-size: 7.5px;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 4px;
+}
+
+.tooltip-text {
+  font-size: 7.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tooltip-pt {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 4px;
 }

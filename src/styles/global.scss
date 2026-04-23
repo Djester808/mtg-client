@@ -43,12 +43,12 @@
   --card-h:         140px;
   --card-w-hand:    88px;
   --card-h-hand:    123px;
-  --card-radius:    8px;
+  --card-radius:    14px;
 
   // Glow effects
   --glow-priority:  0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
   --glow-attack:    0 0 0 2px #e74c3c, 0 0 18px rgba(231, 76, 60, 0.45);
-  --glow-select:    0 0 0 2px #4a90d9, 0 0 16px rgba(74, 144, 217, 0.35);
+  --glow-select:    0 0 0 2px #c9a84c, 0 0 16px rgba(201, 168, 76, 0.35);
   --glow-castable:  0 0 0 1px rgba(39, 174, 96, 0.5), 0 0 12px rgba(39, 174, 96, 0.2);
 
   // Typography

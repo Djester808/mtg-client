@@ -4,11 +4,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PermanentDto, CardDto, ManaColor, CardType } from '../../models/game.models';
+import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 
 @Component({
   selector: 'app-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ManaCostComponent],
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,14 +24,24 @@ export class CardComponent implements OnChanges {
   @Input() isPendingAttacker = false;
   @Input() isCastable = false;
   @Input() showBack = false;        // library / face-down
+  @Input() showInfo = false;        // bottom info panel (hand)
 
   @Output() clicked     = new EventEmitter<void>();
+  @Output() dblClicked  = new EventEmitter<void>();
   @Output() hoverEnter  = new EventEmitter<CardDto>();
   @Output() hoverLeave  = new EventEmitter<void>();
 
   // Resolved card def (from permanent or direct card)
   get cardData(): CardDto | null {
     return this.permanent?.sourceCard ?? this.card ?? null;
+  }
+
+  get artCropUri(): string | null {
+    const cd = this.cardData;
+    if (!cd) return null;
+    if (cd.imageUriArtCrop) return cd.imageUriArtCrop;
+    // Derive from normal URI when art_crop wasn't stored (cached cards)
+    return cd.imageUriNormal?.replace('/normal/', '/art_crop/') ?? null;
   }
 
   get isTapped(): boolean {
@@ -85,6 +96,13 @@ export class CardComponent implements OnChanges {
     return map[c] ?? '✨';
   }
 
+  get typeLineText(): string {
+    const cd = this.cardData;
+    if (!cd) return '';
+    const base = cd.cardTypes.join(' ');
+    return cd.subtypes.length ? `${base} — ${cd.subtypes.join(' ')}` : base;
+  }
+
   get isCreature(): boolean {
     return this.cardData?.cardTypes.includes(CardType.Creature) ?? false;
   }
@@ -113,5 +131,9 @@ export class CardComponent implements OnChanges {
 
   onClick(): void {
     this.clicked.emit();
+  }
+
+  onDblClick(): void {
+    this.dblClicked.emit();
   }
 }

@@ -1,7 +1,7 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest, map } from 'rxjs';
+import { combineLatest, map } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../../store';
 import {
   selectLocalPlayer,
@@ -12,14 +12,13 @@ import {
   selectUIMode,
   selectSelectedCardId,
 } from '../../store/selectors';
-import { CardDto, Phase, Step, CardType } from '../../models/game.models';
+import { CardDto, ManaPoolDto, Phase, Step, CardType } from '../../models/game.models';
 import { CardComponent } from '../card/card.component';
 
 interface HandCardVm {
   card: CardDto;
   isCastable: boolean;
   isSelected: boolean;
-  rotationClass: string;
 }
 
 @Component({
@@ -31,14 +30,23 @@ interface HandCardVm {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HandComponent {
-  vm$: Observable<{ cards: HandCardVm[]; count: number }>;
+  @Input() handHeight = 160;
 
-  private readonly FAN_ROTATIONS = [
-    'r-10', 'r-7', 'r-4', 'r-1', 'r1', 'r4', 'r7', 'r10'
-  ];
+  get cardDims(): { w: number; h: number } {
+    const h = Math.round(Math.min(Math.max(this.handHeight * 0.72, 80), 380));
+    return { h, w: Math.round(h * (88 / 123)) };
+  }
 
-  constructor(private store: Store<AppState>) {
-    this.vm$ = combineLatest([
+  count = 0;
+  orderedCards: HandCardVm[] = [];
+  draggingId: string | null = null;
+  dragOverId: string | null = null;
+
+  private cardOrder: string[] = [];
+  private latestCards: HandCardVm[] = [];
+
+  constructor(private store: Store<AppState>, private cdr: ChangeDetectorRef) {
+    combineLatest([
       this.store.select(selectLocalPlayer),
       this.store.select(selectCurrentPhase),
       this.store.select(selectCurrentStep),
@@ -52,40 +60,137 @@ export class HandComponent {
         const manaPool = player?.manaPool;
         const inMain = (phase === Phase.PreCombatMain || phase === Phase.PostCombatMain)
           && step === Step.Main;
-        const stackEmpty = true; // simplification — full impl uses selectStackIsEmpty
+        const stackEmpty = true;
 
-        const cards: HandCardVm[] = hand.map((card, idx) => {
-          const isLand = card.cardTypes.includes(CardType.Land);
+        const cards: HandCardVm[] = hand.map(card => {
+          const isLandCard = card.cardTypes.includes(CardType.Land);
           const canCastSorcery = isActive && hasPriority && inMain && stackEmpty;
           const canCastInstant = hasPriority && mode === 'idle';
 
           let isCastable = false;
-          if (isLand) {
+          if (isLandCard) {
             isCastable = canCastSorcery && !(player?.hasLandPlayedThisTurn ?? false);
           } else {
             const hasFlash = card.keywords.includes('Flash');
-            isCastable = hasFlash ? canCastInstant : canCastSorcery;
+            const speedOk = hasFlash ? canCastInstant : canCastSorcery;
+            isCastable = speedOk && this.canAfford(card.manaCost, manaPool);
           }
 
-          return {
-            card,
-            isCastable,
-            isSelected: card.cardId === selectedCardId,
-            rotationClass: this.FAN_ROTATIONS[Math.min(idx, this.FAN_ROTATIONS.length - 1)],
-          };
+          return { card, isCastable, isSelected: card.cardId === selectedCardId };
         });
 
         return { cards, count: hand.length };
       })
-    );
+    ).subscribe(vm => {
+      this.count = vm.count;
+      const idSet = new Set(vm.cards.map(c => c.card.cardId));
+      this.cardOrder = this.cardOrder.filter(id => idSet.has(id));
+      for (const c of vm.cards) {
+        if (!this.cardOrder.includes(c.card.cardId)) {
+          this.cardOrder.push(c.card.cardId);
+        }
+      }
+      this.latestCards = vm.cards;
+      this.rebuildOrderedCards();
+      this.cdr.markForCheck();
+    });
+  }
+
+  private rebuildOrderedCards(): void {
+    const cardMap = new Map(this.latestCards.map(c => [c.card.cardId, c]));
+    this.orderedCards = this.cardOrder
+      .filter(id => cardMap.has(id))
+      .map(id => cardMap.get(id)!);
+  }
+
+  private canAfford(manaCost: string, pool: ManaPoolDto | undefined): boolean {
+    if (!pool) return false;
+    if (!manaCost || manaCost === '0') return true;
+    const remaining: Record<string, number> = { ...(pool.amounts as Record<string, number>) };
+    let generic = 0;
+    let i = 0;
+    while (i < manaCost.length) {
+      if (manaCost[i] >= '0' && manaCost[i] <= '9') {
+        let numStr = '';
+        while (i < manaCost.length && manaCost[i] >= '0' && manaCost[i] <= '9') numStr += manaCost[i++];
+        generic += parseInt(numStr, 10);
+      } else {
+        const color = manaCost[i].toUpperCase();
+        const have = remaining[color] ?? 0;
+        if (have <= 0) return false;
+        remaining[color] = have - 1;
+        i++;
+      }
+    }
+    const leftover = Object.values(remaining).reduce((s, v) => s + (v > 0 ? v : 0), 0);
+    return leftover >= generic;
+  }
+
+  isLand(hc: HandCardVm): boolean {
+    return hc.card.cardTypes.includes(CardType.Land);
   }
 
   trackByCard(_: number, vm: HandCardVm): string {
     return vm.card.cardId;
   }
 
+  // ---- Drag (reorder in hand) ----------------------------------------
+
+  onDragStart(event: DragEvent, cardId: string, isLandCard: boolean): void {
+    event.dataTransfer!.setData('cardId', cardId);
+    event.dataTransfer!.setData('isLand', isLandCard ? '1' : '0');
+    event.dataTransfer!.effectAllowed = 'move';
+    this.draggingId = cardId;
+    this.cdr.markForCheck();
+  }
+
+  onDragOver(event: DragEvent, targetId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer!.dropEffect = 'move';
+    if (!this.draggingId || this.draggingId === targetId || this.dragOverId === targetId) return;
+    this.dragOverId = targetId;
+    const fromIdx = this.cardOrder.indexOf(this.draggingId);
+    const toIdx   = this.cardOrder.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const order = [...this.cardOrder];
+    order.splice(fromIdx, 1);
+    order.splice(toIdx, 0, this.draggingId);
+    this.cardOrder = order;
+    this.rebuildOrderedCards();
+    this.cdr.markForCheck();
+  }
+
+  onDragLeave(): void {
+    this.dragOverId = null;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    // Reorder already applied live via dragover
+  }
+
+  onDragEnd(): void {
+    this.draggingId = null;
+    this.dragOverId = null;
+    this.cdr.markForCheck();
+  }
+
+  // ---- Click / double-click / hover ----------------------------------------
+
   onCardClick(card: CardDto): void {
     this.store.dispatch(UIActions.selectCard({ cardId: card.cardId }));
+  }
+
+  onCardDblClick(hc: HandCardVm): void {
+    if (!hc.isCastable) return;
+    if (this.isLand(hc)) {
+      this.store.dispatch(GameActions.playLand({ cardId: hc.card.cardId }));
+    } else {
+      this.store.dispatch(GameActions.castSpell({ cardId: hc.card.cardId, targetIds: [] }));
+    }
+    this.store.dispatch(UIActions.deselectCard());
   }
 
   onCardHover(card: CardDto): void {

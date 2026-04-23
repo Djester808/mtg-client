@@ -15,20 +15,20 @@
     </div>
   </div>
 
-  <div class="mana-pool">
+  <div class="mana-pool" [class.has-mana]="hasMana">
     <div class="mana-label">Mana Pool</div>
     <div class="mana-pips" *ngIf="hasMana; else emptyPool">
       <ng-container *ngFor="let entry of manaEntries; trackBy: manaTrack">
-        <div
-          class="mana-pip"
-          [ngClass]="entry.color"
+        <i
+          class="ms ms-cost ms-shadow mana-pip-icon"
+          [ngClass]="manaClass[entry.color]"
+          [title]="entry.color"
           *ngFor="let n of [].constructor(entry.count)">
-          {{ entry.color }}
-        </div>
+        </i>
       </ng-container>
     </div>
     <ng-template #emptyPool>
-      <div class="mana-pip empty">◯</div>
+      <i class="ms ms-c ms-cost mana-pip-icon empty"></i>
     </ng-template>
   </div>
 

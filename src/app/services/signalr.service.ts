@@ -61,6 +61,11 @@ export class SignalRService implements OnDestroy {
     this.hub.on('GameStateDiff', (diff: GameStateDiffDto) => {
       this.store.dispatch(GameActions.stateDiff({ diff }));
     });
+
+    // Server-side rule violations / errors
+    this.hub.on('Error', (message: string) => {
+      console.error('[GameHub Error]', message);
+    });
   }
 
   // ---- Client -> Server messages --------------------------
@@ -78,6 +83,10 @@ export class SignalRService implements OnDestroy {
 
   activateMana(permanentId: string): Promise<void> {
     return this.invoke('ActivateMana', permanentId);
+  }
+
+  untapLand(permanentId: string): Promise<void> {
+    return this.invoke('UntapLand', permanentId);
   }
 
   declareAttackers(attackerIds: string[]): Promise<void> {
