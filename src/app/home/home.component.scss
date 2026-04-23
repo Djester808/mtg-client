@@ -1,0 +1,248 @@
+:host { display: block; height: 100vh; }
+
+.home-shell {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--bg-void);
+  overflow: hidden;
+}
+
+// ---- Background ------------------------------------------
+
+.home-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: orb-drift 14s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(201,168,76,0.18), transparent 70%);
+  top: -160px; left: -160px;
+  animation-delay: 0s;
+}
+.orb-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(74,144,217,0.12), transparent 70%);
+  bottom: -120px; right: 5%;
+  animation-delay: -5s;
+}
+.orb-3 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(39,174,96,0.1), transparent 70%);
+  top: 40%; left: 65%;
+  animation-delay: -9s;
+}
+.orb-4 {
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(192,57,43,0.1), transparent 70%);
+  top: 20%; left: 10%;
+  animation-delay: -3s;
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+}
+
+@keyframes orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, -30px) scale(1.06); }
+  66%       { transform: translate(-25px, 35px) scale(0.94); }
+}
+
+// ---- Content ---------------------------------------------
+
+.home-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ---- Logo mark -------------------------------------------
+
+.logo-mark {
+  font-size: 36px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 24px;
+  animation: pulse-gold 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 16px rgba(201,168,76,0.5));
+}
+
+@keyframes pulse-gold {
+  0%, 100% { opacity: 0.85; transform: scale(1);    }
+  50%       { opacity: 1;    transform: scale(1.08); }
+}
+
+// ---- Title -----------------------------------------------
+
+.home-title {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+  line-height: 1;
+  display: flex;
+  gap: 0.25em;
+}
+
+.title-mtg {
+  color: var(--gold);
+  text-shadow: 0 0 40px rgba(201,168,76,0.35);
+}
+
+.title-engine {
+  color: var(--text-primary);
+}
+
+// ---- Tagline ---------------------------------------------
+
+.home-tagline {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 2vw, 18px);
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  margin: 0 0 40px;
+  font-style: italic;
+}
+
+// ---- Mana row --------------------------------------------
+
+.mana-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 48px;
+}
+
+.mana-orb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover { transform: scale(1.25); }
+
+  &.orb-W { background: radial-gradient(circle at 35% 35%, #f0e6c8, #9a8a60); box-shadow: 0 0 10px rgba(240,230,200,0.2); }
+  &.orb-U { background: radial-gradient(circle at 35% 35%, #6aabf0, #2a5a90); box-shadow: 0 0 10px rgba(74,144,217,0.3); }
+  &.orb-B { background: radial-gradient(circle at 35% 35%, #9b59b6, #3a1a5a); box-shadow: 0 0 10px rgba(155,89,182,0.3); }
+  &.orb-R { background: radial-gradient(circle at 35% 35%, #e74c3c, #8a1a10); box-shadow: 0 0 10px rgba(231,76,60,0.3); }
+  &.orb-G { background: radial-gradient(circle at 35% 35%, #27ae60, #0a4a20); box-shadow: 0 0 10px rgba(39,174,96,0.3); }
+}
+
+// ---- CTA row ---------------------------------------------
+
+.cta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+// ---- Play button -----------------------------------------
+
+.play-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 52px;
+  background: var(--gold);
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #0e0c08;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  box-shadow: 0 4px 32px rgba(201,168,76,0.25);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  &:hover {
+    background: #dbb954;
+    box-shadow: 0 6px 40px rgba(201,168,76,0.45);
+    transform: translateY(-2px);
+  }
+
+  &:active { transform: translateY(0); }
+}
+
+.kb-btn {
+  padding: 18px 32px;
+  background: none;
+  border: 1px solid var(--border-lit);
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.1);
+  }
+}
+
+.play-btn-arrow {
+  font-size: 18px;
+  transition: transform 0.2s;
+}
+
+.play-btn:hover .play-btn-arrow {
+  transform: translateX(4px);
+}
+
+// ---- Footer ----------------------------------------------
+
+.home-footer {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}

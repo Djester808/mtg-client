@@ -1,0 +1,164 @@
+<div class="kb-shell">
+
+  <div class="kb-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="kb-topbar">
+    <button class="back-btn" (click)="back()">← Back</button>
+    <div class="topbar-brand">
+      <span class="logo-mark">✦</span>
+      <span class="brand-text"><span class="brand-mtg">MTG</span> Engine — Knowledge Base</span>
+    </div>
+    <div class="topbar-spacer"></div>
+  </header>
+
+  <!-- Body: sidebar + detail -->
+  <div class="kb-body" *ngIf="kb; else loading">
+
+    <!-- Sidebar -->
+    <aside class="kb-sidebar">
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Search rules…"
+          [(ngModel)]="searchQuery"
+          autocomplete="off"
+        />
+        <button class="search-clear" *ngIf="searchQuery" (click)="clearSearch()">✕</button>
+      </div>
+
+      <!-- No results -->
+      <div class="no-results" *ngIf="searchQuery && totalFiltered === 0">
+        No matches for "{{ searchQuery }}"
+      </div>
+
+      <!-- Keywords group -->
+      <div class="sidebar-group" *ngIf="filteredKeywords.length">
+        <div class="group-label">Keywords</div>
+        <button
+          class="sidebar-item"
+          *ngFor="let e of filteredKeywords"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span class="item-label">{{ labelOf(e) }}</span>
+          <span class="item-badge" [ngClass]="$any(e.data).status">{{ $any(e.data).status[0] }}</span>
+        </button>
+      </div>
+
+      <!-- Mechanics group -->
+      <div class="sidebar-group" *ngIf="filteredMechanics.length">
+        <div class="group-label">Mechanics</div>
+        <button
+          class="sidebar-item"
+          *ngFor="let e of filteredMechanics"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span class="item-label">{{ labelOf(e) }}</span>
+          <span class="item-steps" *ngIf="$any(e.data).steps?.length">
+            {{ $any(e.data).steps.length }} steps
+          </span>
+        </button>
+      </div>
+
+      <!-- SBA group -->
+      <div class="sidebar-group" *ngIf="filteredSba.length">
+        <div class="group-label">State-Based Actions</div>
+        <button
+          class="sidebar-item"
+          *ngFor="let e of filteredSba"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span class="item-label">{{ labelOf(e) }}</span>
+          <span class="item-badge" [ngClass]="$any(e.data).status">{{ $any(e.data).status[0] }}</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- Detail panel -->
+    <main class="kb-detail">
+
+      <!-- Nothing selected -->
+      <div class="detail-empty" *ngIf="!selected">
+        <span class="detail-empty-mark">✦</span>
+        <p>Select an entry from the sidebar</p>
+      </div>
+
+      <!-- Keyword detail -->
+      <div class="detail-card" *ngIf="selected?.kind === 'keyword'">
+        <div class="detail-header">
+          <h2 class="detail-title">{{ $any(selected!.data).name }}</h2>
+          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{ $any(selected!.data).status }}</span>
+        </div>
+        <p class="detail-desc">{{ $any(selected!.data).description }}</p>
+        <div class="detail-meta">
+          <span class="meta-label">Rules Reference</span>
+          <span class="meta-value">{{ $any(selected!.data).rulesRef }}</span>
+        </div>
+        <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
+          <ng-container [ngSwitch]="$any(selected!.data).status">
+            <span *ngSwitchCase="'implemented'">Fully enforced in the rules engine — attacker/blocker validation, damage assignment, and SBAs all respect this keyword.</span>
+            <span *ngSwitchCase="'partial'">Validation skeleton exists but full enforcement is not yet complete.</span>
+            <span *ngSwitchCase="'stub'">Defined in the KeywordAbility enum. Logic not yet enforced in targeting or combat.</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Mechanic detail -->
+      <div class="detail-card" *ngIf="selected?.kind === 'mechanic'">
+        <div class="detail-header">
+          <h2 class="detail-title">{{ $any(selected!.data).name }}</h2>
+        </div>
+        <p class="detail-desc">{{ $any(selected!.data).description }}</p>
+        <div class="step-list" *ngIf="$any(selected!.data).steps?.length">
+          <div class="step-row" *ngFor="let s of $any(selected!.data).steps; let i = index">
+            <span class="step-num">{{ i + 1 }}</span>
+            <div class="step-content">
+              <span class="step-name">{{ s.name }}</span>
+              <span class="step-desc">{{ s.description }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SBA detail -->
+      <div class="detail-card" *ngIf="selected?.kind === 'sba'">
+        <div class="detail-header">
+          <h2 class="detail-title">{{ $any(selected!.data).rulesRef }}</h2>
+          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{ $any(selected!.data).status }}</span>
+        </div>
+        <p class="detail-desc">{{ $any(selected!.data).description }}</p>
+        <div class="detail-meta">
+          <span class="meta-label">Category</span>
+          <span class="meta-value">State-Based Action (CR 704)</span>
+        </div>
+        <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
+          <ng-container [ngSwitch]="$any(selected!.data).status">
+            <span *ngSwitchCase="'implemented'">Checked in <code>StateBasedActions.Apply()</code> after every game action. Loops until stable.</span>
+            <span *ngSwitchCase="'stub'">Skeleton only — the check is defined but the resolution effect is not yet applied.</span>
+          </ng-container>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <ng-template #loading>
+    <div class="kb-loading">
+      <div class="loading-pulse">✦</div>
+      <span>Loading rules…</span>
+    </div>
+  </ng-template>
+
+</div>
