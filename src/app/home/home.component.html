@@ -1,41 +1,225 @@
-<div class="home-shell">
+<div class="search-shell">
 
-  <div class="home-bg">
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
-    <div class="bg-orb orb-4"></div>
-    <div class="bg-grid"></div>
+  <!-- Header: logo + search + filters + sets -->
+  <div class="search-header">
+
+    <div class="search-logo">
+      <span class="logo-diamond">&#9670;</span>
+      <span class="logo-text">MTG Engine</span>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-bar-wrap">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        [formControl]="searchText"
+        placeholder="Search for any card…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')">&#10005;</span>
+    </div>
+
+    <!-- Filter row -->
+    <div class="filter-row">
+
+      <!-- Color pips -->
+      <div class="filter-group">
+        <button
+          class="color-pip"
+          *ngFor="let c of colorOptions"
+          [ngClass]="'pip-' + c.code"
+          [class.is-active]="selectedColors.has(c.code)"
+          (click)="toggleColor(c.code)"
+          [title]="c.title"
+        >{{ c.label }}</button>
+      </div>
+
+      <span class="filter-divider"></span>
+
+      <!-- Type pills -->
+      <div class="filter-group filter-group-types">
+        <button
+          class="filter-pill"
+          *ngFor="let t of typeOptions"
+          [class.is-active]="selectedTypes.has(t)"
+          (click)="toggleType(t)"
+        >{{ t }}</button>
+      </div>
+
+      <span class="filter-divider"></span>
+
+      <!-- Rarity -->
+      <div class="filter-group">
+        <button
+          class="rarity-badge"
+          *ngFor="let r of rarityOptions"
+          [ngClass]="'rarity-' + r.code"
+          [class.is-active]="selectedRarities.has(r.code)"
+          (click)="toggleRarity(r.code)"
+        >{{ r.label }}</button>
+      </div>
+
+      <span class="filter-divider"></span>
+
+      <!-- CMC -->
+      <div class="filter-group">
+        <span class="filter-label">CMC</span>
+        <button
+          class="cmc-btn"
+          *ngFor="let opt of cmcOptions"
+          [class.is-active]="selectedCmc === opt"
+          (click)="toggleCmc(opt)"
+        >{{ opt }}</button>
+      </div>
+
+      <span class="filter-divider"></span>
+
+      <!-- Sort -->
+      <div class="filter-group">
+        <span class="filter-label">Sort</span>
+        <button class="sort-btn" [class.is-active]="sortBy === 'name'" (click)="setSortBy('name')">Name</button>
+        <button class="sort-btn" [class.is-active]="sortBy === 'cmc'"  (click)="setSortBy('cmc')">CMC</button>
+        <button class="sort-dir-btn" (click)="toggleSortDir()" [title]="sortDir === 'asc' ? 'Ascending' : 'Descending'">
+          {{ sortDir === 'asc' ? '▲' : '▼' }}
+        </button>
+      </div>
+
+      <span class="filter-divider"></span>
+
+      <!-- Set dropdown -->
+      <div class="set-dropdown-wrap">
+        <button class="set-trigger" [class.is-active]="activeSet" (click)="openSetDrop()">
+          <span class="set-trigger-text">
+            <ng-container *ngIf="activeSet">
+              <span class="set-trigger-code">{{ activeSet.toUpperCase() }}</span>
+              <span class="set-trigger-name">{{ activeSetName }}</span>
+            </ng-container>
+            <span class="set-trigger-placeholder" *ngIf="!activeSet">All Sets</span>
+          </span>
+          <span class="set-trigger-arrow">▾</span>
+        </button>
+        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter">✕</button>
+
+        <div class="set-dropdown" *ngIf="setDropOpen">
+          <div class="set-search-wrap">
+            <input
+              class="set-search-input"
+              type="text"
+              [(ngModel)]="setQuery"
+              placeholder="Search sets…"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+            />
+          </div>
+          <div class="set-list">
+            <div
+              class="set-option"
+              *ngFor="let s of filteredSets"
+              [class.is-active]="activeSet?.toLowerCase() === s.code.toLowerCase()"
+              (click)="selectSetFromDrop(s.code)"
+            >
+              <span class="set-opt-code">{{ s.code }}</span>
+              <span class="set-opt-name">{{ s.name }}</span>
+              <span class="set-opt-count">{{ s.cardCount }}</span>
+            </div>
+            <div class="set-no-results" *ngIf="filteredSets.length === 0">No sets match "{{ setQuery }}"</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="clear-btn" *ngIf="hasFilters" (click)="clearFilters()">&#10005; Clear</button>
+
+    </div>
+
+    <p class="search-hint">Type at least 2 characters · filters combine automatically</p>
+
   </div>
 
-  <div class="home-content">
+  <!-- Loading -->
+  <div class="search-status" *ngIf="loading">
+    <span class="spinner"></span>
+    <span>Searching…</span>
+  </div>
 
-    <div class="logo-mark">✦</div>
+  <!-- No results -->
+  <div class="search-status" *ngIf="!loading && searched && results.length === 0">
+    No cards found
+  </div>
 
-    <h1 class="home-title">
-      <span class="title-mtg">MTG</span>
-      <span class="title-engine">Engine</span>
-    </h1>
+  <!-- Scrollable results area -->
+  <div class="results-scroll" *ngIf="results.length > 0">
 
-    <p class="home-tagline">A pragmatic Magic: The Gathering rules engine</p>
-
-    <div class="mana-row">
-      <span *ngFor="let c of colors" class="mana-orb" [ngClass]="'orb-' + c.cls" [title]="c.label"></span>
+    <!-- Results count -->
+    <div class="results-count">
+      {{ results.length }} result{{ results.length !== 1 ? 's' : '' }}<span *ngIf="hasMore"> so far</span>
     </div>
 
-    <div class="cta-row">
-      <button class="play-btn" (click)="play()">
-        <span class="play-btn-text">Play Game</span>
-        <span class="play-btn-arrow">→</span>
+    <!-- Card grid -->
+    <div class="card-grid">
+      <div
+        class="card-tile"
+        *ngFor="let card of results"
+        tabindex="0"
+        (click)="openCard(card)"
+        (keydown.enter)="openCard(card)"
+        (keydown.space)="openCard(card); $event.preventDefault()"
+        [title]="card.name"
+      >
+        <img
+          *ngIf="card.imageUriNormal; else textCard"
+          class="card-img"
+          [src]="card.imageUriNormal"
+          [alt]="card.name"
+          loading="lazy"
+        />
+        <ng-template #textCard>
+          <div class="card-text-face">
+            <div class="ctf-name">{{ card.name }}</div>
+            <app-mana-cost [cost]="card.manaCost" class="ctf-cost"></app-mana-cost>
+            <div class="ctf-type">{{ card.cardTypes.join(' ') }}</div>
+            <div class="ctf-oracle">{{ card.oracleText }}</div>
+          </div>
+        </ng-template>
+        <div class="dfc-badge" *ngIf="card.imageUriNormalBack">⟲</div>
+      </div>
+    </div>
+
+    <!-- Load More -->
+    <div class="load-more-row" *ngIf="hasMore || loadingMore">
+      <button class="load-more-btn" (click)="loadMore()" [disabled]="loadingMore">
+        <span *ngIf="!loadingMore">Load More</span>
+        <span *ngIf="loadingMore">Loading…</span>
       </button>
-      <button class="kb-btn" (click)="openCollection()">My Collection</button>
-      <button class="kb-btn" (click)="openKb()">Rules KB</button>
     </div>
 
-    <div class="home-footer">
-      Angular · .NET · SignalR · Scryfall
-    </div>
+  </div>
 
+  <!-- Idle state -->
+  <div class="search-idle" *ngIf="!searched && !loading">
+    <div class="idle-mana">
+      <span class="mana-orb orb-W"></span>
+      <span class="mana-orb orb-U"></span>
+      <span class="mana-orb orb-B"></span>
+      <span class="mana-orb orb-R"></span>
+      <span class="mana-orb orb-G"></span>
+    </div>
+    <p class="idle-text">Search across thousands of Magic: The Gathering cards</p>
   </div>
 
 </div>
+
+<!-- Card detail modal -->
+<app-card-modal
+  *ngIf="selectedCard"
+  [card]="selectedCard"
+  [printings]="modalPrintings"
+  [(viewedScryfallId)]="modalViewScryfallId"
+  [(flipped)]="modalFlipped"
+  (closed)="closeCard()"
+></app-card-modal>

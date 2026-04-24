@@ -12,6 +12,7 @@ function makeCardDto(overrides: Partial<CardDto> = {}): CardDto {
     keywords: [], imageUriNormal: null, imageUriNormalBack: null, imageUriSmall: null, imageUriArtCrop: null,
     colorIdentity: [ManaColor.Green], ownerId: 'p1',
     flavorText: null, artist: null, setCode: null,
+    legalities: {},
     ...overrides,
   };
 }

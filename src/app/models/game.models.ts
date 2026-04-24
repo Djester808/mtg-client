@@ -101,6 +101,7 @@ export interface CardDto {
   flavorText: string | null;
   artist: string | null;
   setCode: string | null;
+  legalities: Record<string, string>;
 }
 
 export interface PermanentDto {
@@ -258,6 +259,12 @@ export interface PrintingDto {
   flavorText: string | null;
   artist: string | null;
   manaCost: string | null;
+}
+
+export interface SetSummaryDto {
+  code: string;
+  name: string;
+  cardCount: number;
 }
 
 // ---- UI-only models (not from server) ---------------------

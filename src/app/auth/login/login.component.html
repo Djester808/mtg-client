@@ -1,0 +1,48 @@
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-logo">&#9670;</div>
+    <h1 class="auth-title">Sign In</h1>
+    <p class="auth-sub">Welcome back to MTG Engine</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <div class="field">
+        <label class="field-label" for="username">Email or Username</label>
+        <input
+          id="username"
+          class="field-input"
+          type="text"
+          formControlName="username"
+          autocomplete="username"
+          placeholder="email or username"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="password">Password</label>
+        <input
+          id="password"
+          class="field-input"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <p class="auth-error" *ngIf="error$ | async as error">{{ error }}</p>
+
+      <button
+        class="submit-btn"
+        type="submit"
+        [disabled]="(loading$ | async) || form.invalid"
+      >
+        <span *ngIf="!(loading$ | async)">Sign In</span>
+        <span *ngIf="loading$ | async">Signing in…</span>
+      </button>
+    </form>
+
+    <p class="auth-link">
+      No account? <a routerLink="/register">Create one</a>
+    </p>
+  </div>
+</div>

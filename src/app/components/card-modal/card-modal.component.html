@@ -1,0 +1,182 @@
+<div class="modal-overlay" (click)="close()"></div>
+
+<div
+  class="card-modal"
+  [class.is-dragging]="isDragging"
+  [class.is-resizing]="isResizing"
+  [style.left.px]="modalX"
+  [style.top.px]="modalY"
+  [style.width.px]="modalWidth"
+  [style.height.px]="modalHeight"
+  (click)="$event.stopPropagation()"
+>
+  <!-- Drag handle / title bar -->
+  <div class="modal-drag" (mousedown)="onDragStart($event)">
+    <span class="modal-drag-name">{{ displayName }}</span>
+    <button class="modal-close-btn" (click)="close()">✕</button>
+  </div>
+
+  <!-- Two-column body -->
+  <div class="modal-body">
+
+    <!-- Left: card art + optional collection controls -->
+    <div class="modal-art-col">
+      <div class="modal-art">
+        <img
+          class="modal-card-img"
+          *ngIf="modalImage"
+          [src]="modalImage"
+          [alt]="card?.name ?? ''"
+        />
+        <div class="modal-art-placeholder" *ngIf="!modalImage">◈</div>
+        <button
+          class="modal-flip-btn"
+          *ngIf="hasBack"
+          [class.is-flipped]="flipped"
+          (click)="toggleFlip()"
+          title="Flip card"
+        >⟲</button>
+      </div>
+      <!-- Collection-specific controls (quantity badge) projected here -->
+      <ng-content select="[extra]"></ng-content>
+    </div>
+
+    <!-- Right: card info -->
+    <div class="modal-info-col">
+
+      <div class="modal-name-row">
+        <span class="modal-card-name">{{ displayName }}</span>
+        <div class="modal-cost-col">
+          <app-mana-cost *ngIf="effectiveCard?.manaCost" [cost]="effectiveCard!.manaCost"></app-mana-cost>
+          <span class="modal-mv" *ngIf="effectiveCard?.manaValue && !isLand">
+            <span class="modal-mv-label">CMC</span>{{ effectiveCard!.manaValue }}
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-type-line" *ngIf="typeLine">{{ typeLine }}</div>
+
+      <div class="modal-set-line" *ngIf="currentPrinting as p">
+        <span class="modal-set-code">{{ p.setCode.toUpperCase() }}</span>
+        <span class="modal-set-name">{{ p.setName }}</span>
+        <ng-container *ngIf="p.collectorNumber">
+          <span class="modal-set-sep">·</span>
+          <span class="modal-set-num">#{{ p.collectorNumber }}</span>
+        </ng-container>
+      </div>
+      <div class="modal-set-line" *ngIf="!currentPrinting && effectiveCard?.setCode">
+        <span class="modal-set-code">{{ effectiveCard!.setCode!.toUpperCase() }}</span>
+      </div>
+
+      <div class="modal-oracle" *ngIf="displayOracleText"
+           [innerHTML]="displayOracleText | oracleSymbols"></div>
+
+      <div class="modal-flavor" *ngIf="effectiveCard?.flavorText">{{ effectiveCard!.flavorText }}</div>
+
+      <div class="modal-keywords" *ngIf="effectiveCard?.keywords?.length">
+        <span class="modal-kw-chip" *ngFor="let kw of effectiveCard!.keywords">{{ kw }}</span>
+      </div>
+
+      <div class="modal-stats-row">
+        <span class="modal-pt" *ngIf="effectiveCard?.power != null">
+          {{ effectiveCard!.power }}/{{ effectiveCard!.toughness }}
+        </span>
+        <span class="modal-loyalty" *ngIf="effectiveCard?.startingLoyalty != null">
+          {{ effectiveCard!.startingLoyalty }}
+        </span>
+        <span class="modal-artist"
+              *ngIf="(currentPrinting?.artist ?? effectiveCard?.artist) as artist">
+          Illus. {{ artist }}
+        </span>
+      </div>
+
+      <!-- Legalities -->
+      <div class="modal-legalities" *ngIf="hasLegalities">
+        <div class="modal-legalities-header">Format Legality</div>
+        <div class="modal-legalities-grid">
+          <div
+            class="legal-chip"
+            *ngFor="let f of legalFormats"
+            [class.is-legal]="f.status === 'legal'"
+            [class.is-restricted]="f.status === 'restricted'"
+          >
+            <span class="legal-chip-status">{{ f.status === 'restricted' ? 'R' : '✓' }}</span>
+            <span class="legal-chip-label">{{ f.label }}</span>
+          </div>
+          <div
+            class="legal-chip is-not-legal"
+            *ngFor="let f of illegalFormats"
+          >
+            <span class="legal-chip-status">✕</span>
+            <span class="legal-chip-label">{{ f.label }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Printings carousel -->
+  <div class="modal-printings-section">
+    <div class="modal-printings-header">
+      Printings
+      <span class="modal-printings-count" *ngIf="printings.length">({{ printings.length }})</span>
+      <span class="modal-printings-loading" *ngIf="!printings.length">loading…</span>
+      <span class="carousel-page-label" *ngIf="printings.length > CAROUSEL_PAGE">
+        {{ carouselStart + 1 }}–{{ carouselStart + carouselSlice.length }} of {{ printings.length }}
+      </span>
+    </div>
+
+    <div class="carousel-row">
+      <button
+        class="carousel-btn"
+        [disabled]="!carouselCanPrev"
+        (click)="carouselPrev()"
+        title="Previous"
+      >‹</button>
+
+      <div class="modal-printings-grid">
+        <div
+          class="modal-printing-chip"
+          *ngFor="let p of carouselSlice"
+          [class.is-viewed]="p.scryfallId === viewedScryfallId"
+          [class.is-owned]="p.scryfallId === primaryScryfallId"
+          [class.is-also-owned]="alsoOwnedIds.includes(p.scryfallId)"
+          (click)="selectPrinting(p)"
+          [title]="p.setName + (p.collectorNumber ? ' #' + p.collectorNumber : '')"
+        >
+          <div
+            class="chip-thumb"
+            [style.backgroundImage]="(flipped && p.scryfallId === viewedScryfallId && p.imageUriNormalBack)
+              ? 'url(' + p.imageUriNormalBack + ')'
+              : p.imageUriSmall ? 'url(' + p.imageUriSmall + ')' : 'none'"
+          >
+            <div class="chip-placeholder" *ngIf="!p.imageUriSmall">◈</div>
+            <div class="chip-viewing-banner" *ngIf="p.scryfallId === viewedScryfallId">Viewing</div>
+            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId">✓ Owned</div>
+            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)">✓ Owned</div>
+            <button
+              class="chip-dfc-badge"
+              *ngIf="p.imageUriNormalBack"
+              (click)="flipToPrintingBack(p, $event)"
+              title="View back face"
+            >⟲</button>
+          </div>
+          <span class="chip-code">{{ p.setCode.toUpperCase() }}</span>
+          <span class="chip-num" *ngIf="p.collectorNumber">#{{ p.collectorNumber }}</span>
+        </div>
+      </div>
+
+      <button
+        class="carousel-btn"
+        [disabled]="!carouselCanNext"
+        (click)="carouselNext()"
+        title="Next"
+      >›</button>
+    </div>
+  </div>
+
+  <!-- Resize handle -->
+  <div class="modal-resize-handle" (mousedown)="onResizeStart($event)"></div>
+
+</div>

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { GameStateDto, CardDto } from '../models/game.models';
+import { GameStateDto, CardDto, SetSummaryDto } from '../models/game.models';
 import { GameActions } from '../store/game/game.actions';
 import { AppState } from '../store';
 
@@ -64,9 +64,13 @@ export class GameApiService {
   /**
    * Search cards by name (proxied to Scryfall).
    */
-  searchCards(query: string, limit = 20): Observable<CardDto[]> {
+  getSets(): Observable<SetSummaryDto[]> {
+    return this.http.get<SetSummaryDto[]>(`${this.base}/cards/sets`);
+  }
+
+  searchCards(query: string, limit = 60, offset = 0, sortBy = 'name', sortDir = 'asc'): Observable<CardDto[]> {
     return this.http.get<CardDto[]>(`${this.base}/cards/search`, {
-      params: { q: query, limit },
+      params: { q: query, limit, offset, sortBy, sortDir },
     });
   }
 }

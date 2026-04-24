@@ -1,0 +1,196 @@
+:host { display: block; }
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 32px;
+  background: rgba(8, 8, 8, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+// ---- Logo ------------------------------------------------
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.nav-logo-diamond {
+  font-size: 14px;
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px rgba(201,168,76,0.5));
+}
+
+.nav-logo-text {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+// ---- Nav links -------------------------------------------
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-link {
+  padding: 6px 12px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-raised);
+  }
+
+  &.active {
+    color: var(--gold);
+  }
+}
+
+// ---- Account menu ----------------------------------------
+
+.account-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.account-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-hover);
+  }
+}
+
+.account-icon {
+  font-size: 10px;
+  color: var(--gold);
+}
+
+.account-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-caret {
+  font-size: 8px;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+
+  &.open { transform: rotate(180deg); }
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  animation: dropdown-in 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+  }
+
+  &.danger {
+    color: #e74c3c;
+    &:hover { background: rgba(231,76,60,0.1); color: #e74c3c; }
+  }
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-dim);
+  margin: 4px 0;
+}
+
+// ---- Create account CTA ---------------------------------
+
+.nav-btn {
+  padding: 7px 16px;
+  background: var(--gold);
+  border-radius: 7px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0e0c08;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    background: #dbb954;
+    box-shadow: 0 2px 16px rgba(201,168,76,0.3);
+  }
+}
