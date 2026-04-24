@@ -93,6 +93,7 @@ export interface CardDto {
   startingLoyalty: number | null;
   keywords: string[];
   imageUriNormal: string | null;
+  imageUriNormalBack: string | null;
   imageUriSmall: string | null;
   imageUriArtCrop: string | null;
   colorIdentity: ManaColor[];
@@ -252,6 +253,11 @@ export interface PrintingDto {
   collectorNumber: string | null;
   imageUriSmall: string | null;
   imageUriNormal: string | null;
+  imageUriNormalBack: string | null;
+  oracleText: string | null;
+  flavorText: string | null;
+  artist: string | null;
+  manaCost: string | null;
 }
 
 // ---- UI-only models (not from server) ---------------------

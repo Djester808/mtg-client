@@ -18,7 +18,7 @@ const KEYWORDS = [
 
 const _kwPattern = KEYWORDS.map(k => k.replace(/\s+/g, '\\s+')).join('|');
 // Alternation: match either a complete HTML tag (pass through) or a keyword (linkify).
-const KW_LINK_RE = new RegExp(`(<[^>]+>)|(\\b(?:${_kwPattern})\\b)`, 'gi');
+const KW_LINK_RE = new RegExp(`(<[^>]+>)|((?<!=)\\b(?:${_kwPattern})\\b)`, 'gi');
 
 function symbolToClass(sym: string): string {
   const up = sym.toUpperCase();
@@ -55,14 +55,26 @@ export class OracleSymbolsPipe implements PipeTransform {
 
   transform(text: string | null | undefined): SafeHtml {
     if (!text) return '';
-    const html = linkKeywords(
-      escapeHtml(text)
-        .replace(/\{([^}]+)\}/g, (_, sym) => {
-          const cls = symbolToClass(sym);
-          return `<i class="ms ms-cost ms-shadow ${cls}"></i>`;
-        })
-        .replace(/\n/g, '<br>'),
+    const withSymbols = escapeHtml(text)
+      .replace(/\{([^}]+)\}/g, (_, sym) => {
+        const cls = symbolToClass(sym);
+        return `<i class="ms ms-cost ms-shadow ${cls}"></i>`;
+      })
+      .replace(/\n/g, '<br>');
+
+    // Loyalty costs appear at the start of planeswalker ability lines: +1:, −2:, 0:
+    const withLoyalty = withSymbols.replace(
+      /(^|<br>)([-+−]?)(\d+|X):/g,
+      (_, prefix, sign, num) => {
+        const n = num.toLowerCase();
+        let cls: string;
+        if (sign === '+')                    cls = `ms-loyalty-up ms-loyalty-${n}`;
+        else if (sign === '-' || sign === '−') cls = `ms-loyalty-down ms-loyalty-${n}`;
+        else                                 cls = 'ms-loyalty-zero';
+        return `${prefix}<i class="ms ${cls}"></i>:`;
+      },
     );
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+
+    return this.sanitizer.bypassSecurityTrustHtml(linkKeywords(withLoyalty));
   }
 }

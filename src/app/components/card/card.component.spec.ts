@@ -9,7 +9,7 @@ function makeCardDto(overrides: Partial<CardDto> = {}): CardDto {
     manaCost: '1G', manaValue: 2,
     cardTypes: [CardType.Creature], subtypes: ['Beast'], supertypes: [],
     oracleText: 'Trample', power: 2, toughness: 2, startingLoyalty: null,
-    keywords: [], imageUriNormal: null, imageUriSmall: null, imageUriArtCrop: null,
+    keywords: [], imageUriNormal: null, imageUriNormalBack: null, imageUriSmall: null, imageUriArtCrop: null,
     colorIdentity: [ManaColor.Green], ownerId: 'p1',
     flavorText: null, artist: null, setCode: null,
     ...overrides,

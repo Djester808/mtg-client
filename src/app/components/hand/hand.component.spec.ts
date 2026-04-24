@@ -15,7 +15,7 @@ function makeCard(id: string, types: CardType[] = [CardType.Creature], cost = '1
     manaCost: cost, manaValue: 2,
     cardTypes: types, subtypes: [], supertypes: [], oracleText: '',
     power: 2, toughness: 2, startingLoyalty: null, keywords: [],
-    imageUriNormal: null, imageUriSmall: null, imageUriArtCrop: null,
+    imageUriNormal: null, imageUriNormalBack: null, imageUriSmall: null, imageUriArtCrop: null,
     colorIdentity: [ManaColor.Green], ownerId: 'p1',
     flavorText: null, artist: null, setCode: null,
   };

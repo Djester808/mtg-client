@@ -4,6 +4,7 @@ import {
   OnDestroy,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,14 +17,16 @@ import {
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import { selectActiveCollection, selectCollectionLoading } from '../../store/collection/collection.selectors';
-import { CollectionDetailDto, CollectionCardDto, CardDto, PrintingDto } from '../../models/game.models';
+import { CollectionDetailDto, CollectionCardDto, CardDto, PrintingDto, CardType } from '../../models/game.models';
 import { GameApiService } from '../../services/game-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
+import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
+import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 
 @Component({
   selector: 'app-collection-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ManaCostComponent, OracleSymbolsPipe],
   templateUrl: './collection-detail.component.html',
   styleUrls: ['./collection-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +48,126 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   /** oracleId → selected scryfallId for search-panel result rows */
   searchSelectedScryfallId = new Map<string, string>();
   addErrors = new Set<string>();
+
+  // ---- Card detail modal ----------------------------------------
+  selectedCard: CollectionCardDto | null = null;
+  /** scryfallId of the printing whose art is shown in the modal (not necessarily the owned one) */
+  modalViewScryfallId: string | null = null;
+  modalFlipped = false;
+  /** Set of collection card IDs currently showing their back face in the grid */
+  flippedCardIds = new Set<string>();
+  modalX = 120;
+  modalY = 80;
+  modalWidth = 760;
+  modalHeight = 580;
+  isDragging = false;
+  isResizing = false;
+  private dragOffsetX = 0;
+  private dragOffsetY = 0;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
+  private resizeStartW = 0;
+  private resizeStartH = 0;
+
+  readonly CAROUSEL_PAGE = 5;
+  carouselStart = 0;
+
+  get modalPrintings(): PrintingDto[] {
+    return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
+  }
+
+  get carouselPrintings(): PrintingDto[] {
+    return this.modalPrintings.slice(this.carouselStart, this.carouselStart + this.CAROUSEL_PAGE);
+  }
+
+  get carouselEnd(): number {
+    return Math.min(this.carouselStart + this.CAROUSEL_PAGE, this.modalPrintings.length);
+  }
+
+  get carouselCanPrev(): boolean { return this.carouselStart > 0; }
+
+  get carouselCanNext(): boolean {
+    return this.carouselStart + this.CAROUSEL_PAGE < this.modalPrintings.length;
+  }
+
+  carouselPrev(): void {
+    this.carouselStart = Math.max(0, this.carouselStart - this.CAROUSEL_PAGE);
+    this.cdr.markForCheck();
+  }
+
+  carouselNext(): void {
+    this.carouselStart = Math.min(
+      Math.max(0, this.modalPrintings.length - this.CAROUSEL_PAGE),
+      this.carouselStart + this.CAROUSEL_PAGE,
+    );
+    this.cdr.markForCheck();
+  }
+
+  get modalImage(): string | null {
+    if (!this.selectedCard) return null;
+    const p = this.modalPrintings.find(x => x.scryfallId === this.modalViewScryfallId);
+    const front = p?.imageUriNormal ?? this.selectedCard.cardDetails?.imageUriNormal ?? null;
+    const back  = p?.imageUriNormalBack ?? this.selectedCard.cardDetails?.imageUriNormalBack ?? null;
+    return this.modalFlipped && back ? back : front;
+  }
+
+  get modalIsLand(): boolean {
+    return this.modalCardDetails?.cardTypes.includes(CardType.Land) ?? false;
+  }
+
+  get modalHasBack(): boolean {
+    if (!this.selectedCard) return false;
+    const p = this.modalPrintings.find(x => x.scryfallId === this.modalViewScryfallId);
+    return !!(p?.imageUriNormalBack ?? this.selectedCard.cardDetails?.imageUriNormalBack);
+  }
+
+  /** For DFC cards the name is stored as "Front // Back". Returns the active face's name. */
+  get modalDisplayName(): string {
+    const name = this.modalCardDetails?.name ?? this.selectedCard?.oracleId ?? '';
+    if (!this.modalHasBack) return name;
+    const parts = name.split(' // ');
+    return this.modalFlipped && parts.length > 1 ? parts[1] : parts[0];
+  }
+
+  /** For DFC cards oracle text is joined with \n//\n. Returns the active face's text. */
+  get modalOracleText(): string | null {
+    const text = this.modalCardDetails?.oracleText ?? null;
+    if (!text || !this.modalHasBack) return text;
+    const parts = text.split('\n//\n');
+    return this.modalFlipped && parts.length > 1 ? parts[1] : parts[0];
+  }
+
+  tileImage(card: CollectionCardDto): string | null {
+    const front = card.cardDetails?.imageUriNormal ?? null;
+    const back  = card.cardDetails?.imageUriNormalBack ?? null;
+    return this.flippedCardIds.has(card.id) && back ? back : front;
+  }
+
+  tileHasBack(card: CollectionCardDto): boolean {
+    return !!card.cardDetails?.imageUriNormalBack;
+  }
+
+  get modalCurrentPrinting(): PrintingDto | null {
+    const id = this.modalViewScryfallId ?? this.selectedCard?.scryfallId;
+    return this.modalPrintings.find(p => p.scryfallId === id) ?? null;
+  }
+
+  /** Returns a CardDto-shaped object merging printing-specific text with base oracle data. Instant — no extra API call. */
+  get modalCardDetails(): CardDto | null {
+    const base = this.selectedCard?.cardDetails ?? null;
+    const p = this.modalViewScryfallId
+      ? this.modalPrintings.find(x => x.scryfallId === this.modalViewScryfallId) ?? null
+      : null;
+    if (!p || !base) return base;
+    return {
+      ...base,
+      oracleText: p.oracleText ?? base.oracleText,
+      flavorText: p.flavorText ?? null,
+      artist:     p.artist     ?? base.artist,
+      manaCost:   p.manaCost   ?? base.manaCost,
+      setCode:    p.setCode    ?? base.setCode,
+    };
+  }
 
   private collectionId = '';
   private searchInput$ = new Subject<string>();
@@ -136,6 +259,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$),
     ).subscribe(({ oracleId, printings }) => {
       this.printingsCache.set(oracleId, printings);
+      // If this modal is open for the same oracle ID and no printing is selected yet, select the first
+      if (this.selectedCard?.oracleId === oracleId && !this.modalViewScryfallId && printings.length)
+        this.modalViewScryfallId = printings[0].scryfallId;
       this.cdr.markForCheck();
     });
   }
@@ -317,4 +443,180 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       .filter(p => p.length > 0)
       .map(p => ({ text: p, match: testRe.test(p) }));
   }
+
+  // ---- Card detail modal ---------------------------------------
+
+  openSearchCard(card: CardDto): void {
+    const synthetic: CollectionCardDto = {
+      id: '',
+      oracleId: card.oracleId,
+      scryfallId: null,
+      quantity: 0,
+      quantityFoil: 0,
+      notes: null,
+      addedAt: '',
+      cardDetails: card,
+    };
+    this.openCard(synthetic);
+  }
+
+  openCard(card: CollectionCardDto): void {
+    this.selectedCard = card;
+    this.modalFlipped = false;
+    this.carouselStart = 0;
+    this.modalWidth  = Math.min(900, Math.floor(window.innerWidth  * 0.92));
+    this.modalHeight = Math.max(580, Math.min(680, Math.floor(window.innerHeight * 0.85)));
+    this.modalX = Math.max(0, (window.innerWidth - this.modalWidth) / 2);
+    this.modalY = Math.max(0, Math.min(60, window.innerHeight * 0.06));
+    // For search results scryfallId is null; fall back to first cached printing if available
+    const cached = this.printingsCache.get(card.oracleId);
+    this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
+    if (!cached)
+      this.searchLoadSubject$.next(card.oracleId);
+    this.cdr.markForCheck();
+  }
+
+  onResizeStart(event: MouseEvent): void {
+    this.isResizing = true;
+    this.resizeStartX = event.clientX;
+    this.resizeStartY = event.clientY;
+    this.resizeStartW = this.modalWidth;
+    this.resizeStartH = this.modalHeight;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  closeCard(): void {
+    this.selectedCard = null;
+    this.isDragging = false;
+    this.cdr.markForCheck();
+  }
+
+  onModalDragStart(event: MouseEvent): void {
+    this.isDragging = true;
+    this.dragOffsetX = event.clientX - this.modalX;
+    this.dragOffsetY = event.clientY - this.modalY;
+    event.preventDefault();
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onDocMouseMove(event: MouseEvent): void {
+    if (this.isDragging) {
+      this.modalX = Math.max(0, event.clientX - this.dragOffsetX);
+      this.modalY = Math.max(0, event.clientY - this.dragOffsetY);
+      this.cdr.markForCheck();
+    }
+    if (this.isResizing) {
+      const dx = event.clientX - this.resizeStartX;
+      const dy = event.clientY - this.resizeStartY;
+      const delta = (dx + dy) / 2;
+      this.modalWidth  = Math.max(680, Math.min(Math.floor(window.innerWidth  * 0.96), this.resizeStartW + delta));
+      this.modalHeight = Math.max(580, Math.min(Math.floor(window.innerHeight * 0.92), this.resizeStartH + delta));
+      this.cdr.markForCheck();
+    }
+  }
+
+  @HostListener('document:mouseup')
+  onDocMouseUp(): void {
+    this.isDragging = false;
+    this.isResizing = false;
+  }
+
+  onModalPrintingClick(printing: PrintingDto): void {
+    this.modalViewScryfallId = printing.scryfallId;
+    this.modalFlipped = false;
+    this.cdr.markForCheck();
+  }
+
+  toggleModalFlip(): void {
+    this.modalFlipped = !this.modalFlipped;
+    this.cdr.markForCheck();
+  }
+
+  toggleTileFlip(card: CollectionCardDto, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.flippedCardIds.has(card.id)) this.flippedCardIds.delete(card.id);
+    else this.flippedCardIds.add(card.id);
+    this.cdr.markForCheck();
+  }
+
+  // ---- Modal quantity controls --------------------------------
+
+  modalIncrementNormal(col: CollectionDetailDto, card: CollectionCardDto): void {
+    const entry = this.viewedEntry(col, card);
+    if (entry?.id) {
+      this.store.dispatch(CollectionActions.updateCard({
+        collectionId: this.collectionId,
+        cardId: entry.id,
+        request: { quantity: entry.quantity + 1, quantityFoil: entry.quantityFoil },
+      }));
+    } else if (this.modalViewScryfallId) {
+      this.store.dispatch(CollectionActions.addCard({
+        collectionId: this.collectionId,
+        request: { oracleId: card.oracleId, scryfallId: this.modalViewScryfallId, quantity: 1 },
+      }));
+    }
+  }
+
+  modalDecrementNormal(col: CollectionDetailDto, card: CollectionCardDto): void {
+    const entry = this.viewedEntry(col, card);
+    if (!entry?.id || entry.quantity <= 0) return;
+    if (entry.quantity === 1 && entry.quantityFoil === 0) {
+      this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }));
+    } else {
+      this.store.dispatch(CollectionActions.updateCard({
+        collectionId: this.collectionId,
+        cardId: entry.id,
+        request: { quantity: entry.quantity - 1, quantityFoil: entry.quantityFoil },
+      }));
+    }
+  }
+
+  modalIncrementFoil(col: CollectionDetailDto, card: CollectionCardDto): void {
+    const entry = this.viewedEntry(col, card);
+    if (entry?.id) {
+      this.store.dispatch(CollectionActions.updateCard({
+        collectionId: this.collectionId,
+        cardId: entry.id,
+        request: { quantity: entry.quantity, quantityFoil: entry.quantityFoil + 1 },
+      }));
+    } else if (this.modalViewScryfallId) {
+      this.store.dispatch(CollectionActions.addCard({
+        collectionId: this.collectionId,
+        request: { oracleId: card.oracleId, scryfallId: this.modalViewScryfallId, quantity: 0, quantityFoil: 1 },
+      }));
+    }
+  }
+
+  modalDecrementFoil(col: CollectionDetailDto, card: CollectionCardDto): void {
+    const entry = this.viewedEntry(col, card);
+    if (!entry?.id || entry.quantityFoil <= 0) return;
+    if (entry.quantityFoil === 1 && entry.quantity === 0) {
+      this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }));
+    } else {
+      this.store.dispatch(CollectionActions.updateCard({
+        collectionId: this.collectionId,
+        cardId: entry.id,
+        request: { quantity: entry.quantity, quantityFoil: entry.quantityFoil - 1 },
+      }));
+    }
+  }
+
+  modalTypeLineFor(card: CollectionCardDto): string {
+    return this.typeLine(card);
+  }
+
+  isAlsoOwned(col: CollectionDetailDto, card: CollectionCardDto, scryfallId: string): boolean {
+    return scryfallId !== card.scryfallId &&
+      col.cards.some(c => c.oracleId === card.oracleId && c.scryfallId === scryfallId);
+  }
+
+  viewedEntry(col: CollectionDetailDto, card: CollectionCardDto): CollectionCardDto | null {
+    if (!this.modalViewScryfallId) return null;
+    return col.cards.find(
+      c => c.oracleId === card.oracleId && c.scryfallId === this.modalViewScryfallId
+    ) ?? null;
+  }
+
 }
+

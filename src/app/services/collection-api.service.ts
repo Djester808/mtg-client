@@ -5,6 +5,7 @@ import {
   CollectionDto,
   CollectionDetailDto,
   CollectionCardDto,
+  CardDto,
   CreateCollectionRequest,
   UpdateCollectionRequest,
   AddCardToCollectionRequest,
@@ -56,5 +57,9 @@ export class CollectionApiService {
 
   getPrintings(oracleId: string): Observable<PrintingDto[]> {
     return this.http.get<PrintingDto[]>(`/api/cards/${oracleId}/printings`);
+  }
+
+  getCardByScryfallId(scryfallId: string): Observable<CardDto> {
+    return this.http.get<CardDto>(`/api/cards/scryfall/${scryfallId}`);
   }
 }

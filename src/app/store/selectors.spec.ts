@@ -20,6 +20,7 @@ function makeCard(overrides: Partial<CardDto> = {}): CardDto {
     startingLoyalty: null,
     keywords: [],
     imageUriNormal: null,
+    imageUriNormalBack: null,
     imageUriSmall: null,
     imageUriArtCrop: null,
     colorIdentity: [ManaColor.Green],

@@ -54,7 +54,11 @@
         <span class="legend-sep">·</span>
         <span class="legend-item legend-item-foil"><span class="legend-dot">✦</span> Foil</span>
         <span class="legend-sep">·</span>
-        <span class="legend-item legend-item-hint">Set dropdown selects which printing</span>
+        <span class="legend-item legend-item-owned"><span class="legend-badge legend-badge-gold">✓</span> This printing owned</span>
+        <span class="legend-sep">·</span>
+        <span class="legend-item legend-item-also-owned"><span class="legend-badge legend-badge-blue">✓</span> Also owned (other entry)</span>
+        <span class="legend-sep">·</span>
+        <span class="legend-item legend-item-hint">Different sets create separate entries</span>
       </div>
 
       <!-- Loading skeleton -->
@@ -81,14 +85,15 @@
             <!-- Visual tile -->
             <div class="card-tile" [class.is-foil]="card.quantityFoil > 0">
 
-              <!-- Card image -->
+              <!-- Card image — click opens detail modal -->
               <div
                 class="card-art"
-                [style.backgroundImage]="card.cardDetails?.imageUriNormal
-                  ? 'url(' + card.cardDetails!.imageUriNormal + ')'
+                [style.backgroundImage]="tileImage(card)
+                  ? 'url(' + tileImage(card) + ')'
                   : 'none'"
+                (click)="openCard(card)"
               >
-                <div class="art-placeholder" *ngIf="!card.cardDetails?.imageUriNormal">◈</div>
+                <div class="art-placeholder" *ngIf="!tileImage(card)">◈</div>
                 <div class="foil-badge" *ngIf="card.quantityFoil > 0">✦</div>
                 <div class="qty-badge">
                   <ng-container *ngIf="card.quantity > 0">×{{ card.quantity }}</ng-container>
@@ -96,70 +101,80 @@
                     <ng-container *ngIf="card.quantity > 0"> </ng-container>✦{{ card.quantityFoil }}
                   </span>
                 </div>
+
+                <!-- Hover info overlay — inside card-art so it only covers the image -->
+                <div class="card-info-panel" *ngIf="hoveredCard?.id === card.id">
+                  <!-- Top: name, mana, type -->
+                  <div class="info-top">
+                    <div class="info-header">
+                      <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                      <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost"></app-mana-cost>
+                    </div>
+                    <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
+                  </div>
+                  <!-- Middle: oracle text, scrollable -->
+                  <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">
+                    <div [innerHTML]="card.cardDetails!.oracleText | oracleSymbols"></div>
+                  </div>
+                  <!-- Bottom: artist + stats -->
+                  <div class="info-bottom">
+                    <div class="info-stats"
+                         *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
+                      <span class="info-pt" *ngIf="card.cardDetails?.power != null">
+                        {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
+                      </span>
+                      <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
+                        <i class="ms ms-loyalty-start ms-loyalty-{{ card.cardDetails!.startingLoyalty }}"></i>
+                      </span>
+                    </div>
+                    <div class="info-artist" *ngIf="card.cardDetails?.artist">
+                      Illus. {{ card.cardDetails!.artist }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Set selector dropdown -->
-              <select
-                class="set-select"
-                [ngModel]="card.scryfallId"
-                [title]="currentSetTooltip(card)"
-                (focus)="onSelectFocus(card)"
-                (ngModelChange)="onSetChange(card, $event)"
-              >
-                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else noprints">
-                  <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                    {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                  </option>
-                </ng-container>
-                <ng-template #noprints>
-                  <option [value]="card.scryfallId">
-                    {{ card.cardDetails?.setCode?.toUpperCase() ?? '···' }}
-                  </option>
-                </ng-template>
-              </select>
+              <!-- Single-row bottom: set · normal qty · foil qty · flip -->
+              <div class="card-bottom">
+                <select
+                  class="set-select"
+                  [ngModel]="card.scryfallId"
+                  [title]="currentSetTooltip(card)"
+                  (focus)="onSelectFocus(card)"
+                  (ngModelChange)="onSetChange(card, $event)"
+                >
+                  <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else noprints">
+                    <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                      {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                    </option>
+                  </ng-container>
+                  <ng-template #noprints>
+                    <option [value]="card.scryfallId">
+                      {{ card.cardDetails?.setCode?.toUpperCase() ?? '···' }}
+                    </option>
+                  </ng-template>
+                </select>
 
-              <!-- Two-row controls: normal / foil -->
-              <div class="card-controls">
                 <div class="ctrl-row">
                   <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
                   <span class="ctrl-label">◈ {{ card.quantity }}</span>
                   <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
                 </div>
+
                 <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
                   <button class="ctrl-btn ctrl-dec" (click)="decrementFoil(card)" title="Remove foil">−</button>
                   <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
                   <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
                 </div>
+
+                <button class="flip-btn"
+                        *ngIf="tileHasBack(card)"
+                        [class.is-flipped]="flippedCardIds.has(card.id)"
+                        (click)="toggleTileFlip(card, $event)"
+                        title="Flip card">⟲</button>
               </div>
             </div>
 
-            <!-- Hover info panel — sibling to tile, overflows card-wrap -->
-            <div class="card-info-panel" *ngIf="hoveredCard?.id === card.id">
-
-              <div class="info-header">
-                <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
-                <span class="info-mana" *ngIf="card.cardDetails?.manaCost">{{ card.cardDetails!.manaCost }}</span>
-              </div>
-
-              <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
-
-              <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">{{ card.cardDetails!.oracleText }}</div>
-
-              <div class="info-stats"
-                   *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
-                <span class="info-pt" *ngIf="card.cardDetails?.power != null">
-                  {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
-                </span>
-                <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
-                  ◆ {{ card.cardDetails!.startingLoyalty }}
-                </span>
-              </div>
-
-              <div class="info-artist" *ngIf="card.cardDetails?.artist">
-                Illus. {{ card.cardDetails!.artist }}
-              </div>
-
-            </div>
           </div>
 
           <!-- No filter results -->
@@ -209,10 +224,12 @@
         <ng-container *ngIf="collection$ | async as col">
           <div class="result-row" *ngFor="let card of searchResults">
             <div
-              class="result-art"
+              class="result-art result-art-clickable"
               [style.backgroundImage]="card.imageUriSmall
                 ? 'url(' + card.imageUriSmall + ')'
                 : 'none'"
+              (click)="openSearchCard(card)"
+              title="Preview card"
             >
               <div class="art-placeholder sm" *ngIf="!card.imageUriSmall">◈</div>
             </div>
@@ -258,5 +275,217 @@
       </div>
     </aside>
   </div>
+
+  <!-- ---- Card detail modal ----------------------------------- -->
+  <ng-container *ngIf="collection$ | async as modalCol">
+  <div class="modal-overlay" *ngIf="selectedCard" (click)="closeCard()"></div>
+
+  <div
+    class="card-modal"
+    *ngIf="selectedCard as card"
+    [class.is-dragging]="isDragging"
+    [class.is-resizing]="isResizing"
+    [style.left.px]="modalX"
+    [style.top.px]="modalY"
+    [style.width.px]="modalWidth"
+    [style.height.px]="modalHeight"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Drag handle -->
+    <div class="modal-drag" (mousedown)="onModalDragStart($event)">
+      <span class="modal-drag-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+      <button class="modal-close-btn" (click)="closeCard()">✕</button>
+    </div>
+
+    <!-- Two-column body -->
+    <div class="modal-body">
+
+      <!-- Left: full card image -->
+      <div class="modal-art-col">
+        <div class="modal-art">
+          <img
+            class="modal-card-img"
+            *ngIf="modalImage"
+            [src]="modalImage"
+            [alt]="selectedCard?.cardDetails?.name ?? ''"
+          />
+          <div class="modal-art-placeholder" *ngIf="!modalImage">◈</div>
+          <button class="modal-flip-btn"
+                  *ngIf="modalHasBack"
+                  [class.is-flipped]="modalFlipped"
+                  (click)="toggleModalFlip()"
+                  title="Flip card">⟲</button>
+        </div>
+
+        <!-- Collection quantity controls — below the image -->
+        <div class="modal-qty-badge">
+          <ng-container *ngIf="viewedEntry(modalCol, card) as viewed; else notOwned">
+
+            <!-- Normal -->
+            <div class="modal-qty-ctrl">
+              <button class="modal-qty-btn modal-qty-dec"
+                      (click)="modalDecrementNormal(modalCol, card)"
+                      [disabled]="viewed.quantity <= 0"
+                      title="Remove normal">−</button>
+              <span class="modal-qty-row">
+                <span class="modal-qty-icon">◈</span>
+                <span class="modal-qty-num">{{ viewed.quantity }}</span>
+              </span>
+              <button class="modal-qty-btn modal-qty-inc"
+                      (click)="modalIncrementNormal(modalCol, card)"
+                      title="Add normal">+</button>
+            </div>
+
+            <span class="modal-qty-sep">·</span>
+
+            <!-- Foil -->
+            <div class="modal-qty-ctrl">
+              <button class="modal-qty-btn modal-qty-dec"
+                      (click)="modalDecrementFoil(modalCol, card)"
+                      [disabled]="viewed.quantityFoil <= 0"
+                      title="Remove foil">−</button>
+              <span class="modal-qty-row modal-qty-foil">
+                <span class="modal-qty-icon">✦</span>
+                <span class="modal-qty-num">{{ viewed.quantityFoil }}</span>
+              </span>
+              <button class="modal-qty-btn modal-qty-inc"
+                      (click)="modalIncrementFoil(modalCol, card)"
+                      title="Add foil">+</button>
+            </div>
+
+          </ng-container>
+          <ng-template #notOwned>
+            <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
+              <button class="modal-add-btn"
+                      (click)="modalIncrementNormal(modalCol, card)">+ Add Normal</button>
+              <button class="modal-add-btn modal-add-btn-foil"
+                      (click)="modalIncrementFoil(modalCol, card)">✦ Add Foil</button>
+            </ng-container>
+            <ng-template #noScryfallHint>
+              <span class="modal-qty-not-owned">Select a printing below</span>
+            </ng-template>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Right: info -->
+      <div class="modal-info-col">
+
+        <div class="modal-name-row">
+          <span class="modal-card-name">{{ modalDisplayName }}</span>
+          <div class="modal-cost-col">
+            <app-mana-cost *ngIf="modalCardDetails?.manaCost" [cost]="modalCardDetails!.manaCost"></app-mana-cost>
+            <span class="modal-mv" *ngIf="modalCardDetails && !modalIsLand">
+              <span class="modal-mv-label">CMC</span>{{ modalCardDetails!.manaValue }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-type-line" *ngIf="modalCardDetails">
+          {{ modalTypeLineFor(card) }}
+        </div>
+
+        <div class="modal-set-line" *ngIf="modalCurrentPrinting as p">
+          <span class="modal-set-code">{{ p.setCode.toUpperCase() }}</span>
+          <span class="modal-set-name">{{ p.setName }}</span>
+          <ng-container *ngIf="p.collectorNumber">
+            <span class="modal-set-sep">·</span>
+            <span class="modal-set-num">#{{ p.collectorNumber }}</span>
+          </ng-container>
+        </div>
+        <div class="modal-set-line" *ngIf="!modalCurrentPrinting && modalCardDetails?.setCode">
+          <span class="modal-set-code">{{ modalCardDetails!.setCode!.toUpperCase() }}</span>
+        </div>
+
+        <div class="modal-oracle" *ngIf="modalOracleText"
+             [innerHTML]="modalOracleText | oracleSymbols"></div>
+
+        <div class="modal-flavor" *ngIf="modalCardDetails?.flavorText">
+          {{ modalCardDetails!.flavorText }}
+        </div>
+
+        <div class="modal-keywords" *ngIf="modalCardDetails?.keywords?.length">
+          <span class="modal-kw-chip" *ngFor="let kw of modalCardDetails!.keywords">{{ kw }}</span>
+        </div>
+
+        <!-- Artist + stats pinned to bottom -->
+        <div class="modal-stats-row">
+          <span class="modal-pt" *ngIf="modalCardDetails?.power != null">
+            {{ modalCardDetails!.power }}/{{ modalCardDetails!.toughness }}
+          </span>
+          <span class="modal-loyalty" *ngIf="modalCardDetails?.startingLoyalty != null">
+            <i class="ms ms-loyalty-start ms-loyalty-{{ modalCardDetails!.startingLoyalty }}"></i>
+          </span>
+          <span class="modal-artist" *ngIf="modalCurrentPrinting?.artist ?? modalCardDetails?.artist">
+            Illus. {{ modalCurrentPrinting?.artist ?? modalCardDetails?.artist }}
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Printings carousel -->
+    <div class="modal-printings-section">
+      <div class="modal-printings-header">
+        Printings
+        <span class="modal-printings-count" *ngIf="modalPrintings.length">
+          ({{ modalPrintings.length }})
+        </span>
+        <span class="modal-printings-loading" *ngIf="!modalPrintings.length">loading…</span>
+        <span class="carousel-page-label" *ngIf="modalPrintings.length > CAROUSEL_PAGE">
+          {{ carouselStart + 1 }}–{{ carouselEnd }} of {{ modalPrintings.length }}
+        </span>
+      </div>
+
+      <div class="carousel-row">
+        <button
+          class="carousel-btn"
+          [disabled]="!carouselCanPrev"
+          (click)="carouselPrev()"
+          title="Previous"
+        >‹</button>
+
+        <div class="modal-printings-grid">
+          <div
+            class="modal-printing-chip"
+            *ngFor="let p of carouselPrintings"
+            [class.is-owned]="p.scryfallId === card.scryfallId"
+            [class.is-also-owned]="isAlsoOwned(modalCol, card, p.scryfallId)"
+            [class.is-viewed]="p.scryfallId === modalViewScryfallId"
+            (click)="onModalPrintingClick(p)"
+            [title]="p.setName + (p.collectorNumber ? ' #' + p.collectorNumber : '')"
+          >
+            <div
+              class="chip-thumb"
+              [style.backgroundImage]="(modalFlipped && p.scryfallId === modalViewScryfallId && p.imageUriNormalBack)
+                ? 'url(' + p.imageUriNormalBack + ')'
+                : p.imageUriSmall ? 'url(' + p.imageUriSmall + ')' : 'none'"
+            >
+              <div class="chip-placeholder" *ngIf="!p.imageUriSmall">◈</div>
+              <div class="chip-viewing-banner" *ngIf="p.scryfallId === modalViewScryfallId">Viewing</div>
+              <div class="chip-owned-banner" *ngIf="p.scryfallId === card.scryfallId">✓ Owned</div>
+              <div class="chip-also-owned-banner" *ngIf="isAlsoOwned(modalCol, card, p.scryfallId)">✓ Owned</div>
+              <div class="chip-dfc-badge" *ngIf="p.imageUriNormalBack">⟲</div>
+            </div>
+            <span class="chip-code">{{ p.setCode.toUpperCase() }}</span>
+            <span class="chip-num" *ngIf="p.collectorNumber">#{{ p.collectorNumber }}</span>
+          </div>
+        </div>
+
+        <button
+          class="carousel-btn"
+          [disabled]="!carouselCanNext"
+          (click)="carouselNext()"
+          title="Next"
+        >›</button>
+      </div>
+    </div>
+
+    <!-- Diagonal resize handle -->
+    <div class="modal-resize-handle" (mousedown)="onResizeStart($event)"></div>
+
+  </div>
+
+  </ng-container><!-- /modalCol -->
 
 </div>

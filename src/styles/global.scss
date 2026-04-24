@@ -34,16 +34,16 @@
   --mana-C:         #95a5a6;
 
   // Text
-  --text-primary:   #e8e0d0;
-  --text-secondary: #9a9080;
-  --text-dim:       #5a5248;
+  --text-primary:   #f0e8d8;
+  --text-secondary: #c4b8a8;
+  --text-dim:       #8a8070;
 
   // Card dimensions
   --card-w:         100px;
   --card-h:         140px;
   --card-w-hand:    88px;
   --card-h-hand:    123px;
-  --card-radius:    14px;
+  --card-radius:    20px;
 
   // Glow effects
   --glow-priority:  0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
@@ -53,7 +53,7 @@
 
   // Typography
   --font-display:   'Cinzel', serif;
-  --font-body:      'Crimson Pro', Georgia, serif;
+  --font-body:      system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 // ---- Reset ------------------------------------------------
@@ -73,8 +73,8 @@ body {
   background: var(--bg-void);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
@@ -105,9 +105,37 @@ body::before {
 .text-dim       { color: var(--text-dim); }
 .text-gold      { color: var(--gold); }
 
-// ---- Keyword links (injected via innerHTML — not reachable by scoped styles) --
+// ---- Card image standard corners (applies globally across all views) ----------
+.card-img {
+  border-radius: var(--card-radius);
+}
+
+// ---- Injected innerHTML styles (not reachable by scoped styles) --------------
 a.kw-link {
+  color: #7eb8e8;
+  text-decoration: none;
   cursor: pointer;
+
+  &:hover { text-decoration: underline; color: #a8d4f5; }
+}
+
+.loyalty-cost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 4px;
+  margin-right: 4px;
+  vertical-align: middle;
+
+  &.loyalty-up   { background: var(--gold); color: #0e0c08; }
+  &.loyalty-down { background: #5b8dd9; color: #fff; }
+  &.loyalty-zero { background: #555; color: #fff; }
 }
 
 // ---- Card drag cursor (set via class during HTML5 dragstart/dragend) ----------
