@@ -583,15 +583,15 @@
 .col-edit-hint {
   font-size: 10px;
   color: var(--text-dim);
-  opacity: 0.3;
+  opacity: 0;
   cursor: pointer;
   transition: opacity 0.15s, color 0.15s;
   flex-shrink: 0;
   padding: 0 1px;
   line-height: 1;
 
-  .free-col-header:hover & { opacity: 0.8; }
-  &:hover { color: var(--gold); opacity: 1 !important; }
+  .free-col-header:hover & { opacity: 1; }
+  &:hover { color: var(--gold); }
 }
 
 .col-drag-handle {
