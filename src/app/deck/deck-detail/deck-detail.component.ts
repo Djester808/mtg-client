@@ -76,6 +76,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   editingColumnId: string | null = null;
   columnLabelDraft = '';
   dragCardId: string | null = null;
+  dragSrcRenderedIdx: number | null = null;
   dragSourceColId: string | null = null;
   dragOverColId: string | null = null;
   dragOverIndex: number | null = null;
@@ -166,7 +167,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.freeColumns = this.getGroups(deck).map(g => ({
       id: crypto.randomUUID(),
       label: g.label,
-      cardIds: g.cards.map(c => c.id),
+      cardIds: g.cards.flatMap(c => Array(this.cardCount(c)).fill(c.id)),
     }));
     this.filterQuery = prevFilter;
     this.saveFreeLayout();
@@ -188,8 +189,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       .map(id => deck.cards.find(c => c.id === id))
       .filter((c): c is CollectionCardDto => c != null);
     if (this.freeColumns[0]?.id === col.id) {
-      const allAssigned = new Set(this.freeColumns.flatMap(c => c.cardIds));
-      const unassigned = deck.cards.filter(c => !allAssigned.has(c.id));
+      // Count explicit assignments across all columns
+      const assignedCounts = new Map<string, number>();
+      for (const fc of this.freeColumns)
+        for (const id of fc.cardIds)
+          assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
+      // Append one tile per unassigned copy
+      const unassigned: CollectionCardDto[] = [];
+      for (const card of deck.cards) {
+        const remaining = this.cardCount(card) - (assignedCounts.get(card.id) ?? 0);
+        for (let i = 0; i < remaining; i++) unassigned.push(card);
+      }
       return [...cards, ...unassigned];
     }
     return cards;
@@ -240,8 +250,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Drag and drop ---------------------------------------
 
-  onCardDragStart(card: CollectionCardDto, colId: string, event: DragEvent): void {
+  onCardDragStart(card: CollectionCardDto, colId: string, renderedIdx: number, event: DragEvent): void {
     this.dragSourceColId = colId;
+    this.dragSrcRenderedIdx = renderedIdx;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', card.id);
@@ -279,7 +290,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cardId = this.dragCardId;
     const dropIdx = this.dragOverIndex ?? 0;
 
-    const cols = this.freeColumns.map(c => ({ ...c, cardIds: c.cardIds.filter(id => id !== cardId) }));
+    // Remove exactly one copy from the source column (handles duplicates correctly)
+    const srcId = this.dragSourceColId;
+    const cols = this.freeColumns.map(c => {
+      if (c.id !== srcId) return c;
+      const idx = c.cardIds.indexOf(cardId);
+      if (idx < 0) return c;
+      return { ...c, cardIds: [...c.cardIds.slice(0, idx), ...c.cardIds.slice(idx + 1)] };
+    });
     const ti = cols.findIndex(c => c.id === colId);
     if (ti >= 0) {
       cols[ti] = {
@@ -373,6 +391,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   onDragEnd(): void {
     this.dragCardId = null;
+    this.dragSrcRenderedIdx = null;
     this.dragSourceColId = null;
     this.dragOverColId = null;
     this.dragOverIndex = null;

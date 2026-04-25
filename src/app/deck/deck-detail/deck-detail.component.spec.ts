@@ -495,6 +495,30 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
     expect(result).toHaveSize(1);
     expect(result[0].id).toBe('c1');
   });
+
+  it('shows one tile per copy based on quantity', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
+    const deck = makeDeck([c1]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] },
+    ];
+    const result = component.getCardsForColumn(component.freeColumns[0], deck);
+    expect(result).toHaveSize(3);
+  });
+
+  it('unassigned copies equal total minus assigned count', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1', quantity: 4, quantityFoil: 0 });
+    const deck = makeDeck([c1]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },   // 1 assigned
+      { id: 'col-2', label: 'B', cardIds: ['c1'] },   // 1 assigned
+    ];
+    // 4 total - 2 assigned = 2 unassigned shown in first col
+    const result = component.getCardsForColumn(component.freeColumns[0], deck);
+    expect(result).toHaveSize(3); // 1 assigned + 2 unassigned
+  });
 });
 
 // ── Drag and drop ─────────────────────────────────────────────────────────────
@@ -505,11 +529,13 @@ describe('DeckDetailComponent — drag and drop', () => {
   it('onDragEnd clears all drag state', async () => {
     const { component } = await setup();
     component.dragCardId = 'c1';
+    component.dragSrcRenderedIdx = 2;
     component.dragSourceColId = 'col-1';
     component.dragOverColId = 'col-2';
     component.dragOverIndex = 3;
     component.onDragEnd();
     expect(component.dragCardId).toBeNull();
+    expect(component.dragSrcRenderedIdx).toBeNull();
     expect(component.dragSourceColId).toBeNull();
     expect(component.dragOverColId).toBeNull();
     expect(component.dragOverIndex).toBeNull();
@@ -547,6 +573,24 @@ describe('DeckDetailComponent — drag and drop', () => {
     component.onColDrop('col-1', event);
 
     expect(component.freeColumns[0].cardIds).toEqual(['c3', 'c1', 'c2']);
+  });
+
+  it('onColDrop moves only one copy when card appears multiple times', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragOverColId = 'col-2';
+    component.dragOverIndex = 0;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+
+    expect(component.freeColumns[0].cardIds).toHaveSize(2);
+    expect(component.freeColumns[1].cardIds).toEqual(['c1']);
   });
 
   it('onColDrop handles unassigned card (not in any cardIds)', async () => {

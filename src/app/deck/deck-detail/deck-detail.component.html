@@ -216,8 +216,8 @@
             <ng-container *ngFor="let card of getCardsForColumn(col, deck); let i = index">
               <div class="free-card"
                    draggable="true"
-                   [class.is-dragging]="dragCardId === card.id"
-                   (dragstart)="onCardDragStart(card, col.id, $event)"
+                   [class.is-dragging]="dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i"
+                   (dragstart)="onCardDragStart(card, col.id, i, $event)"
                    (dragend)="onDragEnd()"
                    (click)="openCard(card)">
                 <div class="visual-art"
