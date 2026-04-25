@@ -1,12 +1,13 @@
 import {
   Component, Input, Output, EventEmitter, HostListener,
-  ChangeDetectionStrategy, OnInit,
+  ChangeDetectionStrategy, OnInit, OnChanges, SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardDto, CardType, PrintingDto } from '../../models/game.models';
+import { CardDto, CardType, PrintingDto, RulingDto } from '../../models/game.models';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
+import { GameApiService } from '../../services/game-api.service';
 
 @Component({
   selector: 'app-card-modal',
@@ -16,7 +17,7 @@ import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
   styleUrls: ['./card-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
 })
-export class CardModalComponent implements OnInit {
+export class CardModalComponent implements OnInit, OnChanges {
 
   @Input() card: CardDto | null = null;
   @Input() printings: PrintingDto[] = [];
@@ -44,8 +45,35 @@ export class CardModalComponent implements OnInit {
   private resizeStartX = 0; private resizeStartY = 0;
   private resizeStartW = 0; private resizeStartH = 0;
 
+  rulings: RulingDto[] = [];
+  rulingsLoading = false;
+  private rulingsCache = new Map<string, RulingDto[]>();
+
   readonly CAROUSEL_PAGE = 5;
   carouselStart = 0;
+
+  constructor(private gameApi: GameApiService) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['card']) {
+      const oracleId = this.card?.oracleId;
+      if (!oracleId) { this.rulings = []; return; }
+      if (this.rulingsCache.has(oracleId)) {
+        this.rulings = this.rulingsCache.get(oracleId)!;
+        return;
+      }
+      this.rulingsLoading = true;
+      this.rulings = [];
+      this.gameApi.getCardRulings(oracleId).subscribe({
+        next: r => {
+          this.rulingsCache.set(oracleId, r);
+          this.rulings = r;
+          this.rulingsLoading = false;
+        },
+        error: () => { this.rulingsLoading = false; },
+      });
+    }
+  }
 
   ngOnInit(): void {
     this.modalWidth  = Math.min(900, Math.floor(window.innerWidth  * 0.92));

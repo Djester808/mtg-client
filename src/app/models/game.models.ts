@@ -6,6 +6,12 @@ import { ManaColor, CounterType, StackObjectType, Phase, Step, GameResult, CardT
 
 // ---- Card / Permanent DTOs --------------------------------
 
+export interface RulingDto {
+  source: string;
+  publishedAt: string;
+  comment: string;
+}
+
 export interface CardDto {
   cardId: string;
   oracleId: string;

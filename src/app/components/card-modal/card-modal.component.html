@@ -113,6 +113,16 @@
         </div>
       </div>
 
+      <!-- Rulings -->
+      <div class="modal-rulings" *ngIf="rulingsLoading || rulings.length > 0">
+        <div class="modal-rulings-header">Rulings</div>
+        <div class="modal-rulings-loading" *ngIf="rulingsLoading">Loading…</div>
+        <div class="modal-ruling" *ngFor="let r of rulings">
+          <span class="modal-ruling-date">{{ r.publishedAt }}</span>
+          <span class="modal-ruling-text" [innerHTML]="r.comment | oracleSymbols"></span>
+        </div>
+      </div>
+
     </div>
   </div>
 

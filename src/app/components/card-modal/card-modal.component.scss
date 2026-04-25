@@ -392,6 +392,57 @@
   text-transform: uppercase;
 }
 
+// ---- Rulings -----------------------------------------------
+
+.modal-rulings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.modal-rulings-header {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.modal-rulings-loading {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.modal-ruling {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--bg-raised);
+  border-radius: 6px;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.modal-ruling-date {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.modal-ruling-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
 // ---- Printings carousel ------------------------------------
 
 .modal-printings-section {

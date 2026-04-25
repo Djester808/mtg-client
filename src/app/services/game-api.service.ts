@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { GameStateDto, CardDto, SetSummaryDto } from '../models/game.models';
+import { GameStateDto, CardDto, RulingDto, SetSummaryDto } from '../models/game.models';
 import { GameActions } from '../store/game/game.actions';
 import { AppState } from '../store';
 
@@ -68,6 +68,10 @@ export class GameApiService {
     const params: Record<string, string> = {};
     if (filterQuery?.trim()) params['q'] = filterQuery.trim();
     return this.http.get<SetSummaryDto[]>(`${this.base}/cards/sets`, { params });
+  }
+
+  getCardRulings(oracleId: string): Observable<RulingDto[]> {
+    return this.http.get<RulingDto[]>(`${this.base}/cards/${oracleId}/rulings`);
   }
 
   searchCards(

@@ -68,6 +68,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   modalFlipped = false;
   /** Set of collection card IDs currently showing their back face in the grid */
   flippedCardIds = new Set<string>();
+  private noteDraft = new Map<string, string>();
 
   get modalPrintings(): PrintingDto[] {
     return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
@@ -529,6 +530,31 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     return col.cards.find(
       c => c.oracleId === card.oracleId && c.scryfallId === this.modalViewScryfallId
     ) ?? null;
+  }
+
+  // ---- Modal notes ----------------------------------------
+
+  noteDraftValue(entry: CollectionCardDto): string {
+    const stored = entry.notes ?? '';
+    if (!this.noteDraft.has(entry.id)) return stored;
+    const draft = this.noteDraft.get(entry.id)!;
+    if (draft === stored) { this.noteDraft.delete(entry.id); return stored; }
+    return draft;
+  }
+
+  setNoteDraft(entryId: string, value: string): void {
+    this.noteDraft.set(entryId, value);
+  }
+
+  saveNotes(entry: CollectionCardDto): void {
+    const draft = this.noteDraft.has(entry.id) ? this.noteDraft.get(entry.id)! : (entry.notes ?? '');
+    const stored = entry.notes ?? '';
+    if (draft === stored) { this.noteDraft.delete(entry.id); return; }
+    this.store.dispatch(CollectionActions.updateCard({
+      collectionId: this.collectionId,
+      cardId: entry.id,
+      request: { quantity: entry.quantity, quantityFoil: entry.quantityFoil, notes: draft || null },
+    }));
   }
 
 }

@@ -330,48 +330,63 @@
     [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
     (closed)="closeCard()"
   >
-    <!-- Collection-specific: quantity controls below the art image -->
-    <div extra class="modal-qty-badge">
-      <ng-container *ngIf="viewedEntry(modalCol, card) as viewed; else notOwned">
-        <div class="modal-qty-ctrl">
-          <button class="modal-qty-btn modal-qty-dec"
-                  (click)="modalDecrementNormal(modalCol, card)"
-                  [disabled]="viewed.quantity <= 0"
-                  title="Remove normal">−</button>
-          <span class="modal-qty-row">
-            <span class="modal-qty-icon">◈</span>
-            <span class="modal-qty-num">{{ viewed.quantity }}</span>
-          </span>
-          <button class="modal-qty-btn modal-qty-inc"
-                  (click)="modalIncrementNormal(modalCol, card)"
-                  title="Add normal">+</button>
-        </div>
-        <span class="modal-qty-sep">·</span>
-        <div class="modal-qty-ctrl">
-          <button class="modal-qty-btn modal-qty-dec"
-                  (click)="modalDecrementFoil(modalCol, card)"
-                  [disabled]="viewed.quantityFoil <= 0"
-                  title="Remove foil">−</button>
-          <span class="modal-qty-row modal-qty-foil">
-            <span class="modal-qty-icon">✦</span>
-            <span class="modal-qty-num">{{ viewed.quantityFoil }}</span>
-          </span>
-          <button class="modal-qty-btn modal-qty-inc"
-                  (click)="modalIncrementFoil(modalCol, card)"
-                  title="Add foil">+</button>
+    <!-- Collection-specific: quantity controls + notes below the art image -->
+    <div extra class="modal-extra-wrap">
+      <div class="modal-qty-badge">
+        <ng-container *ngIf="viewedEntry(modalCol, card) as viewed; else notOwned">
+          <div class="modal-qty-ctrl">
+            <button class="modal-qty-btn modal-qty-dec"
+                    (click)="modalDecrementNormal(modalCol, card)"
+                    [disabled]="viewed.quantity <= 0"
+                    title="Remove normal">−</button>
+            <span class="modal-qty-row">
+              <span class="modal-qty-icon">◈</span>
+              <span class="modal-qty-num">{{ viewed.quantity }}</span>
+            </span>
+            <button class="modal-qty-btn modal-qty-inc"
+                    (click)="modalIncrementNormal(modalCol, card)"
+                    title="Add normal">+</button>
+          </div>
+          <span class="modal-qty-sep">·</span>
+          <div class="modal-qty-ctrl">
+            <button class="modal-qty-btn modal-qty-dec"
+                    (click)="modalDecrementFoil(modalCol, card)"
+                    [disabled]="viewed.quantityFoil <= 0"
+                    title="Remove foil">−</button>
+            <span class="modal-qty-row modal-qty-foil">
+              <span class="modal-qty-icon">✦</span>
+              <span class="modal-qty-num">{{ viewed.quantityFoil }}</span>
+            </span>
+            <button class="modal-qty-btn modal-qty-inc"
+                    (click)="modalIncrementFoil(modalCol, card)"
+                    title="Add foil">+</button>
+          </div>
+        </ng-container>
+        <ng-template #notOwned>
+          <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
+            <button class="modal-add-btn"
+                    (click)="modalIncrementNormal(modalCol, card)">+ Add Normal</button>
+            <button class="modal-add-btn modal-add-btn-foil"
+                    (click)="modalIncrementFoil(modalCol, card)">✦ Add Foil</button>
+          </ng-container>
+          <ng-template #noScryfallHint>
+            <span class="modal-qty-not-owned">Select a printing below</span>
+          </ng-template>
+        </ng-template>
+      </div>
+      <ng-container *ngIf="viewedEntry(modalCol, card) as viewed">
+        <div class="modal-notes-section">
+          <span class="modal-notes-label">Notes</span>
+          <textarea
+            class="modal-notes-input"
+            [value]="noteDraftValue(viewed)"
+            (input)="setNoteDraft(viewed.id, $any($event.target).value)"
+            (blur)="saveNotes(viewed)"
+            placeholder="Add personal notes…"
+            rows="3"
+          ></textarea>
         </div>
       </ng-container>
-      <ng-template #notOwned>
-        <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
-          <button class="modal-add-btn"
-                  (click)="modalIncrementNormal(modalCol, card)">+ Add Normal</button>
-          <button class="modal-add-btn modal-add-btn-foil"
-                  (click)="modalIncrementFoil(modalCol, card)">✦ Add Foil</button>
-        </ng-container>
-        <ng-template #noScryfallHint>
-          <span class="modal-qty-not-owned">Select a printing below</span>
-        </ng-template>
-      </ng-template>
     </div>
   </app-card-modal>
   </ng-container>
