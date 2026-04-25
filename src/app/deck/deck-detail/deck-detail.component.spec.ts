@@ -288,6 +288,75 @@ describe('DeckDetailComponent — tile flip', () => {
     expect(component.tileImage(card, 'grp/0')).toBe('back.jpg');
     expect(component.tileImage(card, 'grp/1')).toBe('front.jpg');
   });
+
+  it('openCard with slotKey initialises modalFlipped from tile flip state', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.flippedCardIds = new Set(['col-1/2']);
+    component.openCard(card, 'col-1/2');
+    expect(component.modalFlipped).toBeTrue();
+  });
+
+  it('openCard with slotKey initialises modalFlipped as false when tile is not flipped', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.flippedCardIds = new Set();
+    component.openCard(card, 'col-1/2');
+    expect(component.modalFlipped).toBeFalse();
+  });
+
+  it('openCard without slotKey always initialises modalFlipped as false', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.flippedCardIds = new Set(['some/0']);
+    component.openCard(card);
+    expect(component.modalFlipped).toBeFalse();
+  });
+
+  it('setting modalFlipped updates the corresponding tile flip state', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.openCard(card, 'col-1/0');
+    component.modalFlipped = true;
+    expect(component.flippedCardIds.has('col-1/0')).toBeTrue();
+    component.modalFlipped = false;
+    expect(component.flippedCardIds.has('col-1/0')).toBeFalse();
+  });
+
+  it('setting modalFlipped does not modify flippedCardIds when no slotKey', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.openCard(card); // no slotKey
+    component.modalFlipped = true;
+    expect(component.flippedCardIds.size).toBe(0);
+  });
+
+  it('toggleTileFlip syncs modalFlipped when that slot is open in the modal', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.openCard(card, 'col-1/0');
+    expect(component.modalFlipped).toBeFalse();
+    component.toggleTileFlip('col-1/0', card, new MouseEvent('click'));
+    expect(component.modalFlipped).toBeTrue();
+    component.toggleTileFlip('col-1/0', card, new MouseEvent('click'));
+    expect(component.modalFlipped).toBeFalse();
+  });
+
+  it('toggleTileFlip does not change modalFlipped when a different slot is open', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.openCard(card, 'col-1/1');
+    component.toggleTileFlip('col-1/0', card, new MouseEvent('click'));
+    expect(component.modalFlipped).toBeFalse();
+  });
+
+  it('closeCard clears modalSlotKey', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1' });
+    component.openCard(card, 'col-1/0');
+    component.closeCard();
+    expect(component.modalSlotKey).toBeNull();
+  });
 });
 
 // ── Free column target selection ─────────────────────────────────────────────
@@ -693,6 +762,107 @@ describe('DeckDetailComponent — drag and drop', () => {
     expect(component.freeColumns[1].cardIds).toEqual(['c1']);
   });
 
+  it('onColDrop transfers flip state from old slot to new slot', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.flippedCardIds = new Set(['col-1/0']); // c1 was showing back face
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragSrcRenderedIdx = 0;
+    component.dragOverIndex = 0;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+
+    expect(component.flippedCardIds.has('col-1/0')).toBeFalse(); // old key removed
+    expect(component.flippedCardIds.has('col-2/0')).toBeTrue();  // new key set
+  });
+
+  it('onColDrop clears stale flip state at the drop target slot', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: ['c2'] },
+    ];
+    // col-2/0 has stale flip state from a previous operation
+    component.flippedCardIds = new Set(['col-2/0']);
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragSrcRenderedIdx = 0;
+    component.dragOverIndex = 0;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+
+    // c1 was NOT flipped, so the drop slot should also not be flipped
+    expect(component.flippedCardIds.has('col-2/0')).toBeFalse();
+  });
+
+  it('onColDrop shifts adjacent source-column flip keys down after removal', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    // c2 (idx 1) and c3 (idx 2) are flipped in col-1; drag c1 from idx 0
+    component.flippedCardIds = new Set(['col-1/1', 'col-1/2']);
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragSrcRenderedIdx = 0;
+    component.dragOverIndex = 0;
+
+    component.onColDrop('col-2', { preventDefault: () => {} } as DragEvent);
+
+    // c2 shifted from idx 1 to idx 0, c3 shifted from idx 2 to idx 1
+    expect(component.flippedCardIds.has('col-1/0')).toBeTrue();
+    expect(component.flippedCardIds.has('col-1/1')).toBeTrue();
+    expect(component.flippedCardIds.has('col-1/2')).toBeFalse();
+  });
+
+  it('onColDrop shifts adjacent target-column flip keys up on insertion', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: ['c2', 'c3'] },
+    ];
+    // c2 (col-2/0) and c3 (col-2/1) are flipped; drop c1 at idx 0 of col-2
+    component.flippedCardIds = new Set(['col-2/0', 'col-2/1']);
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragSrcRenderedIdx = 0;
+    component.dragOverIndex = 0;
+
+    component.onColDrop('col-2', { preventDefault: () => {} } as DragEvent);
+
+    // c2 shifts to idx 1, c3 shifts to idx 2; col-2/0 (c1) was not flipped
+    expect(component.flippedCardIds.has('col-2/0')).toBeFalse();
+    expect(component.flippedCardIds.has('col-2/1')).toBeTrue();
+    expect(component.flippedCardIds.has('col-2/2')).toBeTrue();
+  });
+
+  it('onColDrop same-column reorder keeps unaffected flip keys stable', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
+    ];
+    // c3 at idx 2 is flipped; move c1 from idx 0 to the end (idx 3 → becomes idx 2 after removal)
+    component.flippedCardIds = new Set(['col-1/2']);
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragSrcRenderedIdx = 0;
+    component.dragOverIndex = 3;
+
+    component.onColDrop('col-1', { preventDefault: () => {} } as DragEvent);
+
+    // After removing c1, c2→0, c3→1; drop idx 3 → clamped to end → c1 at idx 2
+    // c3 shifted from idx 2 to idx 1
+    expect(component.flippedCardIds.has('col-1/2')).toBeFalse();
+    expect(component.flippedCardIds.has('col-1/1')).toBeTrue();
+  });
+
   it('onColDrop handles unassigned card (not in any cardIds)', async () => {
     const { component } = await setup();
     component.freeColumns = [
@@ -893,10 +1063,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-2/0', 'c2']]);
     const card = makeDeckCard({ id: 'c1' });
     component.onCardDragStart(card, 'col-1', 0, makeDragEvent());
-    const multi = (component as any).multiDragCards as { colId: string; cardId: string }[];
+    const multi = (component as any).multiDragCards as { colId: string; cardId: string; renderedIdx: number }[];
     expect(multi).toHaveSize(2);
-    expect(multi.some(m => m.colId === 'col-1' && m.cardId === 'c1')).toBeTrue();
-    expect(multi.some(m => m.colId === 'col-2' && m.cardId === 'c2')).toBeTrue();
+    expect(multi.some(m => m.colId === 'col-1' && m.cardId === 'c1' && m.renderedIdx === 0)).toBeTrue();
+    expect(multi.some(m => m.colId === 'col-2' && m.cardId === 'c2' && m.renderedIdx === 0)).toBeTrue();
   });
 
   it('onCardDragStart stays in single-card mode when card not in selection', async () => {
@@ -916,13 +1086,15 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     expect(component.isDraggingMultiCards).toBeFalse();
   });
 
-  it('onDragEnd clears isDraggingMultiCards and multiDragCards', async () => {
+  it('onDragEnd clears isDraggingMultiCards, multiDragCards, and selectedCardSlots', async () => {
     const { component } = await setup();
     component.isDraggingMultiCards = true;
-    (component as any).multiDragCards = [{ colId: 'col-1', cardId: 'c1' }];
+    (component as any).multiDragCards = [{ colId: 'col-1', cardId: 'c1', renderedIdx: 0 }];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
     component.onDragEnd();
     expect(component.isDraggingMultiCards).toBeFalse();
     expect((component as any).multiDragCards).toHaveSize(0);
+    expect(component.selectedCardSlots.size).toBe(0);
   });
 
   it('onColDrop moves multiple cards from different source columns to target', async () => {
@@ -934,8 +1106,8 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     ];
     component.isDraggingMultiCards = true;
     (component as any).multiDragCards = [
-      { colId: 'col-1', cardId: 'c1' },
-      { colId: 'col-2', cardId: 'c2' },
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-2', cardId: 'c2', renderedIdx: 0 },
     ];
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
@@ -954,8 +1126,8 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     ];
     component.isDraggingMultiCards = true;
     (component as any).multiDragCards = [
-      { colId: 'col-1', cardId: 'c1' },
-      { colId: 'col-1', cardId: 'c3' },
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c3', renderedIdx: 2 },
     ];
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
@@ -972,8 +1144,8 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     component.isDraggingMultiCards = true;
     // Select first two cards, drop after position 4 (after c4 in the original)
     (component as any).multiDragCards = [
-      { colId: 'col-1', cardId: 'c1' },
-      { colId: 'col-1', cardId: 'c2' },
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c2', renderedIdx: 1 },
     ];
     component.dragCardId = 'c1';
     component.dragOverIndex = 4;
@@ -989,16 +1161,135 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
     component.isDraggingMultiCards = true;
-    // Select 2 of the 3 copies
+    // Select 2 of the 3 copies (both are explicit: renderedIdx 0 and 1 < col length 3)
     (component as any).multiDragCards = [
-      { colId: 'col-1', cardId: 'c1' },
-      { colId: 'col-1', cardId: 'c1' },
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 1 },
     ];
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
     component.onColDrop('col-2', makeDragEvent());
     expect(component.freeColumns[0].cardIds).toEqual(['c1']); // 1 copy stays
     expect(component.freeColumns[1].cardIds).toEqual(['c1', 'c1']); // 2 copies moved
+  });
+
+  it('executeMultiCardDrop preserves flip state of a flipped card during multi-drag', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    // c1 and c2 selected; c2 is flipped
+    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.flippedCardIds = new Set(['col-1/1']);
+    component.isDraggingMultiCards = true;
+    (component as any).multiDragCards = [
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c2', renderedIdx: 1 },
+    ];
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    component.onColDrop('col-2', makeDragEvent());
+
+    // c1 at col-2/0 (not flipped), c2 at col-2/1 (was flipped → stays flipped)
+    expect(component.flippedCardIds.has('col-2/0')).toBeFalse();
+    expect(component.flippedCardIds.has('col-2/1')).toBeTrue();
+    // Old source keys are gone
+    expect(component.flippedCardIds.has('col-1/0')).toBeFalse();
+    expect(component.flippedCardIds.has('col-1/1')).toBeFalse();
+  });
+
+  it('executeMultiCardDrop shifts non-dragged flip keys in source column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    // Drag c1 (idx 0) and c2 (idx 1); c3 (idx 2) stays and is flipped
+    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.flippedCardIds = new Set(['col-1/2']);
+    component.isDraggingMultiCards = true;
+    (component as any).multiDragCards = [
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c2', renderedIdx: 1 },
+    ];
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    component.onColDrop('col-2', makeDragEvent());
+
+    // c3 shifted from col-1/2 → col-1/0
+    expect(component.flippedCardIds.has('col-1/2')).toBeFalse();
+    expect(component.flippedCardIds.has('col-1/0')).toBeTrue();
+  });
+
+  it('executeMultiCardDrop shifts non-dragged flip keys in target column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2'] },
+      { id: 'col-2', label: 'B', cardIds: ['c3', 'c4'] },
+    ];
+    // Drag c1 and c2 from col-1 to col-2/0; c3 at col-2/0 is flipped
+    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.flippedCardIds = new Set(['col-2/0']);
+    component.isDraggingMultiCards = true;
+    (component as any).multiDragCards = [
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 },
+      { colId: 'col-1', cardId: 'c2', renderedIdx: 1 },
+    ];
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    component.onColDrop('col-2', makeDragEvent());
+
+    // c3 shifted from col-2/0 → col-2/2 (2 cards inserted before it)
+    expect(component.flippedCardIds.has('col-2/0')).toBeFalse();
+    expect(component.flippedCardIds.has('col-2/2')).toBeTrue();
+  });
+
+  it('executeMultiCardDrop does not remove explicit card when only unassigned copies are dragged', async () => {
+    const { component } = await setup();
+    // col-1 has 1 explicit c1; unassigned copies of c1 and c2 are rendered beyond cardIds.length
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.isDraggingMultiCards = true;
+    // renderedIdx 1 and 2 are >= col-1.cardIds.length (1), so both are unassigned
+    (component as any).multiDragCards = [
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 1 },
+      { colId: 'col-1', cardId: 'c2', renderedIdx: 2 },
+    ];
+    component.selectedCardSlots = new Map([['col-1/1', 'c1'], ['col-1/2', 'c2']]);
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    component.onColDrop('col-2', makeDragEvent());
+
+    // Explicit c1 in col-1 must NOT be removed (user dragged unassigned copies)
+    expect(component.freeColumns[0].cardIds).toEqual(['c1']);
+    // Both unassigned copies inserted into col-2
+    expect(component.freeColumns[1].cardIds).toEqual(['c1', 'c2']);
+  });
+
+  it('executeMultiCardDrop removes only the explicit copy when mixed explicit+unassigned selected', async () => {
+    const { component } = await setup();
+    // col-1 has ['c1']; user selects explicit c1 (idx 0) AND an unassigned c1 (idx 1)
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.isDraggingMultiCards = true;
+    (component as any).multiDragCards = [
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 0 }, // explicit
+      { colId: 'col-1', cardId: 'c1', renderedIdx: 1 }, // unassigned
+    ];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c1']]);
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    component.onColDrop('col-2', makeDragEvent());
+
+    // Explicit copy removed from col-1 (1 removal queued for renderedIdx 0)
+    expect(component.freeColumns[0].cardIds).toEqual([]);
+    // Both copies inserted into col-2
+    expect(component.freeColumns[1].cardIds).toEqual(['c1', 'c1']);
   });
 });
 
@@ -1186,5 +1477,89 @@ describe('DeckDetailComponent — detail cover picker', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null })
     );
+  });
+});
+
+// ── freeIncrement / freeDecrement ────────────────────────────────────────────
+
+describe('DeckDetailComponent — freeIncrement / freeDecrement', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('freeIncrement pushes card id into the column and dispatches updateCard', async () => {
+    const { component, store } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    component.freeIncrement(card, 'col-1');
+    expect(component.freeColumns[0].cardIds).toEqual(['c1', 'c1']);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+    );
+  });
+
+  it('freeIncrement marks layout dirty', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: [] }];
+    component.freeLayoutDirty = false;
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    component.freeIncrement(card, 'col-1');
+    expect(component.freeLayoutDirty).toBeTrue();
+  });
+
+  it('freeDecrement removes one card id from the column and dispatches updateCard', async () => {
+    const { component, store } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1'] }];
+    const card = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
+    component.freeDecrement(card, 'col-1');
+    expect(component.freeColumns[0].cardIds).toEqual(['c1']);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 0 } })
+    );
+  });
+
+  it('freeDecrement removes last copy from all columns and dispatches removeCard', async () => {
+    const { component, store } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: ['c2'] },
+    ];
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    component.freeDecrement(card, 'col-1');
+    expect(component.freeColumns[0].cardIds).toEqual([]);
+    expect(component.freeColumns[1].cardIds).toEqual(['c2']);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+    );
+  });
+
+  it('freeDecrement cleans up card from all columns when count reaches 1', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: ['c1'] },
+    ];
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    component.freeDecrement(card, 'col-1');
+    expect(component.freeColumns[0].cardIds).toEqual([]);
+    expect(component.freeColumns[1].cardIds).toEqual([]);
+  });
+
+  it('freeDecrement removes only the last occurrence from the target column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    const card = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
+    component.freeDecrement(card, 'col-1');
+    expect(component.freeColumns[0].cardIds).toEqual(['c1', 'c2']);
+  });
+
+  it('freeDecrement marks layout dirty', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1'] }];
+    component.freeLayoutDirty = false;
+    const card = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
+    component.freeDecrement(card, 'col-1');
+    expect(component.freeLayoutDirty).toBeTrue();
   });
 });

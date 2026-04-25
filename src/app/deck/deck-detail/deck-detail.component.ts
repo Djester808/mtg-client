@@ -92,7 +92,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   selectedCard: CollectionCardDto | null = null;
   modalViewScryfallId: string | null = null;
-  modalFlipped = false;
+  modalSlotKey: string | null = null;
+  private _modalFlipped = false;
+  get modalFlipped(): boolean { return this._modalFlipped; }
+  set modalFlipped(val: boolean) {
+    this._modalFlipped = val;
+    if (this.modalSlotKey) {
+      if (val) this.flippedCardIds.add(this.modalSlotKey);
+      else this.flippedCardIds.delete(this.modalSlotKey);
+      this.cdr.markForCheck();
+    }
+  }
   flippedCardIds = new Set<string>();
   stackDensity: 'full' | 'half' | 'name' = 'half';
   layoutSaved = false;
@@ -108,10 +118,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   isDraggingMultiCards = false;
   isDraggingMultiCols = false;
   multiDragColIds: string[] = [];
-  private multiDragCards: { colId: string; cardId: string }[] = [];
+  private multiDragCards: { colId: string; cardId: string; renderedIdx: number }[] = [];
   private dragSelectOrigin = { x: 0, y: 0 };
   private dragSelectListEl: HTMLElement | null = null;
   private dragSelectJustEnded = false;
+  private edgeScrollAnimId: number | null = null;
+  private edgeScrollEl: HTMLElement | null = null;
+  private edgeScrollDir = 0;
+  private edgeScrollSpeed = 0;
 
   private pendingNavigation: (() => void) | null = null;
   private pendingSortMode: SortMode | null = null;
@@ -183,6 +197,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.stopEdgeScroll();
   }
 
   goBack(): void { this.checkUnsaved(() => this.router.navigate(['/deck'])); }
@@ -439,6 +454,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (!this.isDragSelecting) return;
     this.dragSelectBox = newBox;
     this.updateDragSelection();
+    const scrollEl = el.closest<HTMLElement>('.groups-area') ?? el.parentElement;
+    if (scrollEl) this.updateEdgeScroll(event.clientX, scrollEl);
     this.cdr.markForCheck();
   }
 
@@ -449,6 +466,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.isDragSelecting = false;
     this.dragSelectBox = null;
     this.dragSelectListEl = null;
+    this.stopEdgeScroll();
     this.cdr.markForCheck();
   }
 
@@ -565,6 +583,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.dragSourceColId = colId;
     this.dragSrcRenderedIdx = renderedIdx;
     if (event.dataTransfer) {
+      // Use the full card element as the ghost — prevents the flip button from showing as ghost
+      const cardEl = event.target
+        ? (event.target as Element).closest<HTMLElement>('.free-card')
+        : null;
+      if (cardEl) {
+        const r = cardEl.getBoundingClientRect();
+        event.dataTransfer.setDragImage(cardEl, event.clientX - r.left, event.clientY - r.top);
+      }
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', card.id);
     }
@@ -573,7 +599,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.isDraggingMultiCards = true;
       this.multiDragCards = Array.from(this.selectedCardSlots.entries()).map(([slot, cid]) => {
         const slashIdx = slot.lastIndexOf('/');
-        return { colId: slot.slice(0, slashIdx), cardId: cid };
+        return { colId: slot.slice(0, slashIdx), cardId: cid, renderedIdx: parseInt(slot.slice(slashIdx + 1), 10) };
       });
     } else {
       this.isDraggingMultiCards = false;
@@ -631,54 +657,183 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         };
       }
       this.freeColumns = cols;
+
+      if (srcId != null && this.dragSrcRenderedIdx != null) {
+        const removeIdx = this.dragSrcRenderedIdx;
+        const wasFlipped = this.flippedCardIds.has(`${srcId}/${removeIdx}`);
+        this.flippedCardIds.delete(`${srcId}/${removeIdx}`);
+        this.shiftFlipKeys(srcId, removeIdx, -1);
+        this.shiftFlipKeys(colId, dropIdx, +1);
+        if (wasFlipped) this.flippedCardIds.add(`${colId}/${dropIdx}`);
+      }
     }
 
     this.freeLayoutDirty = true;
     this.onDragEnd();
   }
 
+  private updateEdgeScroll(clientX: number, listEl: HTMLElement): void {
+    const rect = listEl.getBoundingClientRect();
+    const ZONE = 80;
+    const MAX_SPEED = 15;
+    let dir = 0;
+    let speed = 0;
+    if (clientX < rect.left + ZONE) {
+      speed = MAX_SPEED * Math.max(0, (ZONE - (clientX - rect.left)) / ZONE);
+      dir = -1;
+    } else if (clientX > rect.right - ZONE) {
+      speed = MAX_SPEED * Math.max(0, (ZONE - (rect.right - clientX)) / ZONE);
+      dir = 1;
+    }
+    this.edgeScrollEl = dir !== 0 ? listEl : null;
+    this.edgeScrollDir = dir;
+    this.edgeScrollSpeed = speed;
+    if (dir !== 0 && this.edgeScrollAnimId === null) {
+      this.runEdgeScrollLoop();
+    }
+  }
+
+  private runEdgeScrollLoop(): void {
+    if (this.edgeScrollDir === 0 || !this.edgeScrollEl) {
+      this.edgeScrollAnimId = null;
+      return;
+    }
+    this.edgeScrollEl.scrollLeft += this.edgeScrollDir * this.edgeScrollSpeed;
+    this.edgeScrollAnimId = requestAnimationFrame(() => this.runEdgeScrollLoop());
+  }
+
+  onGroupsAreaMouseMove(event: MouseEvent): void {
+    if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
+    this.updateEdgeScroll(event.clientX, event.currentTarget as HTMLElement);
+  }
+
+  onGroupsAreaMouseLeave(): void {
+    this.stopEdgeScroll();
+  }
+
+  onGroupsAreaDragOver(event: DragEvent): void {
+    if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
+    if (!this.dragCardId && !this.dragColId) return;
+    this.updateEdgeScroll(event.clientX, event.currentTarget as HTMLElement);
+  }
+
+  stopEdgeScroll(): void {
+    this.edgeScrollDir = 0;
+    this.edgeScrollEl = null;
+    if (this.edgeScrollAnimId !== null) {
+      cancelAnimationFrame(this.edgeScrollAnimId);
+      this.edgeScrollAnimId = null;
+    }
+  }
+
+  private shiftFlipKeys(colId: string, fromIdx: number, delta: number): void {
+    const prefix = colId + '/';
+    const toDelete: string[] = [];
+    const toAdd: string[] = [];
+    for (const key of this.flippedCardIds) {
+      if (!key.startsWith(prefix)) continue;
+      const idx = parseInt(key.slice(prefix.length), 10);
+      if (isNaN(idx)) continue;
+      if (delta < 0 && idx > fromIdx) {
+        toDelete.push(key);
+        toAdd.push(`${colId}/${idx + delta}`);
+      } else if (delta > 0 && idx >= fromIdx) {
+        toDelete.push(key);
+        toAdd.push(`${colId}/${idx + delta}`);
+      }
+    }
+    for (const k of toDelete) this.flippedCardIds.delete(k);
+    for (const k of toAdd) this.flippedCardIds.add(k);
+  }
+
   private executeMultiCardDrop(targetColId: string, dropIdx: number): void {
-    // Build removal counts per column per cardId
     const removals = new Map<string, Map<string, number>>();
     const toInsert: string[] = [];
 
-    for (const { colId, cardId } of this.multiDragCards) {
-      if (!removals.has(colId)) removals.set(colId, new Map());
-      const m = removals.get(colId)!;
-      m.set(cardId, (m.get(cardId) ?? 0) + 1);
+    for (const { colId, cardId, renderedIdx } of this.multiDragCards) {
+      const srcCol = this.freeColumns.find(c => c.id === colId);
+      const isExplicit = srcCol != null && renderedIdx < srcCol.cardIds.length;
+      if (isExplicit) {
+        if (!removals.has(colId)) removals.set(colId, new Map());
+        const m = removals.get(colId)!;
+        m.set(cardId, (m.get(cardId) ?? 0) + 1);
+      }
       toInsert.push(cardId);
     }
 
+    // Snapshot flip state per original slot key before any modification.
+    // selectedCardSlots iteration order matches multiDragCards (both derived from same Map).
+    const selectedSlotKeys = Array.from(this.selectedCardSlots.keys());
+    const draggedFlip = new Map<string, boolean>();
+    for (const key of selectedSlotKeys) {
+      draggedFlip.set(key, this.flippedCardIds.has(key));
+    }
+
     let adjustedDropIdx = dropIdx;
+    const removalsByCol = new Map<string, Set<number>>();
+
     const cols = this.freeColumns.map(col => {
       const removeMap = removals.get(col.id);
       if (!removeMap) return col;
 
       const counts = new Map(removeMap);
       const remaining: string[] = [];
+      const removedIndices = new Set<number>();
       for (let i = 0; i < col.cardIds.length; i++) {
         const cid = col.cardIds[i];
         const toRemove = counts.get(cid) ?? 0;
         if (toRemove > 0) {
           counts.set(cid, toRemove - 1);
+          removedIndices.add(i);
           if (col.id === targetColId && i < adjustedDropIdx) adjustedDropIdx--;
         } else {
           remaining.push(cid);
         }
       }
+      removalsByCol.set(col.id, removedIndices);
       return { ...col, cardIds: remaining };
     });
 
     const ti = cols.findIndex(c => c.id === targetColId);
+    const adj = ti >= 0 ? Math.max(0, Math.min(adjustedDropIdx, cols[ti].cardIds.length)) : 0;
     if (ti >= 0) {
-      const adj = Math.max(0, Math.min(adjustedDropIdx, cols[ti].cardIds.length));
       cols[ti] = {
         ...cols[ti],
         cardIds: [...cols[ti].cardIds.slice(0, adj), ...toInsert, ...cols[ti].cardIds.slice(adj)],
       };
     }
-
     this.freeColumns = cols;
+
+    // Update flippedCardIds to match the new layout.
+    // Step 1: for each source column, remove dragged card flip keys and shift remaining keys down.
+    for (const [colId, removedIndices] of removalsByCol) {
+      for (const idx of removedIndices) {
+        this.flippedCardIds.delete(`${colId}/${idx}`);
+      }
+      const prefix = colId + '/';
+      const toDelete: string[] = [];
+      const toAdd: string[] = [];
+      for (const key of this.flippedCardIds) {
+        if (!key.startsWith(prefix)) continue;
+        const origIdx = parseInt(key.slice(prefix.length), 10);
+        if (isNaN(origIdx)) continue;
+        const shift = [...removedIndices].filter(ri => ri < origIdx).length;
+        if (shift > 0) {
+          toDelete.push(key);
+          toAdd.push(`${colId}/${origIdx - shift}`);
+        }
+      }
+      for (const k of toDelete) this.flippedCardIds.delete(k);
+      for (const k of toAdd) this.flippedCardIds.add(k);
+    }
+    // Step 2: shift target column keys at/above adj up to make room for inserted cards.
+    this.shiftFlipKeys(targetColId, adj, toInsert.length);
+    // Step 3: re-apply flip states of inserted cards at their new positions.
+    for (let i = 0; i < selectedSlotKeys.length; i++) {
+      if (draggedFlip.get(selectedSlotKeys[i])) {
+        this.flippedCardIds.add(`${targetColId}/${adj + i}`);
+      }
+    }
   }
 
   onColDragLeave(event: DragEvent): void {
@@ -719,6 +874,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.dragOverColInsertIdx = null;
     this.isDraggingMultiCols = false;
     this.multiDragColIds = [];
+    this.stopEdgeScroll();
     this.cdr.markForCheck();
   }
 
@@ -758,9 +914,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   onGroupsListDragLeave(event: DragEvent): void {
-    if (!this.dragColId) return;
     const rel = event.relatedTarget as HTMLElement | null;
-    if (!rel || !(event.currentTarget as HTMLElement).contains(rel)) {
+    const trulyLeft = !rel || !(event.currentTarget as HTMLElement).contains(rel);
+    if (trulyLeft) this.stopEdgeScroll();
+    if (!this.dragColId) return;
+    if (trulyLeft) {
       this.dragOverColInsertIdx = null;
       this.cdr.markForCheck();
     }
@@ -803,6 +961,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.dragOverIndex = null;
     this.isDraggingMultiCards = false;
     this.multiDragCards = [];
+    this.selectedCardSlots = new Map();
+    this.stopEdgeScroll();
     this.cdr.markForCheck();
   }
 
@@ -1033,23 +1193,52 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  freeIncrement(card: CollectionCardDto, colId: string): void {
+    const col = this.freeColumns.find(c => c.id === colId);
+    if (col) { col.cardIds.push(card.id); this.freeLayoutDirty = true; }
+    this.increment(card);
+    this.cdr.markForCheck();
+  }
+
+  freeDecrement(card: CollectionCardDto, colId: string): void {
+    if (this.cardCount(card) <= 1) {
+      for (const col of this.freeColumns) {
+        const idx = col.cardIds.indexOf(card.id);
+        if (idx !== -1) col.cardIds.splice(idx, 1);
+      }
+    } else {
+      const col = this.freeColumns.find(c => c.id === colId);
+      if (col) {
+        const idx = col.cardIds.lastIndexOf(card.id);
+        if (idx !== -1) col.cardIds.splice(idx, 1);
+      }
+    }
+    this.freeLayoutDirty = true;
+    this.decrement(card);
+    this.cdr.markForCheck();
+  }
+
   // ---- Card modal --------------------------------------------
 
-  openCard(card: CollectionCardDto): void {
+  openCard(card: CollectionCardDto, slotKey?: string): void {
     this.selectedCard = card;
-    this.modalFlipped = false;
+    this.modalSlotKey = slotKey ?? null;
+    this._modalFlipped = slotKey ? this.flippedCardIds.has(slotKey) : false;
     const cached = this.printingsCache.get(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
     if (!cached) this.printingsLoad$.next(card.oracleId);
     this.cdr.markForCheck();
   }
 
-  closeCard(): void { this.selectedCard = null; this.cdr.markForCheck(); }
+  closeCard(): void { this.selectedCard = null; this.modalSlotKey = null; this.cdr.markForCheck(); }
 
   toggleTileFlip(slotKey: string, card: CollectionCardDto, event: MouseEvent): void {
     event.stopPropagation();
     if (this.flippedCardIds.has(slotKey)) this.flippedCardIds.delete(slotKey);
     else this.flippedCardIds.add(slotKey);
+    if (this.modalSlotKey === slotKey) {
+      this._modalFlipped = this.flippedCardIds.has(slotKey);
+    }
     this.cdr.markForCheck();
   }
 

@@ -59,7 +59,10 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
+    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck"
+          (mousemove)="onGroupsAreaMouseMove($event)"
+          (mouseleave)="onGroupsAreaMouseLeave()"
+          (dragover)="onGroupsAreaDragOver($event)">
 
       <!-- Filter bar (list / visual only) -->
       <div class="filter-bar" *ngIf="viewMode !== 'free'">
@@ -161,10 +164,12 @@
                           [class.is-flipped]="flippedCardIds.has(group.key + '/' + i)"
                           (click)="toggleTileFlip(group.key + '/' + i, card, $event)"
                           title="Flip">↻</button>
-                  <div class="visual-overlay" (click)="$event.stopPropagation()">
-                    <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
-                    <span class="visual-qty">×{{ cardCount(card) }}</span>
-                    <button class="visual-qty-btn visual-inc" (click)="increment(card)">+</button>
+                </div>
+                <div class="card-bottom" (click)="$event.stopPropagation()">
+                  <div class="ctrl-row">
+                    <button class="ctrl-btn ctrl-dec" (click)="decrement(card)">−</button>
+                    <span class="ctrl-label">◈ {{ cardCount(card) }}</span>
+                    <button class="ctrl-btn ctrl-inc" (click)="increment(card)">+</button>
                   </div>
                 </div>
                 <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
@@ -260,20 +265,25 @@
                    [class.is-dragging]="isDraggingMultiCards ? selectedCardSlots.has(col.id + '/' + i) : (dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i)"
                    (dragstart)="onCardDragStart(card, col.id, i, $event)"
                    (dragend)="onDragEnd()"
-                   (click)="$event.stopPropagation(); openCard(card)">
+                   (click)="$event.stopPropagation(); openCard(card, col.id + '/' + i)">
                 <div class="visual-art"
                      [style.backgroundImage]="tileImage(card, col.id + '/' + i) ? 'url(' + tileImage(card, col.id + '/' + i) + ')' : 'none'"
                      [class.no-image]="!tileImage(card, col.id + '/' + i)">
                   <span class="visual-placeholder" *ngIf="!tileImage(card, col.id + '/' + i)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
+                          draggable="true"
                           [class.is-flipped]="flippedCardIds.has(col.id + '/' + i)"
+                          (dragstart)="$event.stopPropagation(); onCardDragStart(card, col.id, i, $event)"
+                          (dragend)="$event.stopPropagation(); onDragEnd()"
                           (click)="toggleTileFlip(col.id + '/' + i, card, $event)"
                           title="Flip">↻</button>
-                  <div class="visual-overlay" (click)="$event.stopPropagation()">
-                    <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
-                    <span class="visual-qty">×{{ cardCount(card) }}</span>
-                    <button class="visual-qty-btn visual-inc" (click)="increment(card)">+</button>
+                </div>
+                <div class="card-bottom" (click)="$event.stopPropagation()">
+                  <div class="ctrl-row">
+                    <button class="ctrl-btn ctrl-dec" (click)="freeDecrement(card, col.id)">−</button>
+                    <span class="ctrl-label">◈ {{ cardCount(card) }}</span>
+                    <button class="ctrl-btn ctrl-inc" (click)="freeIncrement(card, col.id)">+</button>
                   </div>
                 </div>
                 <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
@@ -414,7 +424,23 @@
       [primaryScryfallId]="selectedCard.scryfallId"
       [alsoOwnedIds]="getAlsoOwnedIds(deck)"
       (closed)="closeCard()"
-    />
+    >
+      <div extra class="modal-extra-wrap">
+        <div class="modal-qty-badge">
+          <div class="modal-qty-ctrl">
+            <button class="modal-qty-btn modal-qty-dec"
+                    (click)="decrement(selectedCard)"
+                    [disabled]="cardCount(selectedCard) <= 0">−</button>
+            <span class="modal-qty-row">
+              <span class="modal-qty-icon">◈</span>
+              <span class="modal-qty-num">{{ cardCount(selectedCard) }}</span>
+            </span>
+            <button class="modal-qty-btn modal-qty-inc"
+                    (click)="increment(selectedCard)">+</button>
+          </div>
+        </div>
+      </div>
+    </app-card-modal>
   </ng-container>
 
   <!-- Sort reset warning -->
