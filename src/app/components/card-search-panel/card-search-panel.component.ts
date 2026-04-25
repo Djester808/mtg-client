@@ -353,7 +353,11 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   }
 
   addCard(card: CardDto): void {
-    const scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
+    let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
+    if (!scryfallId) {
+      const printings = this.printingsCache.get(card.oracleId);
+      if (printings?.length === 1) scryfallId = printings[0].scryfallId;
+    }
     if (!scryfallId) { this.addErrors.add(card.oracleId); this.cdr.markForCheck(); return; }
     this.addErrors.delete(card.oracleId);
     this.cardAdd.emit({ oracleId: card.oracleId, scryfallId });

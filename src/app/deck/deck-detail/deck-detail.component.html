@@ -30,17 +30,16 @@
       <div class="header-right">
         <!-- Sort controls -->
         <div class="sort-group">
-          <button class="sort-btn" [class.is-active]="sortMode === 'cmc'"  (click)="setSortMode('cmc')">CMC</button>
-          <button class="sort-btn" [class.is-active]="sortMode === 'type'" (click)="setSortMode('type')">Type</button>
-          <button class="sort-btn" [class.is-active]="sortMode === 'name'" (click)="setSortMode('name')">Name</button>
+          <button class="sort-btn" [class.is-active]="sortMode === 'cmc'"  (click)="setSortMode('cmc',  deck)">CMC</button>
+          <button class="sort-btn" [class.is-active]="sortMode === 'type'" (click)="setSortMode('type', deck)">Type</button>
+          <button class="sort-btn" [class.is-active]="sortMode === 'name'" (click)="setSortMode('name', deck)" *ngIf="viewMode !== 'free'">Name</button>
         </div>
 
         <!-- View toggle -->
         <div class="sort-group view-toggle">
-          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list',   deck)" title="List view">☰</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view">☰</button>
           <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view">⊞</button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'stack'"  (click)="setViewMode('stack',  deck)" title="Stack view">≡</button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free',   deck)" title="Free arrange">⠿</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange">⠿</button>
         </div>
 
         <span class="header-count">{{ totalCount(deck) }} / 60</span>
@@ -60,7 +59,7 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-visual]="viewMode === 'visual'" [class.is-stack]="viewMode === 'stack'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
+    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
 
       <!-- Filter bar (list / visual only) -->
       <div class="filter-bar" *ngIf="viewMode !== 'free'">
@@ -72,6 +71,11 @@
             [(ngModel)]="filterQuery"
             placeholder="Filter cards…"
           />
+        </div>
+        <div class="density-picker" *ngIf="viewMode === 'visual'">
+          <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
+          <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
+          <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
         </div>
       </div>
 
@@ -88,8 +92,8 @@
 
       <!-- CMC / Type / Name groups (list + visual + stack) -->
       <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length > 0">
-        <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-stack]="viewMode === 'stack'">
-          <div class="cmc-group" *ngFor="let group of getGroups(deck)">
+        <div class="groups-list" [class.is-visual]="viewMode === 'visual'">
+          <div class="cmc-group" *ngFor="let group of getGroups(deck); trackBy: trackByGroupKey">
 
             <div class="group-header">
               <span class="group-label">{{ group.label }}</span>
@@ -105,14 +109,14 @@
               >
                 <div
                   class="card-thumb"
-                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
-                  [class.no-image]="!tileImage(card)"
+                  [style.backgroundImage]="tileImage(card, card.id) ? 'url(' + tileImage(card, card.id) + ')' : 'none'"
+                  [class.no-image]="!tileImage(card, card.id)"
                 >
-                  <span class="thumb-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <span class="thumb-placeholder" *ngIf="!tileImage(card, card.id)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
                           [class.is-flipped]="flippedCardIds.has(card.id)"
-                          (click)="toggleTileFlip(card, $event)"
+                          (click)="toggleTileFlip(card.id, card, $event)"
                           title="Flip">↻</button>
                 </div>
                 <div class="card-info">
@@ -131,23 +135,31 @@
             </div>
 
             <!-- ── Visual view ── -->
-            <div class="visual-stack" *ngIf="viewMode === 'visual'">
+            <div class="visual-stack"
+                 *ngIf="viewMode === 'visual'"
+                 [attr.data-group-key]="group.key"
+                 [class.is-drag-active]="stackDragGroupKey === group.key">
               <div
                 class="visual-card"
-                *ngFor="let card of group.cards; let i = index"
-                [style.z-index]="group.cards.length - i"
+                [class.density-half]="stackDensity === 'half'"
+                [class.density-name]="stackDensity === 'name'"
+                *ngFor="let card of getStackCards(group.key, group.cards); let i = index; trackBy: trackByIdx"
+                [style.z-index]="i + 1"
+                [class.is-stack-dragging]="stackDragGroupKey === group.key && stackDragFromIdx === i"
+                [class.is-stack-drop-target]="stackDragGroupKey === group.key && stackDragOverIdx === i && stackDragFromIdx !== i"
+                (pointerdown)="onStackPointerDown(group.key, i, $event)"
                 (click)="openCard(card)"
               >
                 <div
                   class="visual-art"
-                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
-                  [class.no-image]="!tileImage(card)"
+                  [style.backgroundImage]="tileImage(card, group.key + '/' + i) ? 'url(' + tileImage(card, group.key + '/' + i) + ')' : 'none'"
+                  [class.no-image]="!tileImage(card, group.key + '/' + i)"
                 >
-                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <span class="visual-placeholder" *ngIf="!tileImage(card, group.key + '/' + i)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
-                          [class.is-flipped]="flippedCardIds.has(card.id)"
-                          (click)="toggleTileFlip(card, $event)"
+                          [class.is-flipped]="flippedCardIds.has(group.key + '/' + i)"
+                          (click)="toggleTileFlip(group.key + '/' + i, card, $event)"
                           title="Flip">↻</button>
                   <div class="visual-overlay" (click)="$event.stopPropagation()">
                     <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
@@ -159,37 +171,6 @@
               </div>
             </div>
 
-            <!-- ── Stack view ── -->
-            <div class="stack-list" *ngIf="viewMode === 'stack'">
-              <div
-                class="stack-card"
-                *ngFor="let card of group.cards; let i = index"
-                [style.z-index]="group.cards.length - i"
-                (click)="openCard(card)"
-              >
-                <div
-                  class="stack-art"
-                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
-                  [class.no-image]="!tileImage(card)"
-                >
-                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
-                  <button class="thumb-flip"
-                          *ngIf="tileHasBack(card)"
-                          [class.is-flipped]="flippedCardIds.has(card.id)"
-                          (click)="toggleTileFlip(card, $event)"
-                          title="Flip">↻</button>
-                  <div class="stack-name-bar">
-                    <span class="stack-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
-                    <div class="stack-qty-ctrl" (click)="$event.stopPropagation()">
-                      <button class="stack-qty-btn" (click)="decrement(card)">−</button>
-                      <span class="stack-qty">×{{ cardCount(card) }}</span>
-                      <button class="stack-qty-btn" (click)="increment(card)">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </ng-container>
@@ -197,18 +178,40 @@
       <!-- ── Free arrange mode ── -->
       <ng-container *ngIf="viewMode === 'free' && !(loading$ | async)">
         <div class="free-toolbar">
-          <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset to default groups">↺ Reset Layout</button>
+          <button class="free-save-btn" [class.is-saved]="layoutSaved" (click)="saveLayoutExplicit()">
+            {{ layoutSaved ? '✓ Saved' : '⬡ Save Layout' }}
+          </button>
+          <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset columns to CMC groups">↺ Reset</button>
+          <div class="density-picker">
+            <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
+            <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
+            <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+          </div>
         </div>
 
         <div class="groups-list is-free"
+             (click)="clearFreeColSelection()"
+             (mousedown)="onGroupsListMouseDown($event)"
              (dragover)="onGroupsListDragOver($event)"
              (drop)="onGroupsListDrop($event)"
              (dragleave)="onGroupsListDragLeave($event)">
 
+          <!-- Rubber-band selection box -->
+          <div class="selection-box"
+               *ngIf="dragSelectBox && dragSelectBox.w > 4 && dragSelectBox.h > 4"
+               [style.left.px]="dragSelectBox.x"
+               [style.top.px]="dragSelectBox.y"
+               [style.width.px]="dragSelectBox.w"
+               [style.height.px]="dragSelectBox.h">
+          </div>
+
           <ng-container *ngFor="let col of freeColumns; let i = index">
           <div class="col-insert-line" [class.active]="dragColId && dragOverColInsertIdx === i"></div>
           <div class="free-col"
-               [class.is-dragging-col]="dragColId === col.id"
+               [attr.data-col-id]="col.id"
+               [class.is-dragging-col]="isDraggingMultiCols ? multiDragColIds.includes(col.id) : dragColId === col.id"
+               [class.is-selected-col]="selectedFreeColId === col.id || dragSelectedColIds.has(col.id)"
+               (click)="$event.stopPropagation(); selectFreeCol(col.id)"
                (dragover)="onColDragOver(col.id, $event)"
                (drop)="onColDrop(col.id, $event)"
                (dragleave)="onColDragLeave($event)">
@@ -225,12 +228,12 @@
                       (dblclick)="startEditColumnLabel(col)"
                       title="Double-click to rename">{{ col.label }}</span>
                 <span class="col-edit-hint"
-                      (click)="startEditColumnLabel(col)"
+                      (click)="$event.stopPropagation(); startEditColumnLabel(col)"
                       title="Rename column">✎</span>
                 <span class="group-count">{{ getCardsForColumn(col, deck).length }}</span>
                 <button class="col-remove-btn"
                         *ngIf="freeColumns.length > 1"
-                        (click)="removeColumn(col.id)"
+                        (click)="$event.stopPropagation(); removeColumn(col.id)"
                         title="Remove column">✕</button>
               </ng-container>
               <input *ngIf="editingColumnId === col.id"
@@ -248,18 +251,24 @@
             <ng-container *ngFor="let card of getCardsForColumn(col, deck); let i = index">
               <div class="free-card"
                    draggable="true"
-                   [class.is-dragging]="dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i"
+                   [attr.data-slot-key]="col.id + '/' + i"
+                   [attr.data-card-id]="card.id"
+                   [class.density-half]="stackDensity === 'half'"
+                   [class.density-name]="stackDensity === 'name'"
+                   [style.z-index]="i + 1"
+                   [class.is-selected-card]="selectedCardSlots.has(col.id + '/' + i)"
+                   [class.is-dragging]="isDraggingMultiCards ? selectedCardSlots.has(col.id + '/' + i) : (dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i)"
                    (dragstart)="onCardDragStart(card, col.id, i, $event)"
                    (dragend)="onDragEnd()"
-                   (click)="openCard(card)">
+                   (click)="$event.stopPropagation(); openCard(card)">
                 <div class="visual-art"
-                     [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
-                     [class.no-image]="!tileImage(card)">
-                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
+                     [style.backgroundImage]="tileImage(card, col.id + '/' + i) ? 'url(' + tileImage(card, col.id + '/' + i) + ')' : 'none'"
+                     [class.no-image]="!tileImage(card, col.id + '/' + i)">
+                  <span class="visual-placeholder" *ngIf="!tileImage(card, col.id + '/' + i)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
-                          [class.is-flipped]="flippedCardIds.has(card.id)"
-                          (click)="toggleTileFlip(card, $event)"
+                          [class.is-flipped]="flippedCardIds.has(col.id + '/' + i)"
+                          (click)="toggleTileFlip(col.id + '/' + i, card, $event)"
                           title="Flip">↻</button>
                   <div class="visual-overlay" (click)="$event.stopPropagation()">
                     <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
@@ -407,5 +416,30 @@
       (closed)="closeCard()"
     />
   </ng-container>
+
+  <!-- Sort reset warning -->
+  <div class="unsaved-backdrop" *ngIf="showSortResetModal" (click)="cancelSortReset()">
+    <div class="unsaved-modal" (click)="$event.stopPropagation()">
+      <div class="unsaved-modal-title">Reset Layout?</div>
+      <p class="unsaved-modal-body">Changing the sort will rebuild your columns and reset your custom layout.</p>
+      <div class="unsaved-modal-actions">
+        <button class="unsaved-btn is-save"    (click)="confirmSortReset()">Reset & Sort</button>
+        <button class="unsaved-btn is-cancel"  (click)="cancelSortReset()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unsaved layout warning -->
+  <div class="unsaved-backdrop" *ngIf="showUnsavedLayoutModal" (click)="unsavedCancel()">
+    <div class="unsaved-modal" (click)="$event.stopPropagation()">
+      <div class="unsaved-modal-title">Unsaved Layout</div>
+      <p class="unsaved-modal-body">Your custom layout has unsaved changes. Save before leaving?</p>
+      <div class="unsaved-modal-actions">
+        <button class="unsaved-btn is-save"    (click)="unsavedSave()">Save & Continue</button>
+        <button class="unsaved-btn is-discard" (click)="unsavedDiscard()">Discard</button>
+        <button class="unsaved-btn is-cancel"  (click)="unsavedCancel()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
 </div>
