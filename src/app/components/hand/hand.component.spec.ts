@@ -7,27 +7,11 @@ import {
   selectIsActivePlayer, selectHasPriority, selectUIMode, selectSelectedCardId,
 } from '../../store/selectors';
 import { GameActions, UIActions } from '../../store';
-import { CardDto, CardType, ManaColor, Phase, Step } from '../../models/game.models';
+import { CardType, ManaColor, Phase, Step } from '../../models/game.models';
+import { makeCard as makeCardBase, makePlayer } from '../../testing/test-factories';
 
-function makeCard(id: string, types: CardType[] = [CardType.Creature], cost = '1G'): CardDto {
-  return {
-    cardId: id, oracleId: id, name: `Card-${id}`,
-    manaCost: cost, manaValue: 2,
-    cardTypes: types, subtypes: [], supertypes: [], oracleText: '',
-    power: 2, toughness: 2, startingLoyalty: null, keywords: [],
-    imageUriNormal: null, imageUriNormalBack: null, imageUriSmall: null, imageUriArtCrop: null,
-    colorIdentity: [ManaColor.Green], ownerId: 'p1',
-    flavorText: null, artist: null, setCode: null,
-  };
-}
-
-function makePlayer(hand: CardDto[] = []) {
-  return {
-    playerId: 'p1', name: 'Alice', life: 20, poisonCounters: 0,
-    manaPool: { amounts: {}, total: 0 },
-    handCount: hand.length, libraryCount: 30, graveyardCount: 0, exileCount: 0,
-    hand, graveyard: [], exile: [], hasLandPlayedThisTurn: false,
-  };
+function makeCard(id: string, types: CardType[] = [CardType.Creature], cost = '1G') {
+  return makeCardBase({ cardId: id, oracleId: id, name: `Card-${id}`, manaCost: cost, cardTypes: types, subtypes: [], colorIdentity: [ManaColor.Green] });
 }
 
 describe('HandComponent', () => {

@@ -193,88 +193,104 @@
       </div>
 
       <div class="search-wrap">
-        <svg class="search-icon-inner" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
-          <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <input
-          class="search-input"
-          type="text"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchInput($event)"
-          placeholder="Search for a card…"
-          autocomplete="off"
-        />
+        <div class="search-input-row">
+          <svg class="search-icon-inner" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input
+            class="search-input"
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchInput($event)"
+            placeholder="Search for a card…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="search-flags">
+          <button class="search-flag-btn" [class.is-active]="searchMatchCase" (click)="toggleSearchMatchCase()" title="Match case">Aa</button>
+          <button class="search-flag-btn" [class.is-active]="searchMatchWord" (click)="toggleSearchMatchWord()" title="Match whole word">\b</button>
+          <button class="search-flag-btn" [class.is-active]="searchUseRegex"  (click)="toggleSearchUseRegex()"  title="Use regular expression">.*</button>
+        </div>
       </div>
 
-      <div class="search-hint" *ngIf="searchQuery.length < 2 && !searchLoading">
-        {{ searchQuery.length === 0 ? 'Type a card name to search' : 'Keep typing…' }}
-      </div>
+      <div class="panel-body">
 
-      <div class="search-spinner" *ngIf="searchLoading">Searching…</div>
+        <div class="search-hint" *ngIf="searchQuery.length < 2 && !searchLoading">
+          {{ searchQuery.length === 0 ? 'Type a card name to search' : 'Keep typing…' }}
+        </div>
 
-      <div class="search-empty" *ngIf="!searchLoading && searchQuery.length >= 2 && searchResults.length === 0">
-        No cards matching "{{ searchQuery }}"
-      </div>
+        <div class="search-spinner" *ngIf="searchLoading">Searching…</div>
 
-      <div class="results-count"
-           *ngIf="!searchLoading && searchResults.length > 0">
-        {{ searchResults.length }} result{{ searchResults.length !== 1 ? 's' : '' }}
-        <span *ngIf="searchResults.length === 20"> (showing first 20)</span>
-      </div>
+        <div class="search-empty" *ngIf="!searchLoading && searchQuery.length >= 2 && searchResults.length === 0">
+          No cards matching "{{ searchQuery }}"
+        </div>
 
-      <div class="results-list">
-        <ng-container *ngIf="collection$ | async as col">
-          <div class="result-row" *ngFor="let card of searchResults">
-            <div
-              class="result-art result-art-clickable"
-              [style.backgroundImage]="card.imageUriSmall
-                ? 'url(' + card.imageUriSmall + ')'
-                : 'none'"
-              (click)="openSearchCard(card)"
-              title="Preview card"
-            >
-              <div class="art-placeholder sm" *ngIf="!card.imageUriSmall">◈</div>
-            </div>
+        <div class="results-count"
+             *ngIf="!searchLoading && searchResults.length > 0">
+          {{ searchResults.length }} result{{ searchResults.length !== 1 ? 's' : '' }}
+        </div>
 
-            <div class="result-info">
-              <span class="result-name">
-                <ng-container *ngFor="let part of highlightParts(card.name, searchQuery)">
-                  <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
-                  <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
-                </ng-container>
-              </span>
-            </div>
-
-            <div class="result-set-wrap">
-              <select
-                class="result-set-select"
-                [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-                [title]="searchSetTooltip(card.oracleId)"
-                [class.has-error]="addErrors.has(card.oracleId)"
-                (focus)="onSearchSelectFocus(card.oracleId)"
-                (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
+        <div class="results-list">
+          <ng-container *ngIf="collection$ | async as col">
+            <div class="result-row" *ngFor="let card of searchResults">
+              <div
+                class="result-art result-art-clickable"
+                [style.backgroundImage]="card.imageUriSmall
+                  ? 'url(' + card.imageUriSmall + ')'
+                  : 'none'"
+                (click)="openSearchCard(card)"
+                title="Preview card"
               >
-                <option value="" disabled>SET</option>
-                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints">
-                  <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                    {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                  </option>
-                </ng-container>
-              </select>
-              <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
-            </div>
+                <div class="art-placeholder sm" *ngIf="!card.imageUriSmall">◈</div>
+              </div>
 
-            <div class="result-action">
-              <span class="owned-qty" *ngIf="ownedEntry(col, card.oracleId) as owned">
-                ×{{ owned.quantity }}<ng-container *ngIf="owned.quantityFoil > 0"> ✦{{ owned.quantityFoil }}</ng-container>
-              </span>
-              <button class="add-result-btn" (click)="addCard(card)">
-                {{ ownedEntry(col, card.oracleId) ? '+1' : 'Add' }}
-              </button>
+              <div class="result-info">
+                <span class="result-name">
+                  <ng-container *ngFor="let part of highlightParts(card.name, searchQuery)">
+                    <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
+                    <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
+                  </ng-container>
+                </span>
+              </div>
+
+              <div class="result-set-wrap">
+                <select
+                  class="result-set-select"
+                  [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+                  [title]="searchSetTooltip(card.oracleId)"
+                  [class.has-error]="addErrors.has(card.oracleId)"
+                  (focus)="onSearchSelectFocus(card.oracleId)"
+                  (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
+                >
+                  <option value="" disabled>SET</option>
+                  <ng-container *ngIf="printingsCache.get(card.oracleId) as prints">
+                    <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                      {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                    </option>
+                  </ng-container>
+                </select>
+                <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
+              </div>
+
+              <div class="result-action">
+                <span class="owned-qty" *ngIf="ownedEntry(col, card.oracleId) as owned">
+                  ×{{ owned.quantity }}<ng-container *ngIf="owned.quantityFoil > 0"> ✦{{ owned.quantityFoil }}</ng-container>
+                </span>
+                <button class="add-result-btn" (click)="addCard(card)">
+                  {{ ownedEntry(col, card.oracleId) ? '+1' : 'Add' }}
+                </button>
+              </div>
             </div>
+          </ng-container>
+
+          <div class="load-more-row" *ngIf="searchHasMore">
+            <button class="load-more-btn" (click)="loadMoreSearch()" [disabled]="searchLoadingMore">
+              {{ searchLoadingMore ? 'Loading…' : 'Load more' }}
+            </button>
           </div>
-        </ng-container>
+        </div>
+
       </div>
     </aside>
   </div>

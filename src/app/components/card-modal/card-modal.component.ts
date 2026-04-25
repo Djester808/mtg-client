@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardDto, CardType, PrintingDto } from '../../models/game.models';
+import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 
@@ -121,11 +122,7 @@ export class CardModalComponent implements OnInit {
 
   get typeLine(): string {
     const c = this.effectiveCard;
-    if (!c) return '';
-    const sup   = c.supertypes?.length  ? c.supertypes.join(' ') + ' ' : '';
-    const types = c.cardTypes.join(' ');
-    const sub   = c.subtypes?.length    ? ' — ' + c.subtypes.join(' ') : '';
-    return sup + types + sub;
+    return c ? buildTypeLine(c) : '';
   }
 
   get isLand(): boolean {

@@ -1,7 +1,7 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { GameState } from './game/game.reducer';
 import { UIState } from './ui/ui.reducer';
-import { Phase, Step, PermanentDto } from '../models/game.models';
+import { Phase, Step, CardType, PermanentDto } from '../models/game.models';
 
 // ---- Feature selectors ------------------------------------
 export const selectGameFeature = createFeatureSelector<GameState>('game');
@@ -92,22 +92,22 @@ export const selectOpponentPermanents = createSelector(
 
 export const selectLocalCreatures = createSelector(
   selectLocalPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes('Creature' as any))
+  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Creature))
 );
 
 export const selectLocalLands = createSelector(
   selectLocalPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes('Land' as any))
+  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Land))
 );
 
 export const selectOpponentCreatures = createSelector(
   selectOpponentPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes('Creature' as any))
+  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Creature))
 );
 
 export const selectOpponentLands = createSelector(
   selectOpponentPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes('Land' as any))
+  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Land))
 );
 
 // ---- UI selectors -----------------------------------------

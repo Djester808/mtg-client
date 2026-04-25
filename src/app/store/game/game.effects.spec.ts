@@ -9,23 +9,8 @@ import { GameEffects } from './game.effects';
 import { GameActions } from './game.actions';
 import { SignalRService } from '../../services/signalr.service';
 import { GameApiService } from '../../services/game-api.service';
-import { GameResult, Phase, Step } from '../../models/game.models';
-
-function makeGameState(result: GameResult) {
-  return {
-    gameId: 'game-1',
-    players: [],
-    battlefield: [],
-    stack: [],
-    turn: 1,
-    activePlayerId: 'p1',
-    priorityPlayerId: 'p1',
-    currentPhase: Phase.PreCombatMain,
-    currentStep: Step.Main,
-    result,
-    combat: null,
-  };
-}
+import { GameResult } from '../../models/game.models';
+import { makeGameState } from '../../testing/test-factories';
 
 describe('GameEffects', () => {
   let actions$: Observable<Action>;
@@ -90,8 +75,7 @@ describe('GameEffects', () => {
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
-    it('does not navigate for Draw result', () => {
-      // Draw is also a finished game — should navigate to lobby
+    it('navigates to lobby for Draw result (Draw is a finished game)', () => {
       localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-1', playerToken: 'tok' }));
       spyOn(router, 'navigate');
 

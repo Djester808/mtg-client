@@ -1,22 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { CardModalComponent } from './card-modal.component';
-import { CardDto, CardType, ManaColor, PrintingDto } from '../../models/game.models';
-
-function makeCard(overrides: Partial<CardDto> = {}): CardDto {
-  return {
-    cardId: 'card-1', oracleId: 'oracle-1', name: 'Test Creature',
-    manaCost: '1G', manaValue: 2,
-    cardTypes: [CardType.Creature], subtypes: ['Beast'], supertypes: [],
-    oracleText: 'Trample', power: 2, toughness: 2, startingLoyalty: null,
-    keywords: [], imageUriNormal: null, imageUriNormalBack: null,
-    imageUriSmall: null, imageUriArtCrop: null,
-    colorIdentity: [ManaColor.Green], ownerId: 'p1',
-    flavorText: null, artist: null, setCode: null,
-    legalities: {},
-    ...overrides,
-  };
-}
+import { CardType, PrintingDto } from '../../models/game.models';
+import { makeCard } from '../../testing/test-factories';
 
 function makePrinting(overrides: Partial<PrintingDto> = {}): PrintingDto {
   return {

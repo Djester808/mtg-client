@@ -1,7 +1,7 @@
-import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, Input, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
-import { combineLatest, map } from 'rxjs';
+import { combineLatest, map, Subject, takeUntil } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../../store';
 import {
   selectLocalPlayer,
@@ -29,13 +29,15 @@ interface HandCardVm {
   styleUrls: ['./hand.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HandComponent {
+export class HandComponent implements OnDestroy {
   @Input() handHeight = 160;
 
   get cardDims(): { w: number; h: number } {
     const h = Math.round(Math.min(Math.max(this.handHeight * 0.72, 80), 380));
     return { h, w: Math.round(h * (88 / 123)) };
   }
+
+  private destroy$ = new Subject<void>();
 
   count = 0;
   orderedCards: HandCardVm[] = [];
@@ -85,7 +87,8 @@ export class HandComponent {
         });
 
         return { cards, count: hand.length };
-      })
+      }),
+      takeUntil(this.destroy$),
     ).subscribe(vm => {
       this.count = vm.count;
       const idSet = new Set(vm.cards.map(c => c.card.cardId));
@@ -99,6 +102,11 @@ export class HandComponent {
       this.rebuildOrderedCards();
       this.cdr.markForCheck();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private rebuildOrderedCards(): void {

@@ -1,9 +1,10 @@
 import {
   Component, Input, Output, EventEmitter,
-  ChangeDetectionStrategy, OnChanges
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PermanentDto, CardDto, ManaColor, CardType } from '../../models/game.models';
+import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 
@@ -15,7 +16,7 @@ import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
   styleUrls: ['./card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CardComponent implements OnChanges {
+export class CardComponent {
   @Input() permanent?: PermanentDto;
   @Input() card?: CardDto;          // for hand cards
   @Input() isSelected = false;
@@ -99,9 +100,7 @@ export class CardComponent implements OnChanges {
 
   get typeLineText(): string {
     const cd = this.cardData;
-    if (!cd) return '';
-    const base = cd.cardTypes.join(' ');
-    return cd.subtypes.length ? `${base} — ${cd.subtypes.join(' ')}` : base;
+    return cd ? buildTypeLine(cd) : '';
   }
 
   get isCreature(): boolean {
@@ -119,8 +118,6 @@ export class CardComponent implements OnChanges {
   get hasSummoningSickness(): boolean {
     return this.permanent?.hasSummoningSickness ?? false;
   }
-
-  ngOnChanges(): void {}
 
   onMouseEnter(): void {
     if (this.cardData) this.hoverEnter.emit(this.cardData);

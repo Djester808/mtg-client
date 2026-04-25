@@ -64,13 +64,19 @@ export class GameApiService {
   /**
    * Search cards by name (proxied to Scryfall).
    */
-  getSets(): Observable<SetSummaryDto[]> {
-    return this.http.get<SetSummaryDto[]>(`${this.base}/cards/sets`);
+  getSets(filterQuery?: string): Observable<SetSummaryDto[]> {
+    const params: Record<string, string> = {};
+    if (filterQuery?.trim()) params['q'] = filterQuery.trim();
+    return this.http.get<SetSummaryDto[]>(`${this.base}/cards/sets`, { params });
   }
 
-  searchCards(query: string, limit = 60, offset = 0, sortBy = 'name', sortDir = 'asc'): Observable<CardDto[]> {
+  searchCards(
+    query: string, limit = 60, offset = 0,
+    sortBy = 'name', sortDir = 'asc',
+    matchCase = false, matchWord = false, useRegex = false,
+  ): Observable<CardDto[]> {
     return this.http.get<CardDto[]>(`${this.base}/cards/search`, {
-      params: { q: query, limit, offset, sortBy, sortDir },
+      params: { q: query, limit, offset, sortBy, sortDir, matchCase, matchWord, useRegex },
     });
   }
 }

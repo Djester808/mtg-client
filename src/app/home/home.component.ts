@@ -42,6 +42,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   sortBy:  SortBy  = 'name';
   sortDir: SortDir = 'asc';
 
+  matchCase = false;
+  matchWord = false;
+  useRegex  = false;
+
   // ---- Results state -----------------------------------------
 
   readonly PAGE_SIZE = 60;
@@ -129,8 +133,15 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.api.getSets().pipe(
-      catchError(() => of<SetSummaryDto[]>([])),
+    // Reload set list whenever non-set filters change
+    combineLatest([
+      this.searchText.valueChanges.pipe(startWith('')),
+      this.filterChange$,
+    ]).pipe(
+      debounceTime(350),
+      map(([text]) => this.buildNonSetQuery(text ?? '')),
+      distinctUntilChanged(),
+      switchMap(q => this.api.getSets(q || undefined).pipe(catchError(() => of<SetSummaryDto[]>([])))),
       takeUntil(this.destroy$),
     ).subscribe(sets => {
       this.allSets = sets;
@@ -142,9 +153,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.filterChange$,
     ]).pipe(
       debounceTime(350),
-      map(([text]) => this.buildQuery(text ?? '')),
-      distinctUntilChanged(),
-      switchMap(query => {
+      map(([text]) => ({ query: this.buildQuery(text ?? ''), sortBy: this.sortBy, sortDir: this.sortDir, matchCase: this.matchCase, matchWord: this.matchWord, useRegex: this.useRegex })),
+      distinctUntilChanged((a, b) => a.query === b.query && a.sortBy === b.sortBy && a.sortDir === b.sortDir && a.matchCase === b.matchCase && a.matchWord === b.matchWord && a.useRegex === b.useRegex),
+      switchMap(({ query }) => {
         if (!query.trim()) {
           this.loading = false; this.searched = false; this.results = [];
           this.hasMore = false; this.currentOffset = 0; this.lastQuery = '';
@@ -154,7 +165,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.loading = true; this.searched = true;
         this.currentOffset = 0; this.lastQuery = query;
         this.cdr.markForCheck();
-        return this.api.searchCards(query, this.PAGE_SIZE, 0, this.sortBy, this.sortDir).pipe(
+        return this.api.searchCards(query, this.PAGE_SIZE, 0, this.sortBy, this.sortDir, this.matchCase, this.matchWord, this.useRegex).pipe(
           catchError(() => of<CardDto[]>([])),
         );
       }),
@@ -174,7 +185,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.loadingMore = true;
         this.currentOffset += this.PAGE_SIZE;
         this.cdr.markForCheck();
-        return this.api.searchCards(this.lastQuery, this.PAGE_SIZE, this.currentOffset, this.sortBy, this.sortDir).pipe(
+        return this.api.searchCards(this.lastQuery, this.PAGE_SIZE, this.currentOffset, this.sortBy, this.sortDir, this.matchCase, this.matchWord, this.useRegex).pipe(
           catchError(() => of<CardDto[]>([])),
         );
       }),
@@ -263,11 +274,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.filterChange$.next();
   }
 
+  toggleMatchCase(): void { this.matchCase = !this.matchCase; this.filterChange$.next(); }
+  toggleMatchWord(): void { this.matchWord = !this.matchWord; this.filterChange$.next(); }
+  toggleUseRegex():  void { this.useRegex  = !this.useRegex;  this.filterChange$.next(); }
+
   clearFilters(): void {
     this.selectedColors.clear(); this.selectedTypes.clear();
     this.selectedRarities.clear(); this.selectedCmc = null;
     this.activeSet = null; this.setDropOpen = false;
     this.sortBy = 'name'; this.sortDir = 'asc';
+    this.matchCase = false; this.matchWord = false; this.useRegex = false;
     this.searchText.setValue('', { emitEvent: false });
     this.results = []; this.searched = false;
     this.filterChange$.next();
@@ -291,7 +307,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // ---- Query builder -----------------------------------------
 
-  private buildQuery(text: string): string {
+  private buildNonSetQuery(text: string): string {
     const parts: string[] = [];
     if (text.trim().length >= 2) parts.push(`name:"${text.trim()}"`);
 
@@ -317,8 +333,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       else                           parts.push(`cmc=${this.selectedCmc}`);
     }
 
-    if (this.activeSet) parts.push(`s:${this.activeSet}`);
-
     return parts.join(' ');
+  }
+
+  private buildQuery(text: string): string {
+    const base = this.buildNonSetQuery(text);
+    const setToken = this.activeSet ? `s:${this.activeSet}` : '';
+    return [base, setToken].filter(Boolean).join(' ');
   }
 }

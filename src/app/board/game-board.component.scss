@@ -1,6 +1,6 @@
 :host {
   display: block;
-  height: 100vh;
+  height: 100%;
   width: 100vw;
   overflow: hidden;
 }
@@ -9,7 +9,7 @@
   display: grid;
   grid-template-columns: 180px 1fr 220px;
   // row heights are set dynamically via [style.grid-template-rows] binding
-  height: 100vh;
+  height: 100%;
   width: 100vw;
   position: relative;
 }

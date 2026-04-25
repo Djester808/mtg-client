@@ -16,6 +16,7 @@ import {
 import { Phase, Step, GameResult } from '../models/game.models';
 
 import { SignalRService } from '../services/signalr.service';
+import { buildTypeLine } from '../utils/card.utils';
 import { CardComponent } from '../components/card/card.component';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { HandComponent } from '../components/hand/hand.component';
@@ -307,8 +308,7 @@ export class GameBoardComponent implements OnInit {
   // ---- Preview helpers ------------------------------------
 
   previewTypeLine(card: import('../models/game.models').CardDto): string {
-    const base = card.cardTypes.join(' ');
-    return card.subtypes.length ? `${base} — ${card.subtypes.join(' ')}` : base;
+    return buildTypeLine(card);
   }
 
   // ---- Status bar message ---------------------------------

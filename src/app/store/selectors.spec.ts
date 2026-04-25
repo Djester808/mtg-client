@@ -1,66 +1,17 @@
 import { selectPreviewCard } from './selectors';
-import { CardDto, CardType, ManaColor, PermanentDto, PlayerStateDto } from '../models/game.models';
+import { PlayerStateDto, PermanentDto, CardDto } from '../models/game.models';
+import { makeCard, makePlayer, makePermanent as makePermanentBase } from '../testing/test-factories';
 
 // Tests use the selector's .projector() — a pure function that takes the input
 // selector results directly, bypassing NgRx glue entirely.
 
-function makeCard(overrides: Partial<CardDto> = {}): CardDto {
-  return {
-    cardId: 'card-1',
-    oracleId: 'oracle-1',
-    name: 'Test Card',
-    manaCost: '1G',
-    manaValue: 2,
-    cardTypes: [CardType.Creature],
-    subtypes: [],
-    supertypes: [],
-    oracleText: '',
-    power: 2,
-    toughness: 2,
-    startingLoyalty: null,
-    keywords: [],
-    imageUriNormal: null,
-    imageUriNormalBack: null,
-    imageUriSmall: null,
-    imageUriArtCrop: null,
-    colorIdentity: [ManaColor.Green],
-    ownerId: 'p1',
-    flavorText: null, artist: null, setCode: null,
-    ...overrides,
-  };
-}
-
-function makePlayer(hand: CardDto[]): PlayerStateDto {
-  return {
-    playerId: 'p1',
-    name: 'Alice',
-    life: 20,
-    poisonCounters: 0,
-    manaPool: { amounts: {}, total: 0 },
-    handCount: hand.length,
-    libraryCount: 30,
-    graveyardCount: 0,
-    exileCount: 0,
-    hand,
-    graveyard: [],
-    exile: [],
-    hasLandPlayedThisTurn: false,
-  };
-}
-
 function makePermanent(permanentId: string, sourceCard: CardDto): PermanentDto {
-  return {
+  return makePermanentBase({
     permanentId,
     sourceCard,
-    controllerId: 'p1',
-    isTapped: false,
-    hasSummoningSickness: false,
-    damageMarked: 0,
-    counters: {} as any,
-    attachments: [],
     effectivePower: sourceCard.power,
     effectiveToughness: sourceCard.toughness,
-  };
+  });
 }
 
 describe('selectPreviewCard', () => {

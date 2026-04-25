@@ -22,6 +22,11 @@
         autocomplete="off"
         spellcheck="false"
       />
+      <div class="search-flags">
+        <button class="search-flag-btn" [class.is-active]="matchCase" (click)="toggleMatchCase()" title="Match case">Aa</button>
+        <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
+        <button class="search-flag-btn" [class.is-active]="useRegex"  (click)="toggleUseRegex()"  title="Use regular expression">.*</button>
+      </div>
       <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')">&#10005;</span>
     </div>
 

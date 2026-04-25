@@ -10,14 +10,15 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, debounceTime, distinctUntilChanged,
-  switchMap, mergeMap, takeUntil, of, catchError, map,
+  Observable, Subject, debounceTime,
+  switchMap, mergeMap, concatMap, takeUntil, of, catchError, map,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import { selectActiveCollection, selectCollectionLoading } from '../../store/collection/collection.selectors';
 import { CollectionDetailDto, CollectionCardDto, CardDto, PrintingDto } from '../../models/game.models';
 import { GameApiService } from '../../services/game-api.service';
+import { buildTypeLine } from '../../utils/card.utils';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -35,11 +36,22 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   collection$: Observable<CollectionDetailDto | null>;
   loading$: Observable<boolean>;
 
+  readonly SEARCH_PAGE = 20;
+
   filterQuery = '';
   searchQuery = '';
   searchResults: CardDto[] = [];
   searchLoading = false;
+  searchLoadingMore = false;
+  searchHasMore = false;
   showSearchPanel = false;
+
+  searchMatchCase = false;
+  searchMatchWord = false;
+  searchUseRegex  = false;
+
+  private searchOffset = 0;
+  private lastSearchQuery = '';
 
   hoveredCard: CollectionCardDto | null = null;
   hoveredCardPrintings: PrintingDto[] = [];
@@ -72,6 +84,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   private collectionId = '';
   private searchInput$ = new Subject<string>();
+  private searchLoadMore$ = new Subject<void>();
   /** Card-grid hover/select: switchMap cancels in-flight when user moves quickly */
   private hoverSubject$ = new Subject<string>();           // emits oracleId
   /** Search-panel set dropdowns: mergeMap so multiple rows load in parallel */
@@ -98,31 +111,49 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     // Debounced card search
     this.searchInput$.pipe(
       debounceTime(180),
-      distinctUntilChanged(),
       switchMap(q => {
         if (q.trim().length < 2) {
           this.searchResults = [];
           this.searchLoading = false;
+          this.searchHasMore = false;
           this.cdr.markForCheck();
           return of([] as CardDto[]);
         }
         this.searchLoading = true;
+        this.searchOffset = 0;
+        this.lastSearchQuery = q.trim();
         this.cdr.markForCheck();
-        return this.gameApi.searchCards(`name:"${q.trim()}"`, 20);
+        return this.gameApi.searchCards(q.trim(), this.SEARCH_PAGE, 0, 'name', 'asc', this.searchMatchCase, this.searchMatchWord, this.searchUseRegex).pipe(
+          catchError(() => of([] as CardDto[])),
+        );
       }),
       takeUntil(this.destroy$),
-    ).subscribe({
-      next: results => {
-        this.searchResults = results;
-        this.searchSelectedScryfallId.clear();
-        this.addErrors.clear();
-        this.searchLoading = false;
+    ).subscribe(results => {
+      this.searchResults = results;
+      this.searchHasMore = results.length === this.SEARCH_PAGE;
+      this.searchSelectedScryfallId.clear();
+      this.addErrors.clear();
+      this.searchLoading = false;
+      this.cdr.markForCheck();
+    });
+
+    // Load more search results
+    this.searchLoadMore$.pipe(
+      concatMap(() => {
+        if (!this.lastSearchQuery || this.searchLoadingMore) return of([] as CardDto[]);
+        this.searchLoadingMore = true;
+        this.searchOffset += this.SEARCH_PAGE;
         this.cdr.markForCheck();
-      },
-      error: () => {
-        this.searchLoading = false;
-        this.cdr.markForCheck();
-      },
+        return this.gameApi.searchCards(this.lastSearchQuery, this.SEARCH_PAGE, this.searchOffset, 'name', 'asc', this.searchMatchCase, this.searchMatchWord, this.searchUseRegex).pipe(
+          catchError(() => of([] as CardDto[])),
+        );
+      }),
+      takeUntil(this.destroy$),
+    ).subscribe(results => {
+      this.searchResults = [...this.searchResults, ...results];
+      this.searchHasMore = results.length === this.SEARCH_PAGE;
+      this.searchLoadingMore = false;
+      this.cdr.markForCheck();
     });
 
     // Card-grid printings: switchMap cancels in-flight on fast hover/select
@@ -187,6 +218,25 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   onSearchInput(value: string): void {
     this.searchInput$.next(value);
+  }
+
+  loadMoreSearch(): void {
+    this.searchLoadMore$.next();
+  }
+
+  toggleSearchMatchCase(): void {
+    this.searchMatchCase = !this.searchMatchCase;
+    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
+  }
+
+  toggleSearchMatchWord(): void {
+    this.searchMatchWord = !this.searchMatchWord;
+    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
+  }
+
+  toggleSearchUseRegex(): void {
+    this.searchUseRegex = !this.searchUseRegex;
+    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
   }
 
   // ---- Card-grid hover (for info panel) --------------------
@@ -327,11 +377,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   // ---- Display helpers -------------------------------------
 
   typeLine(card: CollectionCardDto): string {
-    if (!card.cardDetails) return '';
-    const types = card.cardDetails.cardTypes.join(' ');
-    const sub   = card.cardDetails.subtypes?.length ? ` — ${card.cardDetails.subtypes.join(' ')}` : '';
-    const sup   = card.cardDetails.supertypes?.length ? `${card.cardDetails.supertypes.join(' ')} ` : '';
-    return `${sup}${types}${sub}`;
+    return card.cardDetails ? buildTypeLine(card.cardDetails) : '';
   }
 
   highlightParts(text: string, query: string): { text: string; match: boolean }[] {

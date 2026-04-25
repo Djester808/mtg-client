@@ -1,45 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { CardComponent } from './card.component';
-import { CardDto, CardType, CounterType, ManaColor, PermanentDto } from '../../models/game.models';
+import { CardType, CounterType } from '../../models/game.models';
+import { makeCard, makePermanent, emptyCounters } from '../../testing/test-factories';
 
-function makeCardDto(overrides: Partial<CardDto> = {}): CardDto {
-  return {
-    cardId: 'card-1', oracleId: 'oracle-1', name: 'Test Creature',
-    manaCost: '1G', manaValue: 2,
-    cardTypes: [CardType.Creature], subtypes: ['Beast'], supertypes: [],
-    oracleText: 'Trample', power: 2, toughness: 2, startingLoyalty: null,
-    keywords: [], imageUriNormal: null, imageUriNormalBack: null, imageUriSmall: null, imageUriArtCrop: null,
-    colorIdentity: [ManaColor.Green], ownerId: 'p1',
-    flavorText: null, artist: null, setCode: null,
-    legalities: {},
-    ...overrides,
-  };
-}
-
-const emptyCounters: Record<CounterType, number> = {
-  [CounterType.PlusOnePlusOne]:   0,
-  [CounterType.MinusOneMinusOne]: 0,
-  [CounterType.Loyalty]:          0,
-  [CounterType.Charge]:           0,
-  [CounterType.Poison]:           0,
-};
-
-function makePermanent(overrides: Partial<PermanentDto> = {}): PermanentDto {
-  return {
-    permanentId: 'perm-1',
-    sourceCard: makeCardDto(),
-    controllerId: 'p1',
-    isTapped: false,
-    hasSummoningSickness: false,
-    damageMarked: 0,
-    counters: { ...emptyCounters },
-    attachments: [],
-    effectivePower: 2,
-    effectiveToughness: 2,
-    ...overrides,
-  };
-}
+const makeCardDto = makeCard;
 
 describe('CardComponent', () => {
   let component: CardComponent;
