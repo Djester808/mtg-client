@@ -35,6 +35,13 @@
           <button class="sort-btn" [class.is-active]="sortMode === 'name'" (click)="setSortMode('name')">Name</button>
         </div>
 
+        <!-- View toggle -->
+        <div class="sort-group view-toggle">
+          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list',   deck)" title="List view">☰</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view">⊞</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free',   deck)" title="Free arrange">⠿</button>
+        </div>
+
         <span class="header-count">{{ totalCount(deck) }} / 60</span>
 
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
@@ -52,10 +59,10 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" *ngIf="deck$ | async as deck">
+    <main class="groups-area" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
 
-      <!-- Filter bar -->
-      <div class="filter-bar">
+      <!-- Filter bar (list / visual only) -->
+      <div class="filter-bar" *ngIf="viewMode !== 'free'">
         <div class="filter-wrap">
           <span class="filter-icon">⌕</span>
           <input
@@ -71,16 +78,16 @@
       <div class="loading-state" *ngIf="loading$ | async">Loading deck…</div>
 
       <!-- Empty -->
-      <div class="empty-state" *ngIf="!(loading$ | async) && deck.cards.length === 0">
+      <div class="empty-state" *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length === 0">
         <div class="empty-icon">⊗</div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub">Click "Add Cards" to search and add cards to your deck.</p>
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
       </div>
 
-      <!-- CMC / Type / Name groups -->
-      <ng-container *ngIf="!(loading$ | async) && deck.cards.length > 0">
-        <div class="groups-list">
+      <!-- CMC / Type / Name groups (list + visual) -->
+      <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length > 0">
+        <div class="groups-list" [class.is-visual]="viewMode === 'visual'">
           <div class="cmc-group" *ngFor="let group of getGroups(deck)">
 
             <div class="group-header">
@@ -88,13 +95,13 @@
               <span class="group-count">{{ group.totalCount }}</span>
             </div>
 
-            <div class="card-list">
+            <!-- ── List view ── -->
+            <div class="card-list" *ngIf="viewMode === 'list'">
               <div
                 class="card-row"
                 *ngFor="let card of group.cards"
                 (click)="openCard(card)"
               >
-                <!-- Thumbnail -->
                 <div
                   class="card-thumb"
                   [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
@@ -107,15 +114,11 @@
                           (click)="toggleTileFlip(card, $event)"
                           title="Flip">↻</button>
                 </div>
-
-                <!-- Card info -->
                 <div class="card-info">
                   <div class="card-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
                   <div class="card-type">{{ typeLine(card) }}</div>
                   <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost" class="card-mana"></app-mana-cost>
                 </div>
-
-                <!-- Quantity controls -->
                 <div class="card-actions" (click)="$event.stopPropagation()">
                   <div class="qty-ctrl">
                     <button class="qty-btn qty-dec" (click)="decrement(card)">−</button>
@@ -126,8 +129,128 @@
               </div>
             </div>
 
+            <!-- ── Visual view ── -->
+            <div class="visual-stack" *ngIf="viewMode === 'visual'">
+              <div
+                class="visual-card"
+                *ngFor="let card of group.cards; let i = index"
+                [style.z-index]="group.cards.length - i"
+                (click)="openCard(card)"
+              >
+                <div
+                  class="visual-art"
+                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
+                  [class.no-image]="!tileImage(card)"
+                >
+                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <button class="thumb-flip"
+                          *ngIf="tileHasBack(card)"
+                          [class.is-flipped]="flippedCardIds.has(card.id)"
+                          (click)="toggleTileFlip(card, $event)"
+                          title="Flip">↻</button>
+                  <div class="visual-overlay" (click)="$event.stopPropagation()">
+                    <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
+                    <span class="visual-qty">×{{ cardCount(card) }}</span>
+                    <button class="visual-qty-btn visual-inc" (click)="increment(card)">+</button>
+                  </div>
+                </div>
+                <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
+              </div>
+            </div>
+
           </div>
         </div>
+      </ng-container>
+
+      <!-- ── Free arrange mode ── -->
+      <ng-container *ngIf="viewMode === 'free' && !(loading$ | async)">
+        <div class="free-toolbar">
+          <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset to default groups">↺ Reset Layout</button>
+        </div>
+
+        <div class="groups-list is-free"
+             (dragover)="onGroupsListDragOver($event)"
+             (drop)="onGroupsListDrop($event)"
+             (dragleave)="onGroupsListDragLeave($event)">
+
+          <ng-container *ngFor="let col of freeColumns; let i = index">
+          <div class="col-insert-line" [class.active]="dragColId && dragOverColInsertIdx === i"></div>
+          <div class="free-col"
+               [class.is-dragging-col]="dragColId === col.id"
+               (dragover)="onColDragOver(col.id, $event)"
+               (drop)="onColDrop(col.id, $event)"
+               (dragleave)="onColDragLeave($event)">
+
+            <!-- Column header -->
+            <div class="group-header free-col-header">
+              <ng-container *ngIf="editingColumnId !== col.id">
+                <span class="col-drag-handle"
+                      draggable="true"
+                      (dragstart)="onColHeaderDragStart(col, $event)"
+                      (dragend)="onColDragEnd()"
+                      title="Drag to reorder">⠿</span>
+                <span class="group-label free-col-label"
+                      (dblclick)="startEditColumnLabel(col)"
+                      title="Double-click to rename">{{ col.label }}</span>
+                <span class="group-count">{{ getCardsForColumn(col, deck).length }}</span>
+                <button class="col-remove-btn"
+                        *ngIf="freeColumns.length > 1"
+                        (click)="removeColumn(col.id)"
+                        title="Remove column">✕</button>
+              </ng-container>
+              <input *ngIf="editingColumnId === col.id"
+                     class="col-label-input"
+                     [(ngModel)]="columnLabelDraft"
+                     (keydown.enter)="commitColumnLabel()"
+                     (keydown.escape)="cancelColumnLabel()"
+                     (blur)="commitColumnLabel()"
+                     autofocus />
+            </div>
+
+            <!-- Cards + drop indicators -->
+            <div class="drop-line" [class.active]="dragOverColId === col.id && dragOverIndex === 0"></div>
+
+            <ng-container *ngFor="let card of getCardsForColumn(col, deck); let i = index">
+              <div class="free-card"
+                   draggable="true"
+                   [class.is-dragging]="dragCardId === card.id"
+                   (dragstart)="onCardDragStart(card, col.id, $event)"
+                   (dragend)="onDragEnd()"
+                   (click)="openCard(card)">
+                <div class="visual-art"
+                     [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
+                     [class.no-image]="!tileImage(card)">
+                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <button class="thumb-flip"
+                          *ngIf="tileHasBack(card)"
+                          [class.is-flipped]="flippedCardIds.has(card.id)"
+                          (click)="toggleTileFlip(card, $event)"
+                          title="Flip">↻</button>
+                  <div class="visual-overlay" (click)="$event.stopPropagation()">
+                    <button class="visual-qty-btn visual-dec" (click)="decrement(card)">−</button>
+                    <span class="visual-qty">×{{ cardCount(card) }}</span>
+                    <button class="visual-qty-btn visual-inc" (click)="increment(card)">+</button>
+                  </div>
+                </div>
+                <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
+              </div>
+              <div class="drop-line" [class.active]="dragOverColId === col.id && dragOverIndex === i + 1"></div>
+            </ng-container>
+
+            <div class="free-empty" *ngIf="getCardsForColumn(col, deck).length === 0">
+              Drop cards here
+            </div>
+
+          </div><!-- /free-col -->
+          </ng-container>
+
+          <div class="col-insert-line" [class.active]="dragColId && dragOverColInsertIdx === freeColumns.length"></div>
+          <!-- Add column -->
+          <div class="add-col-wrap">
+            <button class="add-col-btn" (click)="addFreeColumn()">+ Column</button>
+          </div>
+
+        </div><!-- /groups-list.is-free -->
       </ng-container>
 
     </main>

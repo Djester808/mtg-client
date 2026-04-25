@@ -3,7 +3,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
-import { DeckDetailComponent } from './deck-detail.component';
+import { DeckDetailComponent, ViewMode, FreeColumn } from './deck-detail.component';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { GameApiService } from '../../services/game-api.service';
@@ -316,6 +316,340 @@ describe('DeckDetailComponent — rename', () => {
     component.isRenaming = true;
     component.cancelRename();
     expect(component.isRenaming).toBeFalse();
+  });
+});
+
+// ── View mode ────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — view mode', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('viewMode defaults to list', async () => {
+    const { component } = await setup();
+    expect(component.viewMode).toBe('list');
+  });
+
+  it('setViewMode switches to visual', async () => {
+    const { component } = await setup();
+    component.setViewMode('visual');
+    expect(component.viewMode).toBe('visual');
+  });
+
+  it('setViewMode switches back to list', async () => {
+    const { component } = await setup();
+    component.setViewMode('visual');
+    component.setViewMode('list');
+    expect(component.viewMode).toBe('list');
+  });
+
+  it('setViewMode("free") initializes freeColumns from deck groups', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([
+      makeDeckCard({ id: 'c1', quantity: 2, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) }),
+      makeDeckCard({ id: 'c2', quantity: 4, cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0, name: 'Forest' }) }),
+    ]);
+    component.setViewMode('free', deck);
+    expect(component.freeColumns.length).toBeGreaterThan(0);
+    const allCardIds = component.freeColumns.flatMap(c => c.cardIds);
+    expect(allCardIds).toContain('c1');
+    expect(allCardIds).toContain('c2');
+  });
+
+  it('setViewMode("free") loads saved layout from localStorage', async () => {
+    const { component } = await setup();
+    const saved: FreeColumn[] = [{ id: 'col-1', label: 'Saved', cardIds: ['c1'] }];
+    localStorage.setItem('deck-free-deck-1', JSON.stringify(saved));
+    component.setViewMode('free', makeDeck());
+    expect(component.freeColumns).toEqual(saved);
+  });
+});
+
+// ── Free mode columns ─────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — free mode columns', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  function initFree(component: DeckDetailComponent, cards: ReturnType<typeof makeDeckCard>[] = []) {
+    const deck = makeDeck(cards);
+    component.setViewMode('free', deck);
+    return deck;
+  }
+
+  it('addFreeColumn appends a new empty column', async () => {
+    const { component } = await setup();
+    initFree(component);
+    const before = component.freeColumns.length;
+    component.addFreeColumn();
+    expect(component.freeColumns.length).toBe(before + 1);
+    expect(component.freeColumns[component.freeColumns.length - 1].label).toBe('New Column');
+    expect(component.freeColumns[component.freeColumns.length - 1].cardIds).toHaveSize(0);
+  });
+
+  it('removeColumn moves its cards to the first column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: ['c2', 'c3'] },
+    ];
+    component.removeColumn('col-2');
+    expect(component.freeColumns).toHaveSize(1);
+    expect(component.freeColumns[0].cardIds).toContain('c2');
+    expect(component.freeColumns[0].cardIds).toContain('c3');
+  });
+
+  it('removeColumn does nothing when only one column remains', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
+    component.removeColumn('col-1');
+    expect(component.freeColumns).toHaveSize(1);
+  });
+
+  it('startEditColumnLabel sets editingColumnId and draft', async () => {
+    const { component } = await setup();
+    const col: FreeColumn = { id: 'col-1', label: 'Spells', cardIds: [] };
+    component.startEditColumnLabel(col);
+    expect(component.editingColumnId).toBe('col-1');
+    expect(component.columnLabelDraft).toBe('Spells');
+  });
+
+  it('commitColumnLabel updates the column label', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'Old', cardIds: [] }];
+    component.editingColumnId = 'col-1';
+    component.columnLabelDraft = 'New Label';
+    component.commitColumnLabel();
+    expect(component.freeColumns[0].label).toBe('New Label');
+    expect(component.editingColumnId).toBeNull();
+  });
+
+  it('commitColumnLabel ignores blank draft', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'Keep', cardIds: [] }];
+    component.editingColumnId = 'col-1';
+    component.columnLabelDraft = '   ';
+    component.commitColumnLabel();
+    expect(component.freeColumns[0].label).toBe('Keep');
+  });
+
+  it('cancelColumnLabel clears editingColumnId without saving', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'Keep', cardIds: [] }];
+    component.editingColumnId = 'col-1';
+    component.columnLabelDraft = 'Changed';
+    component.cancelColumnLabel();
+    expect(component.editingColumnId).toBeNull();
+    expect(component.freeColumns[0].label).toBe('Keep');
+  });
+});
+
+// ── getCardsForColumn ─────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — getCardsForColumn', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('returns cards in column order', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1' });
+    const c2 = makeDeckCard({ id: 'c2' });
+    const deck = makeDeck([c1, c2]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c2', 'c1'] },
+    ];
+    const result = component.getCardsForColumn(component.freeColumns[0], deck);
+    expect(result.map(c => c.id)).toEqual(['c2', 'c1']);
+  });
+
+  it('includes unassigned cards in the first column', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1' });
+    const c2 = makeDeckCard({ id: 'c2' }); // unassigned
+    const deck = makeDeck([c1, c2]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    const result = component.getCardsForColumn(component.freeColumns[0], deck);
+    expect(result.map(c => c.id)).toContain('c2');
+  });
+
+  it('does not include unassigned cards in non-first columns', async () => {
+    const { component } = await setup();
+    const c2 = makeDeckCard({ id: 'c2' }); // unassigned
+    const deck = makeDeck([c2]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    const result = component.getCardsForColumn(component.freeColumns[1], deck);
+    expect(result.map(c => c.id)).not.toContain('c2');
+  });
+
+  it('filters out card ids not present in deck', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1' });
+    const deck = makeDeck([c1]);
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'removed-card'] },
+    ];
+    const result = component.getCardsForColumn(component.freeColumns[0], deck);
+    expect(result).toHaveSize(1);
+    expect(result[0].id).toBe('c1');
+  });
+});
+
+// ── Drag and drop ─────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — drag and drop', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('onDragEnd clears all drag state', async () => {
+    const { component } = await setup();
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragOverColId = 'col-2';
+    component.dragOverIndex = 3;
+    component.onDragEnd();
+    expect(component.dragCardId).toBeNull();
+    expect(component.dragSourceColId).toBeNull();
+    expect(component.dragOverColId).toBeNull();
+    expect(component.dragOverIndex).toBeNull();
+  });
+
+  it('onColDrop moves a card from one column to another at given index', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2'] },
+      { id: 'col-2', label: 'B', cardIds: ['c3'] },
+    ];
+    component.dragCardId = 'c1';
+    component.dragSourceColId = 'col-1';
+    component.dragOverColId = 'col-2';
+    component.dragOverIndex = 1;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+
+    expect(component.freeColumns[0].cardIds).not.toContain('c1');
+    expect(component.freeColumns[1].cardIds).toEqual(['c3', 'c1']);
+  });
+
+  it('onColDrop reorders a card within the same column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
+    ];
+    component.dragCardId = 'c3';
+    component.dragSourceColId = 'col-1';
+    component.dragOverColId = 'col-1';
+    component.dragOverIndex = 0;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-1', event);
+
+    expect(component.freeColumns[0].cardIds).toEqual(['c3', 'c1', 'c2']);
+  });
+
+  it('onColDrop handles unassigned card (not in any cardIds)', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.dragCardId = 'unassigned';
+    component.dragSourceColId = 'col-1';
+    component.dragOverColId = 'col-2';
+    component.dragOverIndex = 0;
+
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+
+    expect(component.freeColumns[1].cardIds).toContain('unassigned');
+    expect(component.freeColumns[0].cardIds).not.toContain('unassigned');
+  });
+});
+
+// ── Column drag and drop ──────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — column drag and drop', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('onColDragEnd clears dragColId and dragOverColInsertIdx', async () => {
+    const { component } = await setup();
+    component.dragColId = 'col-1';
+    component.dragOverColInsertIdx = 2;
+    component.onColDragEnd();
+    expect(component.dragColId).toBeNull();
+    expect(component.dragOverColInsertIdx).toBeNull();
+  });
+
+  it('onGroupsListDrop moves column forward (earlier → later position)', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+      { id: 'col-3', label: 'C', cardIds: [] },
+    ];
+    component.dragColId = 'col-1';
+    component.dragOverColInsertIdx = 3; // insert at end
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onGroupsListDrop(event);
+    expect(component.freeColumns.map(c => c.id)).toEqual(['col-2', 'col-3', 'col-1']);
+  });
+
+  it('onGroupsListDrop moves column backward (later → earlier position)', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+      { id: 'col-3', label: 'C', cardIds: [] },
+    ];
+    component.dragColId = 'col-3';
+    component.dragOverColInsertIdx = 0; // insert at start
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onGroupsListDrop(event);
+    expect(component.freeColumns.map(c => c.id)).toEqual(['col-3', 'col-1', 'col-2']);
+  });
+
+  it('onGroupsListDrop clears drag state after drop', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.dragColId = 'col-1';
+    component.dragOverColInsertIdx = 2;
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onGroupsListDrop(event);
+    expect(component.dragColId).toBeNull();
+    expect(component.dragOverColInsertIdx).toBeNull();
+  });
+
+  it('onGroupsListDrop is a no-op when dragColId is null', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.dragColId = null;
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onGroupsListDrop(event);
+    expect(component.freeColumns.map(c => c.id)).toEqual(['col-1', 'col-2']);
+  });
+
+  it('onColDrop is guarded when a column drag is in progress', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: ['c1'] },
+      { id: 'col-2', label: 'B', cardIds: [] },
+    ];
+    component.dragColId = 'col-1';   // column drag active
+    component.dragCardId = 'c1';
+    component.dragOverIndex = 0;
+    const event = { preventDefault: () => {} } as DragEvent;
+    component.onColDrop('col-2', event);
+    // card should NOT have moved because column drag is in progress
+    expect(component.freeColumns[0].cardIds).toContain('c1');
+    expect(component.freeColumns[1].cardIds).not.toContain('c1');
   });
 });
 

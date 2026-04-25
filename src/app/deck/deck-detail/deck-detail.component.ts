@@ -25,6 +25,13 @@ import { CardSearchPanelComponent } from '../../components/card-search-panel/car
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
 export type SortMode = 'cmc' | 'name' | 'type';
+export type ViewMode = 'list' | 'visual' | 'free';
+
+export interface FreeColumn {
+  id: string;
+  label: string;
+  cardIds: string[];
+}
 
 export interface CmcGroup {
   label: string;
@@ -62,7 +69,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   filterQuery     = '';
   sortMode: SortMode = 'cmc';
+  viewMode: ViewMode = 'list';
   showSearchPanel = false;
+
+  freeColumns: FreeColumn[] = [];
+  editingColumnId: string | null = null;
+  columnLabelDraft = '';
+  dragCardId: string | null = null;
+  dragSourceColId: string | null = null;
+  dragOverColId: string | null = null;
+  dragOverIndex: number | null = null;
+  dragColId: string | null = null;
+  dragOverColInsertIdx: number | null = null;
 
   isRenaming  = false;
   renameDraft = '';
@@ -126,6 +144,240 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ---- Sort & filter ----------------------------------------
 
   setSortMode(mode: SortMode): void { this.sortMode = mode; this.cdr.markForCheck(); }
+
+  setViewMode(mode: ViewMode, deck?: DeckDetailDto): void {
+    this.viewMode = mode;
+    if (mode === 'free' && deck) this.enterFreeMode(deck);
+    this.cdr.markForCheck();
+  }
+
+  // ---- Free mode layout ------------------------------------
+
+  private enterFreeMode(deck: DeckDetailDto): void {
+    const saved = localStorage.getItem(`deck-free-${this.deckId}`);
+    if (saved) {
+      try {
+        const parsed: FreeColumn[] = JSON.parse(saved);
+        if (parsed.length) { this.freeColumns = parsed; return; }
+      } catch { /* fall through */ }
+    }
+    const prevFilter = this.filterQuery;
+    this.filterQuery = '';
+    this.freeColumns = this.getGroups(deck).map(g => ({
+      id: crypto.randomUUID(),
+      label: g.label,
+      cardIds: g.cards.map(c => c.id),
+    }));
+    this.filterQuery = prevFilter;
+    this.saveFreeLayout();
+  }
+
+  saveFreeLayout(): void {
+    localStorage.setItem(`deck-free-${this.deckId}`, JSON.stringify(this.freeColumns));
+  }
+
+  resetFreeLayout(deck: DeckDetailDto): void {
+    localStorage.removeItem(`deck-free-${this.deckId}`);
+    this.freeColumns = [];
+    this.enterFreeMode(deck);
+    this.cdr.markForCheck();
+  }
+
+  getCardsForColumn(col: FreeColumn, deck: DeckDetailDto): CollectionCardDto[] {
+    const cards = col.cardIds
+      .map(id => deck.cards.find(c => c.id === id))
+      .filter((c): c is CollectionCardDto => c != null);
+    if (this.freeColumns[0]?.id === col.id) {
+      const allAssigned = new Set(this.freeColumns.flatMap(c => c.cardIds));
+      const unassigned = deck.cards.filter(c => !allAssigned.has(c.id));
+      return [...cards, ...unassigned];
+    }
+    return cards;
+  }
+
+  addFreeColumn(): void {
+    this.freeColumns = [...this.freeColumns, {
+      id: crypto.randomUUID(), label: 'New Column', cardIds: [],
+    }];
+    this.saveFreeLayout();
+    this.cdr.markForCheck();
+  }
+
+  removeColumn(colId: string): void {
+    if (this.freeColumns.length <= 1) return;
+    const col = this.freeColumns.find(c => c.id === colId);
+    if (!col) return;
+    const remaining = this.freeColumns.filter(c => c.id !== colId);
+    remaining[0] = { ...remaining[0], cardIds: [...remaining[0].cardIds, ...col.cardIds] };
+    this.freeColumns = remaining;
+    this.saveFreeLayout();
+    this.cdr.markForCheck();
+  }
+
+  startEditColumnLabel(col: FreeColumn): void {
+    this.editingColumnId = col.id;
+    this.columnLabelDraft = col.label;
+    this.cdr.markForCheck();
+  }
+
+  commitColumnLabel(): void {
+    if (!this.editingColumnId) return;
+    const label = this.columnLabelDraft.trim();
+    if (label) {
+      this.freeColumns = this.freeColumns.map(c =>
+        c.id === this.editingColumnId ? { ...c, label } : c
+      );
+      this.saveFreeLayout();
+    }
+    this.editingColumnId = null;
+    this.cdr.markForCheck();
+  }
+
+  cancelColumnLabel(): void {
+    this.editingColumnId = null;
+    this.cdr.markForCheck();
+  }
+
+  // ---- Drag and drop ---------------------------------------
+
+  onCardDragStart(card: CollectionCardDto, colId: string, event: DragEvent): void {
+    this.dragSourceColId = colId;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', card.id);
+    }
+    setTimeout(() => { this.dragCardId = card.id; this.cdr.markForCheck(); });
+  }
+
+  onColDragOver(colId: string, event: DragEvent): void {
+    if (this.dragColId) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+
+    const col = event.currentTarget as HTMLElement;
+    const cards = Array.from(
+      col.querySelectorAll<HTMLElement>('.free-card:not(.is-dragging)')
+    );
+    let idx = cards.length;
+    for (let i = 0; i < cards.length; i++) {
+      const { top, height } = cards[i].getBoundingClientRect();
+      if (event.clientY < top + height / 2) { idx = i; break; }
+    }
+
+    if (this.dragOverColId !== colId || this.dragOverIndex !== idx) {
+      this.dragOverColId = colId;
+      this.dragOverIndex = idx;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onColDrop(colId: string, event: DragEvent): void {
+    if (this.dragColId) return;
+    event.preventDefault();
+    if (!this.dragCardId) return;
+
+    const cardId = this.dragCardId;
+    const dropIdx = this.dragOverIndex ?? 0;
+
+    const cols = this.freeColumns.map(c => ({ ...c, cardIds: c.cardIds.filter(id => id !== cardId) }));
+    const ti = cols.findIndex(c => c.id === colId);
+    if (ti >= 0) {
+      cols[ti] = {
+        ...cols[ti],
+        cardIds: [...cols[ti].cardIds.slice(0, dropIdx), cardId, ...cols[ti].cardIds.slice(dropIdx)],
+      };
+    }
+
+    this.freeColumns = cols;
+    this.saveFreeLayout();
+    this.onDragEnd();
+  }
+
+  onColDragLeave(event: DragEvent): void {
+    if (this.dragColId) return;
+    const rel = event.relatedTarget as HTMLElement | null;
+    if (!rel || !(event.currentTarget as HTMLElement).contains(rel)) {
+      this.dragOverColId = null;
+      this.dragOverIndex = null;
+      this.cdr.markForCheck();
+    }
+  }
+
+  // ---- Column drag and drop --------------------------------
+
+  onColHeaderDragStart(col: FreeColumn, event: DragEvent): void {
+    event.stopPropagation();
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', col.id);
+    }
+    setTimeout(() => { this.dragColId = col.id; this.cdr.markForCheck(); });
+  }
+
+  onColDragEnd(): void {
+    this.dragColId = null;
+    this.dragOverColInsertIdx = null;
+    this.cdr.markForCheck();
+  }
+
+  onGroupsListDragOver(event: DragEvent): void {
+    if (!this.dragColId) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+
+    const list = event.currentTarget as HTMLElement;
+    const cols = Array.from(list.querySelectorAll<HTMLElement>('.free-col'));
+    let idx = this.freeColumns.length;
+    for (let i = 0; i < cols.length; i++) {
+      if (cols[i].classList.contains('is-dragging-col')) continue;
+      const { left, width } = cols[i].getBoundingClientRect();
+      if (event.clientX < left + width / 2) { idx = i; break; }
+    }
+
+    if (this.dragOverColInsertIdx !== idx) {
+      this.dragOverColInsertIdx = idx;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onGroupsListDrop(event: DragEvent): void {
+    if (!this.dragColId) return;
+    event.preventDefault();
+    this.executeColumnDrop();
+    this.dragColId = null;
+    this.dragOverColInsertIdx = null;
+    this.cdr.markForCheck();
+  }
+
+  onGroupsListDragLeave(event: DragEvent): void {
+    if (!this.dragColId) return;
+    const rel = event.relatedTarget as HTMLElement | null;
+    if (!rel || !(event.currentTarget as HTMLElement).contains(rel)) {
+      this.dragOverColInsertIdx = null;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private executeColumnDrop(): void {
+    if (!this.dragColId || this.dragOverColInsertIdx == null) return;
+    const fromIdx = this.freeColumns.findIndex(c => c.id === this.dragColId);
+    if (fromIdx < 0) return;
+    let toIdx = this.dragOverColInsertIdx;
+    if (toIdx > fromIdx) toIdx--;
+    const cols = [...this.freeColumns];
+    const [removed] = cols.splice(fromIdx, 1);
+    cols.splice(toIdx, 0, removed);
+    this.freeColumns = cols;
+    this.saveFreeLayout();
+  }
+
+  onDragEnd(): void {
+    this.dragCardId = null;
+    this.dragSourceColId = null;
+    this.dragOverColId = null;
+    this.dragOverIndex = null;
+    this.cdr.markForCheck();
+  }
 
   totalCount(deck: DeckDetailDto): number {
     return deck.cards.reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
