@@ -7,8 +7,7 @@ import { Observable } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectDecks, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { CollectionDto } from '../../models/game.models';
-import { parseDeckMeta } from '../../models/deck.models';
+import { DeckDto } from '../../services/deck-api.service';
 
 @Component({
   selector: 'app-deck-list',
@@ -19,7 +18,7 @@ import { parseDeckMeta } from '../../models/deck.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeckListComponent implements OnInit {
-  decks$: Observable<CollectionDto[]>;
+  decks$: Observable<DeckDto[]>;
   loading$: Observable<boolean>;
 
   showCreateForm = false;
@@ -66,8 +65,8 @@ export class DeckListComponent implements OnInit {
     this.store.dispatch(DeckActions.deleteDeck({ id }));
   }
 
-  coverUri(deck: CollectionDto): string | null {
-    return parseDeckMeta(deck.description).coverUri ?? null;
+  coverUri(deck: DeckDto): string | null {
+    return deck.coverUri ?? null;
   }
 
   goHome(): void {

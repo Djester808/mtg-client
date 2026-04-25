@@ -16,12 +16,9 @@ import {
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import {
-  CollectionDetailDto, CollectionCardDto, CardDto, PrintingDto, CardType,
-} from '../../models/game.models';
-import { parseDeckMeta } from '../../models/deck.models';
+import { CollectionCardDto, CardDto, PrintingDto, CardType } from '../../models/game.models';
+import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { GameApiService } from '../../services/game-api.service';
-import { CollectionApiService } from '../../services/collection-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -60,7 +57,7 @@ export interface DeckStats {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeckDetailComponent implements OnInit, OnDestroy {
-  deck$: Observable<CollectionDetailDto | null>;
+  deck$: Observable<DeckDetailDto | null>;
   loading$: Observable<boolean>;
 
   readonly SEARCH_PAGE = 20;
@@ -115,7 +112,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private gameApi: GameApiService,
-    private collectionApi: CollectionApiService,
+    private deckApi: DeckApiService,
     private cdr: ChangeDetectorRef,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
@@ -185,7 +182,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       mergeMap(oracleId => {
         if (this.printingsCache.has(oracleId))
           return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-        return this.collectionApi.getPrintings(oracleId).pipe(
+        return this.deckApi.getPrintings(oracleId).pipe(
           map(printings => ({ oracleId, printings })),
           catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
         );
@@ -215,7 +212,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  totalCount(deck: CollectionDetailDto): number {
+  totalCount(deck: DeckDetailDto): number {
     return deck.cards.reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
   }
 
@@ -227,7 +224,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return card.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
   }
 
-  getGroups(deck: CollectionDetailDto): CmcGroup[] {
+  getGroups(deck: DeckDetailDto): CmcGroup[] {
     const filtered = this.filteredCards(deck);
 
     if (this.sortMode === 'name') {
@@ -311,13 +308,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return groups;
   }
 
-  filteredCards(deck: CollectionDetailDto): CollectionCardDto[] {
+  filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
     if (!this.filterQuery.trim()) return deck.cards;
     const q = this.filterQuery.toLowerCase();
     return deck.cards.filter(c => c.cardDetails?.name.toLowerCase().includes(q));
   }
 
-  getDeckStats(deck: CollectionDetailDto): DeckStats {
+  getDeckStats(deck: DeckDetailDto): DeckStats {
     const cards = deck.cards;
     const total = cards.reduce((s, c) => s + this.cardCount(c), 0);
     const countOf = (type: CardType) =>
@@ -420,7 +417,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }));
   }
 
-  ownedEntry(deck: CollectionDetailDto, oracleId: string): CollectionCardDto | undefined {
+  ownedEntry(deck: DeckDetailDto, oracleId: string): CollectionCardDto | undefined {
     return deck.cards.find(c => c.oracleId === oracleId);
   }
 
@@ -463,10 +460,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Cover card selection --------------------------------
 
-  setCover(deck: CollectionDetailDto, card: CollectionCardDto): void {
+  setCover(deck: DeckDetailDto, card: CollectionCardDto): void {
     const uri = card.cardDetails?.imageUriArtCrop ?? card.cardDetails?.imageUriNormal ?? null;
-    const meta = parseDeckMeta(deck.description);
-    const alreadyCover = meta.coverUri === uri;
+    const alreadyCover = deck.coverUri === uri;
     this.store.dispatch(DeckActions.updateDeckMeta({
       id: this.deckId,
       name: deck.name,
@@ -474,9 +470,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }));
   }
 
-  isCover(deck: CollectionDetailDto, card: CollectionCardDto): boolean {
+  isCover(deck: DeckDetailDto, card: CollectionCardDto): boolean {
     const uri = card.cardDetails?.imageUriArtCrop ?? card.cardDetails?.imageUriNormal ?? null;
-    return parseDeckMeta(deck.description).coverUri === uri;
+    return deck.coverUri === uri;
   }
 
   // ---- Card modal ------------------------------------------
@@ -514,7 +510,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
   tileHasBack(card: CollectionCardDto): boolean { return !!card.cardDetails?.imageUriNormalBack; }
 
-  getAlsoOwnedIds(deck: CollectionDetailDto): string[] {
+  getAlsoOwnedIds(deck: DeckDetailDto): string[] {
     if (!this.selectedCard) return [];
     return deck.cards
       .filter(c => c.oracleId === this.selectedCard!.oracleId
@@ -528,20 +524,19 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Rename ----------------------------------------------
 
-  startRename(deck: CollectionDetailDto): void {
+  startRename(deck: DeckDetailDto): void {
     this.renameDraft = deck.name;
     this.isRenaming = true;
     this.cdr.markForCheck();
   }
 
-  commitRename(deck: CollectionDetailDto): void {
+  commitRename(deck: DeckDetailDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== deck.name) {
-      const meta = parseDeckMeta(deck.description);
       this.store.dispatch(DeckActions.updateDeckMeta({
         id: this.deckId,
         name,
-        coverUri: meta.coverUri ?? null,
+        coverUri: deck.coverUri ?? null,
       }));
     }
     this.isRenaming = false;

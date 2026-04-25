@@ -1,33 +1,28 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import {
-  CollectionDto,
-  CollectionDetailDto,
-  CollectionCardDto,
-  AddCardToCollectionRequest,
-  UpdateCollectionCardRequest,
-} from '../../models/game.models';
+import { CollectionCardDto, AddCardToCollectionRequest, UpdateCollectionCardRequest } from '../../models/game.models';
+import { DeckDto, DeckDetailDto } from '../../services/deck-api.service';
 
 export const DeckActions = createActionGroup({
   source: 'Deck',
   events: {
     // Load all
     'Load Decks':         emptyProps(),
-    'Load Decks Success': props<{ decks: CollectionDto[] }>(),
+    'Load Decks Success': props<{ decks: DeckDto[] }>(),
     'Load Decks Failure': props<{ error: string }>(),
 
     // Load one
     'Load Deck':         props<{ id: string }>(),
-    'Load Deck Success': props<{ deck: CollectionDetailDto }>(),
+    'Load Deck Success': props<{ deck: DeckDetailDto }>(),
     'Load Deck Failure': props<{ error: string }>(),
 
     // Create
     'Create Deck':         props<{ name: string; coverUri: string | null }>(),
-    'Create Deck Success': props<{ deck: CollectionDetailDto }>(),
+    'Create Deck Success': props<{ deck: DeckDetailDto }>(),
     'Create Deck Failure': props<{ error: string }>(),
 
     // Update meta (name / cover)
     'Update Deck Meta':         props<{ id: string; name: string; coverUri: string | null }>(),
-    'Update Deck Meta Success': props<{ deck: CollectionDetailDto }>(),
+    'Update Deck Meta Success': props<{ deck: DeckDetailDto }>(),
     'Update Deck Meta Failure': props<{ error: string }>(),
 
     // Delete

@@ -1,10 +1,11 @@
 import { createReducer, on } from '@ngrx/store';
-import { CollectionDto, CollectionDetailDto } from '../../models/game.models';
+import { CollectionCardDto } from '../../models/game.models';
+import { DeckDto, DeckDetailDto } from '../../services/deck-api.service';
 import { DeckActions } from './deck.actions';
 
 export interface DeckState {
-  decks: CollectionDto[];
-  activeDeck: CollectionDetailDto | null;
+  decks: DeckDto[];
+  activeDeck: DeckDetailDto | null;
   loading: boolean;
   error: string | null;
 }
@@ -32,7 +33,7 @@ export const deckReducer = createReducer(
     decks: [...state.decks, {
       id: deck.id,
       name: deck.name,
-      description: deck.description,
+      coverUri: deck.coverUri,
       cardCount: 0,
       createdAt: deck.createdAt,
       updatedAt: deck.updatedAt,
@@ -42,11 +43,11 @@ export const deckReducer = createReducer(
   on(DeckActions.updateDeckMetaSuccess, (state, { deck }) => ({
     ...state,
     decks: state.decks.map(d => d.id === deck.id
-      ? { ...d, name: deck.name, description: deck.description }
+      ? { ...d, name: deck.name, coverUri: deck.coverUri }
       : d
     ),
     activeDeck: state.activeDeck?.id === deck.id
-      ? { ...state.activeDeck, name: deck.name, description: deck.description }
+      ? { ...state.activeDeck, name: deck.name, coverUri: deck.coverUri }
       : state.activeDeck,
   })),
 

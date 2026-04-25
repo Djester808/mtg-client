@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, mergeMap, of, switchMap } from 'rxjs';
 import { DeckActions } from './deck.actions';
-import { CollectionApiService } from '../../services/collection-api.service';
-import { encodeDeckMeta } from '../../models/deck.models';
+import { DeckApiService } from '../../services/deck-api.service';
 
 @Injectable()
 export class DeckEffects {
@@ -12,7 +11,7 @@ export class DeckEffects {
     this.actions$.pipe(
       ofType(DeckActions.loadDecks),
       switchMap(() =>
-        this.api.getCollections().pipe(
+        this.api.getDecks().pipe(
           map(decks => DeckActions.loadDecksSuccess({ decks })),
           catchError(err => of(DeckActions.loadDecksFailure({ error: err.message }))),
         )
@@ -24,7 +23,7 @@ export class DeckEffects {
     this.actions$.pipe(
       ofType(DeckActions.loadDeck),
       switchMap(({ id }) =>
-        this.api.getCollection(id).pipe(
+        this.api.getDeck(id).pipe(
           map(deck => DeckActions.loadDeckSuccess({ deck })),
           catchError(err => of(DeckActions.loadDeckFailure({ error: err.message }))),
         )
@@ -36,10 +35,7 @@ export class DeckEffects {
     this.actions$.pipe(
       ofType(DeckActions.createDeck),
       switchMap(({ name, coverUri }) =>
-        this.api.createCollection({
-          name,
-          description: encodeDeckMeta({ coverUri }),
-        }).pipe(
+        this.api.createDeck({ name, coverUri }).pipe(
           map(deck => DeckActions.createDeckSuccess({ deck })),
           catchError(err => of(DeckActions.createDeckFailure({ error: err.message }))),
         )
@@ -51,10 +47,7 @@ export class DeckEffects {
     this.actions$.pipe(
       ofType(DeckActions.updateDeckMeta),
       switchMap(({ id, name, coverUri }) =>
-        this.api.updateCollection(id, {
-          name,
-          description: encodeDeckMeta({ coverUri }),
-        }).pipe(
+        this.api.updateDeck(id, { name, coverUri }).pipe(
           map(deck => DeckActions.updateDeckMetaSuccess({ deck })),
           catchError(err => of(DeckActions.updateDeckMetaFailure({ error: err.message }))),
         )
@@ -66,7 +59,7 @@ export class DeckEffects {
     this.actions$.pipe(
       ofType(DeckActions.deleteDeck),
       mergeMap(({ id }) =>
-        this.api.deleteCollection(id).pipe(
+        this.api.deleteDeck(id).pipe(
           map(() => DeckActions.deleteDeckSuccess({ id })),
           catchError(() => of(DeckActions.deleteDeckSuccess({ id }))),
         )
@@ -112,6 +105,6 @@ export class DeckEffects {
 
   constructor(
     private actions$: Actions,
-    private api: CollectionApiService,
+    private api: DeckApiService,
   ) {}
 }
