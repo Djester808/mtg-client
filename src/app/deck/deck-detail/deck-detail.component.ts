@@ -10,19 +10,19 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, debounceTime,
-  switchMap, mergeMap, concatMap, takeUntil, of, catchError, map,
+  Observable, Subject, mergeMap, takeUntil, of, catchError, map,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { CollectionCardDto, CardDto, PrintingDto, CardType } from '../../models/game.models';
-import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
-import { GameApiService } from '../../services/game-api.service';
+import { CollectionCardDto, PrintingDto, CardType } from '../../models/game.models';
+import { DeckDetailDto } from '../../services/deck-api.service';
+import { CollectionApiService } from '../../services/collection-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
-import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
+import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
+import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
 export type SortMode = 'cmc' | 'name' | 'type';
 
@@ -51,7 +51,7 @@ export interface DeckStats {
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, OracleSymbolsPipe, CardModalComponent],
+  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,50 +60,26 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   deck$: Observable<DeckDetailDto | null>;
   loading$: Observable<boolean>;
 
-  readonly SEARCH_PAGE = 20;
-
-  filterQuery = '';
+  filterQuery     = '';
   sortMode: SortMode = 'cmc';
-
-  searchQuery = '';
-  searchResults: CardDto[] = [];
-  searchLoading = false;
-  searchLoadingMore = false;
-  searchHasMore = false;
   showSearchPanel = false;
 
-  searchMatchCase = false;
-  searchMatchWord = false;
-  searchUseRegex  = false;
+  isRenaming  = false;
+  renameDraft = '';
 
-  private searchOffset = 0;
-  private lastSearchQuery = '';
+  showDetailCoverPicker = false;
 
-  searchSelectedScryfallId = new Map<string, string>();
-  addErrors = new Set<string>();
-  searchFlippedIds = new Set<string>();
-
-  // Card modal
   selectedCard: CollectionCardDto | null = null;
   modalViewScryfallId: string | null = null;
   modalFlipped = false;
   flippedCardIds = new Set<string>();
-
-  // Cover card hover
-  hoveredCoverCardId: string | null = null;
-
-  // Rename
-  isRenaming = false;
-  renameDraft = '';
 
   get modalPrintings(): PrintingDto[] {
     return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
   }
 
   private deckId = '';
-  private searchInput$ = new Subject<string>();
-  private searchLoadMore$ = new Subject<void>();
-  private searchLoadSubject$ = new Subject<string>();
+  private printingsLoad$ = new Subject<string>();
   printingsCache = new Map<string, PrintingDto[]>();
   private destroy$ = new Subject<void>();
 
@@ -111,8 +87,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private store: Store<AppState>,
     private route: ActivatedRoute,
     private router: Router,
-    private gameApi: GameApiService,
-    private deckApi: DeckApiService,
+    private collectionApi: CollectionApiService,
     private cdr: ChangeDetectorRef,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
@@ -123,66 +98,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.deckId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(DeckActions.loadDeck({ id: this.deckId }));
 
-    this.searchInput$.pipe(
-      debounceTime(180),
-      switchMap(q => {
-        if (q.trim().length < 2) {
-          this.searchResults = [];
-          this.searchLoading = false;
-          this.searchHasMore = false;
-          this.cdr.markForCheck();
-          return of([] as CardDto[]);
-        }
-        this.searchLoading = true;
-        this.searchOffset = 0;
-        this.lastSearchQuery = q.trim();
-        this.cdr.markForCheck();
-        return this.gameApi.searchCards(
-          q.trim(), this.SEARCH_PAGE, 0, 'name', 'asc',
-          this.searchMatchCase, this.searchMatchWord, this.searchUseRegex,
-        ).pipe(catchError(() => of([] as CardDto[])));
-      }),
-      takeUntil(this.destroy$),
-    ).subscribe(results => {
-      this.searchResults = results;
-      this.searchHasMore = results.length === this.SEARCH_PAGE;
-      this.searchSelectedScryfallId.clear();
-      this.searchFlippedIds.clear();
-      this.addErrors.clear();
-      this.searchLoading = false;
-      results.forEach(c => {
-        if (!this.printingsCache.has(c.oracleId)) this.searchLoadSubject$.next(c.oracleId);
-      });
-      this.cdr.markForCheck();
-    });
-
-    this.searchLoadMore$.pipe(
-      concatMap(() => {
-        if (!this.lastSearchQuery || this.searchLoadingMore) return of([] as CardDto[]);
-        this.searchLoadingMore = true;
-        this.searchOffset += this.SEARCH_PAGE;
-        this.cdr.markForCheck();
-        return this.gameApi.searchCards(
-          this.lastSearchQuery, this.SEARCH_PAGE, this.searchOffset, 'name', 'asc',
-          this.searchMatchCase, this.searchMatchWord, this.searchUseRegex,
-        ).pipe(catchError(() => of([] as CardDto[])));
-      }),
-      takeUntil(this.destroy$),
-    ).subscribe(results => {
-      this.searchResults = [...this.searchResults, ...results];
-      this.searchHasMore = results.length === this.SEARCH_PAGE;
-      this.searchLoadingMore = false;
-      results.forEach(c => {
-        if (!this.printingsCache.has(c.oracleId)) this.searchLoadSubject$.next(c.oracleId);
-      });
-      this.cdr.markForCheck();
-    });
-
-    this.searchLoadSubject$.pipe(
+    this.printingsLoad$.pipe(
       mergeMap(oracleId => {
         if (this.printingsCache.has(oracleId))
           return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-        return this.deckApi.getPrintings(oracleId).pipe(
+        return this.collectionApi.getPrintings(oracleId).pipe(
           map(printings => ({ oracleId, printings })),
           catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
         );
@@ -192,8 +112,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.printingsCache.set(oracleId, printings);
       if (this.selectedCard?.oracleId === oracleId && !this.modalViewScryfallId && printings.length)
         this.modalViewScryfallId = printings[0].scryfallId;
-      if (printings.length === 1 && !this.searchSelectedScryfallId.has(oracleId))
-        this.searchSelectedScryfallId.set(oracleId, printings[0].scryfallId);
       this.cdr.markForCheck();
     });
   }
@@ -207,10 +125,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Sort & filter ----------------------------------------
 
-  setSortMode(mode: SortMode): void {
-    this.sortMode = mode;
-    this.cdr.markForCheck();
-  }
+  setSortMode(mode: SortMode): void { this.sortMode = mode; this.cdr.markForCheck(); }
 
   totalCount(deck: DeckDetailDto): number {
     return deck.cards.reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
@@ -230,12 +145,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (this.sortMode === 'name') {
       const sorted = [...filtered].sort((a, b) =>
         (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-      return [{
-        label: 'All Cards',
-        key: 'all',
-        cards: sorted,
-        totalCount: sorted.reduce((s, c) => s + this.cardCount(c), 0),
-      }];
+      return [{ label: 'All Cards', key: 'all', cards: sorted, totalCount: sorted.reduce((s, c) => s + this.cardCount(c), 0) }];
     }
 
     if (this.sortMode === 'type') {
@@ -250,61 +160,37 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           .filter(c => c.cardDetails?.cardTypes.includes(type))
           .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
                         || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-        if (cards.length) {
-          groups.push({
-            label: CardType[type] + 's',
-            key: `type-${type}`,
-            cards,
-            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-          });
-        }
+        if (cards.length)
+          groups.push({ label: CardType[type] + 's', key: `type-${type}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) });
       }
-      // uncategorised
       const typed = new Set(groups.flatMap(g => g.cards.map(c => c.id)));
       const rest = filtered.filter(c => !typed.has(c.id));
-      if (rest.length) {
+      if (rest.length)
         groups.push({ label: 'Other', key: 'type-other', cards: rest, totalCount: rest.reduce((s, c) => s + this.cardCount(c), 0) });
-      }
       return groups;
     }
 
-    // default: CMC
-    const nonLands = filtered
-      .filter(c => !this.isLand(c))
+    // CMC
+    const nonLands = filtered.filter(c => !this.isLand(c))
       .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
                     || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-    const lands = filtered
-      .filter(c => this.isLand(c))
+    const lands = filtered.filter(c => this.isLand(c))
       .sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
 
     const groups: CmcGroup[] = [];
-    const buckets: Map<string, CollectionCardDto[]> = new Map();
+    const buckets = new Map<string, CollectionCardDto[]>();
     for (const c of nonLands) {
-      const cmc = c.cardDetails?.manaValue ?? 0;
-      const key = cmc >= 6 ? '6+' : String(cmc);
+      const key = (c.cardDetails?.manaValue ?? 0) >= 6 ? '6+' : String(c.cardDetails?.manaValue ?? 0);
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(c);
     }
-    const cmcOrder = ['0', '1', '2', '3', '4', '5', '6+'];
-    for (const key of cmcOrder) {
+    for (const key of ['0', '1', '2', '3', '4', '5', '6+']) {
       const cards = buckets.get(key);
-      if (cards?.length) {
-        groups.push({
-          label: key === '6+' ? 'CMC 6+' : `CMC ${key}`,
-          key: `cmc-${key}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      }
+      if (cards?.length)
+        groups.push({ label: key === '6+' ? 'CMC 6+' : `CMC ${key}`, key: `cmc-${key}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) });
     }
-    if (lands.length) {
-      groups.push({
-        label: 'Lands',
-        key: 'lands',
-        cards: lands,
-        totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
-      });
-    }
+    if (lands.length)
+      groups.push({ label: 'Lands', key: 'lands', cards: lands, totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0) });
     return groups;
   }
 
@@ -318,124 +204,49 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cards = deck.cards;
     const total = cards.reduce((s, c) => s + this.cardCount(c), 0);
     const countOf = (type: CardType) =>
-      cards.filter(c => c.cardDetails?.cardTypes.includes(type))
-           .reduce((s, c) => s + this.cardCount(c), 0);
+      cards.filter(c => c.cardDetails?.cardTypes.includes(type)).reduce((s, c) => s + this.cardCount(c), 0);
 
-    const lands = countOf(CardType.Land);
-    const creatures = countOf(CardType.Creature);
-    const instants = countOf(CardType.Instant);
-    const sorceries = countOf(CardType.Sorcery);
+    const lands        = countOf(CardType.Land);
+    const creatures    = countOf(CardType.Creature);
+    const instants     = countOf(CardType.Instant);
+    const sorceries    = countOf(CardType.Sorcery);
     const enchantments = countOf(CardType.Enchantment);
-    const artifacts = countOf(CardType.Artifact);
+    const artifacts    = countOf(CardType.Artifact);
     const planeswalkers = countOf(CardType.Planeswalker);
-    const other = total - lands - creatures - instants - sorceries - enchantments - artifacts - planeswalkers;
+    const other = Math.max(0, total - lands - creatures - instants - sorceries - enchantments - artifacts - planeswalkers);
 
     const nonLandCards = cards.filter(c => !this.isLand(c));
-    const totalNonLandCopies = nonLandCards.reduce((s, c) => s + this.cardCount(c), 0);
-    let avgCmcSum = 0;
-    for (const c of nonLandCards) {
-      avgCmcSum += (c.cardDetails?.manaValue ?? 0) * this.cardCount(c);
-    }
-    const avgCmc = totalNonLandCopies > 0 ? Math.round((avgCmcSum / totalNonLandCopies) * 10) / 10 : 0;
+    const totalNL = nonLandCards.reduce((s, c) => s + this.cardCount(c), 0);
+    const avgCmcSum = nonLandCards.reduce((s, c) => s + (c.cardDetails?.manaValue ?? 0) * this.cardCount(c), 0);
+    const avgCmc = totalNL > 0 ? Math.round((avgCmcSum / totalNL) * 10) / 10 : 0;
 
-    const curveData: Map<number, number> = new Map();
+    const curveData = new Map<number, number>();
     for (const c of nonLandCards) {
       const cmc = Math.min(c.cardDetails?.manaValue ?? 0, 7);
       curveData.set(cmc, (curveData.get(cmc) ?? 0) + this.cardCount(c));
     }
-    const curve = [1, 2, 3, 4, 5, 6, 7].map(cmc => ({
-      cmc,
-      count: curveData.get(cmc) ?? 0,
-      label: cmc === 7 ? '7+' : String(cmc),
-    }));
+    const curve = [1, 2, 3, 4, 5, 6, 7].map(cmc => ({ cmc, count: curveData.get(cmc) ?? 0, label: cmc === 7 ? '7+' : String(cmc) }));
     const curveMax = Math.max(...curve.map(b => b.count), 1);
 
-    return { total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other: Math.max(0, other), avgCmc, curve, curveMax };
+    return { total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other, avgCmc, curve, curveMax };
   }
 
-  // ---- Search panel ----------------------------------------
+  // ---- Search panel ------------------------------------------
 
-  toggleSearchPanel(): void {
-    this.showSearchPanel = !this.showSearchPanel;
-    if (!this.showSearchPanel) {
-      this.searchQuery = '';
-      this.searchResults = [];
-      this.searchSelectedScryfallId.clear();
-      this.searchFlippedIds.clear();
-    }
-  }
+  toggleSearchPanel(): void { this.showSearchPanel = !this.showSearchPanel; }
 
-  onSearchInput(value: string): void { this.searchInput$.next(value); }
-  loadMoreSearch(): void { this.searchLoadMore$.next(); }
-
-  toggleSearchMatchCase(): void {
-    this.searchMatchCase = !this.searchMatchCase;
-    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
-  }
-  toggleSearchMatchWord(): void {
-    this.searchMatchWord = !this.searchMatchWord;
-    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
-  }
-  toggleSearchUseRegex(): void {
-    this.searchUseRegex = !this.searchUseRegex;
-    if (this.searchQuery.length >= 2) this.searchInput$.next(this.searchQuery);
-  }
-
-  toggleSearchFlip(oracleId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    if (this.searchFlippedIds.has(oracleId)) this.searchFlippedIds.delete(oracleId);
-    else this.searchFlippedIds.add(oracleId);
-    this.cdr.markForCheck();
-  }
-
-  searchCardImage(card: CardDto): string | null {
-    if (this.searchFlippedIds.has(card.oracleId) && card.imageUriNormalBack)
-      return card.imageUriNormalBack;
-    return card.imageUriSmall;
-  }
-
-  onSearchSelectFocus(oracleId: string): void {
-    if (!this.printingsCache.has(oracleId)) this.searchLoadSubject$.next(oracleId);
-  }
-  onSearchSetChange(oracleId: string, scryfallId: string): void {
-    this.searchSelectedScryfallId.set(oracleId, scryfallId);
-    this.addErrors.delete(oracleId);
-  }
-  searchSetTooltip(oracleId: string): string {
-    const scryfallId = this.searchSelectedScryfallId.get(oracleId);
-    const p = this.printingsCache.get(oracleId)?.find(x => x.scryfallId === scryfallId);
-    return p ? `${p.setName}${p.collectorNumber ? ' #' + p.collectorNumber : ''}` : 'Select a printing';
-  }
-
-  addCard(card: CardDto): void {
-    const scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
-    if (!scryfallId) { this.addErrors.add(card.oracleId); this.cdr.markForCheck(); return; }
-    this.addErrors.delete(card.oracleId);
+  onPanelCardAdd(event: { oracleId: string; scryfallId: string }): void {
     this.store.dispatch(DeckActions.addCard({
       deckId: this.deckId,
-      request: { oracleId: card.oracleId, quantity: 1, scryfallId },
+      request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId },
     }));
   }
 
-  ownedEntry(deck: DeckDetailDto, oracleId: string): CollectionCardDto | undefined {
-    return deck.cards.find(c => c.oracleId === oracleId);
-  }
-
-  highlightParts(text: string, query: string): { text: string; match: boolean }[] {
-    const q = query.trim();
-    if (!q) return [{ text, match: false }];
-    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-    const testRe = new RegExp(`^${escaped}$`, 'i');
-    return parts.filter(p => p.length > 0).map(p => ({ text: p, match: testRe.test(p) }));
-  }
-
-  // ---- Card quantity controls ------------------------------
+  // ---- Card quantity controls --------------------------------
 
   increment(card: CollectionCardDto): void {
     this.store.dispatch(DeckActions.updateCard({
-      deckId: this.deckId,
-      cardId: card.id,
+      deckId: this.deckId, cardId: card.id,
       request: { quantity: card.quantity + 1, quantityFoil: card.quantityFoil },
     }));
   }
@@ -445,53 +256,26 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
     } else if (card.quantity > 0) {
       this.store.dispatch(DeckActions.updateCard({
-        deckId: this.deckId,
-        cardId: card.id,
+        deckId: this.deckId, cardId: card.id,
         request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
       }));
     } else {
       this.store.dispatch(DeckActions.updateCard({
-        deckId: this.deckId,
-        cardId: card.id,
+        deckId: this.deckId, cardId: card.id,
         request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
       }));
     }
   }
 
-  // ---- Cover card selection --------------------------------
-
-  setCover(deck: DeckDetailDto, card: CollectionCardDto): void {
-    const uri = card.cardDetails?.imageUriArtCrop ?? card.cardDetails?.imageUriNormal ?? null;
-    const alreadyCover = deck.coverUri === uri;
-    this.store.dispatch(DeckActions.updateDeckMeta({
-      id: this.deckId,
-      name: deck.name,
-      coverUri: alreadyCover ? null : uri,
-    }));
-  }
-
-  isCover(deck: DeckDetailDto, card: CollectionCardDto): boolean {
-    const uri = card.cardDetails?.imageUriArtCrop ?? card.cardDetails?.imageUriNormal ?? null;
-    return deck.coverUri === uri;
-  }
-
-  // ---- Card modal ------------------------------------------
+  // ---- Card modal --------------------------------------------
 
   openCard(card: CollectionCardDto): void {
     this.selectedCard = card;
     this.modalFlipped = false;
     const cached = this.printingsCache.get(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.searchLoadSubject$.next(card.oracleId);
+    if (!cached) this.printingsLoad$.next(card.oracleId);
     this.cdr.markForCheck();
-  }
-
-  openSearchCard(card: CardDto): void {
-    this.openCard({
-      id: '', oracleId: card.oracleId, scryfallId: null,
-      quantity: 0, quantityFoil: 0, notes: null, addedAt: '',
-      cardDetails: card,
-    });
   }
 
   closeCard(): void { this.selectedCard = null; this.cdr.markForCheck(); }
@@ -508,6 +292,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const back  = card.cardDetails?.imageUriNormalBack ?? null;
     return this.flippedCardIds.has(card.id) && back ? back : front;
   }
+
   tileHasBack(card: CollectionCardDto): boolean { return !!card.cardDetails?.imageUriNormalBack; }
 
   getAlsoOwnedIds(deck: DeckDetailDto): string[] {
@@ -522,7 +307,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return card.cardDetails ? buildTypeLine(card.cardDetails) : '';
   }
 
-  // ---- Rename ----------------------------------------------
+  // ---- Rename -----------------------------------------------
 
   startRename(deck: DeckDetailDto): void {
     this.renameDraft = deck.name;
@@ -533,15 +318,28 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   commitRename(deck: DeckDetailDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== deck.name) {
-      this.store.dispatch(DeckActions.updateDeckMeta({
-        id: this.deckId,
-        name,
-        coverUri: deck.coverUri ?? null,
-      }));
+      this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name, coverUri: deck.coverUri ?? null }));
     }
     this.isRenaming = false;
     this.cdr.markForCheck();
   }
 
   cancelRename(): void { this.isRenaming = false; this.cdr.markForCheck(); }
+
+  // ---- Detail cover picker ----------------------------------
+
+  openDetailCoverPicker(deck: DeckDetailDto): void {
+    this.showDetailCoverPicker = true;
+    this.cdr.markForCheck();
+  }
+
+  closeDetailCoverPicker(): void {
+    this.showDetailCoverPicker = false;
+    this.cdr.markForCheck();
+  }
+
+  onDetailCoverSelected(deck: DeckDetailDto, uri: string | null): void {
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: uri }));
+    this.closeDetailCoverPicker();
+  }
 }

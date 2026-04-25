@@ -1,4 +1,4 @@
-<div class="list-shell">
+<div class="list-shell" (click)="closeMenu()">
 
   <div class="list-bg">
     <div class="bg-orb orb-1"></div>
@@ -38,16 +38,42 @@
           *ngFor="let col of (collections$ | async)"
           (click)="openCollection(col.id)"
         >
-          <div class="collection-card-body">
-            <div class="collection-icon">◈</div>
-            <div class="collection-info">
-              <h3 class="collection-name">{{ col.name }}</h3>
-              <p class="collection-desc" *ngIf="col.description">{{ col.description }}</p>
-            </div>
+          <!-- Cover art -->
+          <div class="col-cover"
+               [style.backgroundImage]="coverUri(col) ? 'url(' + coverUri(col) + ')' : 'none'"
+               [class.no-cover]="!coverUri(col)">
+            <span class="no-cover-icon" *ngIf="!coverUri(col)">◈</span>
           </div>
-          <div class="collection-card-footer">
-            <span class="card-count">{{ col.cardCount }} card{{ col.cardCount !== 1 ? 's' : '' }}</span>
-            <button class="delete-btn" (click)="deleteCollection($event, col.id)" title="Delete">✕</button>
+
+          <div class="col-info">
+            <!-- Name or rename input -->
+            <h3 class="col-name" *ngIf="renamingColId !== col.id">{{ col.name }}</h3>
+            <input
+              *ngIf="renamingColId === col.id"
+              class="rename-input"
+              [(ngModel)]="renameDraft"
+              (click)="$event.stopPropagation()"
+              (keydown.enter)="commitRename(col)"
+              (keydown.escape)="cancelRename()"
+              (blur)="commitRename(col)"
+              autofocus
+            />
+            <p class="col-desc" *ngIf="col.description && renamingColId !== col.id">{{ col.description }}</p>
+
+            <div class="col-meta">
+              <span class="card-count">{{ col.cardCount }} card{{ col.cardCount !== 1 ? 's' : '' }}</span>
+
+              <div class="col-actions" (click)="$event.stopPropagation()">
+                <button class="menu-btn" (click)="toggleMenu($event, col.id)" title="Options">⋮</button>
+
+                <div class="col-menu" *ngIf="menuColId === col.id">
+                  <button class="menu-item" (click)="startRename($event, col)">✎ Rename</button>
+                  <button class="menu-item" (click)="openCoverPicker($event, col)">⊙ Set Cover Image</button>
+                  <div class="menu-divider"></div>
+                  <button class="menu-item menu-item-danger" (click)="deleteCollection($event, col.id)">✕ Delete</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -70,6 +96,7 @@
             type="text"
             formControlName="name"
             placeholder="e.g. Modern Staples"
+            autofocus
           />
         </div>
         <div class="form-field">
@@ -88,5 +115,13 @@
       </form>
     </div>
   </div>
+
+  <!-- Cover picker modal -->
+  <app-cover-picker-modal
+    *ngIf="coverPickerCol"
+    [currentCoverUri]="coverPickerCol.coverUri ?? null"
+    (coverSelected)="onCoverSelected(coverPickerCol, $event)"
+    (closed)="closeCoverPicker()"
+  ></app-cover-picker-modal>
 
 </div>

@@ -43,6 +43,18 @@ export class CollectionEffects {
     )
   );
 
+  updateCollectionMeta$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.updateCollectionMeta),
+      mergeMap(({ id, name, description, coverUri }) =>
+        this.api.updateCollection(id, { name, description, coverUri }).pipe(
+          map(collection => CollectionActions.updateCollectionMetaSuccess({ collection })),
+          catchError(err => of(CollectionActions.updateCollectionMetaFailure({ error: err.message }))),
+        )
+      ),
+    )
+  );
+
   deleteCollection$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.deleteCollection),

@@ -15,7 +15,7 @@ function initialState(): CollectionState {
 function makeCollectionDto(overrides: Partial<CollectionDto> = {}): CollectionDto {
   return {
     id: 'col-1', name: 'My Collection',
-    description: null, cardCount: 0,
+    description: null, coverUri: null, cardCount: 0,
     createdAt: '2024-01-01', updatedAt: '2024-01-01',
     ...overrides,
   };
@@ -24,7 +24,7 @@ function makeCollectionDto(overrides: Partial<CollectionDto> = {}): CollectionDt
 function makeCollectionDetail(overrides: Partial<CollectionDetailDto> = {}): CollectionDetailDto {
   return {
     id: 'col-1', name: 'My Collection',
-    description: null,
+    description: null, coverUri: null,
     createdAt: '2024-01-01', updatedAt: '2024-01-01',
     cards: [],
     ...overrides,
@@ -181,6 +181,57 @@ describe('collectionReducer', () => {
     const base = initialState();
     const state = collectionReducer(base, CollectionActions.removeCardSuccess({ cardId: 'cc-1' }));
     expect(state).toBe(base);
+  });
+
+  // ---- updateCollectionMeta ----------------------------------------
+
+  it('updates name, description, and coverUri in collections list on updateCollectionMetaSuccess', () => {
+    const base: CollectionState = {
+      ...initialState(),
+      collections: [makeCollectionDto({ id: 'col-1', name: 'Old', description: null, coverUri: null })],
+    };
+    const updated = makeCollectionDetail({ id: 'col-1', name: 'New', description: 'desc', coverUri: 'art.jpg' });
+    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    expect(state.collections[0].name).toBe('New');
+    expect(state.collections[0].description).toBe('desc');
+    expect(state.collections[0].coverUri).toBe('art.jpg');
+  });
+
+  it('updates activeCollection on updateCollectionMetaSuccess when ids match', () => {
+    const base: CollectionState = {
+      ...initialState(),
+      collections: [makeCollectionDto({ id: 'col-1' })],
+      activeCollection: makeCollectionDetail({ id: 'col-1', name: 'Old', coverUri: null }),
+    };
+    const updated = makeCollectionDetail({ id: 'col-1', name: 'New', coverUri: 'art.jpg' });
+    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    expect(state.activeCollection!.name).toBe('New');
+    expect(state.activeCollection!.coverUri).toBe('art.jpg');
+  });
+
+  it('leaves activeCollection unchanged on updateCollectionMetaSuccess when ids do not match', () => {
+    const active = makeCollectionDetail({ id: 'col-2', name: 'Untouched' });
+    const base: CollectionState = {
+      ...initialState(),
+      collections: [makeCollectionDto({ id: 'col-1' })],
+      activeCollection: active,
+    };
+    const updated = makeCollectionDetail({ id: 'col-1', name: 'Changed' });
+    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    expect(state.activeCollection).toBe(active);
+  });
+
+  it('does not change other collections on updateCollectionMetaSuccess', () => {
+    const base: CollectionState = {
+      ...initialState(),
+      collections: [
+        makeCollectionDto({ id: 'col-1', name: 'Target' }),
+        makeCollectionDto({ id: 'col-2', name: 'Other' }),
+      ],
+    };
+    const updated = makeCollectionDetail({ id: 'col-1', name: 'Updated' });
+    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    expect(state.collections[1].name).toBe('Other');
   });
 
   // ---- failure actions ----------------------------------------

@@ -184,139 +184,41 @@
       </ng-container>
     </main>
 
-    <!-- Search panel (slides in from right) -->
-    <aside class="search-panel" [class.is-open]="showSearchPanel">
-      <div class="panel-header">
-        <span class="panel-title">Add Cards</span>
-        <button class="panel-close" (click)="toggleSearchPanel()">✕</button>
-      </div>
-
-      <div class="search-wrap">
-        <div class="search-input-row">
-          <svg class="search-icon-inner" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
-            <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-          <input
-            class="search-input"
-            type="text"
-            [(ngModel)]="searchQuery"
-            (ngModelChange)="onSearchInput($event)"
-            placeholder="Search for a card…"
-            autocomplete="off"
-          />
-        </div>
-        <div class="search-flags">
-          <button class="search-flag-btn" [class.is-active]="searchMatchCase" (click)="toggleSearchMatchCase()" title="Match case">Aa</button>
-          <button class="search-flag-btn" [class.is-active]="searchMatchWord" (click)="toggleSearchMatchWord()" title="Match whole word">\b</button>
-          <button class="search-flag-btn" [class.is-active]="searchUseRegex"  (click)="toggleSearchUseRegex()"  title="Use regular expression">.*</button>
-        </div>
-      </div>
-
-      <div class="panel-body">
-
-        <div class="search-hint" *ngIf="searchQuery.length < 2 && !searchLoading">
-          {{ searchQuery.length === 0 ? 'Type a card name to search' : 'Keep typing…' }}
-        </div>
-
-        <div class="search-spinner" *ngIf="searchLoading">Searching…</div>
-
-        <div class="search-empty" *ngIf="!searchLoading && searchQuery.length >= 2 && searchResults.length === 0">
-          No cards matching "{{ searchQuery }}"
-        </div>
-
-        <div class="results-count"
-             *ngIf="!searchLoading && searchResults.length > 0">
-          {{ searchResults.length }} result{{ searchResults.length !== 1 ? 's' : '' }}
-        </div>
-
-        <div class="results-list">
-          <ng-container *ngIf="collection$ | async as col">
-            <div class="result-row" *ngFor="let card of searchResults">
-              <div
-                class="result-art result-art-clickable"
-                [style.backgroundImage]="searchCardImage(card)
-                  ? 'url(' + searchCardImage(card) + ')'
-                  : 'none'"
-                (click)="openSearchCard(card)"
-                title="Preview card"
-              >
-                <div class="art-placeholder sm" *ngIf="!searchCardImage(card)">◈</div>
-                <button
-                  *ngIf="card.imageUriNormalBack"
-                  class="result-flip-btn"
-                  [class.is-flipped]="searchFlippedIds.has(card.oracleId)"
-                  (click)="toggleSearchFlip(card.oracleId, $event)"
-                  title="Flip card">⟲</button>
-              </div>
-
-              <div class="result-info">
-                <span class="result-name">
-                  <ng-container *ngFor="let part of highlightParts(card.name, searchQuery)">
-                    <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
-                    <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
-                  </ng-container>
-                </span>
-              </div>
-
-              <div class="result-set-wrap">
-                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
-                  <span
-                    *ngIf="prints.length === 1; else multiSelect"
-                    class="result-set-single"
-                    [title]="prints[0].setName">
-                    {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
-                  </span>
-                  <ng-template #multiSelect>
-                    <select
-                      class="result-set-select"
-                      [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-                      [title]="searchSetTooltip(card.oracleId)"
-                      [class.has-error]="addErrors.has(card.oracleId)"
-                      (focus)="onSearchSelectFocus(card.oracleId)"
-                      (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
-                    >
-                      <option value="" disabled>SET</option>
-                      <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                        {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                      </option>
-                    </select>
-                  </ng-template>
-                </ng-container>
-                <ng-template #setLoading>
-                  <select
-                    class="result-set-select"
-                    ngModel
-                    [class.has-error]="addErrors.has(card.oracleId)"
-                    (focus)="onSearchSelectFocus(card.oracleId)"
-                  >
-                    <option value="" disabled selected>SET</option>
-                  </select>
-                </ng-template>
-                <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
-              </div>
-
-              <div class="result-action">
-                <span class="owned-qty" *ngIf="ownedEntry(col, card.oracleId) as owned">
-                  ×{{ owned.quantity }}<ng-container *ngIf="owned.quantityFoil > 0"> ✦{{ owned.quantityFoil }}</ng-container>
-                </span>
-                <button class="add-result-btn" (click)="addCard(card)">
-                  {{ ownedEntry(col, card.oracleId) ? '+1' : 'Add' }}
-                </button>
-              </div>
+    <!-- Cover sidebar -->
+    <aside class="cover-panel" *ngIf="!showSearchPanel">
+      <ng-container *ngIf="collection$ | async as col">
+        <div class="cover-section" (click)="openDetailCoverPicker()">
+          <div class="cover-art"
+               [style.backgroundImage]="col.coverUri ? 'url(' + col.coverUri + ')' : 'none'"
+               [class.no-cover-art]="!col.coverUri">
+            <span class="cover-art-placeholder" *ngIf="!col.coverUri">◈</span>
+            <div class="cover-edit-overlay">
+              <span class="cover-edit-icon">✎</span>
+              <span class="cover-edit-label">Change Cover</span>
             </div>
-          </ng-container>
-
-          <div class="load-more-row" *ngIf="searchHasMore">
-            <button class="load-more-btn" (click)="loadMoreSearch()" [disabled]="searchLoadingMore">
-              {{ searchLoadingMore ? 'Loading…' : 'Load more' }}
-            </button>
           </div>
         </div>
-
-      </div>
+      </ng-container>
     </aside>
+
+    <!-- Search panel (shared component, slides in from right) -->
+    <app-card-search-panel
+      [isOpen]="showSearchPanel"
+      [ownedCards]="(collection$ | async)?.cards ?? []"
+      (cardAdd)="onPanelCardAdd($event)"
+      (panelClose)="toggleSearchPanel()"
+    ></app-card-search-panel>
   </div>
+
+  <!-- Detail cover picker modal -->
+  <ng-container *ngIf="collection$ | async as col">
+    <app-cover-picker-modal
+      *ngIf="showDetailCoverPicker"
+      [currentCoverUri]="col.coverUri ?? null"
+      (coverSelected)="onDetailCoverSelected(col, $event)"
+      (closed)="closeDetailCoverPicker()"
+    ></app-cover-picker-modal>
+  </ng-container>
 
   <!-- ---- Card detail modal ----------------------------------- -->
   <ng-container *ngIf="collection$ | async as modalCol">

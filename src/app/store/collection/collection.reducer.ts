@@ -48,6 +48,7 @@ export const collectionReducer = createReducer(
         id: collection.id,
         name: collection.name,
         description: collection.description,
+        coverUri: collection.coverUri ?? null,
         cardCount: 0,
         createdAt: collection.createdAt,
         updatedAt: collection.updatedAt,
@@ -59,6 +60,19 @@ export const collectionReducer = createReducer(
   on(CollectionActions.deleteCollectionSuccess, (state, { id }) => ({
     ...state,
     collections: state.collections.filter(c => c.id !== id),
+  })),
+
+  // Update meta
+  on(CollectionActions.updateCollectionMetaSuccess, (state, { collection }) => ({
+    ...state,
+    collections: state.collections.map(c =>
+      c.id === collection.id
+        ? { ...c, name: collection.name, description: collection.description, coverUri: collection.coverUri ?? null }
+        : c
+    ),
+    activeCollection: state.activeCollection?.id === collection.id
+      ? { ...state.activeCollection, name: collection.name, description: collection.description, coverUri: collection.coverUri ?? null }
+      : state.activeCollection,
   })),
 
   // Add card (upsert into activeCollection)

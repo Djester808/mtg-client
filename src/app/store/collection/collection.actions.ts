@@ -30,6 +30,11 @@ export const CollectionActions = createActionGroup({
     'Delete Collection':         props<{ id: string }>(),
     'Delete Collection Success': props<{ id: string }>(),
 
+    // Update meta (name / cover)
+    'Update Collection Meta':         props<{ id: string; name: string; description: string | null; coverUri: string | null }>(),
+    'Update Collection Meta Success': props<{ collection: CollectionDetailDto }>(),
+    'Update Collection Meta Failure': props<{ error: string }>(),
+
     // Add card
     'Add Card':         props<{ collectionId: string; request: AddCardToCollectionRequest }>(),
     'Add Card Success': props<{ card: CollectionCardDto }>(),

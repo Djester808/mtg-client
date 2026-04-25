@@ -194,6 +194,91 @@ describe('HomeComponent — search flags', () => {
   }));
 });
 
+// ── Home query builder ────────────────────────────────────────────────────────
+
+describe('HomeComponent — query builder', () => {
+  let component: HomeComponent;
+  let fixture: ComponentFixture<HomeComponent>;
+  let gameApi: jasmine.SpyObj<GameApiService>;
+
+  beforeEach(async () => {
+    gameApi = jasmine.createSpyObj('GameApiService', ['searchCards', 'getSets']);
+    gameApi.getSets.and.returnValue(of([]));
+    gameApi.searchCards.and.returnValue(of([]));
+    const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
+    collectionApi.getPrintings.and.returnValue(of([]));
+
+    await TestBed.configureTestingModule({
+      imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
+      providers: [
+        provideMockStore({ initialState: { game: { cards: {} } } }),
+        { provide: GameApiService,       useValue: gameApi },
+        { provide: CollectionApiService, useValue: collectionApi },
+        { provide: ElementRef,           useValue: { nativeElement: document.createElement('div') } },
+        ChangeDetectorRef,
+      ],
+    })
+    .overrideComponent(HomeComponent, { remove: { imports: [ManaCostComponent, CardModalComponent] } })
+    .compileComponents();
+  });
+
+  beforeEach(fakeAsync(() => {
+    fixture = TestBed.createComponent(HomeComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    tick(400);
+    gameApi.searchCards.calls.reset();
+    gameApi.getSets.calls.reset();
+  }));
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('sends name+oracle OR query for plain text', fakeAsync(() => {
+    component.searchText.setValue('flying');
+    tick(400);
+    const query: string = gameApi.searchCards.calls.mostRecent().args[0];
+    expect(query).toBe('(name:"flying" or o:"flying")');
+  }));
+
+  it('includes oracle text token in getSets call', fakeAsync(() => {
+    component.searchText.setValue('flying');
+    tick(400);
+    const q: string | undefined = gameApi.getSets.calls.mostRecent().args[0];
+    expect(q).toContain('o:"flying"');
+  }));
+
+  it('does not search when text is shorter than 2 characters', fakeAsync(() => {
+    component.searchText.setValue('f');
+    tick(400);
+    expect(gameApi.searchCards).not.toHaveBeenCalled();
+  }));
+
+  it('appends set token to query when activeSet is set', fakeAsync(() => {
+    component.activeSet = 'dom';
+    component.searchText.setValue('flying');
+    tick(400);
+    const query: string = gameApi.searchCards.calls.mostRecent().args[0];
+    expect(query).toContain('(name:"flying" or o:"flying")');
+    expect(query).toContain('s:dom');
+  }));
+
+  it('sends only set token when there is no text', fakeAsync(() => {
+    component.selectSetFromDrop('dom');
+    tick(400);
+    const query: string = gameApi.searchCards.calls.mostRecent().args[0];
+    expect(query).toBe('s:dom');
+  }));
+
+  it('appends type token alongside oracle text query', fakeAsync(() => {
+    component.toggleType('Creature');
+    component.searchText.setValue('flying');
+    tick(400);
+    const query: string = gameApi.searchCards.calls.mostRecent().args[0];
+    expect(query).toContain('(name:"flying" or o:"flying")');
+    expect(query).toContain('t:creature');
+  }));
+});
+
 // ── Home flip ─────────────────────────────────────────────────────────────────
 
 describe('HomeComponent — flip', () => {

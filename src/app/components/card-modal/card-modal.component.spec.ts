@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { of } from 'rxjs';
 import { CardModalComponent } from './card-modal.component';
 import { CardType, PrintingDto } from '../../models/game.models';
+import { GameApiService } from '../../services/game-api.service';
 import { makeCard } from '../../testing/test-factories';
 
 function makePrinting(overrides: Partial<PrintingDto> = {}): PrintingDto {
@@ -19,9 +21,13 @@ describe('CardModalComponent', () => {
   let fixture: ComponentFixture<CardModalComponent>;
 
   beforeEach(async () => {
+    const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['getCardRulings']);
+    gameApi.getCardRulings.and.returnValue(of([]));
+
     await TestBed.configureTestingModule({
       imports: [CardModalComponent],
       schemas: [NO_ERRORS_SCHEMA],
+      providers: [{ provide: GameApiService, useValue: gameApi }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardModalComponent);

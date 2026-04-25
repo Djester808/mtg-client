@@ -1,0 +1,252 @@
+<div class="panel-header">
+  <span class="panel-title">Add Cards</span>
+  <button class="panel-close" (click)="close()">✕</button>
+</div>
+
+<!-- Search input -->
+<div class="search-wrap">
+  <div class="search-input-row">
+    <svg class="search-icon-inner" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
+      <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <input
+      class="search-input"
+      type="text"
+      [formControl]="searchText"
+      placeholder="Search cards…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div class="search-flags">
+      <button class="search-flag-btn" [class.is-active]="matchCase" (click)="toggleMatchCase()" title="Match case">Aa</button>
+      <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
+      <button class="search-flag-btn" [class.is-active]="useRegex"  (click)="toggleUseRegex()"  title="Use regular expression">.*</button>
+    </div>
+    <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')">✕</span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="panel-filters">
+
+  <!-- Row 1: Colors + divider + Rarity -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <button
+        class="color-pip"
+        *ngFor="let c of colorOptions"
+        [ngClass]="'pip-' + c.code"
+        [class.is-active]="selectedColors.has(c.code)"
+        (click)="toggleColor(c.code)"
+        [title]="c.title"
+      >{{ c.label }}</button>
+    </div>
+    <span class="filter-divider"></span>
+    <div class="filter-group">
+      <button
+        class="rarity-badge"
+        *ngFor="let r of rarityOptions"
+        [ngClass]="'rarity-' + r.code"
+        [class.is-active]="selectedRarities.has(r.code)"
+        (click)="toggleRarity(r.code)"
+        [title]="r.title"
+      >{{ r.label }}</button>
+    </div>
+  </div>
+
+  <!-- Row 2: Types (wrap allowed) -->
+  <div class="filter-row filter-row-wrap">
+    <button
+      class="filter-pill"
+      *ngFor="let t of typeOptions"
+      [class.is-active]="selectedTypes.has(t)"
+      (click)="toggleType(t)"
+    >{{ t }}</button>
+  </div>
+
+  <!-- Row 3: CMC + Sort -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">CMC</span>
+      <button
+        class="cmc-btn"
+        *ngFor="let opt of cmcOptions"
+        [class.is-active]="selectedCmc === opt"
+        (click)="toggleCmc(opt)"
+      >{{ opt }}</button>
+    </div>
+    <span class="filter-divider"></span>
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <button class="sort-btn" [class.is-active]="sortBy === 'name'" (click)="setSortBy('name')">Name</button>
+      <button class="sort-btn" [class.is-active]="sortBy === 'cmc'"  (click)="setSortBy('cmc')">CMC</button>
+      <button class="sort-dir-btn" (click)="toggleSortDir()" [title]="sortDir === 'asc' ? 'Ascending' : 'Descending'">
+        {{ sortDir === 'asc' ? '▲' : '▼' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Row 4: Set filter + clear -->
+  <div class="filter-row filter-row-set">
+    <div class="filter-group filter-group-set">
+      <span class="filter-label">Set</span>
+      <div class="set-dropdown-wrap">
+        <button class="set-trigger" [class.is-active]="activeSet" (click)="openSetDrop()">
+          <span class="set-trigger-text">
+            <ng-container *ngIf="activeSet">
+              <span class="set-trigger-code">{{ activeSet.toUpperCase() }}</span>
+              <span class="set-trigger-name">{{ activeSetName }}</span>
+            </ng-container>
+            <span class="set-trigger-placeholder" *ngIf="!activeSet">All Sets</span>
+          </span>
+          <span class="set-trigger-arrow">▾</span>
+        </button>
+        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter">✕</button>
+
+        <div class="set-dropdown" *ngIf="setDropOpen">
+          <div class="set-search-wrap">
+            <input
+              class="set-search-input"
+              type="text"
+              [(ngModel)]="setQuery"
+              placeholder="Search sets…"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+            />
+          </div>
+          <div class="set-list">
+            <div
+              class="set-option"
+              *ngFor="let s of filteredSets"
+              [class.is-active]="activeSet?.toLowerCase() === s.code.toLowerCase()"
+              (click)="selectSetFromDrop(s.code)"
+            >
+              <span class="set-opt-code">{{ s.code }}</span>
+              <span class="set-opt-name">{{ s.name }}</span>
+              <span class="set-opt-count">{{ s.cardCount }}</span>
+            </div>
+            <div class="set-no-results" *ngIf="filteredSets.length === 0">No sets match "{{ setQuery }}"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="clear-btn" *ngIf="hasFilters" (click)="clearFilters()">✕ Clear</button>
+  </div>
+
+</div>
+
+<!-- Body: states + results -->
+<div class="panel-body">
+
+  <div class="search-hint" *ngIf="!searched && !loading">
+    {{ (searchText.value?.length ?? 0) === 0 ? 'Search cards or use filters above' : 'Keep typing…' }}
+  </div>
+
+  <div class="search-spinner" *ngIf="loading">Searching…</div>
+
+  <div class="search-empty" *ngIf="!loading && searched && results.length === 0">
+    No cards found
+  </div>
+
+  <div class="results-count" *ngIf="!loading && results.length > 0">
+    {{ results.length }} result{{ results.length !== 1 ? 's' : '' }}<span *ngIf="hasMore"> so far</span>
+  </div>
+
+  <div class="results-list">
+    <div class="result-row" *ngFor="let card of results">
+
+      <!-- Card art (click = preview modal) -->
+      <div
+        class="result-art result-art-clickable"
+        [style.backgroundImage]="cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'"
+        (click)="openPreview(card)"
+        title="Preview card"
+      >
+        <div class="art-placeholder sm" *ngIf="!cardImage(card)">◈</div>
+        <button
+          *ngIf="card.imageUriNormalBack"
+          class="result-flip-btn"
+          [class.is-flipped]="flippedIds.has(card.oracleId)"
+          (click)="toggleFlip(card.oracleId, $event)"
+          title="Flip card">⟲</button>
+      </div>
+
+      <!-- Name -->
+      <div class="result-info">
+        <span class="result-name">
+          <ng-container *ngFor="let part of highlightParts(card.name)">
+            <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
+            <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
+          </ng-container>
+        </span>
+      </div>
+
+      <!-- Set / printing selector -->
+      <div class="result-set-wrap">
+        <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
+          <span
+            *ngIf="prints.length === 1; else multiSelect"
+            class="result-set-single"
+            [title]="prints[0].setName">
+            {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
+          </span>
+          <ng-template #multiSelect>
+            <select
+              class="result-set-select"
+              [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+              [title]="setTooltip(card.oracleId)"
+              [class.has-error]="addErrors.has(card.oracleId)"
+              (focus)="onSelectFocus(card.oracleId)"
+              (ngModelChange)="onSetChange(card.oracleId, $event)"
+            >
+              <option value="" disabled>SET</option>
+              <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+              </option>
+            </select>
+          </ng-template>
+        </ng-container>
+        <ng-template #setLoading>
+          <select
+            class="result-set-select"
+            ngModel
+            [class.has-error]="addErrors.has(card.oracleId)"
+            (focus)="onSelectFocus(card.oracleId)"
+          >
+            <option value="" disabled selected>SET</option>
+          </select>
+        </ng-template>
+        <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
+      </div>
+
+      <!-- Add button -->
+      <div class="result-action">
+        <span class="owned-qty" *ngIf="ownedEntry(card.oracleId) as owned">
+          ×{{ owned.quantity + owned.quantityFoil }}
+        </span>
+        <button class="add-result-btn" (click)="addCard(card)">
+          {{ ownedEntry(card.oracleId) ? '+1' : 'Add' }}
+        </button>
+      </div>
+
+    </div>
+
+    <div class="load-more-row" *ngIf="hasMore || loadingMore">
+      <button class="load-more-btn" (click)="loadMore()" [disabled]="loadingMore">
+        {{ loadingMore ? 'Loading…' : 'Load more' }}
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Preview modal (simple, no quantity controls) -->
+<app-card-modal
+  *ngIf="previewCard"
+  [card]="previewCard"
+  [printings]="previewPrintings"
+  [(viewedScryfallId)]="previewScryfallId"
+  [(flipped)]="previewFlipped"
+  (closed)="closePreview()"
+></app-card-modal>

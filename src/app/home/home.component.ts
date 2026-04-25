@@ -325,7 +325,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private buildNonSetQuery(text: string): string {
     const parts: string[] = [];
-    if (text.trim().length >= 2) parts.push(`name:"${text.trim()}"`);
+    if (text.trim().length >= 2) parts.push(`(name:"${text.trim()}" or o:"${text.trim()}")`);
 
     if (this.selectedColors.size > 0) {
       const codes = [...this.selectedColors];

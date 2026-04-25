@@ -4,6 +4,7 @@ export interface CollectionDto {
   id: string;
   name: string;
   description: string | null;
+  coverUri: string | null;
   cardCount: number;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +25,7 @@ export interface CollectionDetailDto {
   id: string;
   name: string;
   description: string | null;
+  coverUri: string | null;
   createdAt: string;
   updatedAt: string;
   cards: CollectionCardDto[];
@@ -37,6 +39,7 @@ export interface CreateCollectionRequest {
 export interface UpdateCollectionRequest {
   name: string;
   description?: string | null;
+  coverUri?: string | null;
 }
 
 export interface AddCardToCollectionRequest {

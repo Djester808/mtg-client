@@ -187,8 +187,8 @@
 
 .collection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
   animation: fade-up 0.3s ease;
 }
 
@@ -208,48 +208,57 @@
   flex-direction: column;
 
   &:hover {
-    border-color: var(--gold-dim);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.12);
-    transform: translateY(-2px);
+    border-color: rgba(201,168,76,0.4);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.15);
+    transform: translateY(-3px);
+
+    .col-cover { transform: scale(1.04); }
   }
 }
 
-.collection-card-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  flex: 1;
-}
-
-.collection-icon {
-  font-size: 30px;
-  color: var(--gold-dim);
+.col-cover {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background-size: cover;
+  background-position: center top;
+  transition: transform 0.35s ease;
   flex-shrink: 0;
-  line-height: 1;
-  margin-top: 2px;
+
+  &.no-cover {
+    background: linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(30,27,15,0.8) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
-.collection-info {
-  flex: 1;
-  min-width: 0;
+.no-cover-icon {
+  font-size: 42px;
+  color: rgba(201,168,76,0.3);
 }
 
-.collection-name {
+.col-info {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.col-name {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-primary);
-  margin: 0 0 6px;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.collection-desc {
+.col-desc {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
   margin: 0;
   display: -webkit-box;
@@ -258,13 +267,10 @@
   overflow: hidden;
 }
 
-.collection-card-footer {
+.col-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  border-top: 1px solid var(--border-dim);
-  background: rgba(14,14,15,0.6);
 }
 
 .card-count {
@@ -276,22 +282,87 @@
   color: var(--text-dim);
 }
 
-.delete-btn {
+.col-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.menu-btn {
   background: none;
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 13px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: all 0.15s;
+  font-size: 18px;
   line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
 
-  &:hover {
-    color: var(--red-accent);
-    background: rgba(192,57,43,0.12);
+  &:hover { color: var(--text-primary); background: var(--bg-raised); }
+}
+
+.col-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-lit);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 50;
+  animation: menu-in 0.12s ease;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 10px 16px;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover { background: var(--bg-raised); color: var(--text-primary); }
+
+  &.menu-item-danger {
+    color: #e25050;
+    &:hover { background: rgba(226,80,80,0.1); color: #ff6b6b; }
   }
 }
+
+.menu-divider {
+  height: 1px;
+  background: var(--border-dim);
+  margin: 2px 0;
+}
+
+.rename-input {
+  width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid rgba(201,168,76,0.5);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 5px 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
 
 // ---- Create modal ----------------------------------------
 

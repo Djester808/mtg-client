@@ -1,4 +1,4 @@
-<div class="list-shell">
+<div class="list-shell" (click)="closeMenu()">
 
   <div class="list-bg">
     <div class="bg-orb orb-1"></div>
@@ -46,10 +46,34 @@
           </div>
 
           <div class="deck-info">
-            <h3 class="deck-name">{{ deck.name }}</h3>
+            <!-- Name or rename input -->
+            <h3 class="deck-name" *ngIf="renamingDeckId !== deck.id">{{ deck.name }}</h3>
+            <input
+              *ngIf="renamingDeckId === deck.id"
+              class="rename-input"
+              [(ngModel)]="renameDraft"
+              (click)="$event.stopPropagation()"
+              (keydown.enter)="commitRename(deck)"
+              (keydown.escape)="cancelRename()"
+              (blur)="commitRename(deck)"
+              autofocus
+            />
+
             <div class="deck-meta">
               <span class="card-count">{{ deck.cardCount }} card{{ deck.cardCount !== 1 ? 's' : '' }}</span>
-              <button class="delete-btn" (click)="deleteDeck($event, deck.id)" title="Delete deck">✕</button>
+
+              <div class="deck-actions" (click)="$event.stopPropagation()">
+                <!-- 3-dot menu button -->
+                <button class="menu-btn" (click)="toggleMenu($event, deck.id)" title="Options">⋮</button>
+
+                <!-- Dropdown -->
+                <div class="deck-menu" *ngIf="menuDeckId === deck.id">
+                  <button class="menu-item" (click)="startRename($event, deck)">✎ Rename</button>
+                  <button class="menu-item" (click)="openCoverPicker($event, deck)">⊙ Set Cover Image</button>
+                  <div class="menu-divider"></div>
+                  <button class="menu-item menu-item-danger" (click)="deleteDeck($event, deck.id)">✕ Delete</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -83,5 +107,13 @@
       </form>
     </div>
   </div>
+
+  <!-- Cover picker modal -->
+  <app-cover-picker-modal
+    *ngIf="coverPickerDeck"
+    [currentCoverUri]="coverPickerDeck.coverUri ?? null"
+    (coverSelected)="onCoverSelected(coverPickerDeck, $event)"
+    (closed)="closeCoverPicker()"
+  ></app-cover-picker-modal>
 
 </div>
