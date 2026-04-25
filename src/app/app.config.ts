@@ -10,6 +10,7 @@ import { appReducers } from './store';
 import { GameEffects } from './store/game/game.effects';
 import { CollectionEffects } from './store/collection/collection.effects';
 import { AuthEffects } from './store/auth/auth.effects';
+import { DeckEffects } from './store/deck/deck.effects';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { AuthActions } from './store/auth/auth.actions';
 
@@ -23,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimations(),
     provideStore(appReducers),
-    provideEffects([GameEffects, CollectionEffects, AuthEffects]),
+    provideEffects([GameEffects, CollectionEffects, AuthEffects, DeckEffects]),
     provideStoreDevtools({
       maxAge: 50,
       logOnly: false,

@@ -5,6 +5,8 @@ import { LobbyComponent } from './lobby/lobby.component';
 import { KbComponent } from './kb/kb.component';
 import { CollectionListComponent } from './collection/collection-list/collection-list.component';
 import { CollectionDetailComponent } from './collection/collection-detail/collection-detail.component';
+import { DeckListComponent } from './deck/deck-list/deck-list.component';
+import { DeckDetailComponent } from './deck/deck-detail/deck-detail.component';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { authGuard } from './guards/auth.guard';
@@ -45,6 +47,16 @@ export const routes: Routes = [
   {
     path: 'collection/:id',
     component: CollectionDetailComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'deck',
+    component: DeckListComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'deck/:id',
+    component: DeckDetailComponent,
     canActivate: [authGuard],
   },
 ];

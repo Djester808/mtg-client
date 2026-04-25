@@ -1,0 +1,52 @@
+import { createActionGroup, emptyProps, props } from '@ngrx/store';
+import {
+  CollectionDto,
+  CollectionDetailDto,
+  CollectionCardDto,
+  AddCardToCollectionRequest,
+  UpdateCollectionCardRequest,
+} from '../../models/game.models';
+
+export const DeckActions = createActionGroup({
+  source: 'Deck',
+  events: {
+    // Load all
+    'Load Decks':         emptyProps(),
+    'Load Decks Success': props<{ decks: CollectionDto[] }>(),
+    'Load Decks Failure': props<{ error: string }>(),
+
+    // Load one
+    'Load Deck':         props<{ id: string }>(),
+    'Load Deck Success': props<{ deck: CollectionDetailDto }>(),
+    'Load Deck Failure': props<{ error: string }>(),
+
+    // Create
+    'Create Deck':         props<{ name: string; coverUri: string | null }>(),
+    'Create Deck Success': props<{ deck: CollectionDetailDto }>(),
+    'Create Deck Failure': props<{ error: string }>(),
+
+    // Update meta (name / cover)
+    'Update Deck Meta':         props<{ id: string; name: string; coverUri: string | null }>(),
+    'Update Deck Meta Success': props<{ deck: CollectionDetailDto }>(),
+    'Update Deck Meta Failure': props<{ error: string }>(),
+
+    // Delete
+    'Delete Deck':         props<{ id: string }>(),
+    'Delete Deck Success': props<{ id: string }>(),
+
+    // Add card
+    'Add Card':         props<{ deckId: string; request: AddCardToCollectionRequest }>(),
+    'Add Card Success': props<{ card: CollectionCardDto }>(),
+    'Add Card Failure': props<{ error: string }>(),
+
+    // Update card
+    'Update Card':         props<{ deckId: string; cardId: string; request: UpdateCollectionCardRequest }>(),
+    'Update Card Success': props<{ card: CollectionCardDto }>(),
+    'Update Card Failure': props<{ error: string }>(),
+
+    // Remove card
+    'Remove Card':         props<{ deckId: string; cardId: string }>(),
+    'Remove Card Success': props<{ cardId: string }>(),
+    'Remove Card Failure': props<{ error: string }>(),
+  },
+});

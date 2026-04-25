@@ -1,0 +1,356 @@
+<div class="detail-shell">
+
+  <div class="detail-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="detail-header">
+    <button class="back-btn" (click)="goBack()">← Decks</button>
+
+    <ng-container *ngIf="deck$ | async as deck; else loadingHeader">
+
+      <!-- Editable name -->
+      <div class="header-name-wrap" *ngIf="!isRenaming" (dblclick)="startRename(deck)" title="Double-click to rename">
+        <h1 class="header-name">{{ deck.name }}</h1>
+        <button class="rename-btn" (click)="startRename(deck)" title="Rename deck">✎</button>
+      </div>
+      <div class="header-name-wrap" *ngIf="isRenaming">
+        <input
+          class="rename-input"
+          [(ngModel)]="renameDraft"
+          (keydown.enter)="commitRename(deck)"
+          (keydown.escape)="cancelRename()"
+          (blur)="commitRename(deck)"
+          autofocus
+        />
+      </div>
+
+      <div class="header-right">
+        <!-- Sort controls -->
+        <div class="sort-group">
+          <button class="sort-btn" [class.is-active]="sortMode === 'cmc'"  (click)="setSortMode('cmc')">CMC</button>
+          <button class="sort-btn" [class.is-active]="sortMode === 'type'" (click)="setSortMode('type')">Type</button>
+          <button class="sort-btn" [class.is-active]="sortMode === 'name'" (click)="setSortMode('name')">Name</button>
+        </div>
+
+        <span class="header-count">{{ totalCount(deck) }} / 60</span>
+
+        <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+          {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
+        </button>
+      </div>
+
+    </ng-container>
+    <ng-template #loadingHeader>
+      <div class="header-center"><h1 class="header-name is-loading">Loading…</h1></div>
+    </ng-template>
+  </header>
+
+  <!-- Body -->
+  <div class="detail-body">
+
+    <!-- Left: card groups -->
+    <main class="groups-area" *ngIf="deck$ | async as deck">
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="filter-wrap">
+          <span class="filter-icon">⌕</span>
+          <input
+            class="filter-input"
+            type="text"
+            [(ngModel)]="filterQuery"
+            placeholder="Filter cards…"
+          />
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="loading$ | async">Loading deck…</div>
+
+      <!-- Empty -->
+      <div class="empty-state" *ngIf="!(loading$ | async) && deck.cards.length === 0">
+        <div class="empty-icon">⊗</div>
+        <p class="empty-title">No cards yet</p>
+        <p class="empty-sub">Click "Add Cards" to search and add cards to your deck.</p>
+        <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
+      </div>
+
+      <!-- CMC / Type / Name groups -->
+      <ng-container *ngIf="!(loading$ | async) && deck.cards.length > 0">
+        <div class="groups-list">
+          <div class="cmc-group" *ngFor="let group of getGroups(deck)">
+
+            <div class="group-header">
+              <span class="group-label">{{ group.label }}</span>
+              <span class="group-count">{{ group.totalCount }}</span>
+            </div>
+
+            <div class="card-list">
+              <div
+                class="card-row"
+                *ngFor="let card of group.cards"
+                (mouseenter)="hoveredCoverCardId = card.id"
+                (mouseleave)="hoveredCoverCardId = null"
+              >
+                <!-- Thumbnail -->
+                <div
+                  class="card-thumb"
+                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
+                  [class.no-image]="!tileImage(card)"
+                  (click)="openCard(card)"
+                >
+                  <span class="thumb-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <button class="thumb-flip"
+                          *ngIf="tileHasBack(card)"
+                          [class.is-flipped]="flippedCardIds.has(card.id)"
+                          (click)="toggleTileFlip(card, $event)"
+                          title="Flip">↻</button>
+
+                  <!-- Cover badge -->
+                  <span class="cover-badge" *ngIf="isCover(deck, card)" title="Deck cover">★</span>
+                </div>
+
+                <!-- Card info -->
+                <div class="card-info" (click)="openCard(card)">
+                  <div class="card-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
+                  <div class="card-type">{{ typeLine(card) }}</div>
+                  <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost" class="card-mana"></app-mana-cost>
+                </div>
+
+                <!-- Actions: qty + cover -->
+                <div class="card-actions">
+                  <!-- Set as cover (visible on hover) -->
+                  <button
+                    class="cover-btn"
+                    [class.is-cover]="isCover(deck, card)"
+                    [class.is-visible]="hoveredCoverCardId === card.id || isCover(deck, card)"
+                    (click)="setCover(deck, card)"
+                    [title]="isCover(deck, card) ? 'Remove cover' : 'Set as deck cover'"
+                  >{{ isCover(deck, card) ? '★' : '☆' }}</button>
+
+                  <!-- Quantity controls -->
+                  <div class="qty-ctrl">
+                    <button class="qty-btn qty-dec" (click)="decrement(card)">−</button>
+                    <span class="qty-num">{{ cardCount(card) }}</span>
+                    <button class="qty-btn qty-inc" (click)="increment(card)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+
+    </main>
+
+    <!-- Right: stats + search panel -->
+    <aside class="side-panel">
+
+      <!-- Deck stats (always visible) -->
+      <ng-container *ngIf="deck$ | async as deck">
+        <div class="stats-section" *ngIf="!(loading$ | async) as notLoading">
+          <ng-container *ngIf="getDeckStats(deck) as stats">
+
+            <div class="stats-header">Deck Stats</div>
+
+            <!-- Totals -->
+            <div class="stat-row">
+              <span class="stat-label">Total Cards</span>
+              <span class="stat-val" [class.over-limit]="stats.total > 60">{{ stats.total }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.lands > 0">
+              <span class="stat-label">Lands</span>
+              <span class="stat-val">{{ stats.lands }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.creatures > 0">
+              <span class="stat-label">Creatures</span>
+              <span class="stat-val">{{ stats.creatures }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.instants > 0">
+              <span class="stat-label">Instants</span>
+              <span class="stat-val">{{ stats.instants }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.sorceries > 0">
+              <span class="stat-label">Sorceries</span>
+              <span class="stat-val">{{ stats.sorceries }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.enchantments > 0">
+              <span class="stat-label">Enchantments</span>
+              <span class="stat-val">{{ stats.enchantments }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.artifacts > 0">
+              <span class="stat-label">Artifacts</span>
+              <span class="stat-val">{{ stats.artifacts }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.planeswalkers > 0">
+              <span class="stat-label">Planeswalkers</span>
+              <span class="stat-val">{{ stats.planeswalkers }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.other > 0">
+              <span class="stat-label">Other</span>
+              <span class="stat-val">{{ stats.other }}</span>
+            </div>
+            <div class="stat-row" *ngIf="stats.avgCmc > 0">
+              <span class="stat-label">Avg. CMC</span>
+              <span class="stat-val">{{ stats.avgCmc }}</span>
+            </div>
+
+            <!-- Mana curve -->
+            <div class="curve-header">Mana Curve</div>
+            <div class="curve-chart">
+              <div class="curve-bars">
+                <div class="curve-bar-wrap" *ngFor="let b of stats.curve">
+                  <div class="curve-bar-col">
+                    <span class="curve-count" *ngIf="b.count > 0">{{ b.count }}</span>
+                    <div class="curve-bar"
+                         [style.height.%]="b.count > 0 ? (b.count / stats.curveMax * 100) : 0"
+                         [class.has-count]="b.count > 0">
+                    </div>
+                  </div>
+                  <span class="curve-label">{{ b.label }}</span>
+                </div>
+              </div>
+            </div>
+
+          </ng-container>
+        </div>
+      </ng-container>
+
+      <!-- Search panel (slides open) -->
+      <div class="search-panel" [class.is-open]="showSearchPanel">
+
+        <div class="panel-header">
+          <span class="panel-title">Add Cards</span>
+          <button class="panel-close" (click)="toggleSearchPanel()">✕</button>
+        </div>
+
+        <div class="search-wrap">
+          <div class="search-input-row">
+            <span class="search-icon-inner">⌕</span>
+            <input
+              class="search-input"
+              type="text"
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onSearchInput($event)"
+              placeholder="Search cards…"
+            />
+          </div>
+          <div class="search-flags">
+            <button class="search-flag-btn" [class.is-active]="searchMatchCase"  (click)="toggleSearchMatchCase()"  title="Match case">Aa</button>
+            <button class="search-flag-btn" [class.is-active]="searchMatchWord"  (click)="toggleSearchMatchWord()"  title="Match whole word">W</button>
+            <button class="search-flag-btn" [class.is-active]="searchUseRegex"   (click)="toggleSearchUseRegex()"   title="Use regex">.*</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <p class="search-hint" *ngIf="!searchQuery || searchQuery.length < 2">
+            Type at least 2 characters to search…
+          </p>
+          <p class="search-spinner" *ngIf="searchLoading">Searching…</p>
+          <p class="search-empty" *ngIf="!searchLoading && searchResults.length === 0 && searchQuery.length >= 2">
+            No results found.
+          </p>
+
+          <div class="results-count" *ngIf="searchResults.length > 0 && !searchLoading">
+            {{ searchResults.length }} result{{ searchResults.length !== 1 ? 's' : '' }}
+          </div>
+
+          <ng-container *ngIf="deck$ | async as deck">
+            <div class="results-list" *ngIf="searchResults.length > 0">
+
+              <div class="result-row" *ngFor="let card of searchResults">
+                <!-- Art thumbnail -->
+                <div
+                  class="result-art result-art-clickable"
+                  [style.backgroundImage]="searchCardImage(card) ? 'url(' + searchCardImage(card) + ')' : 'none'"
+                  (click)="openSearchCard(card)"
+                >
+                  <span class="art-placeholder sm" *ngIf="!searchCardImage(card)">◈</span>
+                  <button class="result-flip-btn"
+                          *ngIf="card.imageUriNormalBack"
+                          [class.is-flipped]="searchFlippedIds.has(card.oracleId)"
+                          (click)="toggleSearchFlip(card.oracleId, $event)">↻</button>
+                </div>
+
+                <!-- Info + set dropdown -->
+                <div class="result-info">
+                  <div class="result-name">
+                    <ng-container *ngFor="let part of highlightParts(card.name, searchQuery)">
+                      <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
+                      <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
+                    </ng-container>
+                  </div>
+                  <div class="result-meta">{{ card.manaCost || '—' }} · CMC {{ card.manaValue }}</div>
+
+                  <!-- Set selector -->
+                  <div class="result-set-wrap">
+                    <ng-container *ngIf="(printingsCache.get(card.oracleId)?.length ?? 0) > 1">
+                      <select
+                        class="result-set-select"
+                        [class.has-error]="addErrors.has(card.oracleId)"
+                        [title]="searchSetTooltip(card.oracleId)"
+                        [value]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+                        (focus)="onSearchSelectFocus(card.oracleId)"
+                        (change)="onSearchSetChange(card.oracleId, $any($event.target).value)"
+                      >
+                        <option value="" disabled>Select set…</option>
+                        <option
+                          *ngFor="let p of printingsCache.get(card.oracleId)"
+                          [value]="p.scryfallId"
+                        >{{ p.setName }} #{{ p.collectorNumber }}</option>
+                      </select>
+                    </ng-container>
+                    <ng-container *ngIf="(printingsCache.get(card.oracleId)?.length ?? 0) === 1">
+                      <span class="result-set-single"
+                            [title]="searchSetTooltip(card.oracleId)">
+                        {{ printingsCache.get(card.oracleId)![0].setName }}
+                      </span>
+                    </ng-container>
+                    <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set first</span>
+                  </div>
+                </div>
+
+                <!-- Add button / owned count -->
+                <div class="result-action">
+                  <span class="owned-qty" *ngIf="ownedEntry(deck, card.oracleId) as entry">
+                    ×{{ entry.quantity + entry.quantityFoil }}
+                  </span>
+                  <button class="add-result-btn" (click)="addCard(card)">+</button>
+                </div>
+              </div>
+
+              <!-- Load more -->
+              <div class="load-more-row" *ngIf="searchHasMore || searchLoadingMore">
+                <button class="load-more-btn" [disabled]="searchLoadingMore" (click)="loadMoreSearch()">
+                  {{ searchLoadingMore ? 'Loading…' : 'Load more' }}
+                </button>
+              </div>
+
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- /detail-body -->
+
+  <!-- Card detail modal -->
+  <ng-container *ngIf="deck$ | async as deck">
+    <app-card-modal
+      *ngIf="selectedCard"
+      [card]="selectedCard.cardDetails ?? null"
+      [printings]="modalPrintings"
+      [(viewedScryfallId)]="modalViewScryfallId"
+      [(flipped)]="modalFlipped"
+      [primaryScryfallId]="selectedCard.scryfallId"
+      [alsoOwnedIds]="getAlsoOwnedIds(deck)"
+      (closed)="closeCard()"
+    />
+  </ng-container>
+
+</div>
