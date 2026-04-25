@@ -159,7 +159,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (saved) {
       try {
         const parsed: FreeColumn[] = JSON.parse(saved);
-        if (parsed.length) { this.freeColumns = parsed; return; }
+        if (parsed.length) {
+          this.freeColumns = parsed;
+          this.syncFreeColumns(deck);
+          return;
+        }
       } catch { /* fall through */ }
     }
     const prevFilter = this.filterQuery;
@@ -171,6 +175,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }));
     this.filterQuery = prevFilter;
     this.saveFreeLayout();
+  }
+
+  private syncFreeColumns(deck: DeckDetailDto): void {
+    const assignedCounts = new Map<string, number>();
+    for (const col of this.freeColumns)
+      for (const id of col.cardIds)
+        assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
+
+    const extra: string[] = [];
+    for (const card of deck.cards) {
+      const gap = this.cardCount(card) - (assignedCounts.get(card.id) ?? 0);
+      for (let i = 0; i < gap; i++) extra.push(card.id);
+    }
+
+    if (extra.length) {
+      this.freeColumns = [
+        { ...this.freeColumns[0], cardIds: [...this.freeColumns[0].cardIds, ...extra] },
+        ...this.freeColumns.slice(1),
+      ];
+      this.saveFreeLayout();
+    }
   }
 
   saveFreeLayout(): void {

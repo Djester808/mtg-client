@@ -362,6 +362,17 @@ describe('DeckDetailComponent — view mode', () => {
     component.setViewMode('free', makeDeck());
     expect(component.freeColumns).toEqual(saved);
   });
+
+  it('setViewMode("free") adds missing copies when saved layout is stale', async () => {
+    const { component } = await setup();
+    // Saved layout has card c1 only once, but deck now has qty=3
+    const saved: FreeColumn[] = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
+    localStorage.setItem('deck-free-deck-1', JSON.stringify(saved));
+    const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 3 })]);
+    component.setViewMode('free', deck);
+    const allIds = component.freeColumns.flatMap(c => c.cardIds);
+    expect(allIds.filter(id => id === 'c1')).toHaveSize(3);
+  });
 });
 
 // ── Free mode columns ─────────────────────────────────────────────────────────
