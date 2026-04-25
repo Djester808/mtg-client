@@ -511,7 +511,7 @@
   text-transform: uppercase;
   padding: 5px 12px;
   transition: all 0.15s;
-  &:hover { border-color: var(--border-lit); color: var(--text-secondary); }
+  &:hover { border-color: rgba(167,139,250,0.4); color: #a78bfa; }
 }
 
 .groups-list.is-free {
@@ -605,7 +605,7 @@
   user-select: none;
 
   .free-col-header:hover & { opacity: 1; }
-  &:hover { color: var(--text-secondary); }
+  &:hover { color: #a78bfa; }
 }
 
 .col-remove-btn {
