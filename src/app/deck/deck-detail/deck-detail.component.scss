@@ -549,6 +549,13 @@
   border: 1px solid var(--border-dim);
   padding: 8px;
   min-height: 120px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+
+  &:not(.is-dragging-col):hover {
+    border-color: rgba(167,139,250,0.35);
+    box-shadow: 0 0 0 1px rgba(167,139,250,0.1), 0 4px 20px rgba(124,58,237,0.12);
+    background: rgba(167,139,250,0.03);
+  }
 
   &.is-dragging-col { opacity: 0.3; }
 }
@@ -561,7 +568,30 @@
   flex-shrink: 0;
 }
 
-.free-col-label { cursor: default; }
+.free-col-label {
+  cursor: default;
+  border-bottom: 1px dotted rgba(255,255,255,0.15);
+  padding-bottom: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-edit-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.3;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 0 1px;
+  line-height: 1;
+
+  .free-col-header:hover & { opacity: 0.8; }
+  &:hover { color: #a78bfa; opacity: 1 !important; }
+}
 
 .col-drag-handle {
   cursor: grab;
@@ -569,7 +599,7 @@
   font-size: 11px;
   padding: 0 2px;
   margin-right: 2px;
-  opacity: 0;
+  opacity: 0.3;
   transition: opacity 0.15s, color 0.15s;
   flex-shrink: 0;
   user-select: none;

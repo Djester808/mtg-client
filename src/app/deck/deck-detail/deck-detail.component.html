@@ -192,6 +192,9 @@
                 <span class="group-label free-col-label"
                       (dblclick)="startEditColumnLabel(col)"
                       title="Double-click to rename">{{ col.label }}</span>
+                <span class="col-edit-hint"
+                      (click)="startEditColumnLabel(col)"
+                      title="Rename column">✎</span>
                 <span class="group-count">{{ getCardsForColumn(col, deck).length }}</span>
                 <button class="col-remove-btn"
                         *ngIf="freeColumns.length > 1"
