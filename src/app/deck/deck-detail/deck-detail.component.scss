@@ -551,7 +551,7 @@
   min-height: 120px;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 
-  &:not(.is-dragging-col):hover {
+  &:not(.is-dragging-col):hover:not(:has(.free-card:hover)) {
     border-color: rgba(167,139,250,0.35);
     box-shadow: 0 0 0 1px rgba(167,139,250,0.1), 0 4px 20px rgba(124,58,237,0.12);
     background: rgba(167,139,250,0.03);
@@ -663,9 +663,11 @@
   border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
+  transition: box-shadow 0.15s;
 
   &:active { cursor: grabbing; }
   &.is-dragging { opacity: 0.25; }
+  &:hover { box-shadow: 0 0 0 2px rgba(167,139,250,0.4); }
   &:hover .visual-overlay { opacity: 1; }
 
   .visual-art {
