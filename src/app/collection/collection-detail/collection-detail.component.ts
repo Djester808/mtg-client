@@ -60,6 +60,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   /** oracleId → selected scryfallId for search-panel result rows */
   searchSelectedScryfallId = new Map<string, string>();
   addErrors = new Set<string>();
+  searchFlippedIds = new Set<string>();
 
   // ---- Card detail modal ----------------------------------------
   selectedCard: CollectionCardDto | null = null;
@@ -132,8 +133,12 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       this.searchResults = results;
       this.searchHasMore = results.length === this.SEARCH_PAGE;
       this.searchSelectedScryfallId.clear();
+      this.searchFlippedIds.clear();
       this.addErrors.clear();
       this.searchLoading = false;
+      results.forEach(c => {
+        if (!this.printingsCache.has(c.oracleId)) this.searchLoadSubject$.next(c.oracleId);
+      });
       this.cdr.markForCheck();
     });
 
@@ -153,6 +158,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       this.searchResults = [...this.searchResults, ...results];
       this.searchHasMore = results.length === this.SEARCH_PAGE;
       this.searchLoadingMore = false;
+      results.forEach(c => {
+        if (!this.printingsCache.has(c.oracleId)) this.searchLoadSubject$.next(c.oracleId);
+      });
       this.cdr.markForCheck();
     });
 
@@ -194,6 +202,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       // If this modal is open for the same oracle ID and no printing is selected yet, select the first
       if (this.selectedCard?.oracleId === oracleId && !this.modalViewScryfallId && printings.length)
         this.modalViewScryfallId = printings[0].scryfallId;
+      // Auto-select the only printing so Add works without user interaction
+      if (printings.length === 1 && !this.searchSelectedScryfallId.has(oracleId))
+        this.searchSelectedScryfallId.set(oracleId, printings[0].scryfallId);
       this.cdr.markForCheck();
     });
   }
@@ -213,7 +224,21 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       this.searchQuery = '';
       this.searchResults = [];
       this.searchSelectedScryfallId.clear();
+      this.searchFlippedIds.clear();
     }
+  }
+
+  toggleSearchFlip(oracleId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.searchFlippedIds.has(oracleId)) this.searchFlippedIds.delete(oracleId);
+    else this.searchFlippedIds.add(oracleId);
+    this.cdr.markForCheck();
+  }
+
+  searchCardImage(card: CardDto): string | null {
+    if (this.searchFlippedIds.has(card.oracleId) && card.imageUriNormalBack)
+      return card.imageUriNormalBack;
+    return card.imageUriSmall;
   }
 
   onSearchInput(value: string): void {

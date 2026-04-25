@@ -582,18 +582,23 @@
   display: block;
 }
 
-.dfc-badge {
+.card-flip-btn {
   position: absolute;
-  bottom: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.72);
-  border: 1px solid var(--border-lit);
-  border-radius: 5px;
-  color: var(--text-secondary);
-  font-size: 14px;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.78);
+  border: 1.5px solid var(--border-lit);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 22px;
   line-height: 1;
-  padding: 3px 5px;
-  pointer-events: none;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  z-index: 5;
+
+  &.is-flipped { color: var(--gold); border-color: var(--gold); }
+  &:hover { border-color: var(--gold); color: var(--gold); }
 }
 
 // ---- Text fallback card ----------------------------------

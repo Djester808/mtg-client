@@ -158,8 +158,9 @@
             <button
               class="chip-dfc-badge"
               *ngIf="p.imageUriNormalBack"
+              [class.is-flipped]="flipped && p.scryfallId === viewedScryfallId"
               (click)="flipToPrintingBack(p, $event)"
-              title="View back face"
+              title="Flip card"
             >⟲</button>
           </div>
           <span class="chip-code">{{ p.setCode.toUpperCase() }}</span>

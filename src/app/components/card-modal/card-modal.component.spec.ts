@@ -210,6 +210,79 @@ describe('CardModalComponent', () => {
     expect(component.flippedChange.emit).toHaveBeenCalledWith(false);
   });
 
+  // ---- flipToPrintingBack ----------------------------------------
+
+  it('flipToPrintingBack stops propagation', () => {
+    const p = makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' });
+    component.printings = [p];
+    component.viewedScryfallId = 's1';
+    const e = jasmine.createSpyObj<MouseEvent>('MouseEvent', ['stopPropagation']);
+    component.flipToPrintingBack(p, e);
+    expect(e.stopPropagation).toHaveBeenCalled();
+  });
+
+  it('flipToPrintingBack sets flipped=true when switching to a new printing', () => {
+    const p1 = makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' });
+    const p2 = makePrinting({ scryfallId: 's2', imageUriNormalBack: 'back2.jpg' });
+    component.printings = [p1, p2];
+    component.viewedScryfallId = 's1';
+    component.flipped = false;
+    spyOn(component.viewedScryfallIdChange, 'emit');
+    spyOn(component.flippedChange, 'emit');
+
+    const e = new MouseEvent('click');
+    component.flipToPrintingBack(p2, e);
+
+    expect(component.viewedScryfallId).toBe('s2');
+    expect(component.viewedScryfallIdChange.emit).toHaveBeenCalledWith('s2');
+    expect(component.flipped).toBeTrue();
+    expect(component.flippedChange.emit).toHaveBeenCalledWith(true);
+  });
+
+  it('flipToPrintingBack toggles flipped when chip is already the viewed printing (false → true)', () => {
+    const p = makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' });
+    component.printings = [p];
+    component.viewedScryfallId = 's1';
+    component.flipped = false;
+    spyOn(component.viewedScryfallIdChange, 'emit');
+    spyOn(component.flippedChange, 'emit');
+
+    const e = new MouseEvent('click');
+    component.flipToPrintingBack(p, e);
+
+    expect(component.flipped).toBeTrue();
+    expect(component.flippedChange.emit).toHaveBeenCalledWith(true);
+    expect(component.viewedScryfallIdChange.emit).not.toHaveBeenCalled();
+  });
+
+  it('flipToPrintingBack toggles flipped when chip is already the viewed printing (true → false)', () => {
+    const p = makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' });
+    component.printings = [p];
+    component.viewedScryfallId = 's1';
+    component.flipped = true;
+    spyOn(component.flippedChange, 'emit');
+
+    const e = new MouseEvent('click');
+    component.flipToPrintingBack(p, e);
+
+    expect(component.flipped).toBeFalse();
+    expect(component.flippedChange.emit).toHaveBeenCalledWith(false);
+  });
+
+  it('flipToPrintingBack does not change viewedScryfallId when toggling current printing', () => {
+    const p = makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' });
+    component.printings = [p];
+    component.viewedScryfallId = 's1';
+    component.flipped = true;
+    spyOn(component.viewedScryfallIdChange, 'emit');
+
+    const e = new MouseEvent('click');
+    component.flipToPrintingBack(p, e);
+
+    expect(component.viewedScryfallId).toBe('s1');
+    expect(component.viewedScryfallIdChange.emit).not.toHaveBeenCalled();
+  });
+
   // ---- carousel ----------------------------------------
 
   it('carouselCanPrev is false when at start', () => {

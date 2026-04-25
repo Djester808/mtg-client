@@ -143,9 +143,8 @@
 
 .modal-flip-btn {
   position: absolute;
-  top: 50%;
+  bottom: 10px;
   right: 10px;
-  transform: translateY(-50%);
   background: rgba(0,0,0,0.78);
   border: 1.5px solid var(--border-lit);
   border-radius: 10px;
@@ -566,17 +565,20 @@
 
 .chip-dfc-badge {
   position: absolute;
-  top: 4px; right: 4px;
-  background: rgba(0,0,0,0.72);
+  bottom: 4px; right: 4px;
+  background: rgba(0,0,0,0.78);
   border: 1px solid var(--border-lit);
   border-radius: 4px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 10px;
   line-height: 1;
   padding: 2px 3px;
   cursor: pointer;
+  z-index: 5;
+  transition: color 0.15s, border-color 0.15s;
 
-  &:hover { background: rgba(60,60,60,0.9); color: var(--text-primary); }
+  &.is-flipped { color: var(--gold); border-color: var(--gold); }
+  &:hover { border-color: var(--gold); color: var(--gold); }
 }
 
 .chip-code {

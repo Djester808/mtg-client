@@ -176,10 +176,15 @@ export class CardModalComponent implements OnInit {
 
   flipToPrintingBack(p: PrintingDto, e: MouseEvent): void {
     e.stopPropagation();
-    this.viewedScryfallId = p.scryfallId;
-    this.viewedScryfallIdChange.emit(p.scryfallId);
-    this.flipped = true;
-    this.flippedChange.emit(true);
+    if (this.viewedScryfallId === p.scryfallId) {
+      this.flipped = !this.flipped;
+      this.flippedChange.emit(this.flipped);
+    } else {
+      this.viewedScryfallId = p.scryfallId;
+      this.viewedScryfallIdChange.emit(p.scryfallId);
+      this.flipped = true;
+      this.flippedChange.emit(true);
+    }
   }
 
   toggleFlip(): void {

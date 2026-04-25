@@ -193,3 +193,119 @@ describe('HomeComponent — search flags', () => {
     expect(args[5]).toBeTrue(); // matchCase carried forward
   }));
 });
+
+// ── Home flip ─────────────────────────────────────────────────────────────────
+
+describe('HomeComponent — flip', () => {
+  let component: HomeComponent;
+  let fixture: ComponentFixture<HomeComponent>;
+  let gameApi: jasmine.SpyObj<GameApiService>;
+
+  const DFC  = makeCard({ cardId: 'dfc-1',    imageUriNormal: 'front.jpg', imageUriNormalBack: 'back.jpg' });
+  const MONO = makeCard({ cardId: 'mono-1',   imageUriNormal: 'front.jpg', imageUriNormalBack: null });
+
+  beforeEach(async () => {
+    gameApi = jasmine.createSpyObj('GameApiService', ['searchCards', 'getSets']);
+    gameApi.getSets.and.returnValue(of([]));
+    gameApi.searchCards.and.returnValue(of([]));
+    const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
+    collectionApi.getPrintings.and.returnValue(of([]));
+
+    await TestBed.configureTestingModule({
+      imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
+      providers: [
+        provideMockStore({ initialState: { game: { cards: {} } } }),
+        { provide: GameApiService,       useValue: gameApi },
+        { provide: CollectionApiService, useValue: collectionApi },
+        { provide: ElementRef,           useValue: { nativeElement: document.createElement('div') } },
+        ChangeDetectorRef,
+      ],
+    })
+    .overrideComponent(HomeComponent, { remove: { imports: [ManaCostComponent, CardModalComponent] } })
+    .compileComponents();
+  });
+
+  beforeEach(fakeAsync(() => {
+    fixture = TestBed.createComponent(HomeComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    tick(400);
+  }));
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  // ---- toggleFlip ------------------------------------------
+
+  it('adds cardId to flippedIds on first toggle', () => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+    expect(component.flippedIds.has('dfc-1')).toBeTrue();
+  });
+
+  it('removes cardId from flippedIds on second toggle', () => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+    component.toggleFlip(DFC, ev);
+    expect(component.flippedIds.has('dfc-1')).toBeFalse();
+  });
+
+  it('stops propagation so the card modal does not open', () => {
+    const ev = jasmine.createSpyObj<MouseEvent>('MouseEvent', ['stopPropagation']);
+    component.toggleFlip(DFC, ev);
+    expect(ev.stopPropagation).toHaveBeenCalled();
+  });
+
+  // ---- cardImage -------------------------------------------
+
+  it('returns imageUriNormal when card is not flipped', () => {
+    expect(component.cardImage(DFC)).toBe('front.jpg');
+  });
+
+  it('returns imageUriNormalBack when card is flipped', () => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+    expect(component.cardImage(DFC)).toBe('back.jpg');
+  });
+
+  it('returns imageUriNormal even when flipped if card has no back face', () => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(MONO, ev);
+    expect(component.cardImage(MONO)).toBe('front.jpg');
+  });
+
+  // ---- State resets ----------------------------------------
+
+  it('clears flippedIds when new search results arrive', fakeAsync(() => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+    expect(component.flippedIds.size).toBe(1);
+
+    gameApi.searchCards.and.returnValue(of([DFC]));
+    component.searchText.setValue('rat');
+    tick(400);
+
+    expect(component.flippedIds.size).toBe(0);
+  }));
+
+  it('clears flippedIds when clearFilters is called', () => {
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+    component.clearFilters();
+    expect(component.flippedIds.size).toBe(0);
+  });
+
+  it('preserves flippedIds across loadMore', fakeAsync(() => {
+    gameApi.searchCards.and.returnValue(of([DFC]));
+    component.searchText.setValue('rat');
+    tick(400);
+
+    const ev = new MouseEvent('click');
+    component.toggleFlip(DFC, ev);
+
+    gameApi.searchCards.and.returnValue(of([MONO]));
+    component.loadMore();
+    tick(10);
+
+    expect(component.flippedIds.has('dfc-1')).toBeTrue();
+  }));
+});

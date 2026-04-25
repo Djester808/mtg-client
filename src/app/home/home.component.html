@@ -179,7 +179,7 @@
         <img
           *ngIf="card.imageUriNormal; else textCard"
           class="card-img"
-          [src]="card.imageUriNormal"
+          [src]="cardImage(card)"
           [alt]="card.name"
           loading="lazy"
         />
@@ -191,7 +191,12 @@
             <div class="ctf-oracle">{{ card.oracleText }}</div>
           </div>
         </ng-template>
-        <div class="dfc-badge" *ngIf="card.imageUriNormalBack">⟲</div>
+        <button
+          *ngIf="card.imageUriNormalBack"
+          class="card-flip-btn"
+          [class.is-flipped]="flippedIds.has(card.cardId)"
+          (click)="toggleFlip(card, $event)"
+          title="Flip card">⟲</button>
       </div>
     </div>
 

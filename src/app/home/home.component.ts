@@ -55,6 +55,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   loadingMore  = false;
   searched     = false;
   hasMore      = false;
+  flippedIds   = new Set<string>();
   private currentOffset = 0;
   private lastQuery     = '';
 
@@ -175,6 +176,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.results = res;
         this.hasMore = res.length === this.PAGE_SIZE;
         this.loading = false;
+        this.flippedIds.clear();
       }
       this.cdr.markForCheck();
     });
@@ -286,7 +288,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.matchCase = false; this.matchWord = false; this.useRegex = false;
     this.searchText.setValue('', { emitEvent: false });
     this.results = []; this.searched = false;
+    this.flippedIds.clear();
     this.filterChange$.next();
+  }
+
+  toggleFlip(card: CardDto, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.flippedIds.has(card.cardId)) this.flippedIds.delete(card.cardId);
+    else this.flippedIds.add(card.cardId);
+    this.cdr.markForCheck();
+  }
+
+  cardImage(card: CardDto): string | null {
+    if (this.flippedIds.has(card.cardId) && card.imageUriNormalBack)
+      return card.imageUriNormalBack;
+    return card.imageUriNormal;
   }
 
   // ---- Card detail -------------------------------------------

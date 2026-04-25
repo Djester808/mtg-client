@@ -94,6 +94,11 @@
                 (click)="openCard(card)"
               >
                 <div class="art-placeholder" *ngIf="!tileImage(card)">◈</div>
+                <button class="flip-btn"
+                        *ngIf="tileHasBack(card)"
+                        [class.is-flipped]="flippedCardIds.has(card.id)"
+                        (click)="toggleTileFlip(card, $event)"
+                        title="Flip card">⟲</button>
                 <div class="foil-badge" *ngIf="card.quantityFoil > 0">✦</div>
                 <div class="qty-badge">
                   <ng-container *ngIf="card.quantity > 0">×{{ card.quantity }}</ng-container>
@@ -166,12 +171,6 @@
                   <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
                   <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
                 </div>
-
-                <button class="flip-btn"
-                        *ngIf="tileHasBack(card)"
-                        [class.is-flipped]="flippedCardIds.has(card.id)"
-                        (click)="toggleTileFlip(card, $event)"
-                        title="Flip card">⟲</button>
               </div>
             </div>
 
@@ -236,13 +235,19 @@
             <div class="result-row" *ngFor="let card of searchResults">
               <div
                 class="result-art result-art-clickable"
-                [style.backgroundImage]="card.imageUriSmall
-                  ? 'url(' + card.imageUriSmall + ')'
+                [style.backgroundImage]="searchCardImage(card)
+                  ? 'url(' + searchCardImage(card) + ')'
                   : 'none'"
                 (click)="openSearchCard(card)"
                 title="Preview card"
               >
-                <div class="art-placeholder sm" *ngIf="!card.imageUriSmall">◈</div>
+                <div class="art-placeholder sm" *ngIf="!searchCardImage(card)">◈</div>
+                <button
+                  *ngIf="card.imageUriNormalBack"
+                  class="result-flip-btn"
+                  [class.is-flipped]="searchFlippedIds.has(card.oracleId)"
+                  (click)="toggleSearchFlip(card.oracleId, $event)"
+                  title="Flip card">⟲</button>
               </div>
 
               <div class="result-info">
@@ -255,21 +260,39 @@
               </div>
 
               <div class="result-set-wrap">
-                <select
-                  class="result-set-select"
-                  [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-                  [title]="searchSetTooltip(card.oracleId)"
-                  [class.has-error]="addErrors.has(card.oracleId)"
-                  (focus)="onSearchSelectFocus(card.oracleId)"
-                  (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
-                >
-                  <option value="" disabled>SET</option>
-                  <ng-container *ngIf="printingsCache.get(card.oracleId) as prints">
-                    <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                      {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                    </option>
-                  </ng-container>
-                </select>
+                <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
+                  <span
+                    *ngIf="prints.length === 1; else multiSelect"
+                    class="result-set-single"
+                    [title]="prints[0].setName">
+                    {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
+                  </span>
+                  <ng-template #multiSelect>
+                    <select
+                      class="result-set-select"
+                      [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+                      [title]="searchSetTooltip(card.oracleId)"
+                      [class.has-error]="addErrors.has(card.oracleId)"
+                      (focus)="onSearchSelectFocus(card.oracleId)"
+                      (ngModelChange)="onSearchSetChange(card.oracleId, $event)"
+                    >
+                      <option value="" disabled>SET</option>
+                      <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                        {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                      </option>
+                    </select>
+                  </ng-template>
+                </ng-container>
+                <ng-template #setLoading>
+                  <select
+                    class="result-set-select"
+                    ngModel
+                    [class.has-error]="addErrors.has(card.oracleId)"
+                    (focus)="onSearchSelectFocus(card.oracleId)"
+                  >
+                    <option value="" disabled selected>SET</option>
+                  </select>
+                </ng-template>
                 <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
               </div>
 
