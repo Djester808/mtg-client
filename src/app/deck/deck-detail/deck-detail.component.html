@@ -39,6 +39,7 @@
         <div class="sort-group view-toggle">
           <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list',   deck)" title="List view">☰</button>
           <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view">⊞</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'stack'"  (click)="setViewMode('stack',  deck)" title="Stack view">≡</button>
           <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free',   deck)" title="Free arrange">⠿</button>
         </div>
 
@@ -59,7 +60,7 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
+    <main class="groups-area" [class.is-visual]="viewMode === 'visual'" [class.is-stack]="viewMode === 'stack'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck">
 
       <!-- Filter bar (list / visual only) -->
       <div class="filter-bar" *ngIf="viewMode !== 'free'">
@@ -85,9 +86,9 @@
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
       </div>
 
-      <!-- CMC / Type / Name groups (list + visual) -->
+      <!-- CMC / Type / Name groups (list + visual + stack) -->
       <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length > 0">
-        <div class="groups-list" [class.is-visual]="viewMode === 'visual'">
+        <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-stack]="viewMode === 'stack'">
           <div class="cmc-group" *ngFor="let group of getGroups(deck)">
 
             <div class="group-header">
@@ -155,6 +156,37 @@
                   </div>
                 </div>
                 <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
+              </div>
+            </div>
+
+            <!-- ── Stack view ── -->
+            <div class="stack-list" *ngIf="viewMode === 'stack'">
+              <div
+                class="stack-card"
+                *ngFor="let card of group.cards; let i = index"
+                [style.z-index]="group.cards.length - i"
+                (click)="openCard(card)"
+              >
+                <div
+                  class="stack-art"
+                  [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
+                  [class.no-image]="!tileImage(card)"
+                >
+                  <span class="visual-placeholder" *ngIf="!tileImage(card)">◈</span>
+                  <button class="thumb-flip"
+                          *ngIf="tileHasBack(card)"
+                          [class.is-flipped]="flippedCardIds.has(card.id)"
+                          (click)="toggleTileFlip(card, $event)"
+                          title="Flip">↻</button>
+                  <div class="stack-name-bar">
+                    <span class="stack-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                    <div class="stack-qty-ctrl" (click)="$event.stopPropagation()">
+                      <button class="stack-qty-btn" (click)="decrement(card)">−</button>
+                      <span class="stack-qty">×{{ cardCount(card) }}</span>
+                      <button class="stack-qty-btn" (click)="increment(card)">+</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

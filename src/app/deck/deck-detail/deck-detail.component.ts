@@ -25,7 +25,7 @@ import { CardSearchPanelComponent } from '../../components/card-search-panel/car
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
 export type SortMode = 'cmc' | 'name' | 'type';
-export type ViewMode = 'list' | 'visual' | 'free';
+export type ViewMode = 'list' | 'visual' | 'stack' | 'free';
 
 export interface FreeColumn {
   id: string;
