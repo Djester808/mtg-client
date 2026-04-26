@@ -364,7 +364,7 @@
 
 .group-label {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -374,7 +374,7 @@
 
 .group-count {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 700;
   color: var(--gold);
   background: rgba(201,168,76,0.12);
@@ -382,6 +382,7 @@
   border-radius: 4px;
   padding: 1px 6px;
   opacity: 0.85;
+  margin-left: auto;
 }
 
 .card-list {
@@ -665,6 +666,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 8px;
+  letter-spacing: 0.12em;
 }
 
 .col-edit-hint {
@@ -770,19 +773,14 @@
     border-radius: 6px;
   }
 
-  .visual-name { display: block; }
-
   // ---- Stacked densities ----
   &.density-half,
   &.density-name {
     overflow: visible;
     &:hover { box-shadow: none; z-index: 999 !important; }
     &:hover .visual-art { box-shadow: 0 0 0 2px rgba(201,168,76,0.5), 0 4px 20px rgba(0,0,0,0.7); }
-    .visual-name { display: none; }
   }
 
-  // Name density: only 32px bar visible — no room for bottom controls
-  &.density-name { .card-bottom { display: none; } }
 }
 
 // Negative margin on the TOP of subsequent stacked cards so the last card's
@@ -921,7 +919,6 @@
 
   &.density-name {
     margin-bottom: calc(32px - 140%);
-    .card-bottom { display: none; }
   }
 }
 

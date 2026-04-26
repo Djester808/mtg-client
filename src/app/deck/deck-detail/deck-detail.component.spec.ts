@@ -1563,3 +1563,103 @@ describe('DeckDetailComponent — freeIncrement / freeDecrement', () => {
     expect(component.freeLayoutDirty).toBeTrue();
   });
 });
+
+// ── Delete key ───────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — Delete key', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  function press(key: string, tagName = 'DIV'): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true });
+    Object.defineProperty(event, 'target', { value: { tagName } });
+    return event;
+  }
+
+  it('does nothing when not in free view', async () => {
+    const { component, store } = await setup();
+    component.viewMode = 'list';
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
+    component.onDocumentKeyDown(press('Delete'));
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when no slots are selected', async () => {
+    const { component, store } = await setup();
+    component.viewMode = 'free';
+    component.selectedCardSlots = new Map();
+    component.onDocumentKeyDown(press('Delete'));
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when target is an input', async () => {
+    const { component, store } = await setup();
+    component.viewMode = 'free';
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
+    component.onDocumentKeyDown(press('Delete', 'INPUT'));
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('dispatches removeCard and clears selection when deleting last copy', async () => {
+    const { component, store } = await setup();
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    component.viewMode = 'free';
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
+    component.onDocumentKeyDown(press('Delete'));
+    await Promise.resolve();
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+    );
+    expect(component.selectedCardSlots.size).toBe(0);
+    expect(component.freeColumns[0].cardIds).toEqual([]);
+  });
+
+  it('dispatches updateCard when deleting one of multiple copies', async () => {
+    const { component, store } = await setup();
+    const card = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    component.viewMode = 'free';
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] }];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
+    component.onDocumentKeyDown(press('Delete'));
+    await Promise.resolve();
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+    );
+    expect(component.freeColumns[0].cardIds).toEqual(['c1', 'c1']);
+  });
+
+  it('removes all rubber-band selected slots across multiple cards', async () => {
+    const { component, store } = await setup();
+    const c1 = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
+    const c2 = makeDeckCard({ id: 'c2', quantity: 1, quantityFoil: 0 });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([c1, c2]), loading: false, error: null } });
+    component.viewMode = 'free';
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c2'] }];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/2', 'c2']]);
+    component.onDocumentKeyDown(press('Delete'));
+    await Promise.resolve();
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 0 } })
+    );
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c2' })
+    );
+    expect(component.freeColumns[0].cardIds).toEqual(['c1']);
+  });
+
+  it('Backspace key works the same as Delete', async () => {
+    const { component, store } = await setup();
+    const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    component.viewMode = 'free';
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
+    component.onDocumentKeyDown(press('Backspace'));
+    await Promise.resolve();
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+    );
+  });
+});

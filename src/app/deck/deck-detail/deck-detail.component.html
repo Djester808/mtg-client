@@ -172,7 +172,6 @@
                     <button class="ctrl-btn ctrl-inc" (click)="increment(card)">+</button>
                   </div>
                 </div>
-                <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
               </div>
             </div>
 
@@ -286,7 +285,6 @@
                     <button class="ctrl-btn ctrl-inc" (click)="freeIncrement(card, col.id)">+</button>
                   </div>
                 </div>
-                <div class="visual-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
               </div>
               <div class="drop-line" [class.active]="dragOverColId === col.id && dragOverIndex === i + 1"></div>
             </ng-container>

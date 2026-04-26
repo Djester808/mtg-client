@@ -431,6 +431,52 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     event.preventDefault();
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeyDown(event: KeyboardEvent): void {
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+    const tag = (event.target as HTMLElement | null)?.tagName?.toLowerCase() ?? '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (this.viewMode !== 'free' || this.selectedCardSlots.size === 0) return;
+    event.preventDefault();
+    this.deleteSelectedCards();
+  }
+
+  private deleteSelectedCards(): void {
+    this.deck$.pipe(take(1)).subscribe(deck => {
+      if (!deck) return;
+      const removals = new Map<string, number>(); // cardId → copies to remove
+      const splices: Array<{ col: FreeColumn; idx: number }> = [];
+      for (const [slotKey, cardId] of this.selectedCardSlots) {
+        const slashIdx = slotKey.lastIndexOf('/');
+        const colId = slotKey.slice(0, slashIdx);
+        const renderedIdx = parseInt(slotKey.slice(slashIdx + 1), 10);
+        const col = this.freeColumns.find(c => c.id === colId);
+        if (col != null && renderedIdx < col.cardIds.length) {
+          splices.push({ col, idx: renderedIdx });
+        }
+        removals.set(cardId, (removals.get(cardId) ?? 0) + 1);
+      }
+      splices.sort((a, b) => b.idx - a.idx);
+      for (const { col, idx } of splices) col.cardIds.splice(idx, 1);
+      for (const [cardId, count] of removals) {
+        const card = deck.cards.find(c => c.id === cardId);
+        if (!card) continue;
+        if (this.cardCount(card) - count <= 0) {
+          this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId }));
+        } else {
+          const newQty  = Math.max(0, card.quantity - count);
+          const newFoil = Math.max(0, card.quantityFoil - Math.max(0, count - card.quantity));
+          this.store.dispatch(DeckActions.updateCard({
+            deckId: this.deckId, cardId, request: { quantity: newQty, quantityFoil: newFoil },
+          }));
+        }
+      }
+      this.selectedCardSlots = new Map();
+      this.freeLayoutDirty = true;
+      this.cdr.markForCheck();
+    });
+  }
+
   @HostListener('document:mousemove', ['$event'])
   onDocumentMouseMove(event: MouseEvent): void {
     if (!this.dragSelectListEl) return;
