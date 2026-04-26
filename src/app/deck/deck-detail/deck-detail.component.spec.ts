@@ -1748,11 +1748,11 @@ describe('DeckDetailComponent — Commander format', () => {
 
     const el: HTMLElement = fixture.nativeElement;
 
-    expect(el.querySelector('.commander-panel'))
-      .withContext('commander-panel should be visible').toBeTruthy();
+    expect(el.querySelector('.cp-panel'))
+      .withContext('commander panel should be visible').toBeTruthy();
 
-    expect(el.querySelector('.cp-slot'))
-      .withContext('commander slot should be visible').toBeTruthy();
+    expect(el.querySelector('.cp-portrait-wrap'))
+      .withContext('commander portrait slot should be visible').toBeTruthy();
 
     expect(el.querySelector('.cp-no-cmdr'))
       .withContext('"Select Commander" prompt should appear').toBeTruthy();
