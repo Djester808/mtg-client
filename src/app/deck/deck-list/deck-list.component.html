@@ -24,7 +24,7 @@
     <ng-container *ngIf="!(loading$ | async)">
 
       <!-- Empty state -->
-      <div class="empty-state" *ngIf="(decks$ | async)?.length === 0">
+      <div class="empty-state" *ngIf="sortedDecks.length === 0">
         <div class="empty-icon">⊗</div>
         <p class="empty-title">No decks yet</p>
         <p class="empty-sub">Build your first deck to start playing.</p>
@@ -32,10 +32,17 @@
       </div>
 
       <!-- Grid -->
-      <div class="deck-grid" *ngIf="(decks$ | async)?.length">
+      <div class="deck-grid" *ngIf="sortedDecks.length > 0">
         <div
           class="deck-card"
-          *ngFor="let deck of (decks$ | async)"
+          *ngFor="let deck of sortedDecks"
+          draggable="true"
+          [class.is-dragging]="dragDeckId === deck.id"
+          [class.is-drag-over]="dragOverDeckId === deck.id"
+          (dragstart)="onDeckDragStart(deck, $event)"
+          (dragover)="onDeckDragOver(deck, $event)"
+          (drop)="onDeckDrop(deck, $event)"
+          (dragend)="onDeckDragEnd()"
           (click)="openDeck(deck.id)"
         >
           <!-- Cover art -->

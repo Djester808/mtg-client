@@ -199,18 +199,30 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-dim);
   border-radius: 14px;
-  cursor: pointer;
+  cursor: grab;
   transition: all 0.2s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 
-  &:hover {
+  &:hover:not(.is-dragging) {
     border-color: rgba(167,139,250,0.4);
     box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,250,0.15);
     transform: translateY(-3px);
 
     .deck-cover { transform: scale(1.04); }
+  }
+
+  &.is-dragging {
+    opacity: 0.35;
+    cursor: grabbing;
+    transform: scale(0.97);
+  }
+
+  &.is-drag-over {
+    border-color: rgba(167,139,250,0.7);
+    box-shadow: 0 0 0 2px rgba(167,139,250,0.35), 0 8px 32px rgba(0,0,0,0.5);
+    transform: scale(1.02);
   }
 }
 

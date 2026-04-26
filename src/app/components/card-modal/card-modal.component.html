@@ -21,13 +21,25 @@
 
     <!-- Left: card art + optional collection controls -->
     <div class="modal-art-col">
-      <div class="modal-art">
+      <div class="modal-art"
+           (mouseleave)="onImageMouseLeave()">
         <img
           class="modal-card-img"
           *ngIf="modalImage"
           [src]="modalImage"
           [alt]="card?.name ?? ''"
+          (mouseenter)="onImageMouseEnter()"
+          (mousemove)="onImageMouseMove($event)"
         />
+        <div
+          class="img-magnifier-lens"
+          *ngIf="lensVisible && modalImage"
+          [style.left.px]="lensX"
+          [style.top.px]="lensY"
+          [style.backgroundImage]="'url(' + modalImage + ')'"
+          [style.backgroundPosition]="lensBgX + 'px ' + lensBgY + 'px'"
+          [style.backgroundSize]="lensBgW + 'px ' + lensBgH + 'px'"
+        ></div>
         <div class="modal-art-placeholder" *ngIf="!modalImage">◈</div>
         <button
           class="modal-flip-btn"

@@ -32,6 +32,13 @@ type SortDir    = 'asc' | 'desc';
 export class CardSearchPanelComponent implements OnInit, OnDestroy {
   @Input() ownedCards: CollectionCardDto[] = [];
 
+  private _commanderFilter = false;
+  get commanderFilter(): boolean { return this._commanderFilter; }
+  @Input() set commanderFilter(v: boolean) {
+    this._commanderFilter = v;
+    this.filterChange$.next();
+  }
+
   @Input()
   set isOpen(value: boolean) {
     this._isOpen = value;
@@ -363,6 +370,27 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     this.cardAdd.emit({ oracleId: card.oracleId, scryfallId });
   }
 
+  onDragStart(card: CardDto, event: DragEvent): void {
+    let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
+    if (!scryfallId) {
+      const printings = this.printingsCache.get(card.oracleId);
+      if (printings?.length === 1) scryfallId = printings[0].scryfallId;
+    }
+    if (!scryfallId) {
+      this.addErrors.add(card.oracleId);
+      this.cdr.markForCheck();
+      event.preventDefault();
+      return;
+    }
+    this.addErrors.delete(card.oracleId);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('application/x-search-card', JSON.stringify({ oracleId: card.oracleId, scryfallId }));
+      const artEl = (event.target as HTMLElement).closest('.result-row')?.querySelector('.result-art') as HTMLElement | null;
+      if (artEl) event.dataTransfer.setDragImage(artEl, artEl.offsetWidth / 2, artEl.offsetHeight / 2);
+    }
+  }
+
   highlightParts(text: string): { text: string; match: boolean }[] {
     const q = (this.searchText.value ?? '').trim();
     if (!q) return [{ text, match: false }];
@@ -424,8 +452,11 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   }
 
   private buildQuery(text: string): string {
-    const base     = this.buildNonSetQuery(text);
-    const setToken = this.activeSet ? `s:${this.activeSet}` : '';
-    return [base, setToken].filter(Boolean).join(' ');
+    const base      = this.buildNonSetQuery(text);
+    const setToken  = this.activeSet ? `s:${this.activeSet}` : '';
+    const cmdrToken = this.commanderFilter
+      ? 't:legendary (t:creature OR t:planeswalker)'
+      : '';
+    return [base, setToken, cmdrToken].filter(Boolean).join(' ');
   }
 }

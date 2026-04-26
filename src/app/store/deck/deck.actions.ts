@@ -20,8 +20,8 @@ export const DeckActions = createActionGroup({
     'Create Deck Success': props<{ deck: DeckDetailDto }>(),
     'Create Deck Failure': props<{ error: string }>(),
 
-    // Update meta (name / cover)
-    'Update Deck Meta':         props<{ id: string; name: string; coverUri: string | null }>(),
+    // Update meta (name / cover / format / commander)
+    'Update Deck Meta':         props<{ id: string; name: string; coverUri: string | null; format: string | null; commanderOracleId: string | null }>(),
     'Update Deck Meta Success': props<{ deck: DeckDetailDto }>(),
     'Update Deck Meta Failure': props<{ error: string }>(),
 

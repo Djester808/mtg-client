@@ -13,6 +13,8 @@ export interface DeckDto {
   id: string;
   name: string;
   coverUri: string | null;
+  format: string | null;
+  commanderOracleId: string | null;
   cardCount: number;
   createdAt: string;
   updatedAt: string;
@@ -22,6 +24,8 @@ export interface DeckDetailDto {
   id: string;
   name: string;
   coverUri: string | null;
+  format: string | null;
+  commanderOracleId: string | null;
   createdAt: string;
   updatedAt: string;
   cards: CollectionCardDto[];
@@ -30,11 +34,15 @@ export interface DeckDetailDto {
 export interface CreateDeckRequest {
   name: string;
   coverUri?: string | null;
+  format?: string | null;
+  commanderOracleId?: string | null;
 }
 
 export interface UpdateDeckRequest {
   name: string;
   coverUri?: string | null;
+  format?: string | null;
+  commanderOracleId?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

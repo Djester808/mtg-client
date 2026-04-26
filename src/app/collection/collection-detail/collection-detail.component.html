@@ -33,7 +33,7 @@
   <div class="detail-body">
 
     <!-- Card grid area -->
-    <main class="grid-area">
+    <main class="grid-area" [style.--card-zoom]="zoomLevel">
 
       <!-- Filter bar (only when cards exist) -->
       <div class="filter-bar" *ngIf="(collection$ | async)?.cards?.length">
@@ -45,6 +45,11 @@
             [(ngModel)]="filterQuery"
             placeholder="Filter cards in collection…"
           />
+        </div>
+        <div class="zoom-group">
+          <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
+          <span class="zoom-label">{{ zoomLabel }}</span>
+          <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
         </div>
       </div>
 

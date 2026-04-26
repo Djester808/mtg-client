@@ -1,5 +1,8 @@
 <div class="panel-header">
-  <span class="panel-title">Add Cards</span>
+  <div class="panel-title-wrap">
+    <span class="panel-title">{{ commanderFilter ? 'Find Commander' : 'Add Cards' }}</span>
+    <span class="panel-cmdr-badge" *ngIf="commanderFilter">Legendary only</span>
+  </div>
   <button class="panel-close" (click)="close()">✕</button>
 </div>
 
@@ -154,7 +157,9 @@
   </div>
 
   <div class="results-list">
-    <div class="result-row" *ngFor="let card of results">
+    <div class="result-row" *ngFor="let card of results"
+         draggable="true"
+         (dragstart)="onDragStart(card, $event)">
 
       <!-- Card art (click = preview modal) -->
       <div

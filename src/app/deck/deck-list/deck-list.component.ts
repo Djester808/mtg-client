@@ -7,6 +7,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectDecks, selectDeckLoading } from '../../store/deck/deck.selectors';
@@ -25,6 +26,8 @@ export class DeckListComponent implements OnInit, OnDestroy {
   decks$: Observable<DeckDto[]>;
   loading$: Observable<boolean>;
 
+  sortedDecks: DeckDto[] = [];
+
   showCreateForm = false;
   createForm: FormGroup;
 
@@ -34,6 +37,10 @@ export class DeckListComponent implements OnInit, OnDestroy {
 
   coverPickerDeck: DeckDto | null = null;
 
+  dragDeckId: string | null = null;
+  dragOverDeckId: string | null = null;
+
+  private readonly ORDER_KEY = 'deck-list-order';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -51,11 +58,31 @@ export class DeckListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.store.dispatch(DeckActions.loadDecks());
+
+    this.store.select(selectDecks).pipe(takeUntil(this.destroy$)).subscribe(decks => {
+      this.applySavedOrder(decks);
+      this.cdr.markForCheck();
+    });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private applySavedOrder(decks: DeckDto[]): void {
+    const saved = localStorage.getItem(this.ORDER_KEY);
+    if (!saved) { this.sortedDecks = [...decks]; return; }
+    const order: string[] = JSON.parse(saved);
+    const byId = new Map(decks.map(d => [d.id, d]));
+    const sorted = order.filter(id => byId.has(id)).map(id => byId.get(id)!);
+    const inOrder = new Set(order);
+    for (const d of decks) if (!inOrder.has(d.id)) sorted.push(d);
+    this.sortedDecks = sorted;
+  }
+
+  private saveDeckOrder(): void {
+    localStorage.setItem(this.ORDER_KEY, JSON.stringify(this.sortedDecks.map(d => d.id)));
   }
 
   openDeck(id: string): void {
@@ -121,6 +148,8 @@ export class DeckListComponent implements OnInit, OnDestroy {
         id: deck.id,
         name,
         coverUri: deck.coverUri ?? null,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
       }));
     }
     this.renamingDeckId = null;
@@ -151,7 +180,50 @@ export class DeckListComponent implements OnInit, OnDestroy {
       id: deck.id,
       name: deck.name,
       coverUri: uri,
+      format: deck.format ?? null,
+      commanderOracleId: deck.commanderOracleId ?? null,
     }));
     this.closeCoverPicker();
+  }
+
+  // ---- Drag reorder ---------------------------------------
+
+  onDeckDragStart(deck: DeckDto, e: DragEvent): void {
+    this.dragDeckId = deck.id;
+    e.dataTransfer!.effectAllowed = 'move';
+    e.dataTransfer!.setData('text/plain', deck.id);
+    this.cdr.markForCheck();
+  }
+
+  onDeckDragOver(deck: DeckDto, e: DragEvent): void {
+    if (!this.dragDeckId || this.dragDeckId === deck.id) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'move';
+    if (this.dragOverDeckId !== deck.id) {
+      this.dragOverDeckId = deck.id;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onDeckDrop(deck: DeckDto, e: DragEvent): void {
+    e.preventDefault();
+    if (!this.dragDeckId || this.dragDeckId === deck.id) return;
+    const fromIdx = this.sortedDecks.findIndex(d => d.id === this.dragDeckId);
+    const toIdx   = this.sortedDecks.findIndex(d => d.id === deck.id);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const updated = [...this.sortedDecks];
+    const [removed] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, removed);
+    this.sortedDecks = updated;
+    this.saveDeckOrder();
+    this.dragDeckId    = null;
+    this.dragOverDeckId = null;
+    this.cdr.markForCheck();
+  }
+
+  onDeckDragEnd(): void {
+    this.dragDeckId    = null;
+    this.dragOverDeckId = null;
+    this.cdr.markForCheck();
   }
 }

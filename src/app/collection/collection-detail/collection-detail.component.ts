@@ -39,6 +39,11 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   filterQuery      = '';
   showSearchPanel  = false;
   showDetailCoverPicker = false;
+  zoomLevel = 1.0;
+
+  zoomIn():  void { this.zoomLevel = Math.min(2.0, +(this.zoomLevel + 0.25).toFixed(2)); localStorage.setItem('collection-zoom', String(this.zoomLevel)); }
+  zoomOut(): void { this.zoomLevel = Math.max(0.5, +(this.zoomLevel - 0.25).toFixed(2)); localStorage.setItem('collection-zoom', String(this.zoomLevel)); }
+  get zoomLabel(): string { return Math.round(this.zoomLevel * 100) + '%'; }
 
   hoveredCard: CollectionCardDto | null = null;
   printingsLoading = false;
@@ -84,6 +89,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.collectionId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(CollectionActions.loadCollection({ id: this.collectionId }));
+    const savedZoom = localStorage.getItem('collection-zoom');
+    if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
 
     // Card-grid hover: switchMap cancels in-flight when user moves quickly
     this.hoverSubject$.pipe(

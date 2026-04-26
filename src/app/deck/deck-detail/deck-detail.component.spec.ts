@@ -8,7 +8,7 @@ import { DeckActions } from '../../store/deck/deck.actions';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { GameApiService } from '../../services/game-api.service';
 import { DeckDetailDto } from '../../services/deck-api.service';
-import { CollectionCardDto, CardType } from '../../models/game.models';
+import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
 
 function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
@@ -20,7 +20,7 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
 }
 
 function makeDeck(cards: CollectionCardDto[] = []): DeckDetailDto {
-  return { id: 'deck-1', name: 'Test Deck', coverUri: null, createdAt: '', updatedAt: '', cards };
+  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, createdAt: '', updatedAt: '', cards };
 }
 
 const INITIAL_STATE = {
@@ -31,8 +31,9 @@ async function setup() {
   const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
   collectionApi.getPrintings.and.returnValue(of([]));
 
-  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards']);
+  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards', 'getSets']);
   gameApi.searchCards.and.returnValue(of([]));
+  gameApi.getSets.and.returnValue(of([]));
 
   await TestBed.configureTestingModule({
     imports: [DeckDetailComponent],
@@ -237,6 +238,30 @@ describe('DeckDetailComponent — quantity controls', () => {
       })
     );
   });
+
+  it('selectedCard syncs from store so a second modal increment uses the updated quantity', async () => {
+    const { component, store } = await setup();
+    const originalCard = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
+    component.openCard(originalCard);
+    expect(component.selectedCard?.quantity).toBe(2);
+
+    // Simulate store update after first increment succeeds
+    const updatedCard = { ...originalCard, quantity: 3 };
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([updatedCard]), loading: false, error: null },
+    });
+
+    expect(component.selectedCard?.quantity).toBe(3);
+
+    (store.dispatch as jasmine.Spy).calls.reset();
+    component.increment(component.selectedCard!);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({
+        deckId: 'deck-1', cardId: 'c1',
+        request: { quantity: 4, quantityFoil: 0 },
+      })
+    );
+  });
 });
 
 // ── Tile flip ────────────────────────────────────────────────────────────────
@@ -382,7 +407,7 @@ describe('DeckDetailComponent — free column target', () => {
     expect(component.selectedFreeColId).toBeNull();
   });
 
-  it('selectFreeCol moves selected column before the clicked column', async () => {
+  it('selectFreeCol clicking a different column changes selection without reordering', async () => {
     const { component } = await setup();
     component.freeColumns = [
       { id: 'col-a', label: 'A', cardIds: [] },
@@ -391,8 +416,8 @@ describe('DeckDetailComponent — free column target', () => {
     ];
     component.selectFreeCol('col-c');
     component.selectFreeCol('col-a');
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-c', 'col-a', 'col-b']);
-    expect(component.selectedFreeColId).toBeNull();
+    expect(component.freeColumns.map(c => c.id)).toEqual(['col-a', 'col-b', 'col-c']);
+    expect(component.selectedFreeColId).toBe('col-a');
   });
 
   it('getCardsForColumn shows unassigned cards in selected column, not first', async () => {
@@ -455,7 +480,7 @@ describe('DeckDetailComponent — rename', () => {
     component.renameDraft = 'New Deck Name';
     component.commitRename(deck);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Deck Name', coverUri: null })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Deck Name', coverUri: null, format: null, commanderOracleId: null })
     );
     expect(component.isRenaming).toBeFalse();
   });
@@ -1008,6 +1033,7 @@ describe('DeckDetailComponent — rubber-band selection persistence', () => {
     const { component } = await setup();
     (component as any).dragSelectListEl = document.createElement('div');
     component.isDragSelecting = true;
+    component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
     component.onDocumentMouseUp();
     expect((component as any).dragSelectJustEnded).toBeTrue();
   });
@@ -1465,7 +1491,7 @@ describe('DeckDetailComponent — detail cover picker', () => {
     component.showDetailCoverPicker = true;
     component.onDetailCoverSelected(deck, 'new-art.jpg');
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: 'new-art.jpg' })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: 'new-art.jpg', format: null, commanderOracleId: null })
     );
     expect(component.showDetailCoverPicker).toBeFalse();
   });
@@ -1475,7 +1501,7 @@ describe('DeckDetailComponent — detail cover picker', () => {
     const deck = { ...makeDeck(), coverUri: 'old.jpg' };
     component.onDetailCoverSelected(deck, null);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null })
     );
   });
 });
@@ -1661,5 +1687,418 @@ describe('DeckDetailComponent — Delete key', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
     );
+  });
+});
+
+// ── Commander format ──────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — Commander format', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches updateDeckMeta with format:commander when Commander is selected', async () => {
+    const { component, store } = await setup();
+    component.toggleFormatMenu();
+    component.setFormat('commander', makeDeck());
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateDeckMeta({
+        id: 'deck-1', name: 'Test Deck', coverUri: null,
+        format: 'commander', commanderOracleId: null,
+      })
+    );
+    expect(component.showFormatMenu).toBeFalse();
+  });
+
+  it('dispatches updateDeckMeta with format:null when No Format is selected', async () => {
+    const { component, store } = await setup();
+    const commanderDeck = { ...makeDeck(), format: 'commander', commanderOracleId: 'oracle-cmdr' };
+    component.setFormat(null, commanderDeck);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateDeckMeta({
+        id: 'deck-1', name: 'Test Deck', coverUri: null,
+        format: null, commanderOracleId: null,
+      })
+    );
+  });
+
+  it('shows commander panel 2 seconds after selecting Commander', async () => {
+    const { component, fixture, store } = await setup();
+
+    // Click the format dropdown button
+    component.toggleFormatMenu();
+    expect(component.showFormatMenu).toBeTrue();
+
+    // Select Commander from the menu
+    component.setFormat('commander', makeDeck());
+    expect(component.showFormatMenu).toBeFalse();
+
+    // Simulate store update (optimistic reducer + server response)
+    store.setState({
+      deck: {
+        decks: [],
+        activeDeck: { ...makeDeck(), format: 'commander', commanderOracleId: null },
+        loading: false,
+        error: null,
+      },
+    });
+    fixture.detectChanges();
+
+    // Wait 2 seconds — verifies format has not reverted
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('.commander-panel'))
+      .withContext('commander-panel should be visible').toBeTruthy();
+
+    expect(el.querySelector('.cp-slot'))
+      .withContext('commander slot should be visible').toBeTruthy();
+
+    expect(el.querySelector('.cp-no-cmdr'))
+      .withContext('"Select Commander" prompt should appear').toBeTruthy();
+
+    expect(el.querySelectorAll('.cp-check').length)
+      .withContext('4 validation pills: size, commander, singleton, color ID').toBe(4);
+
+    const formatBtn = el.querySelector<HTMLElement>('.format-btn');
+    expect(formatBtn?.textContent?.trim())
+      .withContext('format button should show CMDR label').toContain('CMDR');
+  }, 10000); // extend Jasmine timeout to allow the 2-second wait
+});
+
+// ── eligibleCommanders ────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — eligibleCommanders', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('includes legendary creatures', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: ['Legendary'] }) });
+    const eligible = component.eligibleCommanders(makeDeck([card]));
+    expect(eligible.map(c => c.id)).toContain('c1');
+  });
+
+  it('includes legendary planeswalkers', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ cardTypes: [CardType.Planeswalker], supertypes: ['Legendary'] }) });
+    const eligible = component.eligibleCommanders(makeDeck([card]));
+    expect(eligible.map(c => c.id)).toContain('c1');
+  });
+
+  it('excludes non-legendary creatures', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: [] }) });
+    expect(component.eligibleCommanders(makeDeck([card]))).toHaveSize(0);
+  });
+
+  it('excludes legendary non-creature/non-planeswalker cards', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ cardTypes: [CardType.Enchantment], supertypes: ['Legendary'] }) });
+    expect(component.eligibleCommanders(makeDeck([card]))).toHaveSize(0);
+  });
+
+  it('excludes cards with no cardDetails', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', cardDetails: null });
+    expect(component.eligibleCommanders(makeDeck([card]))).toHaveSize(0);
+  });
+});
+
+// ── commanderCard ─────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — commanderCard', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns null when commanderOracleId is not set', async () => {
+    const { component } = await setup();
+    expect(component.commanderCard(makeDeck())).toBeNull();
+  });
+
+  it('returns the card whose oracleId matches commanderOracleId', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'oracle-cmdr' });
+    const deck = { ...makeDeck([card]), commanderOracleId: 'oracle-cmdr' };
+    expect(component.commanderCard(deck)?.id).toBe('c1');
+  });
+
+  it('returns null when no card matches', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'oracle-other' });
+    const deck = { ...makeDeck([card]), commanderOracleId: 'oracle-cmdr' };
+    expect(component.commanderCard(deck)).toBeNull();
+  });
+});
+
+// ── singletonViolations ───────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — singletonViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty when all non-basics appear exactly once', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) }),
+      makeDeckCard({ id: 'c2', oracleId: 'o2', quantity: 1, cardDetails: makeCard({ supertypes: [] }) }),
+    ];
+    expect(component.singletonViolations(makeDeck(cards))).toHaveSize(0);
+  });
+
+  it('flags a card that appears twice', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
+    const violations = component.singletonViolations(makeDeck([card]));
+    expect(violations.map(c => c.id)).toContain('c1');
+  });
+
+  it('flags cards sharing an oracleId across different printings', async () => {
+    const { component } = await setup();
+    const p1 = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    const p2 = makeDeckCard({ id: 'c2', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    const violations = component.singletonViolations(makeDeck([p1, p2]));
+    expect(violations.length).toBe(2);
+  });
+
+  it('does not flag basic lands even when count > 1', async () => {
+    const { component } = await setup();
+    const forest = makeDeckCard({ id: 'c1', oracleId: 'o-forest', quantity: 20, cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }) });
+    expect(component.singletonViolations(makeDeck([forest]))).toHaveSize(0);
+  });
+});
+
+// ── colorIdentityViolations ───────────────────────────────────────────────────
+
+describe('DeckDetailComponent — colorIdentityViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty when no commander is set', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    expect(component.colorIdentityViolations(makeDeck([card]))).toHaveSize(0);
+  });
+
+  it('returns empty when all cards are within commander color identity', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }) });
+    const card  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const deck  = { ...makeDeck([cmdr, card]), commanderOracleId: 'o-cmdr' };
+    expect(component.colorIdentityViolations(deck)).toHaveSize(0);
+  });
+
+  it('flags cards with colors outside commander identity', async () => {
+    const { component } = await setup();
+    const cmdr  = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const blue  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) });
+    const deck  = { ...makeDeck([cmdr, blue]), commanderOracleId: 'o-cmdr' };
+    const violations = component.colorIdentityViolations(deck);
+    expect(violations.map(c => c.id)).toContain('c1');
+  });
+
+  it('does not flag the commander itself', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) });
+    const deck = { ...makeDeck([cmdr]), commanderOracleId: 'o-cmdr' };
+    const violations = component.colorIdentityViolations(deck);
+    expect(violations.map(c => c.id)).not.toContain('cmdr');
+  });
+
+  it('does not flag colorless cards', async () => {
+    const { component } = await setup();
+    const cmdr      = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const colorless = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [] }) });
+    const deck      = { ...makeDeck([cmdr, colorless]), commanderOracleId: 'o-cmdr' };
+    expect(component.colorIdentityViolations(deck)).toHaveSize(0);
+  });
+});
+
+// ── cardViolationType / cardViolationClass ────────────────────────────────────
+
+describe('DeckDetailComponent — cardViolationType & cardViolationClass', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns null for non-commander format', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
+    const deck = makeDeck([card]); // format: null
+    expect(component.cardViolationType(card, deck)).toBeNull();
+  });
+
+  it('returns "singleton" when only singleton is violated', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }) });
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.cardViolationType(card, deck)).toBe('singleton');
+  });
+
+  it('returns "color-id" when only color identity is violated', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const card = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 1, cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }) });
+    const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.cardViolationType(card, deck)).toBe('color-id');
+  });
+
+  it('returns "both" when both violations apply', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const card = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 2, cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }) });
+    const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.cardViolationType(card, deck)).toBe('both');
+  });
+
+  it('cardViolationClass returns empty string when no violation', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    const deck = { ...makeDeck([card]), format: 'commander', commanderOracleId: null };
+    expect(component.cardViolationClass(card, deck)).toBe('');
+  });
+
+  it('cardViolationClass returns "violation-singleton" for singleton violators', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }) });
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.cardViolationClass(card, deck)).toBe('violation-singleton');
+  });
+});
+
+// ── hasCommanderViolations ────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — hasCommanderViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns false for non-commander format', async () => {
+    const { component } = await setup();
+    expect(component.hasCommanderViolations(makeDeck())).toBeFalse();
+  });
+
+  it('returns true when deck total is not 100', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', quantity: 1, cardDetails: makeCard({ supertypes: ['Legendary'], cardTypes: [CardType.Creature] }) });
+    const deck = { ...makeDeck([cmdr]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.hasCommanderViolations(deck)).toBeTrue();
+  });
+
+  it('returns true when commanderOracleId is null', async () => {
+    const { component } = await setup();
+    const deck = { ...makeDeck(), format: 'commander', commanderOracleId: null };
+    expect(component.hasCommanderViolations(deck)).toBeTrue();
+  });
+
+  it('returns true when singleton violations exist', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', quantity: 1, cardDetails: makeCard({ colorIdentity: [], supertypes: ['Legendary'], cardTypes: [CardType.Creature] }) });
+    const dup  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 2, cardDetails: makeCard({ colorIdentity: [], supertypes: [] }) });
+    // Pad to 100 total (1 + 2 + 97 basic lands)
+    const lands = Array.from({ length: 97 }, (_, i) =>
+      makeDeckCard({ id: `land-${i}`, oracleId: `o-land-${i}`, quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }) })
+    );
+    const deck = { ...makeDeck([cmdr, dup, ...lands]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    expect(component.hasCommanderViolations(deck)).toBeTrue();
+  });
+});
+
+// ── totalOracleCount ──────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — totalOracleCount', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns 1 for a single card with quantity 1', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, quantityFoil: 0 });
+    expect(component.totalOracleCount(card, makeDeck([card]))).toBe(1);
+  });
+
+  it('sums across different printings with the same oracleId', async () => {
+    const { component } = await setup();
+    const p1 = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, quantityFoil: 0, cardDetails: makeCard() });
+    const p2 = makeDeckCard({ id: 'c2', oracleId: 'o1', quantity: 2, quantityFoil: 1, cardDetails: makeCard() });
+    expect(component.totalOracleCount(p1, makeDeck([p1, p2]))).toBe(4);
+  });
+
+  it('does not count cards with a different oracleId', async () => {
+    const { component } = await setup();
+    const c1 = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1 });
+    const c2 = makeDeckCard({ id: 'c2', oracleId: 'o2', quantity: 3 });
+    expect(component.totalOracleCount(c1, makeDeck([c1, c2]))).toBe(1);
+  });
+});
+
+// ── targetCount ───────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — targetCount', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns 100 for commander format', async () => {
+    const { component } = await setup();
+    const deck = { ...makeDeck(), format: 'commander' };
+    expect(component.targetCount(deck)).toBe(100);
+  });
+
+  it('returns 60 for non-commander format', async () => {
+    const { component } = await setup();
+    expect(component.targetCount(makeDeck())).toBe(60);
+  });
+
+  it('returns 60 when format is null', async () => {
+    const { component } = await setup();
+    const deck = { ...makeDeck(), format: null };
+    expect(component.targetCount(deck)).toBe(60);
+  });
+});
+
+// ── setSortMode in free mode ──────────────────────────────────────────────────
+
+describe('DeckDetailComponent — setSortMode (free mode sort reset)', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('shows sort-reset modal when changing sort in free mode', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) })]);
+    component.setViewMode('free', deck);
+    component.sortMode = 'cmc';
+    component.setSortMode('type', deck);
+    expect(component.showSortResetModal).toBeTrue();
+  });
+
+  it('does not show modal when setting same sort mode in free mode', async () => {
+    const { component } = await setup();
+    const deck = makeDeck();
+    component.setViewMode('free', deck);
+    component.sortMode = 'cmc';
+    component.setSortMode('cmc', deck);
+    expect(component.showSortResetModal).toBeFalse();
+  });
+
+  it('does not show modal when not in free mode', async () => {
+    const { component } = await setup();
+    component.sortMode = 'cmc';
+    component.setViewMode('list');
+    component.setSortMode('type');
+    expect(component.showSortResetModal).toBeFalse();
+    expect(component.sortMode).toBe('type');
+  });
+
+  it('confirmSortReset applies the new sort mode and rebuilds columns', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) })]);
+    component.setViewMode('free', deck);
+    component.sortMode = 'cmc';
+    component.setSortMode('type', deck);
+    component.confirmSortReset();
+    expect(component.sortMode).toBe('type');
+    expect(component.showSortResetModal).toBeFalse();
+    expect(component.freeColumns.length).toBeGreaterThan(0);
+  });
+
+  it('cancelSortReset keeps original sort mode', async () => {
+    const { component } = await setup();
+    const deck = makeDeck();
+    component.setViewMode('free', deck);
+    component.sortMode = 'cmc';
+    component.setSortMode('type', deck);
+    component.cancelSortReset();
+    expect(component.sortMode).toBe('cmc');
+    expect(component.showSortResetModal).toBeFalse();
   });
 });

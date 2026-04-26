@@ -37,17 +37,30 @@ export const deckReducer = createReducer(
       cardCount: 0,
       createdAt: deck.createdAt,
       updatedAt: deck.updatedAt,
+      format: deck.format ?? null,
+      commanderOracleId: deck.commanderOracleId ?? null,
     }],
+  })),
+
+  on(DeckActions.updateDeckMeta, (state, { id, name, coverUri, format, commanderOracleId }) => ({
+    ...state,
+    decks: state.decks.map(d => d.id === id
+      ? { ...d, name, coverUri, format, commanderOracleId }
+      : d
+    ),
+    activeDeck: state.activeDeck?.id === id
+      ? { ...state.activeDeck, name, coverUri, format, commanderOracleId }
+      : state.activeDeck,
   })),
 
   on(DeckActions.updateDeckMetaSuccess, (state, { deck }) => ({
     ...state,
     decks: state.decks.map(d => d.id === deck.id
-      ? { ...d, name: deck.name, coverUri: deck.coverUri }
+      ? { ...d, name: deck.name, coverUri: deck.coverUri, format: deck.format, commanderOracleId: deck.commanderOracleId }
       : d
     ),
     activeDeck: state.activeDeck?.id === deck.id
-      ? { ...state.activeDeck, name: deck.name, coverUri: deck.coverUri }
+      ? { ...state.activeDeck, name: deck.name, coverUri: deck.coverUri, format: deck.format, commanderOracleId: deck.commanderOracleId }
       : state.activeDeck,
   })),
 

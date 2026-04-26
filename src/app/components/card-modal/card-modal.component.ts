@@ -49,6 +49,14 @@ export class CardModalComponent implements OnInit, OnChanges {
   rulingsLoading = false;
   private rulingsCache = new Map<string, RulingDto[]>();
 
+  // Magnifier lens
+  lensVisible = false;
+  lensX = 0; lensY = 0;
+  lensBgX = 0; lensBgY = 0;
+  lensBgW = 0; lensBgH = 0;
+  private readonly LENS_SIZE = 220;
+  private readonly ZOOM = 3;
+
   readonly CAROUSEL_PAGE = 5;
   carouselStart = 0;
 
@@ -218,6 +226,24 @@ export class CardModalComponent implements OnInit, OnChanges {
   toggleFlip(): void {
     this.flipped = !this.flipped;
     this.flippedChange.emit(this.flipped);
+  }
+
+  onImageMouseEnter(): void { this.lensVisible = true; }
+  onImageMouseLeave(): void { this.lensVisible = false; }
+
+  onImageMouseMove(e: MouseEvent): void {
+    const img = e.target as HTMLImageElement;
+    const imgRect = img.getBoundingClientRect();
+    const artRect = img.parentElement!.getBoundingClientRect();
+    const half = this.LENS_SIZE / 2;
+    const x = e.clientX - imgRect.left;
+    const y = e.clientY - imgRect.top;
+    this.lensX = e.clientX - artRect.left - half;
+    this.lensY = e.clientY - artRect.top - half;
+    this.lensBgW = imgRect.width * this.ZOOM;
+    this.lensBgH = imgRect.height * this.ZOOM;
+    this.lensBgX = -(x * this.ZOOM - half);
+    this.lensBgY = -(y * this.ZOOM - half);
   }
 
   // ---- Drag / resize --------------------------------------------------

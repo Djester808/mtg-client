@@ -29,6 +29,12 @@
   flex-shrink: 0;
 }
 
+.panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .panel-title {
   font-family: var(--font-display);
   font-size: 11px;
@@ -36,6 +42,19 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-secondary);
+}
+
+.panel-cmdr-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
 }
 
 .panel-close {
@@ -558,7 +577,9 @@
   gap: 10px;
   padding: 7px 14px;
   transition: background 0.15s;
+  cursor: grab;
   &:hover { background: var(--bg-raised); }
+  &:active { cursor: grabbing; }
 }
 
 .result-art {

@@ -1,4 +1,4 @@
-<div class="detail-shell">
+<div class="detail-shell" (click)="showFormatMenu = false; showCommanderPicker = false">
 
   <div class="detail-bg">
     <div class="bg-orb orb-1"></div>
@@ -42,7 +42,29 @@
           <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange">⠿</button>
         </div>
 
-        <span class="header-count">{{ totalCount(deck) }} / 60</span>
+
+        <!-- Format selector -->
+        <div class="format-wrap" (click)="$event.stopPropagation()">
+          <button class="format-btn"
+                  [class.has-format]="deck.format"
+                  [class.has-violations]="hasCommanderViolations(deck)"
+                  (click)="toggleFormatMenu()">
+            {{ deck.format === 'commander' ? 'CMDR' : 'FORMAT' }}
+            <span class="format-caret">▾</span>
+          </button>
+          <div class="format-menu" *ngIf="showFormatMenu">
+            <button class="format-menu-item" [class.is-active]="!deck.format"
+                    (click)="setFormat(null, deck)">No Format</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'commander'"
+                    (click)="setFormat('commander', deck)">Commander</button>
+          </div>
+        </div>
+
+        <span class="header-count"
+              [class.count-ok]="totalCount(deck) === targetCount(deck)"
+              [class.count-bad]="totalCount(deck) !== targetCount(deck) && deck.format">
+          {{ totalCount(deck) }} / {{ targetCount(deck) }}
+        </span>
 
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
@@ -55,14 +77,66 @@
     </ng-template>
   </header>
 
+  <!-- Validation bar (commander only) — pills on left, cover image on right -->
+  <ng-container *ngIf="deck$ | async as deck">
+    <div class="validation-bar" *ngIf="deck.format === 'commander'">
+
+      <!-- Left column: deck cover image -->
+      <div class="vbar-cover" (click)="openDetailCoverPicker(deck)" title="Change cover image">
+        <div class="vbar-cover-art"
+             [style.backgroundImage]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
+             [class.no-cover]="!deck.coverUri">
+          <span class="vbar-cover-placeholder" *ngIf="!deck.coverUri">◈</span>
+          <div class="vbar-cover-overlay">✎</div>
+        </div>
+      </div>
+
+      <!-- Right column: row 1 = checks, row 2 = legend -->
+      <div class="vbar-right">
+        <div class="vbar-row">
+          <span class="cp-check" [class.ok]="totalCount(deck) === 100" [class.bad]="totalCount(deck) !== 100">
+            <span class="cp-check-icon">{{ totalCount(deck) === 100 ? '✓' : '✕' }}</span>
+            {{ totalCount(deck) }}/100
+          </span>
+          <span class="cp-check" [class.ok]="!!deck.commanderOracleId" [class.bad]="!deck.commanderOracleId">
+            <span class="cp-check-icon">{{ deck.commanderOracleId ? '✓' : '✕' }}</span>
+            Commander
+          </span>
+          <span class="cp-check"
+                [class.ok]="singletonViolations(deck).length === 0"
+                [class.bad-singleton]="singletonViolations(deck).length > 0"
+                [title]="singletonViolationNames(deck)">
+            <span class="cp-check-icon">{{ singletonViolations(deck).length === 0 ? '✓' : '✕' }}</span>
+            Singleton<ng-container *ngIf="singletonViolations(deck).length > 0"> ({{ singletonViolations(deck).length }})</ng-container>
+          </span>
+          <span class="cp-check"
+                [class.ok]="colorIdentityViolations(deck).length === 0"
+                [class.bad-color-id]="colorIdentityViolations(deck).length > 0"
+                [title]="colorIdentityViolationNames(deck)">
+            <span class="cp-check-icon">{{ colorIdentityViolations(deck).length === 0 ? '✓' : '✕' }}</span>
+            Color ID<ng-container *ngIf="colorIdentityViolations(deck).length > 0"> ({{ colorIdentityViolations(deck).length }})</ng-container>
+          </span>
+        </div>
+        <div class="vbar-row vbar-legend-row" *ngIf="hasCommanderViolations(deck)">
+          <span class="cp-legend-item"><span class="cp-legend-dot dot-singleton"></span>Too many</span>
+          <span class="cp-legend-item"><span class="cp-legend-dot dot-color-id"></span>Wrong color</span>
+          <span class="cp-legend-item"><span class="cp-legend-dot dot-both"></span>Both</span>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+
   <!-- Body -->
   <div class="detail-body">
 
     <!-- Left: card groups -->
     <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck"
+          [style.--card-zoom]="zoomLevel"
           (mousemove)="onGroupsAreaMouseMove($event)"
           (mouseleave)="onGroupsAreaMouseLeave()"
-          (dragover)="onGroupsAreaDragOver($event)">
+          (dragover)="onGroupsAreaDragOver($event)"
+          (drop)="onGroupsAreaDrop($event)">
 
       <!-- Filter bar (list / visual only) -->
       <div class="filter-bar" *ngIf="viewMode !== 'free'">
@@ -79,6 +153,11 @@
           <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
           <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
           <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+        </div>
+        <div class="sort-group zoom-group">
+          <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
+          <span class="zoom-label">{{ zoomLabel }}</span>
+          <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
         </div>
       </div>
 
@@ -108,6 +187,7 @@
               <div
                 class="card-row"
                 *ngFor="let card of group.cards"
+                [ngClass]="cardViolationClass(card, deck)"
                 (click)="openCard(card)"
               >
                 <div
@@ -123,8 +203,8 @@
                           title="Flip">↻</button>
                 </div>
                 <div class="card-info">
-                  <div class="card-name">{{ card.cardDetails?.name ?? card.oracleId }}</div>
-                  <div class="card-type">{{ typeLine(card) }}</div>
+                  <div class="card-name"><span>{{ card.cardDetails?.name ?? card.oracleId }}</span></div>
+                  <div class="card-type"><span>{{ typeLine(card) }}</span></div>
                   <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost" class="card-mana"></app-mana-cost>
                 </div>
                 <div class="card-actions" (click)="$event.stopPropagation()">
@@ -146,6 +226,7 @@
                 class="visual-card"
                 [class.density-half]="stackDensity === 'half'"
                 [class.density-name]="stackDensity === 'name'"
+                [ngClass]="cardViolationClass(card, deck)"
                 *ngFor="let card of getStackCards(group.key, group.cards); let i = index; trackBy: trackByIdx"
                 [style.z-index]="i + 1"
                 [class.is-stack-dragging]="stackDragGroupKey === group.key && stackDragFromIdx === i"
@@ -190,6 +271,11 @@
             <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
             <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
             <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+          </div>
+          <div class="sort-group zoom-group">
+            <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
+            <span class="zoom-label">{{ zoomLabel }}</span>
+            <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
           </div>
         </div>
 
@@ -259,6 +345,7 @@
                    [attr.data-card-id]="card.id"
                    [class.density-half]="stackDensity === 'half'"
                    [class.density-name]="stackDensity === 'name'"
+                   [ngClass]="cardViolationClass(card, deck)"
                    [style.z-index]="i + 1"
                    [class.is-selected-card]="selectedCardSlots.has(col.id + '/' + i)"
                    [class.is-dragging]="isDraggingMultiCards ? selectedCardSlots.has(col.id + '/' + i) : (dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i)"
@@ -281,7 +368,7 @@
                 <div class="card-bottom" (click)="$event.stopPropagation()">
                   <div class="ctrl-row">
                     <button class="ctrl-btn ctrl-dec" (click)="freeDecrement(card, col.id)">−</button>
-                    <span class="ctrl-label">◈ {{ cardCount(card) }}</span>
+                    <span class="ctrl-label">◈ {{ totalOracleCount(card, deck) }}</span>
                     <button class="ctrl-btn ctrl-inc" (click)="freeIncrement(card, col.id)">+</button>
                   </div>
                 </div>
@@ -311,18 +398,48 @@
     <aside class="side-panel" *ngIf="!showSearchPanel">
       <ng-container *ngIf="deck$ | async as deck">
 
-        <!-- Cover image -->
-        <div class="cover-section" (click)="openDetailCoverPicker(deck)" title="Change cover image">
-          <div class="cover-art"
-               [style.backgroundImage]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
-               [class.no-cover-art]="!deck.coverUri">
-            <span class="cover-art-placeholder" *ngIf="!deck.coverUri">⊗</span>
-            <div class="cover-edit-overlay">
-              <span class="cover-edit-icon">✎</span>
-              <span class="cover-edit-label">Change Cover</span>
+        <!-- Commander panel (in sidebar) -->
+        <ng-container *ngIf="deck.format === 'commander'">
+          <div class="cp-panel">
+
+            <div class="cp-cmdr-label">Commander</div>
+
+            <!-- Card portrait (click = open detail, drop = assign commander) -->
+            <div class="cp-portrait-wrap"
+                 (dragover)="onCpSlotDragOver($event, deck)"
+                 (dragleave)="cpSlotDragOver = false"
+                 (drop)="onCpSlotDrop(deck, $event)"
+                 [class.is-cmdr-drop-target]="cpSlotDragOver">
+              <ng-container *ngIf="commanderCard(deck) as cmdr; else noCommander">
+                <div class="cp-portrait"
+                     [style.backgroundImage]="cmdr.cardDetails?.imageUriSmall ? 'url(' + cmdr.cardDetails!.imageUriSmall + ')' : 'none'"
+                     [class.no-art]="!cmdr.cardDetails?.imageUriSmall"
+                     (click)="openCard(cmdr)"
+                     title="View card details">
+                </div>
+                <div class="cp-portrait-actions">
+                  <button class="cp-detail-btn-overlay"
+                          (click)="openCard(cmdr); $event.stopPropagation()"
+                          title="View card details">View Details</button>
+                  <button class="cp-search-btn"
+                          (click)="openCommanderSearch(); $event.stopPropagation()"
+                          title="Search for new commander">⊕ Change</button>
+                  <button class="cp-clear-btn-overlay"
+                          (click)="setCommander(null, deck); $event.stopPropagation()"
+                          title="Remove commander">✕ Remove</button>
+                </div>
+              </ng-container>
+              <ng-template #noCommander>
+                <div class="cp-portrait no-art"
+                     (click)="openCommanderSearch(); $event.stopPropagation()"
+                     title="Search for commander">
+                  <div class="cp-no-cmdr">⊛<br>Click or drop<br>to assign</div>
+                </div>
+              </ng-template>
             </div>
+
           </div>
-        </div>
+        </ng-container>
 
         <div class="stats-section" *ngIf="!(loading$ | async)">
           <ng-container *ngIf="getDeckStats(deck) as stats">
@@ -395,6 +512,7 @@
     <app-card-search-panel
       [isOpen]="showSearchPanel"
       [ownedCards]="(deck$ | async)?.cards ?? []"
+      [commanderFilter]="commanderSearchMode"
       (cardAdd)="onPanelCardAdd($event)"
       (panelClose)="toggleSearchPanel()"
     ></app-card-search-panel>
