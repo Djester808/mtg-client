@@ -173,7 +173,7 @@ describe('DeckListComponent — delete and create', () => {
     component.createForm.setValue({ name: '  Aggro  ' });
     component.submitCreate();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.createDeck({ name: 'Aggro', coverUri: null })
+      DeckActions.createDeck({ name: 'Aggro', coverUri: null, format: null })
     );
     expect(component.showCreateForm).toBeFalse();
   });

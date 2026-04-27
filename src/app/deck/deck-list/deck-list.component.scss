@@ -508,3 +508,231 @@
 
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
+
+// ---- Format picker (create & edit modals) ----------------
+
+.format-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.format-opt {
+  flex: 1;
+  padding: 9px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { border-color: var(--border-lit); color: var(--text-primary); }
+
+  &.is-active {
+    background: rgba(124,58,237,0.18);
+    border-color: rgba(167,139,250,0.6);
+    color: #a78bfa;
+  }
+}
+
+// ---- Header actions (import + new deck) ------------------
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.import-btn {
+  padding: 10px 18px;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+}
+
+// ---- Format badge on deck cards --------------------------
+
+.format-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  background: rgba(124,58,237,0.18);
+  border: 1px solid rgba(167,139,250,0.35);
+  border-radius: 4px;
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+
+// ---- Import modal ----------------------------------------
+
+.import-modal {
+  width: 520px;
+}
+
+.import-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.import-tab {
+  flex: 1;
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) { color: var(--text-secondary); }
+
+  &.is-active {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.import-textarea {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px 14px;
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+
+  &::placeholder { color: var(--text-dim); }
+  &:focus { border-color: rgba(167,139,250,0.5); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.form-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+// ---- Import result states --------------------------------
+
+.import-result-ok,
+.import-result-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.import-result-ok {
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.25);
+}
+
+.import-result-error {
+  background: rgba(226,80,80,0.08);
+  border: 1px solid rgba(226,80,80,0.25);
+}
+
+.import-result-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+
+  .import-result-ok & { color: #34d399; }
+  .import-result-error & { color: #e25050; }
+}
+
+.import-result-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.import-result-sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.import-unresolved {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.import-unresolved-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.import-unresolved-list {
+  margin: 0;
+  padding: 0 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 140px;
+  overflow-y: auto;
+
+  li {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+}

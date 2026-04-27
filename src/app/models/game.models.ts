@@ -35,6 +35,7 @@ export interface CardDto {
   flavorText: string | null;
   artist: string | null;
   setCode: string | null;
+  rarity: string | null;
   legalities: Record<string, string>;
 }
 

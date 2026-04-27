@@ -11,6 +11,7 @@ import {
   startWith, map, takeUntil, mergeMap, of, concatMap,
 } from 'rxjs';
 import { CardDto, CollectionCardDto, PrintingDto, SetSummaryDto } from '../../models/game.models';
+import { CardType } from '../../models/enums';
 import { GameApiService } from '../../services/game-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
@@ -36,6 +37,8 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   get commanderFilter(): boolean { return this._commanderFilter; }
   @Input() set commanderFilter(v: boolean) {
     this._commanderFilter = v;
+    this.results = [];
+    this.searched = false;
     this.filterChange$.next();
   }
 
@@ -49,7 +52,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   @HostBinding('class.is-open') get openClass() { return this._isOpen; }
 
-  @Output() cardAdd   = new EventEmitter<{ oracleId: string; scryfallId: string }>();
+  @Output() cardAdd   = new EventEmitter<{ oracleId: string; scryfallId: string; isCommanderEligible: boolean }>();
   @Output() panelClose = new EventEmitter<void>();
 
   // ---- Search & filter state ----------------------------------------
@@ -367,7 +370,9 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     }
     if (!scryfallId) { this.addErrors.add(card.oracleId); this.cdr.markForCheck(); return; }
     this.addErrors.delete(card.oracleId);
-    this.cardAdd.emit({ oracleId: card.oracleId, scryfallId });
+    const isLegendary = card.supertypes?.includes('Legendary') ?? false;
+    const isCreatureOrPw = (card.cardTypes?.includes(CardType.Creature) || card.cardTypes?.includes(CardType.Planeswalker)) ?? false;
+    this.cardAdd.emit({ oracleId: card.oracleId, scryfallId, isCommanderEligible: isLegendary && isCreatureOrPw });
   }
 
   onDragStart(card: CardDto, event: DragEvent): void {
@@ -386,6 +391,11 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.setData('application/x-search-card', JSON.stringify({ oracleId: card.oracleId, scryfallId }));
+      const isLegendary = card.supertypes?.includes('Legendary') ?? false;
+      const isCreatureOrPw = (card.cardTypes?.includes(CardType.Creature) || card.cardTypes?.includes(CardType.Planeswalker)) ?? false;
+      if (isLegendary && isCreatureOrPw) {
+        event.dataTransfer.setData('application/x-commander-card', '1');
+      }
       const artEl = (event.target as HTMLElement).closest('.result-row')?.querySelector('.result-art') as HTMLElement | null;
       if (artEl) event.dataTransfer.setDragImage(artEl, artEl.offsetWidth / 2, artEl.offsetHeight / 2);
     }

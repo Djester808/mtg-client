@@ -34,8 +34,8 @@ export class DeckEffects {
   createDeck$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.createDeck),
-      switchMap(({ name, coverUri }) =>
-        this.api.createDeck({ name, coverUri }).pipe(
+      switchMap(({ name, coverUri, format }) =>
+        this.api.createDeck({ name, coverUri, format }).pipe(
           map(deck => DeckActions.createDeckSuccess({ deck })),
           catchError(err => of(DeckActions.createDeckFailure({ error: err.message }))),
         )

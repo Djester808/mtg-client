@@ -28,6 +28,7 @@ export function makeCard(overrides: Partial<CardDto> = {}): CardDto {
     flavorText: null,
     artist: null,
     setCode: null,
+    rarity: null,
     legalities: {},
     ...overrides,
   };

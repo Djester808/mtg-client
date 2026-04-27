@@ -30,9 +30,17 @@
       <div class="header-right">
         <!-- Sort controls -->
         <div class="sort-group">
-          <button class="sort-btn" [class.is-active]="sortMode === 'cmc'"  (click)="setSortMode('cmc',  deck)">CMC</button>
-          <button class="sort-btn" [class.is-active]="sortMode === 'type'" (click)="setSortMode('type', deck)">Type</button>
-          <button class="sort-btn" [class.is-active]="sortMode === 'name'" (click)="setSortMode('name', deck)" *ngIf="viewMode !== 'free'">Name</button>
+          <select class="sort-select" [ngModel]="sortMode" (ngModelChange)="setSortMode($event, deck)">
+            <option value="cmc">CMC</option>
+            <option value="type">Type</option>
+            <option value="name">Name</option>
+            <option value="subtype">Subtype</option>
+            <option value="color">Color</option>
+            <option value="color-identity">Color Identity</option>
+            <option value="rarity">Rarity</option>
+            <option value="artist">Artist</option>
+            <option value="set">Set</option>
+          </select>
         </div>
 
         <!-- View toggle -->
@@ -66,6 +74,9 @@
           {{ totalCount(deck) }} / {{ targetCount(deck) }}
         </span>
 
+        <button class="stats-btn" [class.is-active]="showSidePanel" (click)="toggleSidePanel()">
+          ☰ Stats
+        </button>
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
         </button>
@@ -131,7 +142,7 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck"
+    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck"
           [style.--card-zoom]="zoomLevel"
           (mousemove)="onGroupsAreaMouseMove($event)"
           (mouseleave)="onGroupsAreaMouseLeave()"
@@ -149,10 +160,17 @@
             placeholder="Filter cards…"
           />
         </div>
+        <!-- List density: thumbnail vs text -->
+        <div class="density-picker" *ngIf="viewMode === 'list'">
+          <button class="density-btn" [class.is-active]="!textStyle" (click)="setTextStyle(false)" title="Thumbnail">⊟</button>
+          <button class="density-btn" [class.is-active]="textStyle"  (click)="setTextStyle(true)"  title="Text list">☰</button>
+        </div>
+        <!-- Visual density + text -->
         <div class="density-picker" *ngIf="viewMode === 'visual'">
-          <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
-          <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
-          <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+          <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list">☰</button>
         </div>
         <div class="sort-group zoom-group">
           <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -182,8 +200,8 @@
               <span class="group-count">{{ group.totalCount }}</span>
             </div>
 
-            <!-- ── List view ── -->
-            <div class="card-list" *ngIf="viewMode === 'list'">
+            <!-- ── List thumbnail view ── -->
+            <div class="card-list" *ngIf="viewMode === 'list' && !textStyle">
               <div
                 class="card-row"
                 *ngFor="let card of group.cards"
@@ -217,9 +235,27 @@
               </div>
             </div>
 
+            <!-- ── Text view (any mode) ── -->
+            <div class="card-list" *ngIf="textStyle">
+              <div
+                class="card-row list-row"
+                *ngFor="let card of group.cards"
+                [ngClass]="cardViolationClass(card, deck)"
+                (click)="openCard(card)"
+              >
+                <span class="list-qty">{{ cardCount(card) }}</span>
+                <span class="list-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost" class="list-mana"></app-mana-cost>
+                <div class="list-actions" (click)="$event.stopPropagation()">
+                  <button class="list-btn list-dec" (click)="decrement(card)">−</button>
+                  <button class="list-btn list-inc" (click)="increment(card)">+</button>
+                </div>
+              </div>
+            </div>
+
             <!-- ── Visual view ── -->
             <div class="visual-stack"
-                 *ngIf="viewMode === 'visual'"
+                 *ngIf="viewMode === 'visual' && !textStyle"
                  [attr.data-group-key]="group.key"
                  [class.is-drag-active]="stackDragGroupKey === group.key">
               <div
@@ -231,7 +267,7 @@
                 [style.z-index]="i + 1"
                 [class.is-stack-dragging]="stackDragGroupKey === group.key && stackDragFromIdx === i"
                 [class.is-stack-drop-target]="stackDragGroupKey === group.key && stackDragOverIdx === i && stackDragFromIdx !== i"
-                (pointerdown)="onStackPointerDown(group.key, i, $event)"
+                (pointerdown)="onStackPointerDown(group.key, i, card, $event)"
                 (click)="openCard(card)"
               >
                 <div
@@ -268,9 +304,10 @@
           </button>
           <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset columns to CMC groups">↺ Reset</button>
           <div class="density-picker">
-            <button class="density-btn" [class.is-active]="stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
-            <button class="density-btn" [class.is-active]="stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
-            <button class="density-btn" [class.is-active]="stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
+            <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list">☰</button>
           </div>
           <div class="sort-group zoom-group">
             <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -301,6 +338,9 @@
                [attr.data-col-id]="col.id"
                [class.is-dragging-col]="isDraggingMultiCols ? multiDragColIds.includes(col.id) : dragColId === col.id"
                [class.is-selected-col]="selectedFreeColId === col.id || dragSelectedColIds.has(col.id)"
+               [class.has-fixed-width]="!!col.width"
+               [class.is-text-style]="textStyle && !col.width"
+               [style.width.px]="col.width || null"
                (click)="$event.stopPropagation(); selectFreeCol(col.id)"
                (dragover)="onColDragOver(col.id, $event)"
                (drop)="onColDrop(col.id, $event)"
@@ -339,7 +379,8 @@
             <div class="drop-line" [class.active]="dragOverColId === col.id && dragOverIndex === 0"></div>
 
             <ng-container *ngFor="let card of getCardsForColumn(col, deck); let i = index">
-              <div class="free-card"
+              <!-- Card tile view -->
+              <div class="free-card" *ngIf="!textStyle"
                    draggable="true"
                    [attr.data-slot-key]="col.id + '/' + i"
                    [attr.data-card-id]="card.id"
@@ -373,6 +414,18 @@
                   </div>
                 </div>
               </div>
+              <!-- Text row view -->
+              <div class="card-row list-row" *ngIf="textStyle"
+                   [ngClass]="cardViolationClass(card, deck)"
+                   (click)="$event.stopPropagation(); openCard(card, col.id + '/' + i)">
+                <span class="list-qty">1</span>
+                <span class="list-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost" class="list-mana"></app-mana-cost>
+                <div class="list-actions" (click)="$event.stopPropagation()">
+                  <button class="list-btn list-dec" (click)="freeDecrement(card, col.id)">−</button>
+                  <button class="list-btn list-inc" (click)="freeIncrement(card, col.id)">+</button>
+                </div>
+              </div>
               <div class="drop-line" [class.active]="dragOverColId === col.id && dragOverIndex === i + 1"></div>
             </ng-container>
 
@@ -380,6 +433,10 @@
               Drop cards here
             </div>
 
+            <div class="col-resize-handle"
+                 [class.is-resizing]="resizingColId === col.id"
+                 (pointerdown)="onColResizeStart(col.id, $event)"
+                 (dblclick)="resetColWidth(col.id)"></div>
           </div><!-- /free-col -->
           </ng-container>
 
@@ -394,8 +451,12 @@
 
     </main>
 
-    <!-- Stats sidebar -->
-    <aside class="side-panel" *ngIf="!showSearchPanel">
+    <!-- Stats drawer (overlays main content) -->
+    <aside class="side-panel" [class.is-open]="showSidePanel && !showSearchPanel">
+      <div class="side-panel-header">
+        <span class="side-panel-title">Stats</span>
+        <button class="side-panel-close" (click)="toggleSidePanel()">✕</button>
+      </div>
       <ng-container *ngIf="deck$ | async as deck">
 
         <!-- Commander panel (in sidebar) -->

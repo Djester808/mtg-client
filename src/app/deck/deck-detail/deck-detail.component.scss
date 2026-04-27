@@ -163,6 +163,32 @@
   &.is-active { background: rgba(167,139,250,0.15); color: #a78bfa; }
 }
 
+.sort-select {
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  appearance: none;
+  outline: none;
+
+  &:hover { color: var(--gold); }
+
+  option {
+    background: var(--bg-surface, #1a1a2e);
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px;
+  }
+}
+
 .header-count {
   font-family: var(--font-display);
   font-size: 11px;
@@ -215,6 +241,7 @@
 
 .groups-area {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 20px 24px 64px;
 
@@ -229,6 +256,7 @@
     .group-header { padding-inline: 24px; }
     .empty-state  { padding-inline: 24px; }
     .loading-state { padding-inline: 24px; }
+
   }
 }
 
@@ -352,6 +380,12 @@
 
 .cmc-group {}
 
+.groups-area.is-text.is-visual .cmc-group {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: unset;
+}
+
 .group-header {
   display: flex;
   align-items: center;
@@ -390,6 +424,9 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 // ---- Card row --------------------------------------------
@@ -423,6 +460,75 @@
     outline-offset: -1px;
   }
 }
+
+// ---- List-view text rows ---------------------------------
+
+.list-row {
+  min-width: max-content;
+  box-sizing: border-box;
+  padding: calc(2px * var(--card-zoom, 1)) calc(8px * var(--card-zoom, 1));
+  gap: calc(6px * var(--card-zoom, 1));
+  min-height: calc(24px * var(--card-zoom, 1));
+
+  &:hover .list-actions { opacity: 1; }
+}
+
+.list-qty {
+  font-family: var(--font-display);
+  font-size: calc(10px * var(--card-zoom, 1));
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: calc(14px * var(--card-zoom, 1));
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.list-name {
+  font-family: var(--font-body);
+  font-size: calc(11px * var(--card-zoom, 1));
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.list-mana {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.list-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.list-btn {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+
+  &:hover { border-color: var(--border-lit); color: var(--text-primary); background: var(--bg-surface); }
+}
+
+.list-dec:hover { color: var(--mana-R, #e74c3c) !important; }
+.list-inc:hover { color: var(--mana-G, #27ae60) !important; }
+
+// -------------------------------------------------------
 
 .card-thumb {
   width: calc(40px * var(--card-zoom, 1));
@@ -637,11 +743,15 @@
 }
 
 .free-col {
-  flex: 1;
-  min-width: calc(150px * var(--card-zoom, 1));
+  flex: 0 0 calc(260px * var(--card-zoom, 1));
+  min-width: calc(80px * var(--card-zoom, 1));
   display: flex;
   flex-direction: column;
+  position: relative;
   border-radius: 8px;
+
+  &.has-fixed-width  { flex: 0 0 auto; }
+  &.is-text-style    { flex: 0 0 auto; width: max-content; min-width: unset; }
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-dim);
   padding: 8px;
@@ -663,6 +773,20 @@
     box-shadow: 0 0 0 1px rgba(201,168,76,0.2), 0 4px 20px rgba(201,168,76,0.1);
     background: rgba(201,168,76,0.03);
   }
+}
+
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  border-radius: 3px;
+  transition: background 0.15s;
+
+  &:hover, &.is-resizing { background: rgba(201,168,76,0.35); }
 }
 
 .free-col-header {
@@ -933,6 +1057,7 @@
     min-width: calc(140px * var(--card-zoom, 1));
   }
 
+
   .group-header { margin-bottom: 8px; }
 }
 
@@ -1112,22 +1237,85 @@
   display: none;
 }
 
-// ---- Side panel (stats + search) -------------------------
+// ---- Side panel (collapsible column) ---------------------
 
 .side-panel {
-  width: 280px;
+  width: 0;
   flex-shrink: 0;
-  border-left: 1px solid var(--border-dim);
+  overflow: hidden;
   background: var(--bg-deep);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s;
+  border-left: 1px solid transparent;
+
+  &.is-open {
+    width: 300px;
+    border-left-color: var(--border-dim);
+    overflow-y: auto;
+  }
 
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+}
+
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+
+.side-panel-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.side-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.06);
+  }
+}
+
+.stats-btn {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  &.is-active {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
 }
 
 // ---- Deck Stats ------------------------------------------

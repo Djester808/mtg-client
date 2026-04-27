@@ -16,7 +16,7 @@ import {
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { CollectionCardDto, PrintingDto, CardType } from '../../models/game.models';
+import { CollectionCardDto, PrintingDto, CardType, ManaColor } from '../../models/game.models';
 import { DeckDetailDto } from '../../services/deck-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
@@ -25,13 +25,14 @@ import { CardModalComponent } from '../../components/card-modal/card-modal.compo
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
-export type SortMode = 'cmc' | 'name' | 'type';
+export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set';
 export type ViewMode = 'list' | 'visual' | 'free';
 
 export interface FreeColumn {
   id: string;
   label: string;
   cardIds: string[];
+  width?: number;
 }
 
 export interface CmcGroup {
@@ -71,8 +72,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   filterQuery     = '';
   sortMode: SortMode = 'cmc';
   viewMode: ViewMode = 'list';
+  textStyle       = false;
   zoomLevel = 1.0;
   showSearchPanel = false;
+  showSidePanel   = false;
 
   freeColumns: FreeColumn[] = [];
   selectedFreeColId: string | null = null;
@@ -131,6 +134,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private pendingNavigation: (() => void) | null = null;
   private pendingSortMode: SortMode | null = null;
   private pendingSortDeck: DeckDetailDto | null = null;
+
+  resizingColId: string | null = null;
 
   stackOrders = new Map<string, string[]>();
   stackDragGroupKey: string | null = null;
@@ -253,6 +258,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const doSwitch = () => {
       if (this.viewMode !== mode) this.stackOrders.clear();
       this.viewMode = mode;
+      this.textStyle = false;
       if (mode === 'free' && deck) this.enterFreeMode(deck);
       this.cdr.markForCheck();
     };
@@ -261,6 +267,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     } else {
       doSwitch();
     }
+  }
+
+  setTextStyle(val: boolean): void {
+    this.textStyle = val;
+    this.cdr.markForCheck();
   }
 
   private checkUnsaved(proceed: () => void): void {
@@ -301,6 +312,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   setStackDensity(density: 'full' | 'half' | 'name'): void {
     this.stackDensity = density;
+    this.textStyle = false;
     this.cdr.markForCheck();
   }
 
@@ -607,6 +619,39 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const remaining = this.freeColumns.filter(c => c.id !== colId);
     remaining[0] = { ...remaining[0], cardIds: [...remaining[0].cardIds, ...col.cardIds] };
     this.freeColumns = remaining;
+    this.freeLayoutDirty = true;
+    this.cdr.markForCheck();
+  }
+
+  onColResizeStart(colId: string, event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const colEl = document.querySelector<HTMLElement>(`[data-col-id="${colId}"]`);
+    if (!colEl) return;
+    const startX = event.clientX;
+    const startWidth = colEl.offsetWidth;
+    this.resizingColId = colId;
+    document.body.style.setProperty('cursor', 'col-resize', 'important');
+    this.cdr.markForCheck();
+    const onMove = (e: PointerEvent) => {
+      const newWidth = Math.max(120, startWidth + (e.clientX - startX));
+      this.freeColumns = this.freeColumns.map(c => c.id === colId ? { ...c, width: newWidth } : c);
+      this.freeLayoutDirty = true;
+      this.cdr.markForCheck();
+    };
+    const onUp = () => {
+      this.resizingColId = null;
+      document.body.style.removeProperty('cursor');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      this.cdr.markForCheck();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  resetColWidth(colId: string): void {
+    this.freeColumns = this.freeColumns.map(c => c.id === colId ? { ...c, width: undefined } : c);
     this.freeLayoutDirty = true;
     this.cdr.markForCheck();
   }
@@ -1102,6 +1147,117 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       return groups;
     }
 
+    if (this.sortMode === 'subtype') {
+      const bySubtype = new Map<string, CollectionCardDto[]>();
+      for (const c of filtered) {
+        const key = c.cardDetails?.subtypes?.[0] ?? 'Other';
+        if (!bySubtype.has(key)) bySubtype.set(key, []);
+        bySubtype.get(key)!.push(c);
+      }
+      const keys = [...bySubtype.keys()].sort((a, b) =>
+        a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b));
+      return keys.map(key => {
+        const cards = bySubtype.get(key)!;
+        return { label: key, key: `subtype-${key}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+      });
+    }
+
+    if (this.sortMode === 'color') {
+      const colorOrder = ['White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor', 'Colorless'];
+      const byColor = new Map<string, CollectionCardDto[]>();
+      for (const label of colorOrder) byColor.set(label, []);
+      for (const c of filtered) {
+        const mc = c.cardDetails?.manaCost ?? '';
+        const colors = new Set([...mc].filter(ch => 'WUBRG'.includes(ch)));
+        const label = colors.size === 0 ? 'Colorless'
+          : colors.size > 1 ? 'Multicolor'
+          : colors.has('W') ? 'White'
+          : colors.has('U') ? 'Blue'
+          : colors.has('B') ? 'Black'
+          : colors.has('R') ? 'Red' : 'Green';
+        byColor.get(label)!.push(c);
+      }
+      return colorOrder
+        .filter(label => (byColor.get(label)?.length ?? 0) > 0)
+        .map(label => {
+          const cards = byColor.get(label)!;
+          return { label, key: `color-${label}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        });
+    }
+
+    if (this.sortMode === 'color-identity') {
+      const colorOrder = ['White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor', 'Colorless'];
+      const ciLabel = (ci: ManaColor[]): string => {
+        if (ci.length === 0) return 'Colorless';
+        if (ci.length > 1) return 'Multicolor';
+        const map: Partial<Record<ManaColor, string>> = {
+          [ManaColor.White]: 'White', [ManaColor.Blue]: 'Blue', [ManaColor.Black]: 'Black',
+          [ManaColor.Red]: 'Red', [ManaColor.Green]: 'Green',
+        };
+        return map[ci[0]] ?? 'Colorless';
+      };
+      const byColor = new Map<string, CollectionCardDto[]>();
+      for (const label of colorOrder) byColor.set(label, []);
+      for (const c of filtered) {
+        const label = ciLabel(c.cardDetails?.colorIdentity ?? []);
+        byColor.get(label)!.push(c);
+      }
+      return colorOrder
+        .filter(label => (byColor.get(label)?.length ?? 0) > 0)
+        .map(label => {
+          const cards = byColor.get(label)!;
+          return { label, key: `ci-${label}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        });
+    }
+
+    if (this.sortMode === 'rarity') {
+      const rarityOrder = ['mythic', 'rare', 'uncommon', 'common', 'special', 'bonus'];
+      const rarityLabel: Record<string, string> = {
+        mythic: 'Mythic Rare', rare: 'Rare', uncommon: 'Uncommon', common: 'Common',
+        special: 'Special', bonus: 'Bonus',
+      };
+      const byRarity = new Map<string, CollectionCardDto[]>();
+      for (const c of filtered) {
+        const r = c.cardDetails?.rarity ?? 'unknown';
+        if (!byRarity.has(r)) byRarity.set(r, []);
+        byRarity.get(r)!.push(c);
+      }
+      const known = rarityOrder.filter(r => byRarity.has(r));
+      const other = [...byRarity.keys()].filter(r => !rarityOrder.includes(r)).sort();
+      return [...known, ...other].map(r => {
+        const cards = byRarity.get(r)!;
+        return { label: rarityLabel[r] ?? r, key: `rarity-${r}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+      });
+    }
+
+    if (this.sortMode === 'artist') {
+      const byArtist = new Map<string, CollectionCardDto[]>();
+      for (const c of filtered) {
+        const artist = c.cardDetails?.artist ?? 'Unknown';
+        if (!byArtist.has(artist)) byArtist.set(artist, []);
+        byArtist.get(artist)!.push(c);
+      }
+      const keys = [...byArtist.keys()].sort((a, b) => a.localeCompare(b));
+      return keys.map(artist => {
+        const cards = byArtist.get(artist)!;
+        return { label: artist, key: `artist-${artist}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+      });
+    }
+
+    if (this.sortMode === 'set') {
+      const bySet = new Map<string, CollectionCardDto[]>();
+      for (const c of filtered) {
+        const set = (c.cardDetails?.setCode ?? 'unknown').toUpperCase();
+        if (!bySet.has(set)) bySet.set(set, []);
+        bySet.get(set)!.push(c);
+      }
+      const keys = [...bySet.keys()].sort((a, b) => a.localeCompare(b));
+      return keys.map(set => {
+        const cards = bySet.get(set)!;
+        return { label: set, key: `set-${set}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+      });
+    }
+
     // CMC
     const nonLands = filtered.filter(c => !this.isLand(c))
       .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
@@ -1153,30 +1309,43 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       .filter((c): c is CollectionCardDto => c != null);
   }
 
-  onStackPointerDown(groupKey: string, idx: number, event: PointerEvent): void {
+  onStackPointerDown(groupKey: string, idx: number, card: CollectionCardDto, event: PointerEvent): void {
     if ((event.target as HTMLElement).closest('button')) return;
     const startX = event.clientX;
     const startY = event.clientY;
     let dragging = false;
+    let overCommander = false;
+
+    const d = card.cardDetails;
+    const isCommanderEligible = !!d &&
+      (d.supertypes?.includes('Legendary') ?? false) &&
+      ((d.cardTypes?.includes(CardType.Creature) ?? false) || (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
 
     const cleanup = (drop: boolean) => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
       if (dragging && drop) {
-        const srcIdx = this.stackDragFromIdx;
-        const dstIdx = this.stackDragOverIdx;
-        if (srcIdx != null && dstIdx != null && srcIdx !== dstIdx) {
-          const order = [...(this.stackOrders.get(groupKey) ?? [])];
-          const [moved] = order.splice(srcIdx, 1);
-          order.splice(dstIdx, 0, moved);
-          this.stackOrders.set(groupKey, order);
+        if (overCommander && isCommanderEligible) {
+          this.deck$.pipe(take(1)).subscribe(deck => {
+            if (deck) this.setCommander(card.oracleId, deck);
+          });
+        } else {
+          const srcIdx = this.stackDragFromIdx;
+          const dstIdx = this.stackDragOverIdx;
+          if (srcIdx != null && dstIdx != null && srcIdx !== dstIdx) {
+            const order = [...(this.stackOrders.get(groupKey) ?? [])];
+            const [moved] = order.splice(srcIdx, 1);
+            order.splice(dstIdx, 0, moved);
+            this.stackOrders.set(groupKey, order);
+          }
         }
       }
       document.body.style.removeProperty('cursor');
       this.stackDragGroupKey = null;
       this.stackDragFromIdx = null;
       this.stackDragOverIdx = null;
+      if (this.cpSlotDragOver) { this.cpSlotDragOver = false; }
       if (dragging) this.cdr.markForCheck();
     };
 
@@ -1189,6 +1358,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         document.body.style.setProperty('cursor', 'grabbing', 'important');
         this.cdr.markForCheck();
       }
+
+      // Check hover over commander slot (only relevant for eligible cards in commander decks)
+      if (isCommanderEligible) {
+        const cpEl = document.querySelector<HTMLElement>('.cp-portrait-wrap');
+        if (cpEl) {
+          const r = cpEl.getBoundingClientRect();
+          const nowOver = e.clientX >= r.left && e.clientX <= r.right &&
+                          e.clientY >= r.top  && e.clientY <= r.bottom;
+          if (nowOver !== overCommander) {
+            overCommander = nowOver;
+            this.cpSlotDragOver = nowOver;
+            this.cdr.markForCheck();
+          }
+          if (nowOver) return; // don't update stack hover while over commander slot
+        }
+      }
+
       const listEl = document.querySelector<HTMLElement>(`.visual-stack[data-group-key="${groupKey}"]`);
       if (!listEl) return;
       const cards = Array.from(listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'));
@@ -1253,7 +1439,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return { total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other, avgCmc, curve, curveMax };
   }
 
-  // ---- Search panel ------------------------------------------
+  // ---- Side panel / Search panel ----------------------------
+
+  toggleSidePanel(): void {
+    this.showSidePanel = !this.showSidePanel;
+    this.cdr.markForCheck();
+  }
 
   toggleSearchPanel(): void {
     this.showSearchPanel = !this.showSearchPanel;
@@ -1266,15 +1457,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onPanelCardAdd(event: { oracleId: string; scryfallId: string }): void {
+  onPanelCardAdd(event: { oracleId: string; scryfallId: string; isCommanderEligible?: boolean }): void {
     this.store.dispatch(DeckActions.addCard({
       deckId: this.deckId,
       request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId },
     }));
     if (this.commanderSearchMode) {
-      this.deck$.pipe(take(1)).subscribe(deck => {
-        if (deck) this.setCommander(event.oracleId, deck);
-      });
+      if (event.isCommanderEligible) {
+        this.deck$.pipe(take(1)).subscribe(deck => {
+          if (deck) this.setCommander(event.oracleId, deck);
+        });
+      }
       this.commanderSearchMode = false;
       this.showSearchPanel = false;
     }
@@ -1437,12 +1630,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   onCpSlotDragOver(event: DragEvent, deck: DeckDetailDto): void {
-    const hasSearch = event.dataTransfer?.types.includes('application/x-search-card') ?? false;
+    const hasCommanderCard = event.dataTransfer?.types.includes('application/x-commander-card') ?? false;
     const draggedCard = this.dragCardId ? deck.cards.find(c => c.id === this.dragCardId) : null;
     const isEligible  = draggedCard ? this.eligibleCommanders(deck).some(c => c.id === draggedCard.id) : false;
-    if (!hasSearch && !isEligible) return;
+    if (!hasCommanderCard && !isEligible) return;
     event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = hasSearch ? 'copy' : 'move';
+    if (event.dataTransfer) event.dataTransfer.dropEffect = hasCommanderCard ? 'copy' : 'move';
     if (!this.cpSlotDragOver) { this.cpSlotDragOver = true; this.cdr.markForCheck(); }
   }
 
@@ -1452,9 +1645,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     const searchCard = this.parseSearchDrag(event);
     if (searchCard) {
-      // We can't verify eligibility without card details at this point — just set it.
-      // The commander picker already filters, but search drags bypass that check.
-      this.onPanelCardAdd(searchCard);
+      if (!(event.dataTransfer?.types.includes('application/x-commander-card') ?? false)) {
+        this.cdr.markForCheck();
+        return;
+      }
+      this.store.dispatch(DeckActions.addCard({
+        deckId: this.deckId,
+        request: { oracleId: searchCard.oracleId, quantity: 1, scryfallId: searchCard.scryfallId },
+      }));
       this.setCommander(searchCard.oracleId, deck);
       return;
     }

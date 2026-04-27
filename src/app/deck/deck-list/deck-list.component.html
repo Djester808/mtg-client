@@ -13,7 +13,10 @@
       <span class="header-mark">⊗</span>
       <h1>My Decks</h1>
     </div>
-    <button class="create-btn" (click)="openCreateForm()">+ New Deck</button>
+    <div class="header-actions">
+      <button class="import-btn" (click)="openImportModal()">⇩ Import</button>
+      <button class="create-btn" (click)="openCreateForm()">+ New Deck</button>
+    </div>
   </header>
 
   <!-- Content -->
@@ -68,6 +71,7 @@
 
             <div class="deck-meta">
               <span class="card-count">{{ deck.cardCount }} card{{ deck.cardCount !== 1 ? 's' : '' }}</span>
+              <span class="format-badge" *ngIf="deck.format">{{ deck.format === 'commander' ? 'CMDR' : deck.format }}</span>
 
               <div class="deck-actions" (click)="$event.stopPropagation()">
                 <!-- 3-dot menu button -->
@@ -76,6 +80,7 @@
                 <!-- Dropdown -->
                 <div class="deck-menu" *ngIf="menuDeckId === deck.id">
                   <button class="menu-item" (click)="startRename($event, deck)">✎ Rename</button>
+                  <button class="menu-item" (click)="openFormatModal($event, deck)">⊞ Set Format</button>
                   <button class="menu-item" (click)="openCoverPicker($event, deck)">⊙ Set Cover Image</button>
                   <div class="menu-divider"></div>
                   <button class="menu-item menu-item-danger" (click)="deleteDeck($event, deck.id)">✕ Delete</button>
@@ -107,11 +112,150 @@
             autofocus
           />
         </div>
+        <div class="form-field">
+          <label class="form-label">Format</label>
+          <div class="format-picker">
+            <button type="button" class="format-opt" [class.is-active]="!createForm.value.format"
+                    (click)="createForm.patchValue({ format: null })">None</button>
+            <button type="button" class="format-opt" [class.is-active]="createForm.value.format === 'commander'"
+                    (click)="createForm.patchValue({ format: 'commander' })">Commander</button>
+          </div>
+        </div>
         <div class="modal-actions">
           <button type="button" class="cancel-btn" (click)="closeCreateForm()">Cancel</button>
           <button type="submit" class="submit-btn" [disabled]="createForm.invalid">Create</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Import modal -->
+  <div class="modal-overlay" *ngIf="showImportModal" (click)="importState !== 'loading' && closeImportModal()">
+    <div class="modal import-modal" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Import Deck</h2>
+        <button class="modal-close" [disabled]="importState === 'loading'" (click)="closeImportModal()">✕</button>
+      </div>
+
+      <!-- ── Idle / loading: show form ── -->
+      <div class="modal-body" *ngIf="importState === 'idle' || importState === 'loading'">
+
+        <!-- Deck name -->
+        <div class="form-field">
+          <label class="form-label">Deck Name <span class="form-hint">(optional — auto-detected from URL)</span></label>
+          <input class="form-input" type="text" [(ngModel)]="importName"
+                 placeholder="My Imported Deck" [disabled]="importState === 'loading'" />
+        </div>
+
+        <!-- Tabs -->
+        <div class="import-tabs">
+          <button class="import-tab" [class.is-active]="importTab === 'text'"
+                  (click)="importTab = 'text'" [disabled]="importState === 'loading'">Paste List</button>
+          <button class="import-tab" [class.is-active]="importTab === 'url'"
+                  (click)="importTab = 'url'"  [disabled]="importState === 'loading'">From URL</button>
+        </div>
+
+        <!-- Text tab -->
+        <div class="form-field" *ngIf="importTab === 'text'">
+          <label class="form-label">Deck List</label>
+          <textarea class="import-textarea" [(ngModel)]="importText"
+                    placeholder="4 Lightning Bolt&#10;4 Counterspell&#10;1 Sol Ring&#10;&#10;// Paste any standard deck list format"
+                    [disabled]="importState === 'loading'"></textarea>
+        </div>
+
+        <!-- URL tab -->
+        <div class="form-field" *ngIf="importTab === 'url'">
+          <label class="form-label">Deck URL</label>
+          <input class="form-input" type="url" [(ngModel)]="importUrl"
+                 placeholder="https://www.moxfield.com/decks/..."
+                 [disabled]="importState === 'loading'" />
+          <span class="form-hint" style="margin-top:6px">Supports Moxfield and Archidekt links.</span>
+        </div>
+
+        <!-- Format -->
+        <div class="form-field">
+          <label class="form-label">Format <span class="form-hint">(optional — auto-detected)</span></label>
+          <div class="format-picker">
+            <button type="button" class="format-opt" [class.is-active]="!importFormat"
+                    (click)="importFormat = null" [disabled]="importState === 'loading'">None</button>
+            <button type="button" class="format-opt" [class.is-active]="importFormat === 'commander'"
+                    (click)="importFormat = 'commander'" [disabled]="importState === 'loading'">Commander</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeImportModal()"
+                  [disabled]="importState === 'loading'">Cancel</button>
+          <button type="button" class="submit-btn" (click)="submitImport()"
+                  [disabled]="importState === 'loading' || (importTab === 'text' && !importText.trim()) || (importTab === 'url' && !importUrl.trim())">
+            {{ importState === 'loading' ? 'Importing…' : 'Import' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Done: show result ── -->
+      <div class="modal-body" *ngIf="importState === 'done' && importResult">
+        <div class="import-result-ok">
+          <span class="import-result-icon">✓</span>
+          <div>
+            <div class="import-result-title">{{ importResult.deck.name }}</div>
+            <div class="import-result-sub">{{ importResult.cardsResolved }} of {{ importResult.cardsTotal }} cards imported</div>
+          </div>
+        </div>
+        <div class="import-unresolved" *ngIf="importResult.unresolvedCards.length > 0">
+          <div class="import-unresolved-label">Not found ({{ importResult.unresolvedCards.length }}):</div>
+          <ul class="import-unresolved-list">
+            <li *ngFor="let c of importResult.unresolvedCards">{{ c }}</li>
+          </ul>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeImportModal()">Close</button>
+          <button type="button" class="submit-btn" (click)="goToImportedDeck()">Open Deck →</button>
+        </div>
+      </div>
+
+      <!-- ── Error ── -->
+      <div class="modal-body" *ngIf="importState === 'error'">
+        <div class="import-result-error">
+          <span class="import-result-icon">✕</span>
+          <div>
+            <div class="import-result-title">Import failed</div>
+            <div class="import-result-sub">{{ importError }}</div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="importState = 'idle'">← Back</button>
+          <button type="button" class="cancel-btn" (click)="closeImportModal()">Close</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Format modal -->
+  <div class="modal-overlay" *ngIf="showFormatModal" (click)="closeFormatModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Set Format</h2>
+        <button class="modal-close" (click)="closeFormatModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label class="form-label">Format</label>
+          <div class="format-picker">
+            <button type="button" class="format-opt" [class.is-active]="!formatDraft"
+                    (click)="formatDraft = null">None</button>
+            <button type="button" class="format-opt" [class.is-active]="formatDraft === 'commander'"
+                    (click)="formatDraft = 'commander'">Commander</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeFormatModal()">Cancel</button>
+          <button type="button" class="submit-btn" (click)="submitFormat()">Save</button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -11,7 +11,7 @@ import { takeUntil } from 'rxjs/operators';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectDecks, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { DeckDto } from '../../services/deck-api.service';
+import { DeckApiService, DeckDto, ImportDeckResult } from '../../services/deck-api.service';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
 @Component({
@@ -31,6 +31,10 @@ export class DeckListComponent implements OnInit, OnDestroy {
   showCreateForm = false;
   createForm: FormGroup;
 
+  showFormatModal = false;
+  formatModalDeck: DeckDto | null = null;
+  formatDraft: string | null = null;
+
   menuDeckId: string | null = null;
   renamingDeckId: string | null = null;
   renameDraft = '';
@@ -43,16 +47,29 @@ export class DeckListComponent implements OnInit, OnDestroy {
   private readonly ORDER_KEY = 'deck-list-order';
   private destroy$ = new Subject<void>();
 
+  // ---- Import modal state --------------------------------
+  showImportModal  = false;
+  importTab: 'text' | 'url' = 'text';
+  importName   = '';
+  importText   = '';
+  importUrl    = '';
+  importFormat: string | null = null;
+  importState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
+  importResult: ImportDeckResult | null = null;
+  importError  = '';
+
   constructor(
     private store: Store<AppState>,
     private router: Router,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
+    private deckApi: DeckApiService,
   ) {
     this.decks$ = this.store.select(selectDecks);
     this.loading$ = this.store.select(selectDeckLoading);
     this.createForm = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(256)]],
+      name:   ['', [Validators.required, Validators.maxLength(256)]],
+      format: [null as string | null],
     });
   }
 
@@ -90,7 +107,7 @@ export class DeckListComponent implements OnInit, OnDestroy {
   }
 
   openCreateForm(): void {
-    this.createForm.reset({ name: '' });
+    this.createForm.reset({ name: '', format: null });
     this.showCreateForm = true;
   }
 
@@ -100,9 +117,39 @@ export class DeckListComponent implements OnInit, OnDestroy {
 
   submitCreate(): void {
     if (this.createForm.invalid) return;
-    const { name } = this.createForm.value;
-    this.store.dispatch(DeckActions.createDeck({ name: name.trim(), coverUri: null }));
+    const { name, format } = this.createForm.value;
+    this.store.dispatch(DeckActions.createDeck({ name: name.trim(), coverUri: null, format: format ?? null }));
     this.showCreateForm = false;
+  }
+
+  // ---- Format modal --------------------------------------
+
+  openFormatModal(event: Event, deck: DeckDto): void {
+    event.stopPropagation();
+    this.menuDeckId = null;
+    this.formatModalDeck = deck;
+    this.formatDraft = deck.format ?? null;
+    this.showFormatModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeFormatModal(): void {
+    this.showFormatModal = false;
+    this.formatModalDeck = null;
+    this.cdr.markForCheck();
+  }
+
+  submitFormat(): void {
+    const deck = this.formatModalDeck;
+    if (!deck) return;
+    this.store.dispatch(DeckActions.updateDeckMeta({
+      id: deck.id,
+      name: deck.name,
+      coverUri: deck.coverUri ?? null,
+      format: this.formatDraft,
+      commanderOracleId: deck.commanderOracleId ?? null,
+    }));
+    this.closeFormatModal();
   }
 
   deleteDeck(event: Event, id: string): void {
@@ -159,6 +206,65 @@ export class DeckListComponent implements OnInit, OnDestroy {
   cancelRename(): void {
     this.renamingDeckId = null;
     this.cdr.markForCheck();
+  }
+
+  // ---- Import deck ----------------------------------------
+
+  openImportModal(): void {
+    this.importName   = '';
+    this.importText   = '';
+    this.importUrl    = '';
+    this.importFormat = null;
+    this.importTab    = 'text';
+    this.importState  = 'idle';
+    this.importResult = null;
+    this.importError  = '';
+    this.showImportModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeImportModal(): void {
+    this.showImportModal = false;
+    this.cdr.markForCheck();
+  }
+
+  submitImport(): void {
+    const hasText = this.importTab === 'text' && this.importText.trim().length > 0;
+    const hasUrl  = this.importTab === 'url'  && this.importUrl.trim().length > 0;
+    if (!hasText && !hasUrl) return;
+
+    this.importState = 'loading';
+    this.cdr.markForCheck();
+
+    this.deckApi.importDeck({
+      name:   this.importName.trim() || 'Imported Deck',
+      text:   this.importTab === 'text' ? this.importText : undefined,
+      url:    this.importTab === 'url'  ? this.importUrl.trim() : undefined,
+      format: this.importFormat,
+    }).subscribe({
+      next: result => {
+        this.importResult = result;
+        this.importState  = 'done';
+        this.store.dispatch(DeckActions.loadDecks());
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        const body = err?.error;
+        this.importError =
+          (typeof body === 'string' ? body : body?.message)
+          ?? err?.message
+          ?? 'Import failed.';
+        this.importState = 'error';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  goToImportedDeck(): void {
+    if (this.importResult) {
+      this.closeImportModal();
+      this.router.navigate(['/deck', this.importResult.deck.id]);
+    }
   }
 
   // ---- Cover picker ---------------------------------------

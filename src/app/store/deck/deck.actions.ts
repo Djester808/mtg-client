@@ -16,7 +16,7 @@ export const DeckActions = createActionGroup({
     'Load Deck Failure': props<{ error: string }>(),
 
     // Create
-    'Create Deck':         props<{ name: string; coverUri: string | null }>(),
+    'Create Deck':         props<{ name: string; coverUri: string | null; format: string | null }>(),
     'Create Deck Success': props<{ deck: DeckDetailDto }>(),
     'Create Deck Failure': props<{ error: string }>(),
 

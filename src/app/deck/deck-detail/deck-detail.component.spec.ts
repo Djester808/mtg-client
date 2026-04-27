@@ -558,6 +558,62 @@ describe('DeckDetailComponent — view mode', () => {
   });
 });
 
+// ── Side panel ────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — side panel', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('toggleSidePanel opens panel', async () => {
+    const { component } = await setup();
+    component.showSidePanel = false;
+    component.toggleSidePanel();
+    expect(component.showSidePanel).toBeTrue();
+  });
+
+  it('toggleSidePanel closes panel when already open', async () => {
+    const { component } = await setup();
+    component.showSidePanel = true;
+    component.toggleSidePanel();
+    expect(component.showSidePanel).toBeFalse();
+  });
+
+  it('side-panel element gains is-open class when showSidePanel is true and search is closed', async () => {
+    const { component, fixture } = await setup();
+    component.showSidePanel = true;
+    component.showSearchPanel = false;
+    fixture.detectChanges();
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.side-panel');
+    expect(panel).toBeTruthy();
+    expect(panel.classList.contains('is-open')).toBeTrue();
+  });
+
+  it('side-panel element does NOT get is-open when search panel is also open', async () => {
+    const { component, fixture } = await setup();
+    component.showSidePanel = true;
+    component.showSearchPanel = true;
+    fixture.detectChanges();
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.side-panel');
+    expect(panel.classList.contains('is-open')).toBeFalse();
+  });
+
+  it('stats-btn has is-active class when showSidePanel is true', async () => {
+    const { component, fixture } = await setup();
+    component.showSidePanel = true;
+    fixture.detectChanges();
+    const btn: HTMLElement = fixture.nativeElement.querySelector('.stats-btn');
+    expect(btn).toBeTruthy();
+    expect(btn.classList.contains('is-active')).toBeTrue();
+  });
+
+  it('stats-btn does not have is-active class when showSidePanel is false', async () => {
+    const { component, fixture } = await setup();
+    component.showSidePanel = false;
+    fixture.detectChanges();
+    const btn: HTMLElement = fixture.nativeElement.querySelector('.stats-btn');
+    expect(btn.classList.contains('is-active')).toBeFalse();
+  });
+});
+
 // ── Free mode columns ─────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — free mode columns', () => {
@@ -2100,5 +2156,218 @@ describe('DeckDetailComponent — setSortMode (free mode sort reset)', () => {
     component.cancelSortReset();
     expect(component.sortMode).toBe('cmc');
     expect(component.showSortResetModal).toBeFalse();
+  });
+});
+
+// ── setTextStyle / setStackDensity ────────────────────────────────────────────
+
+describe('DeckDetailComponent — setTextStyle / setStackDensity', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('setTextStyle(true) enables text style', async () => {
+    const { component } = await setup();
+    component.setTextStyle(true);
+    expect(component.textStyle).toBeTrue();
+  });
+
+  it('setTextStyle(false) disables text style', async () => {
+    const { component } = await setup();
+    component.textStyle = true;
+    component.setTextStyle(false);
+    expect(component.textStyle).toBeFalse();
+  });
+
+  it('setStackDensity sets density and clears textStyle', async () => {
+    const { component } = await setup();
+    component.textStyle = true;
+    component.setStackDensity('full');
+    expect(component.stackDensity).toBe('full');
+    expect(component.textStyle).toBeFalse();
+  });
+
+  it('setStackDensity("name") sets name density', async () => {
+    const { component } = await setup();
+    component.setStackDensity('name');
+    expect(component.stackDensity).toBe('name');
+  });
+});
+
+// ── zoom ─────────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — zoom', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('zoomIn increments zoomLevel by 0.25', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 1.0;
+    component.zoomIn();
+    expect(component.zoomLevel).toBe(1.25);
+  });
+
+  it('zoomOut decrements zoomLevel by 0.25', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 1.0;
+    component.zoomOut();
+    expect(component.zoomLevel).toBe(0.75);
+  });
+
+  it('zoomIn does not exceed 2.0', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 2.0;
+    component.zoomIn();
+    expect(component.zoomLevel).toBe(2.0);
+  });
+
+  it('zoomOut does not go below 0.5', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 0.5;
+    component.zoomOut();
+    expect(component.zoomLevel).toBe(0.5);
+  });
+
+  it('zoomLabel returns percentage string', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 1.5;
+    expect(component.zoomLabel).toBe('150%');
+  });
+
+  it('zoomIn persists to localStorage', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 1.0;
+    component.zoomIn();
+    expect(localStorage.getItem('deck-zoom')).toBe('1.25');
+  });
+
+  it('zoomOut persists to localStorage', async () => {
+    const { component } = await setup();
+    component.zoomLevel = 1.0;
+    component.zoomOut();
+    expect(localStorage.getItem('deck-zoom')).toBe('0.75');
+  });
+});
+
+// ── toggleSearchPanel ─────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — toggleSearchPanel', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('toggleSearchPanel opens panel', async () => {
+    const { component } = await setup();
+    component.showSearchPanel = false;
+    component.toggleSearchPanel();
+    expect(component.showSearchPanel).toBeTrue();
+  });
+
+  it('toggleSearchPanel closes panel', async () => {
+    const { component } = await setup();
+    component.showSearchPanel = true;
+    component.toggleSearchPanel();
+    expect(component.showSearchPanel).toBeFalse();
+  });
+
+  it('toggleSearchPanel clears commanderSearchMode on close', async () => {
+    const { component } = await setup();
+    component.showSearchPanel = true;
+    component.commanderSearchMode = true;
+    component.toggleSearchPanel();
+    expect(component.commanderSearchMode).toBeFalse();
+  });
+
+  it('toggleSearchPanel does not clear commanderSearchMode on open', async () => {
+    const { component } = await setup();
+    component.showSearchPanel = false;
+    component.commanderSearchMode = true;
+    component.toggleSearchPanel();
+    expect(component.commanderSearchMode).toBeTrue();
+  });
+});
+
+// ── resetColWidth ─────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — resetColWidth', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('clears width on the target column', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: [], width: 400 }];
+    component.resetColWidth('col-1');
+    expect(component.freeColumns[0].width).toBeUndefined();
+  });
+
+  it('leaves other columns untouched', async () => {
+    const { component } = await setup();
+    component.freeColumns = [
+      { id: 'col-1', label: 'A', cardIds: [], width: 400 },
+      { id: 'col-2', label: 'B', cardIds: [], width: 300 },
+    ];
+    component.resetColWidth('col-1');
+    expect(component.freeColumns[1].width).toBe(300);
+  });
+
+  it('marks layout dirty', async () => {
+    const { component } = await setup();
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: [], width: 400 }];
+    component.freeLayoutDirty = false;
+    component.resetColWidth('col-1');
+    expect(component.freeLayoutDirty).toBeTrue();
+  });
+});
+
+// ── unsaved layout modal ──────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — unsaved layout modal', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  function enterDirtyFreeMode(component: DeckDetailComponent) {
+    const deck = makeDeck([makeDeckCard({ id: 'c1' })]);
+    component.setViewMode('free', deck);
+    component.freeLayoutDirty = true;
+    return deck;
+  }
+
+  it('switching away from dirty free mode shows modal', async () => {
+    const { component } = await setup();
+    enterDirtyFreeMode(component);
+    component.setViewMode('list');
+    expect(component.showUnsavedLayoutModal).toBeTrue();
+    expect(component.viewMode).toBe('free');
+  });
+
+  it('switching modes when layout is clean does not show modal', async () => {
+    const { component } = await setup();
+    const deck = makeDeck();
+    component.setViewMode('free', deck);
+    component.freeLayoutDirty = false;
+    component.setViewMode('list');
+    expect(component.showUnsavedLayoutModal).toBeFalse();
+    expect(component.viewMode).toBe('list');
+  });
+
+  it('unsavedDiscard closes modal and completes the pending switch', async () => {
+    const { component } = await setup();
+    enterDirtyFreeMode(component);
+    component.setViewMode('list');
+    component.unsavedDiscard();
+    expect(component.showUnsavedLayoutModal).toBeFalse();
+    expect(component.viewMode).toBe('list');
+  });
+
+  it('unsavedCancel closes modal and stays in free mode', async () => {
+    const { component } = await setup();
+    enterDirtyFreeMode(component);
+    component.setViewMode('list');
+    component.unsavedCancel();
+    expect(component.showUnsavedLayoutModal).toBeFalse();
+    expect(component.viewMode).toBe('free');
+  });
+
+  it('unsavedSave saves layout, closes modal and completes the pending switch', async () => {
+    const { component } = await setup();
+    enterDirtyFreeMode(component);
+    component.setViewMode('list');
+    component.unsavedSave();
+    expect(component.showUnsavedLayoutModal).toBeFalse();
+    expect(component.freeLayoutDirty).toBeFalse();
+    expect(component.viewMode).toBe('list');
   });
 });

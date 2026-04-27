@@ -45,6 +45,20 @@ export interface UpdateDeckRequest {
   commanderOracleId?: string | null;
 }
 
+export interface ImportDeckRequest {
+  name: string;
+  text?: string;
+  url?: string;
+  format?: string | null;
+}
+
+export interface ImportDeckResult {
+  deck: DeckDetailDto;
+  cardsResolved: number;
+  cardsTotal: number;
+  unresolvedCards: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DeckApiService {
   private readonly base = '/api/decks';
@@ -81,6 +95,10 @@ export class DeckApiService {
 
   removeCard(deckId: string, cardId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${deckId}/cards/${cardId}`);
+  }
+
+  importDeck(req: ImportDeckRequest): Observable<ImportDeckResult> {
+    return this.http.post<ImportDeckResult>(`${this.base}/import`, req);
   }
 
   getPrintings(oracleId: string): Observable<PrintingDto[]> {
