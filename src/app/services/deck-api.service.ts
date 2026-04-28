@@ -74,6 +74,27 @@ export interface SynergyResult {
   reason: string;
 }
 
+export interface SuggestedCardDto {
+  name: string;
+  reason: string;
+  scryfallId: string | null;
+  card: import('../models/game.models').CardDto | null;
+}
+
+export interface DeckSuggestionsDto {
+  latestSet:       SuggestedCardDto[];
+  topSynergy:      SuggestedCardDto[];
+  gameChangers:    SuggestedCardDto[];
+  notableMentions: SuggestedCardDto[];
+}
+
+export interface DeckSuggestionsRequest {
+  commanderOracleId: string;
+  commanderName:     string;
+  commanderText:     string;
+  deckCardNames:     string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DeckApiService {
   private readonly base = '/api/decks';
@@ -118,6 +139,10 @@ export class DeckApiService {
 
   analyzeSynergy(req: SynergyRequest): Observable<SynergyResult> {
     return this.http.post<SynergyResult>(`${this.base}/synergy`, req);
+  }
+
+  getSuggestions(req: DeckSuggestionsRequest): Observable<DeckSuggestionsDto> {
+    return this.http.post<DeckSuggestionsDto>(`${this.base}/suggestions`, req);
   }
 
   getPrintings(oracleId: string): Observable<PrintingDto[]> {

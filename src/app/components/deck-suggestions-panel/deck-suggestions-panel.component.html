@@ -1,0 +1,78 @@
+<div class="sugg-header">
+  <span class="sugg-title"><i class="bi bi-magic"></i> Card Suggestions</span>
+  <button class="sugg-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+</div>
+
+<!-- Commander context bar -->
+<div class="sugg-commander" *ngIf="commanderCard">
+  <img class="sugg-cmdr-art" *ngIf="commanderCard.imageUriSmall" [src]="commanderCard.imageUriSmall" [alt]="commanderCard.name" />
+  <div class="sugg-cmdr-info">
+    <span class="sugg-cmdr-name">{{ commanderCard.name }}</span>
+    <span class="sugg-cmdr-sub">Commander · {{ (deck?.cards?.length ?? 0) }} cards in deck</span>
+  </div>
+  <button class="sugg-generate-btn" (click)="generate()" [disabled]="loading">
+    <i class="bi" [class.bi-arrow-repeat]="!loading" [class.bi-hourglass-split]="loading"></i>
+    {{ suggestions ? 'Regenerate' : 'Generate' }}
+  </button>
+</div>
+
+<!-- Loading -->
+<div class="sugg-loading" *ngIf="loading">
+  <i class="bi bi-arrow-repeat sugg-spin"></i>
+  <span>Asking the oracle…</span>
+</div>
+
+<!-- Error -->
+<div class="sugg-error" *ngIf="error && !loading">
+  <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+
+<!-- Empty state -->
+<div class="sugg-empty" *ngIf="!suggestions && !loading && !error">
+  <i class="bi bi-stars"></i>
+  <p>Click <strong>Generate</strong> to get AI-powered card suggestions tailored to your deck.</p>
+</div>
+
+<!-- Results -->
+<div class="sugg-results" *ngIf="suggestions && !loading">
+  <div class="sugg-category" *ngFor="let cat of categories">
+    <div class="sugg-cat-header" [style.--accent]="cat.accent">
+      <i class="bi" [ngClass]="cat.icon"></i>
+      <span>{{ cat.label }}</span>
+      <span class="sugg-cat-count">{{ cardsFor(cat.key).length }}</span>
+    </div>
+
+    <div class="sugg-card-list">
+      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key)">
+        <div class="sugg-card-art-wrap">
+          <img class="sugg-card-art"
+               *ngIf="s.card?.imageUriSmall; else artPlaceholder"
+               [src]="s.card!.imageUriSmall!"
+               [alt]="s.name" />
+          <ng-template #artPlaceholder>
+            <div class="sugg-art-placeholder">◈</div>
+          </ng-template>
+        </div>
+
+        <div class="sugg-card-body">
+          <div class="sugg-card-top">
+            <span class="sugg-card-name">{{ s.name }}</span>
+            <app-mana-cost *ngIf="s.card?.manaCost" [cost]="s.card!.manaCost" class="sugg-mana"></app-mana-cost>
+          </div>
+          <span class="sugg-card-type" *ngIf="s.card">
+            {{ s.card.supertypes?.join(' ') }} {{ s.card.cardTypes?.join(' ') }}
+            <ng-container *ngIf="s.card.subtypes?.length"> — {{ s.card.subtypes.join(' ') }}</ng-container>
+          </span>
+          <span class="sugg-card-reason">{{ s.reason }}</span>
+        </div>
+
+        <button class="sugg-add-btn"
+                [disabled]="!s.scryfallId"
+                (click)="addCard(s)"
+                [title]="s.scryfallId ? 'Add to deck' : 'Card not found in database'">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

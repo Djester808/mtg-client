@@ -80,6 +80,12 @@
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
+        <button class="suggest-btn"
+                *ngIf="(commanderCardDetails$ | async)"
+                [class.is-active]="showSuggestionsPanel"
+                (click)="showSuggestionsPanel = !showSuggestionsPanel; showSearchPanel = false">
+          <i class="bi bi-magic"></i> Suggest
+        </button>
       </div>
 
     </ng-container>
@@ -706,6 +712,17 @@
       (fitRequested)="onFitRequested($event)"
       (panelClose)="toggleSearchPanel()"
     ></app-card-search-panel>
+
+    <!-- Suggestions panel -->
+    <div class="suggestions-panel-wrap" [class.is-open]="showSuggestionsPanel">
+      <app-deck-suggestions-panel
+        *ngIf="showSuggestionsPanel"
+        [deck]="deck$ | async"
+        [commanderCard]="commanderCardDetails$ | async"
+        (cardAdd)="addSuggestedCard($event)"
+        (panelClose)="showSuggestionsPanel = false"
+      ></app-deck-suggestions-panel>
+    </div>
 
   </div><!-- /detail-body -->
 

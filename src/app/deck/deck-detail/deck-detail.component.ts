@@ -25,6 +25,7 @@ import { ManaCostComponent } from '../../components/mana-cost/mana-cost.componen
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
+import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
 
 export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set';
 export type ViewMode = 'list' | 'visual' | 'free';
@@ -61,7 +62,7 @@ export interface DeckStats {
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent],
+  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,7 +77,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   viewMode: ViewMode = 'list';
   textStyle       = false;
   zoomLevel = 1.0;
-  showSearchPanel = false;
+  showSearchPanel    = false;
+  showSuggestionsPanel = false;
   showSidePanel   = false;
 
   freeColumns: FreeColumn[] = [];
@@ -1519,6 +1521,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     ).subscribe(result => {
       this.searchPanel?.setSynergyScore(card.oracleId, result);
     });
+  }
+
+  addSuggestedCard(event: { oracleId: string; scryfallId: string }): void {
+    this.store.dispatch(DeckActions.addCard({
+      deckId: this.deckId,
+      request: { oracleId: event.oracleId, scryfallId: event.scryfallId, quantity: 1, quantityFoil: 0 },
+    }));
   }
 
   // ---- Card quantity controls --------------------------------

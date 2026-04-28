@@ -1342,6 +1342,60 @@
   display: none;
 }
 
+// ---- Suggest button --------------------------------------
+
+.suggest-btn {
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  &:hover:not(.is-active) {
+    background: rgba(201, 168, 76, 0.1);
+  }
+
+  &.is-active {
+    background: rgba(201, 168, 76, 0.15);
+    color: var(--gold);
+  }
+}
+
+// ---- Suggestions panel -----------------------------------
+
+.suggestions-panel-wrap {
+  width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s;
+  border-left: 1px solid transparent;
+
+  &.is-open {
+    width: 380px;
+    border-left-color: var(--border-dim);
+    overflow-y: hidden;
+  }
+
+  app-deck-suggestions-panel {
+    width: 380px;
+    height: 100%;
+  }
+}
+
 // ---- Side panel (collapsible column) ---------------------
 
 .side-panel {
