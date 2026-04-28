@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   HostListener,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,8 +17,8 @@ import {
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { CollectionCardDto, PrintingDto, CardType, ManaColor } from '../../models/game.models';
-import { DeckDetailDto } from '../../services/deck-api.service';
+import { CollectionCardDto, PrintingDto, CardType, ManaColor, CardDto } from '../../models/game.models';
+import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
@@ -68,6 +69,7 @@ export interface DeckStats {
 export class DeckDetailComponent implements OnInit, OnDestroy {
   deck$: Observable<DeckDetailDto | null>;
   loading$: Observable<boolean>;
+  commanderCardDetails$: Observable<CardDto | null>;
 
   filterQuery     = '';
   sortMode: SortMode = 'cmc';
@@ -146,6 +148,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
   }
 
+  @ViewChild(CardSearchPanelComponent) searchPanel?: CardSearchPanelComponent;
+
   private deckId = '';
   private printingsLoad$ = new Subject<string>();
   printingsCache = new Map<string, PrintingDto[]>();
@@ -156,10 +160,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private collectionApi: CollectionApiService,
+    private deckApi: DeckApiService,
     private cdr: ChangeDetectorRef,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
+    this.commanderCardDetails$ = this.deck$.pipe(
+      map(deck => (deck?.format === 'commander' ? (this.commanderCard(deck)?.cardDetails ?? null) : null)),
+    );
   }
 
   ngOnInit(): void {
@@ -1471,6 +1479,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.commanderSearchMode = false;
       this.showSearchPanel = false;
     }
+  }
+
+  onFitRequested(event: { card: CardDto; commanderCard: CardDto }): void {
+    const { card, commanderCard } = event;
+    this.deckApi.analyzeSynergy({
+      commanderOracleId: commanderCard.oracleId,
+      commanderName:     commanderCard.name,
+      commanderText:     commanderCard.oracleText,
+      cardOracleId:      card.oracleId,
+      cardName:          card.name,
+      cardText:          card.oracleText,
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(() => of({ score: 0, reason: 'Failed to get synergy score.' })),
+    ).subscribe(result => {
+      this.searchPanel?.setSynergyScore(card.oracleId, result);
+    });
   }
 
   // ---- Card quantity controls --------------------------------

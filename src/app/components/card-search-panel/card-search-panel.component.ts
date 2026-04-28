@@ -22,6 +22,11 @@ type CmcOption  = '0' | '1' | '2' | '3' | '4' | '5' | '6+';
 type SortBy     = 'name' | 'cmc';
 type SortDir    = 'asc' | 'desc';
 
+export interface SynergyScore {
+  score: number;   // 0–100
+  reason: string;
+}
+
 @Component({
   selector: 'app-card-search-panel',
   standalone: true,
@@ -32,6 +37,36 @@ type SortDir    = 'asc' | 'desc';
 })
 export class CardSearchPanelComponent implements OnInit, OnDestroy {
   @Input() ownedCards: CollectionCardDto[] = [];
+
+  /** Pass the commander's CardDto to enable the "Fit?" analysis button. */
+  @Input() commanderCard: CardDto | null = null;
+
+  @Output() fitRequested = new EventEmitter<{ card: CardDto; commanderCard: CardDto }>();
+
+  // ---- Synergy scores per oracle ID --------------------------------
+  synergyScores = new Map<string, SynergyScore | 'loading'>();
+
+  requestFit(card: CardDto, e: MouseEvent): void {
+    e.stopPropagation();
+    if (!this.commanderCard) return;
+    this.synergyScores.set(card.oracleId, 'loading');
+    this.cdr.markForCheck();
+    this.fitRequested.emit({ card, commanderCard: this.commanderCard });
+  }
+
+  setSynergyScore(oracleId: string, result: SynergyScore): void {
+    this.synergyScores.set(oracleId, result);
+    this.cdr.markForCheck();
+  }
+
+  isSynergyLoading(oracleId: string): boolean {
+    return this.synergyScores.get(oracleId) === 'loading';
+  }
+
+  getSynergyScore(oracleId: string): SynergyScore | null {
+    const s = this.synergyScores.get(oracleId);
+    return s && s !== 'loading' ? s : null;
+  }
 
   private _commanderFilter = false;
   get commanderFilter(): boolean { return this._commanderFilter; }

@@ -701,7 +701,9 @@
       [isOpen]="showSearchPanel"
       [ownedCards]="(deck$ | async)?.cards ?? []"
       [commanderFilter]="commanderSearchMode"
+      [commanderCard]="commanderCardDetails$ | async"
       (cardAdd)="onPanelCardAdd($event)"
+      (fitRequested)="onFitRequested($event)"
       (panelClose)="toggleSearchPanel()"
     ></app-card-search-panel>
 

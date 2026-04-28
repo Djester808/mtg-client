@@ -59,6 +59,20 @@ export interface ImportDeckResult {
   unresolvedCards: string[];
 }
 
+export interface SynergyRequest {
+  commanderOracleId: string;
+  commanderName: string;
+  commanderText: string;
+  cardOracleId: string;
+  cardName: string;
+  cardText: string;
+}
+
+export interface SynergyResult {
+  score: number;
+  reason: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DeckApiService {
   private readonly base = '/api/decks';
@@ -99,6 +113,10 @@ export class DeckApiService {
 
   importDeck(req: ImportDeckRequest): Observable<ImportDeckResult> {
     return this.http.post<ImportDeckResult>(`${this.base}/import`, req);
+  }
+
+  analyzeSynergy(req: SynergyRequest): Observable<SynergyResult> {
+    return this.http.post<SynergyResult>(`${this.base}/synergy`, req);
   }
 
   getPrintings(oracleId: string): Observable<PrintingDto[]> {

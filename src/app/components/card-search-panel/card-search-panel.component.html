@@ -3,7 +3,7 @@
     <span class="panel-title">{{ commanderFilter ? 'Find Commander' : 'Add Cards' }}</span>
     <span class="panel-cmdr-badge" *ngIf="commanderFilter">Legendary only</span>
   </div>
-  <button class="panel-close" (click)="close()">✕</button>
+  <button class="panel-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
 </div>
 
 <!-- Search input -->
@@ -26,7 +26,7 @@
       <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
       <button class="search-flag-btn" [class.is-active]="useRegex"  (click)="toggleUseRegex()"  title="Use regular expression">.*</button>
     </div>
-    <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')">✕</span>
+    <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')"><i class="bi bi-x"></i></span>
   </div>
 </div>
 
@@ -103,9 +103,9 @@
             </ng-container>
             <span class="set-trigger-placeholder" *ngIf="!activeSet">All Sets</span>
           </span>
-          <span class="set-trigger-arrow">▾</span>
+          <span class="set-trigger-arrow"><i class="bi bi-chevron-down"></i></span>
         </button>
-        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter">✕</button>
+        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter"><i class="bi bi-x"></i></button>
 
         <div class="set-dropdown" *ngIf="setDropOpen">
           <div class="set-search-wrap">
@@ -134,7 +134,7 @@
         </div>
       </div>
     </div>
-    <button class="clear-btn" *ngIf="hasFilters" (click)="clearFilters()">✕ Clear</button>
+    <button class="clear-btn" *ngIf="hasFilters" (click)="clearFilters()"><i class="bi bi-x"></i> Clear</button>
   </div>
 
 </div>
@@ -223,6 +223,28 @@
           </select>
         </ng-template>
         <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
+      </div>
+
+      <!-- Synergy fit button (commander only) -->
+      <div class="result-fit" *ngIf="commanderCard">
+        <button class="fit-btn"
+                *ngIf="!synergyScores.has(card.oracleId)"
+                (click)="requestFit(card, $event)"
+                title="Analyze fit with commander">
+          <i class="bi bi-stars"></i>
+        </button>
+        <span class="fit-loading" *ngIf="isSynergyLoading(card.oracleId)">
+          <i class="bi bi-arrow-repeat"></i>
+        </span>
+        <span class="fit-score"
+              *ngIf="getSynergyScore(card.oracleId) as score"
+              [class.score-high]="score.score >= 70"
+              [class.score-mid]="score.score >= 40 && score.score < 70"
+              [class.score-low]="score.score < 40"
+              [title]="score.reason"
+              (click)="requestFit(card, $event)">
+          {{ score.score }}%
+        </span>
       </div>
 
       <!-- Add button -->
