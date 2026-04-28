@@ -37,6 +37,7 @@ export interface CardDto {
   setCode: string | null;
   rarity: string | null;
   legalities: Record<string, string>;
+  gameChanger: boolean;
 }
 
 export interface PermanentDto {

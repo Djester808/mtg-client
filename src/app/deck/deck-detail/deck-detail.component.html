@@ -127,11 +127,24 @@
             <span class="cp-check-icon">{{ colorIdentityViolations(deck).length === 0 ? '✓' : '✕' }}</span>
             Color ID<ng-container *ngIf="colorIdentityViolations(deck).length > 0"> ({{ colorIdentityViolations(deck).length }})</ng-container>
           </span>
+          <span class="cp-check"
+                [class.ok]="bannedInCommander(deck).length === 0"
+                [class.bad-banned]="bannedInCommander(deck).length > 0"
+                [title]="bannedViolationNames(deck)">
+            <span class="cp-check-icon">{{ bannedInCommander(deck).length === 0 ? '✓' : '✕' }}</span>
+            Banned<ng-container *ngIf="bannedInCommander(deck).length > 0"> ({{ bannedInCommander(deck).length }})</ng-container>
+          </span>
+          <span class="cp-check info-gc"
+                *ngIf="gameChangerCards(deck).length > 0"
+                [title]="gameChangerNames(deck)">
+            ⚡ Game Changers ({{ gameChangerCards(deck).length }})
+          </span>
         </div>
         <div class="vbar-row vbar-legend-row" *ngIf="hasCommanderViolations(deck)">
           <span class="cp-legend-item"><span class="cp-legend-dot dot-singleton"></span>Too many</span>
           <span class="cp-legend-item"><span class="cp-legend-dot dot-color-id"></span>Wrong color</span>
           <span class="cp-legend-item"><span class="cp-legend-dot dot-both"></span>Both</span>
+          <span class="cp-legend-item"><span class="cp-legend-dot dot-banned"></span>Banned</span>
         </div>
       </div>
 

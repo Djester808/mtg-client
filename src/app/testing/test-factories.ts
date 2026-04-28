@@ -30,6 +30,7 @@ export function makeCard(overrides: Partial<CardDto> = {}): CardDto {
     setCode: null,
     rarity: null,
     legalities: {},
+    gameChanger: false,
     ...overrides,
   };
 }

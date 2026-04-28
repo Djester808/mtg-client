@@ -1814,7 +1814,7 @@ describe('DeckDetailComponent — Commander format', () => {
       .withContext('"Select Commander" prompt should appear').toBeTruthy();
 
     expect(el.querySelectorAll('.cp-check').length)
-      .withContext('4 validation pills: size, commander, singleton, color ID').toBe(4);
+      .withContext('5 validation pills: size, commander, singleton, color ID, banned').toBe(5);
 
     const formatBtn = el.querySelector<HTMLElement>('.format-btn');
     expect(formatBtn?.textContent?.trim())
@@ -2369,5 +2369,146 @@ describe('DeckDetailComponent — unsaved layout modal', () => {
     expect(component.showUnsavedLayoutModal).toBeFalse();
     expect(component.freeLayoutDirty).toBeFalse();
     expect(component.viewMode).toBe('list');
+  });
+});
+
+// ── bannedInCommander ─────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — bannedInCommander', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns cards with legalities commander=banned', async () => {
+    const { component } = await setup();
+    const banned = makeDeckCard({ id: 'b1', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const legal  = makeDeckCard({ id: 'b2', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    const deck = makeDeck([banned, legal]);
+    expect(component.bannedInCommander(deck)).toEqual([banned]);
+  });
+
+  it('returns empty when no cards are banned', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([makeDeckCard({ cardDetails: makeCard({ legalities: { commander: 'legal' } }) })]);
+    expect(component.bannedInCommander(deck)).toHaveSize(0);
+  });
+
+  it('returns empty for cards with null cardDetails', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([makeDeckCard({ cardDetails: null })]);
+    expect(component.bannedInCommander(deck)).toHaveSize(0);
+  });
+
+  it('bannedViolationNames joins banned card names', async () => {
+    const { component } = await setup();
+    const b1 = makeDeckCard({ id: 'b1', cardDetails: makeCard({ name: 'Banned Card A', legalities: { commander: 'banned' } }) });
+    const b2 = makeDeckCard({ id: 'b2', cardDetails: makeCard({ name: 'Banned Card B', legalities: { commander: 'banned' } }) });
+    const deck = makeDeck([b1, b2]);
+    expect(component.bannedViolationNames(deck)).toBe('Banned Card A, Banned Card B');
+  });
+});
+
+// ── gameChangerCards ──────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — gameChangerCards', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns cards where gameChanger is true', async () => {
+    const { component } = await setup();
+    const gc  = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true }) });
+    const reg = makeDeckCard({ id: 'gc2', cardDetails: makeCard({ gameChanger: false }) });
+    const deck = makeDeck([gc, reg]);
+    expect(component.gameChangerCards(deck)).toEqual([gc]);
+  });
+
+  it('returns empty when no game changers present', async () => {
+    const { component } = await setup();
+    const deck = makeDeck([makeDeckCard({ cardDetails: makeCard({ gameChanger: false }) })]);
+    expect(component.gameChangerCards(deck)).toHaveSize(0);
+  });
+
+  it('gameChangerNames joins game changer card names', async () => {
+    const { component } = await setup();
+    const g1 = makeDeckCard({ id: 'g1', cardDetails: makeCard({ name: 'Sol Ring', gameChanger: true }) });
+    const g2 = makeDeckCard({ id: 'g2', cardDetails: makeCard({ name: 'Rhystic Study', gameChanger: true }) });
+    const deck = makeDeck([g1, g2]);
+    expect(component.gameChangerNames(deck)).toBe('Sol Ring, Rhystic Study');
+  });
+});
+
+// ── cardViolationType (banned) ────────────────────────────────────────────────
+
+describe('DeckDetailComponent — cardViolationType banned', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns "banned" for a commander-banned card regardless of singleton status', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'b1', oracleId: 'o-ban', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const deck = { ...makeDeck([card]), format: 'commander' };
+    expect(component.cardViolationType(card, deck)).toBe('banned');
+  });
+
+  it('returns null for a legal non-singleton non-colorid card', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    const deck = { ...makeDeck([card]), format: 'commander' };
+    expect(component.cardViolationType(card, deck)).toBeNull();
+  });
+
+  it('returns null when deck format is not commander', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'b1', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const deck = { ...makeDeck([card]), format: 'standard' };
+    expect(component.cardViolationType(card, deck)).toBeNull();
+  });
+});
+
+// ── hasCommanderViolations (banned) ──────────────────────────────────────────
+
+describe('DeckDetailComponent — hasCommanderViolations includes banned', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns true when a banned card is present in a 100-card commander deck', async () => {
+    const { component } = await setup();
+    const banned = makeDeckCard({ id: 'b1', oracleId: 'o-ban', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const filler = Array.from({ length: 99 }, (_, i) =>
+      makeDeckCard({ id: `f${i}`, oracleId: `of${i}`, quantity: 1, cardDetails: makeCard({ supertypes: ['Basic'] }) })
+    );
+    const deck = { ...makeDeck([banned, ...filler]), format: 'commander', commanderOracleId: 'cmdr' };
+    expect(component.hasCommanderViolations(deck)).toBeTrue();
+  });
+});
+
+// ── cardViolationClass (is-game-changer) ──────────────────────────────────────
+
+describe('DeckDetailComponent — cardViolationClass game changer', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('adds is-game-changer class for a commander game changer card', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'legal' } }) });
+    const deck = { ...makeDeck([card]), format: 'commander' };
+    expect(component.cardViolationClass(card, deck)).toContain('is-game-changer');
+  });
+
+  it('does not add is-game-changer for non-commander format', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true }) });
+    const deck = { ...makeDeck([card]), format: 'standard' };
+    expect(component.cardViolationClass(card, deck)).not.toContain('is-game-changer');
+  });
+
+  it('combines violation-banned and is-game-changer when both apply', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'bc1', cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'banned' } }) });
+    const deck = { ...makeDeck([card]), format: 'commander' };
+    const cls = component.cardViolationClass(card, deck);
+    expect(cls).toContain('violation-banned');
+    expect(cls).toContain('is-game-changer');
+  });
+
+  it('returns empty string for a clean card in a non-commander deck', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ cardDetails: makeCard({ gameChanger: false }) });
+    const deck = { ...makeDeck([card]), format: 'standard' };
+    expect(component.cardViolationClass(card, deck)).toBe('');
   });
 });

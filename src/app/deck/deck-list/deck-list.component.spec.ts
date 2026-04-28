@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { DeckListComponent } from './deck-list.component';
 import { DeckActions } from '../../store/deck/deck.actions';
@@ -27,6 +28,7 @@ async function setup() {
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
+      provideHttpClient(),
     ],
   }).compileComponents();
 
@@ -170,7 +172,7 @@ describe('DeckListComponent — delete and create', () => {
 
   it('submitCreate dispatches createDeck with trimmed name', async () => {
     const { component, store } = await setup();
-    component.createForm.setValue({ name: '  Aggro  ' });
+    component.createForm.setValue({ name: '  Aggro  ', format: null });
     component.submitCreate();
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.createDeck({ name: 'Aggro', coverUri: null, format: null })
@@ -180,7 +182,7 @@ describe('DeckListComponent — delete and create', () => {
 
   it('submitCreate does not dispatch when form is invalid', async () => {
     const { component, store } = await setup();
-    component.createForm.setValue({ name: '' });
+    component.createForm.setValue({ name: '', format: null });
     component.submitCreate();
     expect(store.dispatch).not.toHaveBeenCalled();
   });

@@ -444,6 +444,11 @@
     background: var(--bg-surface);
   }
 
+  &.violation-banned {
+    background: rgba(180, 0, 0, 0.45);
+    outline: 2px solid #dc2626;
+    outline-offset: -1px;
+  }
   &.violation-singleton {
     background: rgba(230, 120, 0, 0.3);
     outline: 2px solid #f97316;
@@ -458,6 +463,9 @@
     background: rgba(140, 0, 200, 0.3);
     outline: 2px solid #a855f7;
     outline-offset: -1px;
+  }
+  &.is-game-changer {
+    box-shadow: inset 3px 0 0 rgba(201, 168, 76, 0.7);
   }
 }
 
@@ -900,6 +908,18 @@
 
   &:active { cursor: grabbing; }
   &.is-dragging { opacity: 0.25; }
+  &.violation-banned {
+    outline: 2px solid #dc2626;
+    outline-offset: -1px;
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(180, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 10;
+    }
+  }
   &.violation-singleton {
     outline: 2px solid #f97316;
     outline-offset: -1px;
@@ -935,6 +955,9 @@
       pointer-events: none;
       z-index: 10;
     }
+  }
+  &.is-game-changer {
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.7);
   }
   &.is-selected-card {
     outline: 2px solid rgba(201,168,76,0.75);
@@ -1085,6 +1108,7 @@
 
   &:hover { z-index: 999 !important; }
 
+  &.violation-banned .visual-art::after,
   &.violation-singleton .visual-art::after,
   &.violation-color-id .visual-art::after,
   &.violation-both .visual-art::after {
@@ -1093,6 +1117,10 @@
     inset: 0;
     pointer-events: none;
     z-index: 10;
+  }
+  &.violation-banned {
+    outline: 2px solid #dc2626;
+    .visual-art::after { background: rgba(180, 0, 0, 0.5); }
   }
   &.violation-singleton {
     outline: 2px solid #f97316;
@@ -1105,6 +1133,9 @@
   &.violation-both {
     outline: 2px solid #a855f7;
     .visual-art::after { background: rgba(140, 0, 200, 0.4); }
+  }
+  &.is-game-changer {
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.7);
   }
 
   // Drag indicators apply at all densities
@@ -2180,6 +2211,7 @@
   &.dot-singleton { background: #f97316; }
   &.dot-color-id  { background: #dc3232; }
   &.dot-both      { background: #a855f7; }
+  &.dot-banned    { background: #dc2626; }
 }
 
 // Validation pills
@@ -2208,6 +2240,8 @@
   &.bad         { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
   &.bad-singleton { color: #f97316; border-color: rgba(249,115,22,0.35); background: rgba(249,115,22,0.08); cursor: help; }
   &.bad-color-id  { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); cursor: help; }
+  &.bad-banned    { color: #dc2626; border-color: rgba(220,38,38,0.4);   background: rgba(220,38,38,0.1);  cursor: help; font-weight: 700; }
+  &.info-gc       { color: var(--gold); border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.08); cursor: help; }
 }
 
 .cp-check-icon { font-size: 9px; }

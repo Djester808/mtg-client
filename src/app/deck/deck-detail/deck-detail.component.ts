@@ -1684,6 +1684,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return deck.cards.find(c => c.oracleId === deck.commanderOracleId) ?? null;
   }
 
+  /** Cards that are banned in Commander. */
+  bannedInCommander(deck: DeckDetailDto): CollectionCardDto[] {
+    return deck.cards.filter(c => c.cardDetails?.legalities?.['commander'] === 'banned');
+  }
+
+  bannedViolationNames(deck: DeckDetailDto): string {
+    return this.bannedInCommander(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+  }
+
+  /** Cards on the Commander game changers list (legal but flagged as highly impactful). */
+  gameChangerCards(deck: DeckDetailDto): CollectionCardDto[] {
+    return deck.cards.filter(c => c.cardDetails?.gameChanger === true);
+  }
+
+  gameChangerNames(deck: DeckDetailDto): string {
+    return this.gameChangerCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+  }
+
   /** Non-basic cards with more than one total copy — violates singleton.
    *  Counts across all records sharing the same oracleId (different printings
    *  of the same card each contribute their quantity). */
@@ -1729,12 +1747,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return this.totalCount(deck) !== 100
       || !deck.commanderOracleId
       || this.singletonViolations(deck).length > 0
-      || this.colorIdentityViolations(deck).length > 0;
+      || this.colorIdentityViolations(deck).length > 0
+      || this.bannedInCommander(deck).length > 0;
   }
 
-  /** Returns 'singleton', 'color-id', 'both', or null. */
+  /** Returns 'banned', 'singleton', 'color-id', 'both', or null. Banned takes highest priority. */
   cardViolationType(card: CollectionCardDto, deck: DeckDetailDto): string | null {
     if (deck.format !== 'commander') return null;
+    if (card.cardDetails?.legalities?.['commander'] === 'banned') return 'banned';
     const isSingleton = this.singletonViolations(deck).some(c => c.id === card.id);
     const isColorId   = this.colorIdentityViolations(deck).some(c => c.id === card.id);
     if (isSingleton && isColorId) return 'both';
@@ -1744,8 +1764,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   cardViolationClass(card: CollectionCardDto, deck: DeckDetailDto): string {
+    const classes: string[] = [];
     const type = this.cardViolationType(card, deck);
-    return type ? `violation-${type}` : '';
+    if (type) classes.push(`violation-${type}`);
+    if (deck.format === 'commander' && card.cardDetails?.gameChanger) classes.push('is-game-changer');
+    return classes.join(' ');
   }
 
   private isBasicLand(card: CollectionCardDto): boolean {
