@@ -95,6 +95,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   isRenaming  = false;
   renameDraft = '';
+  tagDraft    = '';
 
   showDetailCoverPicker = false;
 
@@ -198,6 +199,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (this.selectedCard && deck) {
         const updated = deck.cards.find(c => c.id === this.selectedCard!.id);
         if (updated) { this.selectedCard = updated; this.cdr.markForCheck(); }
+        else { this.closeCard(); }
       }
       if (deck && this.viewMode === 'free' && this.freeColumns.length > 0) {
         this.syncFreeColumns(deck);
@@ -762,6 +764,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     const searchCard = this.parseSearchDrag(event);
     if (searchCard) {
+      event.stopPropagation();
       this.selectedFreeColId = colId;
       this.onPanelCardAdd(searchCard);
       this.dragOverColId = null;
@@ -1530,6 +1533,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }));
   }
 
+  removeSuggestedCard(oracleId: string): void {
+    this.deck$.pipe(take(1)).subscribe(deck => {
+      const card = deck?.cards.find(c => c.cardDetails?.oracleId === oracleId);
+      if (card) this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
+    });
+  }
+
   // ---- Card quantity controls --------------------------------
 
   increment(card: CollectionCardDto): void {
@@ -1635,13 +1645,30 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   commitRename(deck: DeckDetailDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== deck.name) {
-      this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null }));
+      this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags: deck.tags ?? [] }));
     }
     this.isRenaming = false;
     this.cdr.markForCheck();
   }
 
   cancelRename(): void { this.isRenaming = false; this.cdr.markForCheck(); }
+
+  addTag(deck: DeckDetailDto, tag: string): void {
+    const t = tag.trim().toLowerCase();
+    if (!t || (deck.tags ?? []).includes(t)) return;
+    const tags = [...(deck.tags ?? []), t];
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: deck.id, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags }));
+  }
+
+  removeTag(deck: DeckDetailDto, tag: string): void {
+    const tags = (deck.tags ?? []).filter(t => t !== tag);
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: deck.id, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags }));
+  }
+
+  commitTagInput(deck: DeckDetailDto): void {
+    const tag = this.tagDraft.trim();
+    if (tag) { this.addTag(deck, tag); this.tagDraft = ''; }
+  }
 
   // ---- Detail cover picker ----------------------------------
 
@@ -1656,7 +1683,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   onDetailCoverSelected(deck: DeckDetailDto, uri: string | null): void {
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: uri, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null }));
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: uri, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags: deck.tags ?? [] }));
     this.closeDetailCoverPicker();
   }
 
@@ -1676,13 +1703,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.showFormatMenu = false;
     // Clearing format also clears the commander
     const commanderOracleId = format === 'commander' ? (deck.commanderOracleId ?? null) : null;
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format, commanderOracleId }));
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format, commanderOracleId, tags: deck.tags ?? [] }));
     this.cdr.markForCheck();
   }
 
   setCommander(oracleId: string | null, deck: DeckDetailDto): void {
     this.showCommanderPicker = false;
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: oracleId }));
+    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: oracleId, tags: deck.tags ?? [] }));
     this.cdr.markForCheck();
   }
 
@@ -1918,6 +1945,28 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return this.colorIdentityViolations(deck).map(c => c.cardDetails?.name ?? '').join(', ');
   }
 
+  formatLabel(format: string | null): string {
+    const labels: Record<string, string> = {
+      commander: 'CMDR', brawl: 'BRAWL', oathbreaker: 'OATH',
+      standard: 'STD', pioneer: 'PIO', modern: 'MOD',
+      legacy: 'LEG', vintage: 'VIN', pauper: 'PAU',
+    };
+    return format ? (labels[format] ?? format.toUpperCase()) : 'FORMAT';
+  }
+
+  hasFormatViolations(deck: DeckDetailDto): boolean {
+    return this.hasCommanderViolations(deck) || this.formatViolations(deck).length > 0;
+  }
+
+  formatViolations(deck: DeckDetailDto): CollectionCardDto[] {
+    const fmt = deck.format;
+    if (!fmt || fmt === 'commander') return [];
+    return deck.cards.filter(c => {
+      const leg = c.cardDetails?.legalities?.[fmt];
+      return leg && leg !== 'legal';
+    });
+  }
+
   hasCommanderViolations(deck: DeckDetailDto): boolean {
     if (deck.format !== 'commander') return false;
     return this.totalCount(deck) !== 100
@@ -1957,6 +2006,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   targetCount(deck: DeckDetailDto): number {
-    return deck.format === 'commander' ? 100 : 60;
+    if (deck.format === 'commander') return 100;
+    if (deck.format === 'brawl' || deck.format === 'oathbreaker') return 60;
+    return 60;
   }
 }

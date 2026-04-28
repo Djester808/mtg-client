@@ -27,6 +27,18 @@
         />
       </div>
 
+      <!-- Deck tags -->
+      <div class="deck-tags-row">
+        <span class="deck-tag" *ngFor="let t of (deck.tags ?? [])">
+          {{ t }}<button class="deck-tag-remove" (click)="removeTag(deck, t)" title="Remove tag"><i class="bi bi-x"></i></button>
+        </span>
+        <input class="deck-tag-input"
+               [(ngModel)]="tagDraft"
+               placeholder="+ tag"
+               (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
+               (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
+      </div>
+
       <div class="header-right">
         <!-- Sort controls -->
         <div class="sort-group">
@@ -55,16 +67,34 @@
         <div class="format-wrap" (click)="$event.stopPropagation()">
           <button class="format-btn"
                   [class.has-format]="deck.format"
-                  [class.has-violations]="hasCommanderViolations(deck)"
+                  [class.has-violations]="hasFormatViolations(deck)"
                   (click)="toggleFormatMenu()">
-            {{ deck.format === 'commander' ? 'CMDR' : 'FORMAT' }}
+            {{ formatLabel(deck.format) }}
             <span class="format-caret"><i class="bi bi-chevron-down"></i></span>
           </button>
           <div class="format-menu" *ngIf="showFormatMenu">
             <button class="format-menu-item" [class.is-active]="!deck.format"
                     (click)="setFormat(null, deck)">No Format</button>
+            <div class="format-menu-sep"></div>
             <button class="format-menu-item" [class.is-active]="deck.format === 'commander'"
                     (click)="setFormat('commander', deck)">Commander</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'brawl'"
+                    (click)="setFormat('brawl', deck)">Brawl</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'oathbreaker'"
+                    (click)="setFormat('oathbreaker', deck)">Oathbreaker</button>
+            <div class="format-menu-sep"></div>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'standard'"
+                    (click)="setFormat('standard', deck)">Standard</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'pioneer'"
+                    (click)="setFormat('pioneer', deck)">Pioneer</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'modern'"
+                    (click)="setFormat('modern', deck)">Modern</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'legacy'"
+                    (click)="setFormat('legacy', deck)">Legacy</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'vintage'"
+                    (click)="setFormat('vintage', deck)">Vintage</button>
+            <button class="format-menu-item" [class.is-active]="deck.format === 'pauper'"
+                    (click)="setFormat('pauper', deck)">Pauper</button>
           </div>
         </div>
 
@@ -706,9 +736,13 @@
     <app-card-search-panel
       [isOpen]="showSearchPanel"
       [ownedCards]="(deck$ | async)?.cards ?? []"
+      [deckCards]="(deck$ | async)?.cards ?? []"
+      [isDeckContext]="true"
+      [deckFormat]="(deck$ | async)?.format ?? null"
       [commanderFilter]="commanderSearchMode"
       [commanderCard]="commanderCardDetails$ | async"
       (cardAdd)="onPanelCardAdd($event)"
+      (cardRemove)="removeSuggestedCard($event)"
       (fitRequested)="onFitRequested($event)"
       (panelClose)="toggleSearchPanel()"
     ></app-card-search-panel>
@@ -720,6 +754,7 @@
         [deck]="deck$ | async"
         [commanderCard]="commanderCardDetails$ | async"
         (cardAdd)="addSuggestedCard($event)"
+        (cardRemove)="removeSuggestedCard($event)"
         (panelClose)="showSuggestionsPanel = false"
       ></app-deck-suggestions-panel>
     </div>
@@ -751,19 +786,17 @@
       (closed)="closeCard()"
     >
       <div extra class="modal-extra-wrap">
-        <div class="modal-qty-badge">
-          <div class="modal-qty-ctrl">
-            <button class="modal-qty-btn modal-qty-dec"
-                    (click)="decrement(selectedCard)"
-                    [disabled]="cardCount(selectedCard) <= 0">−</button>
-            <span class="modal-qty-row">
-              <span class="modal-qty-icon"><i class="bi bi-layers"></i></span>
-              <span class="modal-qty-num">{{ cardCount(selectedCard) }}</span>
-            </span>
-            <button class="modal-qty-btn modal-qty-inc"
-                    (click)="increment(selectedCard)">+</button>
-          </div>
-        </div>
+        <span class="modal-deck-badge" *ngIf="cardCount(selectedCard) as n">{{ n }} in deck</span>
+        <button class="modal-action-btn"
+                (click)="increment(selectedCard)">
+          <i class="bi bi-plus-lg"></i> Add Another
+        </button>
+        <button class="modal-action-btn modal-action-btn--remove"
+                [disabled]="cardCount(selectedCard) <= 0"
+                (click)="decrement(selectedCard)"
+                title="Remove one from deck">
+          <i class="bi bi-dash-lg"></i> Remove
+        </button>
       </div>
     </app-card-modal>
   </ng-container>

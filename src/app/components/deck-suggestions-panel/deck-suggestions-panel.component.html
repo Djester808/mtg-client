@@ -16,6 +16,23 @@
   </button>
 </div>
 
+<!-- Fine-tuning tags -->
+<div class="sugg-tags-section" *ngIf="commanderCard">
+  <div class="sugg-tags-row">
+    <span class="sugg-tag" *ngFor="let t of (deck?.tags ?? [])">
+      <i class="bi bi-tag"></i> {{ t }}
+    </span>
+    <span class="sugg-tag sugg-tag--focus" *ngFor="let t of suggestionTags">
+      {{ t }}<button class="sugg-tag-remove" (click)="removeSuggestionTag(t)"><i class="bi bi-x"></i></button>
+    </span>
+    <input class="sugg-tag-input"
+           [(ngModel)]="tagDraft"
+           placeholder="+ focus"
+           (keydown.enter)="commitTagInput(); $event.preventDefault()"
+           (keydown.comma)="commitTagInput(); $event.preventDefault()" />
+  </div>
+</div>
+
 <!-- Loading -->
 <div class="sugg-loading" *ngIf="loading">
   <i class="bi bi-arrow-repeat sugg-spin"></i>
@@ -43,7 +60,7 @@
     </div>
 
     <div class="sugg-card-list">
-      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key)">
+      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key)" (click)="openDetail(s, $event)">
         <div class="sugg-card-art-wrap">
           <img class="sugg-card-art"
                *ngIf="s.card?.imageUriSmall; else artPlaceholder"
@@ -58,6 +75,7 @@
           <div class="sugg-card-top">
             <span class="sugg-card-name">{{ s.name }}</span>
             <app-mana-cost *ngIf="s.card?.manaCost" [cost]="s.card!.manaCost" class="sugg-mana"></app-mana-cost>
+            <span class="sugg-score" *ngIf="s.score" [class.sugg-score--high]="s.score >= 80" [class.sugg-score--mid]="s.score >= 60 && s.score < 80">{{ s.score }}%</span>
           </div>
           <span class="sugg-card-type" *ngIf="s.card">
             {{ s.card.supertypes?.join(' ') }} {{ s.card.cardTypes?.join(' ') }}
@@ -67,12 +85,44 @@
         </div>
 
         <button class="sugg-add-btn"
+                *ngIf="!isInDeck(s)"
                 [disabled]="!s.scryfallId"
-                (click)="addCard(s)"
+                (click)="addCard(s); $event.stopPropagation()"
                 [title]="s.scryfallId ? 'Add to deck' : 'Card not found in database'">
           <i class="bi bi-plus-lg"></i>
+        </button>
+        <button class="sugg-add-btn sugg-add-btn--added"
+                *ngIf="isInDeck(s)"
+                (click)="removeCard(s); $event.stopPropagation()"
+                title="Remove from deck">
+          <i class="bi bi-check-lg"></i>
         </button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Card detail modal -->
+<app-card-modal
+  *ngIf="selectedSuggestion?.card"
+  [card]="selectedSuggestion!.card"
+  [printings]="modalPrintings"
+  [(viewedScryfallId)]="modalViewScryfallId"
+  [(flipped)]="modalFlipped"
+  [primaryScryfallId]="selectedSuggestion!.scryfallId"
+  (closed)="closeDetail()"
+>
+  <div extra class="sugg-modal-extra">
+    <button class="sugg-modal-add-btn"
+            *ngIf="!isInDeck(selectedSuggestion!)"
+            [disabled]="!selectedSuggestion!.scryfallId"
+            (click)="addAndClose(selectedSuggestion!)">
+      <i class="bi bi-plus-lg"></i> Add to Deck
+    </button>
+    <button class="sugg-modal-add-btn sugg-modal-add-btn--remove"
+            *ngIf="isInDeck(selectedSuggestion!)"
+            (click)="removeAndClose(selectedSuggestion!)">
+      <i class="bi bi-dash-lg"></i> Remove from Deck
+    </button>
+  </div>
+</app-card-modal>

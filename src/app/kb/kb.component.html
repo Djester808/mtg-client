@@ -24,7 +24,7 @@
 
       <!-- Search -->
       <div class="search-wrap">
-        <span class="search-icon">⌕</span>
+        <span class="search-icon"><i class="bi bi-search"></i></span>
         <input
           class="search-input"
           type="text"
@@ -32,7 +32,7 @@
           [(ngModel)]="searchQuery"
           autocomplete="off"
         />
-        <button class="search-clear" *ngIf="searchQuery" (click)="clearSearch()">✕</button>
+        <button class="search-clear" *ngIf="searchQuery" (click)="clearSearch()"><i class="bi bi-x"></i></button>
       </div>
 
       <!-- No results -->

@@ -7,7 +7,7 @@ import { DeckDetailComponent, ViewMode, FreeColumn } from './deck-detail.compone
 import { DeckActions } from '../../store/deck/deck.actions';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { GameApiService } from '../../services/game-api.service';
-import { DeckDetailDto } from '../../services/deck-api.service';
+import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
 
@@ -20,7 +20,7 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
 }
 
 function makeDeck(cards: CollectionCardDto[] = []): DeckDetailDto {
-  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, createdAt: '', updatedAt: '', cards };
+  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], cards };
 }
 
 const INITIAL_STATE = {
@@ -35,6 +35,13 @@ async function setup() {
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
 
+  const deckApi = jasmine.createSpyObj('DeckApiService', [
+    'getDecks', 'getDeck', 'createDeck', 'updateDeck', 'deleteDeck',
+    'addCard', 'updateCard', 'removeCard', 'importDeck',
+    'analyzeSynergy', 'getSuggestions', 'getPrintings', 'getCardByScryfallId',
+  ]);
+  deckApi.getPrintings.and.returnValue(of([]));
+
   await TestBed.configureTestingModule({
     imports: [DeckDetailComponent],
     schemas: [NO_ERRORS_SCHEMA],
@@ -42,6 +49,7 @@ async function setup() {
       provideMockStore({ initialState: INITIAL_STATE }),
       { provide: CollectionApiService, useValue: collectionApi },
       { provide: GameApiService,       useValue: gameApi },
+      { provide: DeckApiService,        useValue: deckApi },
       { provide: Router,               useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute,       useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
     ],
@@ -480,7 +488,7 @@ describe('DeckDetailComponent — rename', () => {
     component.renameDraft = 'New Deck Name';
     component.commitRename(deck);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Deck Name', coverUri: null, format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Deck Name', coverUri: null, format: null, commanderOracleId: null, tags: [] })
     );
     expect(component.isRenaming).toBeFalse();
   });
@@ -1547,7 +1555,7 @@ describe('DeckDetailComponent — detail cover picker', () => {
     component.showDetailCoverPicker = true;
     component.onDetailCoverSelected(deck, 'new-art.jpg');
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: 'new-art.jpg', format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: 'new-art.jpg', format: null, commanderOracleId: null, tags: [] })
     );
     expect(component.showDetailCoverPicker).toBeFalse();
   });
@@ -1557,7 +1565,7 @@ describe('DeckDetailComponent — detail cover picker', () => {
     const deck = { ...makeDeck(), coverUri: 'old.jpg' };
     component.onDetailCoverSelected(deck, null);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, tags: [] })
     );
   });
 });
@@ -1758,7 +1766,7 @@ describe('DeckDetailComponent — Commander format', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateDeckMeta({
         id: 'deck-1', name: 'Test Deck', coverUri: null,
-        format: 'commander', commanderOracleId: null,
+        format: 'commander', commanderOracleId: null, tags: [],
       })
     );
     expect(component.showFormatMenu).toBeFalse();
@@ -1771,7 +1779,7 @@ describe('DeckDetailComponent — Commander format', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateDeckMeta({
         id: 'deck-1', name: 'Test Deck', coverUri: null,
-        format: null, commanderOracleId: null,
+        format: null, commanderOracleId: null, tags: [],
       })
     );
   });

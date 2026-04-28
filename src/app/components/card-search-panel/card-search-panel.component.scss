@@ -788,15 +788,20 @@
 
 .owned-qty {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
   color: var(--gold);
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 8px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
 }
 
 .add-result-btn {
   background: var(--gold);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   color: #0e0c08;
   cursor: pointer;
@@ -812,6 +817,7 @@
     background: #dbb954;
     box-shadow: 0 2px 8px rgba(201,168,76,0.3);
   }
+
 }
 
 .load-more-row {
@@ -836,4 +842,147 @@
 
   &:hover:not(:disabled) { color: var(--gold); border-color: var(--gold-dim); }
   &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.deck-qty-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.remove-deck-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(248, 113, 113, 0.2);
+    border-color: #f87171;
+  }
+}
+
+.violation-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+
+  &.color-violation {
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
+  }
+
+  &.singleton-violation {
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    color: #f87171;
+  }
+}
+
+.modal-foil-toggle {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.is-foil {
+    background: rgba(201, 168, 76, 0.15);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  &:hover { border-color: var(--gold-dim); color: var(--gold); }
+}
+
+// ---- Preview modal extra ------------------------------------------
+
+.modal-extra-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px 8px;
+  border-top: 1px solid var(--border-dim);
+  background: var(--bg-raised);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.modal-deck-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &--foil {
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.12);
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+}
+
+.modal-group-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border-dim);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.modal-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: var(--gold);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  &:hover:not(:disabled) { filter: brightness(1.1); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  &--remove {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    &:hover:not(:disabled) { filter: brightness(1.2); }
+  }
 }

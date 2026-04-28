@@ -26,6 +26,7 @@ export interface DeckDetailDto {
   coverUri: string | null;
   format: string | null;
   commanderOracleId: string | null;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   cards: CollectionCardDto[];
@@ -43,6 +44,7 @@ export interface UpdateDeckRequest {
   coverUri?: string | null;
   format?: string | null;
   commanderOracleId?: string | null;
+  tags?: string[];
 }
 
 export interface ImportDeckRequest {
@@ -77,6 +79,7 @@ export interface SynergyResult {
 export interface SuggestedCardDto {
   name: string;
   reason: string;
+  score: number;
   scryfallId: string | null;
   card: import('../models/game.models').CardDto | null;
 }
@@ -93,6 +96,8 @@ export interface DeckSuggestionsRequest {
   commanderName:     string;
   commanderText:     string;
   deckCardNames:     string[];
+  deckTags?:         string[];
+  suggestionTags?:   string[];
 }
 
 @Injectable({ providedIn: 'root' })

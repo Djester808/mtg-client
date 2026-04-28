@@ -2,11 +2,11 @@
   <div class="cp-modal">
     <div class="cp-header">
       <h2>Set Cover Image</h2>
-      <button class="cp-close" (click)="close()">✕</button>
+      <button class="cp-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <div class="cp-search">
-      <span class="cp-search-icon">⌕</span>
+      <span class="cp-search-icon"><i class="bi bi-search"></i></span>
       <input
         class="cp-search-input"
         type="text"
@@ -35,8 +35,8 @@
             [src]="cardImageUri(card)"
             [alt]="card.name"
           />
-          <div class="cp-no-img" *ngIf="!cardImageUri(card)">◈</div>
-          <div class="cp-check" *ngIf="isSelected(card)">✓</div>
+          <div class="cp-no-img" *ngIf="!cardImageUri(card)"><i class="bi bi-image"></i></div>
+          <div class="cp-check" *ngIf="isSelected(card)"><i class="bi bi-check-lg"></i></div>
         </div>
       </div>
     </div>

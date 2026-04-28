@@ -37,6 +37,9 @@ export class CardModalComponent implements OnInit, OnChanges {
   /** Optional: scryfallIds of other printings the user also owns (shows blue "Owned" banner). */
   @Input() alsoOwnedIds: string[] = [];
 
+  @Input() isGameChanger = false;
+  @Input() isBanned = false;
+
   // Position / size — managed internally, centred on first render
   modalX = 0; modalY = 0;
   modalWidth = 860; modalHeight = 600;

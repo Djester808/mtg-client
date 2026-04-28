@@ -111,6 +111,23 @@
   border-right: 1px solid var(--border-dim);
 }
 
+@keyframes modal-gc-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.2), 0 0 6px rgba(201, 168, 76, 0.1); }
+  50%       { box-shadow: 0 0 0 3px rgba(201, 168, 76, 1.0), 0 0 28px rgba(201, 168, 76, 0.8), 0 0 50px rgba(201, 168, 76, 0.35); }
+}
+@keyframes modal-gc-icon-pulse {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+@keyframes modal-banned-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2), 0 0 6px rgba(220, 38, 38, 0.1); }
+  50%       { box-shadow: 0 0 0 3px rgba(220, 38, 38, 1.0), 0 0 28px rgba(220, 38, 38, 0.8), 0 0 50px rgba(220, 38, 38, 0.35); }
+}
+@keyframes modal-banned-icon-pulse {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+
 .modal-art {
   flex: 1;
   min-height: 0;
@@ -120,6 +137,45 @@
   justify-content: center;
   background: var(--bg-void);
   margin: 8px;
+
+  &.is-game-changer .modal-card-img {
+    animation: modal-gc-pulse 2s ease-in-out infinite;
+  }
+  &.is-game-changer::before {
+    font-family: 'bootstrap-icons';
+    content: '\f7f6';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 160px;
+    line-height: 1;
+    color: rgba(240, 192, 64, 0.25);
+    text-shadow: 0 0 20px rgba(255, 210, 80, 1.0), 0 0 50px rgba(240, 192, 64, 0.9), 0 0 90px rgba(220, 160, 40, 0.6);
+    animation: modal-gc-icon-pulse 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  &.is-banned .modal-card-img {
+    animation: modal-banned-pulse 2s ease-in-out infinite;
+  }
+  &.is-banned::before {
+    font-family: 'bootstrap-icons';
+    content: '\f566';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 160px;
+    line-height: 1;
+    color: rgba(220, 38, 38, 0.5);
+    animation: modal-banned-icon-pulse 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 5;
+  }
 }
 
 .modal-card-img {

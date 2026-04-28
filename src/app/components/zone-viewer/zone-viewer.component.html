@@ -7,7 +7,7 @@
     <div class="viewer-header">
       <span class="viewer-title">{{ vm.title }}</span>
       <span class="viewer-count">{{ vm.cards.length }} card{{ vm.cards.length !== 1 ? 's' : '' }}</span>
-      <button class="viewer-close" (click)="close()">✕</button>
+      <button class="viewer-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <div class="viewer-body" *ngIf="vm.cards.length; else emptyZone">

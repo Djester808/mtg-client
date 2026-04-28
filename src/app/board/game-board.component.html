@@ -58,7 +58,7 @@
       <div class="rh se" (mousedown)="startPreviewResize($event,'se')"></div>
       <div class="rh sw" (mousedown)="startPreviewResize($event,'sw')"></div>
       <!-- Close button floats over the image -->
-      <button class="preview-close-btn" (mousedown)="$event.stopPropagation()" (click)="closePreview()">✕</button>
+      <button class="preview-close-btn" (mousedown)="$event.stopPropagation()" (click)="closePreview()"><i class="bi bi-x-lg"></i></button>
       <img
         *ngIf="vm.previewCard.imageUriNormal"
         [src]="vm.previewCard.imageUriNormal"

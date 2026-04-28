@@ -37,11 +37,17 @@ export interface SynergyScore {
 })
 export class CardSearchPanelComponent implements OnInit, OnDestroy {
   @Input() ownedCards: CollectionCardDto[] = [];
+  @Input() deckCards: CollectionCardDto[] = [];
+  @Input() isDeckContext = false;
+  @Input() deckFormat: string | null = null;
 
   /** Pass the commander's CardDto to enable the "Fit?" analysis button. */
   @Input() commanderCard: CardDto | null = null;
 
-  @Output() fitRequested = new EventEmitter<{ card: CardDto; commanderCard: CardDto }>();
+  @Output() fitRequested       = new EventEmitter<{ card: CardDto; commanderCard: CardDto }>();
+  @Output() cardRemove         = new EventEmitter<string>(); // emits oracleId
+  @Output() cardDecrementNormal = new EventEmitter<string>(); // emits oracleId
+  @Output() cardDecrementFoil   = new EventEmitter<string>(); // emits oracleId
 
   // ---- Synergy scores per oracle ID --------------------------------
   synergyScores = new Map<string, SynergyScore | 'loading'>();
@@ -87,7 +93,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   @HostBinding('class.is-open') get openClass() { return this._isOpen; }
 
-  @Output() cardAdd   = new EventEmitter<{ oracleId: string; scryfallId: string; isCommanderEligible: boolean }>();
+  @Output() cardAdd   = new EventEmitter<{ oracleId: string; scryfallId: string; isCommanderEligible: boolean; foil?: boolean }>();
   @Output() panelClose = new EventEmitter<void>();
 
   // ---- Search & filter state ----------------------------------------
@@ -175,6 +181,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   previewPrintings:  PrintingDto[]     = [];
   previewScryfallId: string | null     = null;
   previewFlipped     = false;
+  previewFoil        = false;
 
   // ---- Internal -----------------------------------------------------
 
@@ -397,6 +404,30 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return this.ownedCards.find(c => c.oracleId === oracleId);
   }
 
+  isInDeck(card: CardDto): boolean {
+    return this.deckCards.some(c => c.oracleId === card.oracleId);
+  }
+
+  deckCount(oracleId: string): number {
+    return this.deckCards.filter(c => c.oracleId === oracleId).reduce((sum, c) => sum + c.quantity + c.quantityFoil, 0);
+  }
+
+  removeFromDeck(card: CardDto): void {
+    this.cardRemove.emit(card.oracleId);
+  }
+
+  isColorViolation(card: CardDto): boolean {
+    if (!this.isDeckContext || !this.commanderCard?.colorIdentity?.length) return false;
+    const allowed = new Set(this.commanderCard.colorIdentity);
+    return card.colorIdentity?.some(c => c !== 'C' && !allowed.has(c)) ?? false;
+  }
+
+  isSingletonViolation(card: CardDto): boolean {
+    if (!this.isDeckContext || this.deckFormat !== 'commander') return false;
+    const isBasic = (card.supertypes?.includes('Basic') && card.cardTypes?.includes(CardType.Land)) ?? false;
+    return !isBasic && this.deckCount(card.oracleId) >= 1;
+  }
+
   addCard(card: CardDto): void {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
@@ -414,11 +445,9 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
       const printings = this.printingsCache.get(card.oracleId);
-      if (printings?.length === 1) scryfallId = printings[0].scryfallId;
+      if (printings && printings.length > 0) scryfallId = printings[0].scryfallId;
     }
     if (!scryfallId) {
-      this.addErrors.add(card.oracleId);
-      this.cdr.markForCheck();
       event.preventDefault();
       return;
     }
@@ -450,6 +479,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   openPreview(card: CardDto): void {
     this.previewCard = card;
     this.previewFlipped = false;
+    this.previewFoil = false;
     const cached = this.printingsCache.get(card.oracleId);
     this.previewPrintings = cached ?? [];
     this.previewScryfallId = cached?.[0]?.scryfallId ?? null;
@@ -458,6 +488,35 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   }
 
   closePreview(): void { this.previewCard = null; this.cdr.markForCheck(); }
+
+  addPreviewCard(): void {
+    if (!this.previewCard) return;
+    const scryfallId = this.previewScryfallId
+      ?? this.searchSelectedScryfallId.get(this.previewCard.oracleId)
+      ?? this.printingsCache.get(this.previewCard.oracleId)?.[0]?.scryfallId;
+    if (!scryfallId) return;
+    const isLegendary = this.previewCard.supertypes?.includes('Legendary') ?? false;
+    const isCreatureOrPw = (this.previewCard.cardTypes?.includes(CardType.Creature) || this.previewCard.cardTypes?.includes(CardType.Planeswalker)) ?? false;
+    this.cardAdd.emit({ oracleId: this.previewCard.oracleId, scryfallId, isCommanderEligible: isLegendary && isCreatureOrPw, foil: this.previewFoil });
+  }
+
+  addPreviewNormal(): void { this.previewFoil = false; this.addPreviewCard(); }
+  addPreviewFoil():   void { this.previewFoil = true;  this.addPreviewCard(); }
+
+  removePreviewCard(): void {
+    if (!this.previewCard) return;
+    this.cardRemove.emit(this.previewCard.oracleId);
+  }
+
+  decrementPreviewNormal(): void {
+    if (!this.previewCard) return;
+    this.cardDecrementNormal.emit(this.previewCard.oracleId);
+  }
+
+  decrementPreviewFoil(): void {
+    if (!this.previewCard) return;
+    this.cardDecrementFoil.emit(this.previewCard.oracleId);
+  }
 
   close(): void { this.panelClose.emit(); }
 

@@ -46,8 +46,8 @@ export class DeckEffects {
   updateDeckMeta$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.updateDeckMeta),
-      switchMap(({ id, name, coverUri, format, commanderOracleId }) =>
-        this.api.updateDeck(id, { name, coverUri, format, commanderOracleId }).pipe(
+      switchMap(({ id, name, coverUri, format, commanderOracleId, tags }) =>
+        this.api.updateDeck(id, { name, coverUri, format, commanderOracleId, ...(tags !== undefined ? { tags } : {}) }).pipe(
           map(deck => DeckActions.updateDeckMetaSuccess({ deck })),
           catchError(err => of(DeckActions.updateDeckMetaFailure({ error: err.message }))),
         )

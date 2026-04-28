@@ -13,7 +13,7 @@
   <!-- Drag handle / title bar -->
   <div class="modal-drag" (mousedown)="onDragStart($event)">
     <span class="modal-drag-name">{{ displayName }}</span>
-    <button class="modal-close-btn" (click)="close()">✕</button>
+    <button class="modal-close-btn" (click)="close()"><i class="bi bi-x-lg"></i></button>
   </div>
 
   <!-- Two-column body -->
@@ -22,6 +22,8 @@
     <!-- Left: card art + optional collection controls -->
     <div class="modal-art-col">
       <div class="modal-art"
+           [class.is-game-changer]="isGameChanger"
+           [class.is-banned]="isBanned"
            (mouseleave)="onImageMouseLeave()">
         <img
           class="modal-card-img"
@@ -112,14 +114,14 @@
             [class.is-legal]="f.status === 'legal'"
             [class.is-restricted]="f.status === 'restricted'"
           >
-            <span class="legal-chip-status">{{ f.status === 'restricted' ? 'R' : '✓' }}</span>
+            <span class="legal-chip-status">{{ f.status === 'restricted' ? 'R' : '' }}<i *ngIf="f.status !== 'restricted'" class="bi bi-check-lg"></i></span>
             <span class="legal-chip-label">{{ f.label }}</span>
           </div>
           <div
             class="legal-chip is-not-legal"
             *ngFor="let f of illegalFormats"
           >
-            <span class="legal-chip-status">✕</span>
+            <span class="legal-chip-status"><i class="bi bi-x-lg"></i></span>
             <span class="legal-chip-label">{{ f.label }}</span>
           </div>
         </div>
@@ -175,8 +177,8 @@
           >
             <div class="chip-placeholder" *ngIf="!p.imageUriSmall">◈</div>
             <div class="chip-viewing-banner" *ngIf="p.scryfallId === viewedScryfallId">Viewing</div>
-            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId">✓ Owned</div>
-            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)">✓ Owned</div>
+            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId"><i class="bi bi-check-lg"></i> Owned</div>
+            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)"><i class="bi bi-check-lg"></i> Owned</div>
             <button
               class="chip-dfc-badge"
               *ngIf="p.imageUriNormalBack"

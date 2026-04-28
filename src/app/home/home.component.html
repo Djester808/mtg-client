@@ -107,9 +107,9 @@
             </ng-container>
             <span class="set-trigger-placeholder" *ngIf="!activeSet">All Sets</span>
           </span>
-          <span class="set-trigger-arrow">▾</span>
+          <span class="set-trigger-arrow"><i class="bi bi-chevron-down"></i></span>
         </button>
-        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter">✕</button>
+        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter"><i class="bi bi-x"></i></button>
 
         <div class="set-dropdown" *ngIf="setDropOpen">
           <div class="set-search-wrap">

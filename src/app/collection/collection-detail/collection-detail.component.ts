@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, switchMap, mergeMap, takeUntil, of, catchError, map,
+  Observable, Subject, switchMap, mergeMap, takeUntil, take, of, catchError, map,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
@@ -147,11 +147,77 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Search panel event handler -----------------------------------
 
-  onPanelCardAdd(event: { oracleId: string; scryfallId: string }): void {
+  onPanelCardRemove(oracleId: string): void {
+    this.collection$.pipe(take(1)).subscribe(col => {
+      if (!col) return;
+      const card = col.cards.find(c => c.oracleId === oracleId);
+      if (!card) return;
+      this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: card.id }));
+    });
+  }
+
+  onPanelDecrementNormal(oracleId: string): void {
+    this.collection$.pipe(take(1)).subscribe(col => {
+      if (!col) return;
+      const card = col.cards.find(c => c.oracleId === oracleId);
+      if (!card || card.quantity <= 0) return;
+      if (card.quantity === 1 && card.quantityFoil === 0) {
+        this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: card.id }));
+      } else {
+        this.store.dispatch(CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: card.id,
+          request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
+        }));
+      }
+    });
+  }
+
+  onPanelDecrementFoil(oracleId: string): void {
+    this.collection$.pipe(take(1)).subscribe(col => {
+      if (!col) return;
+      const card = col.cards.find(c => c.oracleId === oracleId);
+      if (!card || card.quantityFoil <= 0) return;
+      if (card.quantityFoil === 1 && card.quantity === 0) {
+        this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: card.id }));
+      } else {
+        this.store.dispatch(CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: card.id,
+          request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
+        }));
+      }
+    });
+  }
+
+  onPanelCardAdd(event: { oracleId: string; scryfallId: string; foil?: boolean }): void {
     this.store.dispatch(CollectionActions.addCard({
       collectionId: this.collectionId,
-      request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId },
+      request: {
+        oracleId: event.oracleId,
+        scryfallId: event.scryfallId,
+        quantity: event.foil ? 0 : 1,
+        quantityFoil: event.foil ? 1 : 0,
+      },
     }));
+  }
+
+  onAreaDragOver(event: DragEvent): void {
+    const isSearch = event.dataTransfer?.types.includes('application/x-search-card');
+    if (isSearch) {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  onAreaDrop(event: DragEvent): void {
+    try {
+      const raw = event.dataTransfer?.getData('application/x-search-card');
+      if (!raw) return;
+      event.preventDefault();
+      const { oracleId, scryfallId } = JSON.parse(raw) as { oracleId: string; scryfallId: string };
+      this.onPanelCardAdd({ oracleId, scryfallId });
+    } catch { /* ignore */ }
   }
 
   // ---- Card-grid hover -------------------------------------------
@@ -344,6 +410,13 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
         request: { quantity: entry.quantity, quantityFoil: entry.quantityFoil - 1 },
       }));
     }
+  }
+
+  modalRemoveCard(col: CollectionDetailDto, card: CollectionCardDto): void {
+    const entry = this.viewedEntry(col, card);
+    if (!entry?.id) return;
+    this.store.dispatch(CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }));
+    this.closeCard();
   }
 
   getAlsoOwnedIds(col: CollectionDetailDto): string[] {

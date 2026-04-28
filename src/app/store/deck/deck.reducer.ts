@@ -42,14 +42,14 @@ export const deckReducer = createReducer(
     }],
   })),
 
-  on(DeckActions.updateDeckMeta, (state, { id, name, coverUri, format, commanderOracleId }) => ({
+  on(DeckActions.updateDeckMeta, (state, { id, name, coverUri, format, commanderOracleId, tags }) => ({
     ...state,
     decks: state.decks.map(d => d.id === id
       ? { ...d, name, coverUri, format, commanderOracleId }
       : d
     ),
     activeDeck: state.activeDeck?.id === id
-      ? { ...state.activeDeck, name, coverUri, format, commanderOracleId }
+      ? { ...state.activeDeck, name, coverUri, format, commanderOracleId, ...(tags !== undefined ? { tags } : {}) }
       : state.activeDeck,
   })),
 
@@ -60,7 +60,7 @@ export const deckReducer = createReducer(
       : d
     ),
     activeDeck: state.activeDeck?.id === deck.id
-      ? { ...state.activeDeck, name: deck.name, coverUri: deck.coverUri, format: deck.format, commanderOracleId: deck.commanderOracleId }
+      ? { ...state.activeDeck, name: deck.name, coverUri: deck.coverUri, format: deck.format, commanderOracleId: deck.commanderOracleId, tags: deck.tags }
       : state.activeDeck,
   })),
 

@@ -447,3 +447,115 @@ describe('CardSearchPanelComponent — addCard', () => {
     expect(component.addErrors.has('oracle-z')).toBeFalse();
   });
 });
+
+// ── Preview modal — add / decrement ─────────────────────────────────────────
+
+describe('CardSearchPanelComponent — addPreviewNormal / addPreviewFoil', () => {
+  let component: CardSearchPanelComponent;
+
+  beforeEach(async () => {
+    const { gameApi, collectionApi } = makeSpies();
+    await buildModule(gameApi, collectionApi);
+    component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
+    component.previewCard = makeCard({ oracleId: 'oracle-p' });
+    component.previewScryfallId = 'scry-p';
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('addPreviewNormal emits cardAdd with foil:false', () => {
+    const emitted: { oracleId: string; scryfallId: string; foil?: boolean }[] = [];
+    component.cardAdd.subscribe(e => emitted.push(e));
+
+    component.addPreviewNormal();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].foil).toBeFalse();
+    expect(emitted[0].oracleId).toBe('oracle-p');
+    expect(emitted[0].scryfallId).toBe('scry-p');
+  });
+
+  it('addPreviewFoil emits cardAdd with foil:true', () => {
+    const emitted: { oracleId: string; scryfallId: string; foil?: boolean }[] = [];
+    component.cardAdd.subscribe(e => emitted.push(e));
+
+    component.addPreviewFoil();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].foil).toBeTrue();
+    expect(emitted[0].oracleId).toBe('oracle-p');
+    expect(emitted[0].scryfallId).toBe('scry-p');
+  });
+
+  it('addPreviewNormal does not emit when previewCard is null', () => {
+    component.previewCard = null;
+    let emitted = false;
+    component.cardAdd.subscribe(() => (emitted = true));
+
+    component.addPreviewNormal();
+
+    expect(emitted).toBeFalse();
+  });
+
+  it('addPreviewFoil does not emit when previewScryfallId is null', () => {
+    component.previewScryfallId = null;
+    let emitted = false;
+    component.cardAdd.subscribe(() => (emitted = true));
+
+    component.addPreviewFoil();
+
+    expect(emitted).toBeFalse();
+  });
+});
+
+describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreviewFoil', () => {
+  let component: CardSearchPanelComponent;
+
+  beforeEach(async () => {
+    const { gameApi, collectionApi } = makeSpies();
+    await buildModule(gameApi, collectionApi);
+    component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
+    component.previewCard = makeCard({ oracleId: 'oracle-p' });
+    component.previewScryfallId = 'scry-p';
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('decrementPreviewNormal emits cardDecrementNormal with the preview oracleId', () => {
+    const emitted: string[] = [];
+    component.cardDecrementNormal.subscribe(id => emitted.push(id));
+
+    component.decrementPreviewNormal();
+
+    expect(emitted).toEqual(['oracle-p']);
+  });
+
+  it('decrementPreviewFoil emits cardDecrementFoil with the preview oracleId', () => {
+    const emitted: string[] = [];
+    component.cardDecrementFoil.subscribe(id => emitted.push(id));
+
+    component.decrementPreviewFoil();
+
+    expect(emitted).toEqual(['oracle-p']);
+  });
+
+  it('decrementPreviewNormal does not emit when previewCard is null', () => {
+    component.previewCard = null;
+    let emitted = false;
+    component.cardDecrementNormal.subscribe(() => (emitted = true));
+
+    component.decrementPreviewNormal();
+
+    expect(emitted).toBeFalse();
+  });
+
+  it('decrementPreviewFoil does not emit when previewCard is null', () => {
+    component.previewCard = null;
+    let emitted = false;
+    component.cardDecrementFoil.subscribe(() => (emitted = true));
+
+    component.decrementPreviewFoil();
+
+    expect(emitted).toBeFalse();
+  });
+});

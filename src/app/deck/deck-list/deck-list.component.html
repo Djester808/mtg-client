@@ -10,12 +10,12 @@
   <header class="list-header">
     <button class="back-btn" (click)="goHome()">← Home</button>
     <div class="header-title">
-      <span class="header-mark">⊗</span>
+      <span class="header-mark"><i class="bi bi-collection"></i></span>
       <h1>My Decks</h1>
     </div>
     <div class="header-actions">
-      <button class="import-btn" (click)="openImportModal()">⇩ Import</button>
-      <button class="create-btn" (click)="openCreateForm()">+ New Deck</button>
+      <button class="import-btn" (click)="openImportModal()"><i class="bi bi-download"></i> Import</button>
+      <button class="create-btn" (click)="openCreateForm()"><i class="bi bi-plus"></i> New Deck</button>
     </div>
   </header>
 
@@ -28,7 +28,7 @@
 
       <!-- Empty state -->
       <div class="empty-state" *ngIf="sortedDecks.length === 0">
-        <div class="empty-icon">⊗</div>
+        <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No decks yet</p>
         <p class="empty-sub">Build your first deck to start playing.</p>
         <button class="create-btn" (click)="openCreateForm()">+ New Deck</button>
@@ -52,7 +52,7 @@
           <div class="deck-cover"
                [style.backgroundImage]="coverUri(deck) ? 'url(' + coverUri(deck) + ')' : 'none'"
                [class.no-cover]="!coverUri(deck)">
-            <span class="no-cover-icon" *ngIf="!coverUri(deck)">⊗</span>
+            <span class="no-cover-icon" *ngIf="!coverUri(deck)"><i class="bi bi-image"></i></span>
           </div>
 
           <div class="deck-info">
@@ -75,15 +75,15 @@
 
               <div class="deck-actions" (click)="$event.stopPropagation()">
                 <!-- 3-dot menu button -->
-                <button class="menu-btn" (click)="toggleMenu($event, deck.id)" title="Options">⋮</button>
+                <button class="menu-btn" (click)="toggleMenu($event, deck.id)" title="Options"><i class="bi bi-three-dots-vertical"></i></button>
 
                 <!-- Dropdown -->
                 <div class="deck-menu" *ngIf="menuDeckId === deck.id">
-                  <button class="menu-item" (click)="startRename($event, deck)">✎ Rename</button>
-                  <button class="menu-item" (click)="openFormatModal($event, deck)">⊞ Set Format</button>
-                  <button class="menu-item" (click)="openCoverPicker($event, deck)">⊙ Set Cover Image</button>
+                  <button class="menu-item" (click)="startRename($event, deck)"><i class="bi bi-pencil"></i> Rename</button>
+                  <button class="menu-item" (click)="openFormatModal($event, deck)"><i class="bi bi-grid"></i> Set Format</button>
+                  <button class="menu-item" (click)="openCoverPicker($event, deck)"><i class="bi bi-image"></i> Set Cover Image</button>
                   <div class="menu-divider"></div>
-                  <button class="menu-item menu-item-danger" (click)="deleteDeck($event, deck.id)">✕ Delete</button>
+                  <button class="menu-item menu-item-danger" (click)="deleteDeck($event, deck.id)"><i class="bi bi-trash"></i> Delete</button>
                 </div>
               </div>
             </div>
@@ -99,7 +99,7 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>New Deck</h2>
-        <button class="modal-close" (click)="closeCreateForm()">✕</button>
+        <button class="modal-close" (click)="closeCreateForm()"><i class="bi bi-x-lg"></i></button>
       </div>
       <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="modal-body">
         <div class="form-field">
@@ -136,7 +136,7 @@
       <!-- Header -->
       <div class="modal-header">
         <h2>Import Deck</h2>
-        <button class="modal-close" [disabled]="importState === 'loading'" (click)="closeImportModal()">✕</button>
+        <button class="modal-close" [disabled]="importState === 'loading'" (click)="closeImportModal()"><i class="bi bi-x-lg"></i></button>
       </div>
 
       <!-- ── Idle / loading: show form ── -->
@@ -198,7 +198,7 @@
       <!-- ── Done: show result ── -->
       <div class="modal-body" *ngIf="importState === 'done' && importResult">
         <div class="import-result-ok">
-          <span class="import-result-icon">✓</span>
+          <span class="import-result-icon"><i class="bi bi-check-circle-fill"></i></span>
           <div>
             <div class="import-result-title">{{ importResult.deck.name }}</div>
             <div class="import-result-sub">{{ importResult.cardsResolved }} of {{ importResult.cardsTotal }} cards imported</div>
@@ -219,7 +219,7 @@
       <!-- ── Error ── -->
       <div class="modal-body" *ngIf="importState === 'error'">
         <div class="import-result-error">
-          <span class="import-result-icon">✕</span>
+          <span class="import-result-icon"><i class="bi bi-x-circle-fill"></i></span>
           <div>
             <div class="import-result-title">Import failed</div>
             <div class="import-result-sub">{{ importError }}</div>
@@ -239,7 +239,7 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Set Format</h2>
-        <button class="modal-close" (click)="closeFormatModal()">✕</button>
+        <button class="modal-close" (click)="closeFormatModal()"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="modal-body">
         <div class="form-field">

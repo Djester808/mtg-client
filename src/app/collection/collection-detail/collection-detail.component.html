@@ -17,7 +17,7 @@
       <div class="header-right">
         <span class="header-count">{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span>
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
-          {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
+          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
       </div>
     </ng-container>
@@ -33,12 +33,14 @@
   <div class="detail-body">
 
     <!-- Card grid area -->
-    <main class="grid-area" [style.--card-zoom]="zoomLevel">
+    <main class="grid-area" [style.--card-zoom]="zoomLevel"
+          (dragover)="onAreaDragOver($event)"
+          (drop)="onAreaDrop($event)">
 
       <!-- Filter bar (only when cards exist) -->
       <div class="filter-bar" *ngIf="(collection$ | async)?.cards?.length">
         <div class="filter-wrap">
-          <span class="filter-icon">⌕</span>
+          <span class="filter-icon"><i class="bi bi-search"></i></span>
           <input
             class="filter-input"
             type="text"
@@ -55,7 +57,7 @@
 
       <!-- Legend -->
       <div class="legend" *ngIf="(collection$ | async)?.cards?.length">
-        <span class="legend-item"><span class="legend-dot">◈</span> Normal</span>
+        <span class="legend-item"><span class="legend-dot"><i class="bi bi-layers"></i></span> Normal</span>
         <span class="legend-sep">·</span>
         <span class="legend-item legend-item-foil"><span class="legend-dot">✦</span> Foil</span>
         <span class="legend-sep">·</span>
@@ -71,7 +73,7 @@
 
       <!-- Empty collection -->
       <div class="empty-state" *ngIf="!(loading$ | async) && (collection$ | async)?.cards?.length === 0">
-        <div class="empty-icon">⊕</div>
+        <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub">Click "Add Cards" to search and add cards to your collection.</p>
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
@@ -167,7 +169,7 @@
 
                 <div class="ctrl-row">
                   <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
-                  <span class="ctrl-label">◈ {{ card.quantity }}</span>
+                  <span class="ctrl-label"><i class="bi bi-layers"></i> {{ card.quantity }}</span>
                   <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
                 </div>
 
@@ -198,7 +200,7 @@
                [class.no-cover-art]="!col.coverUri">
             <span class="cover-art-placeholder" *ngIf="!col.coverUri">◈</span>
             <div class="cover-edit-overlay">
-              <span class="cover-edit-icon">✎</span>
+              <span class="cover-edit-icon"><i class="bi bi-pencil"></i></span>
               <span class="cover-edit-label">Change Cover</span>
             </div>
           </div>
@@ -211,6 +213,9 @@
       [isOpen]="showSearchPanel"
       [ownedCards]="(collection$ | async)?.cards ?? []"
       (cardAdd)="onPanelCardAdd($event)"
+      (cardRemove)="onPanelCardRemove($event)"
+      (cardDecrementNormal)="onPanelDecrementNormal($event)"
+      (cardDecrementFoil)="onPanelDecrementFoil($event)"
       (panelClose)="toggleSearchPanel()"
     ></app-card-search-panel>
   </div>
@@ -237,49 +242,43 @@
     [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
     (closed)="closeCard()"
   >
-    <!-- Collection-specific: quantity controls + notes below the art image -->
+    <!-- Collection-specific: action buttons + notes -->
     <div extra class="modal-extra-wrap">
-      <div class="modal-qty-badge">
-        <ng-container *ngIf="viewedEntry(modalCol, card) as viewed; else notOwned">
-          <div class="modal-qty-ctrl">
-            <button class="modal-qty-btn modal-qty-dec"
-                    (click)="modalDecrementNormal(modalCol, card)"
-                    [disabled]="viewed.quantity <= 0"
-                    title="Remove normal">−</button>
-            <span class="modal-qty-row">
-              <span class="modal-qty-icon">◈</span>
-              <span class="modal-qty-num">{{ viewed.quantity }}</span>
-            </span>
-            <button class="modal-qty-btn modal-qty-inc"
-                    (click)="modalIncrementNormal(modalCol, card)"
-                    title="Add normal">+</button>
-          </div>
-          <span class="modal-qty-sep">·</span>
-          <div class="modal-qty-ctrl">
-            <button class="modal-qty-btn modal-qty-dec"
-                    (click)="modalDecrementFoil(modalCol, card)"
-                    [disabled]="viewed.quantityFoil <= 0"
-                    title="Remove foil">−</button>
-            <span class="modal-qty-row modal-qty-foil">
-              <span class="modal-qty-icon">✦</span>
-              <span class="modal-qty-num">{{ viewed.quantityFoil }}</span>
-            </span>
-            <button class="modal-qty-btn modal-qty-inc"
-                    (click)="modalIncrementFoil(modalCol, card)"
-                    title="Add foil">+</button>
-          </div>
+      <div class="modal-action-row">
+        <ng-container *ngIf="viewedEntry(modalCol, card) as viewed">
+          <span class="modal-deck-badge">×{{ viewed.quantity }}</span>
+          <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
+            <i class="bi bi-plus-lg"></i> Normal
+          </button>
+          <button class="modal-action-btn modal-action-btn--remove"
+                  [disabled]="viewed.quantity <= 0"
+                  (click)="modalDecrementNormal(modalCol, card)">
+            <i class="bi bi-dash-lg"></i> Normal
+          </button>
+          <span class="modal-group-sep"></span>
+          <span class="modal-deck-badge modal-deck-badge--foil">✦ ×{{ viewed.quantityFoil }}</span>
+          <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
+            <i class="bi bi-plus-lg"></i> Foil
+          </button>
+          <button class="modal-action-btn modal-action-btn--remove"
+                  [disabled]="viewed.quantityFoil <= 0"
+                  (click)="modalDecrementFoil(modalCol, card)">
+            <i class="bi bi-dash-lg"></i> Foil
+          </button>
         </ng-container>
-        <ng-template #notOwned>
+        <ng-container *ngIf="!viewedEntry(modalCol, card)">
           <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
-            <button class="modal-add-btn"
-                    (click)="modalIncrementNormal(modalCol, card)">+ Add Normal</button>
-            <button class="modal-add-btn modal-add-btn-foil"
-                    (click)="modalIncrementFoil(modalCol, card)">✦ Add Foil</button>
+            <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
+              <i class="bi bi-plus-lg"></i> Add Normal
+            </button>
+            <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
+              ✦ Add Foil
+            </button>
           </ng-container>
           <ng-template #noScryfallHint>
             <span class="modal-qty-not-owned">Select a printing below</span>
           </ng-template>
-        </ng-template>
+        </ng-container>
       </div>
       <ng-container *ngIf="viewedEntry(modalCol, card) as viewed">
         <div class="modal-notes-section">

@@ -98,13 +98,24 @@ describe('CollectionDetailComponent — onPanelCardAdd', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('dispatches addCard with oracleId, scryfallId and quantity 1', () => {
+  it('dispatches addCard with quantity 1 and quantityFoil 0 for a normal add', () => {
     component.onPanelCardAdd({ oracleId: 'oracle-x', scryfallId: 'scry-x' });
 
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.addCard({
         collectionId: 'col-1',
-        request: { oracleId: 'oracle-x', quantity: 1, scryfallId: 'scry-x' },
+        request: { oracleId: 'oracle-x', scryfallId: 'scry-x', quantity: 1, quantityFoil: 0 },
+      })
+    );
+  });
+
+  it('dispatches addCard with quantity 0 and quantityFoil 1 for a foil add', () => {
+    component.onPanelCardAdd({ oracleId: 'oracle-x', scryfallId: 'scry-x', foil: true });
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.addCard({
+        collectionId: 'col-1',
+        request: { oracleId: 'oracle-x', scryfallId: 'scry-x', quantity: 0, quantityFoil: 1 },
       })
     );
   });
@@ -324,5 +335,272 @@ describe('CollectionDetailComponent — tile flip', () => {
     });
     component.toggleTileFlip(card, new MouseEvent('click'));
     expect(component.tileImage(card)).toBe('back.jpg');
+  });
+});
+
+// ── Panel decrement / remove helpers ────────────────────────────────────────
+
+function withCards(store: MockStore, cards: CollectionCardDto[]): void {
+  store.setState({
+    collection: { collections: [], activeCollection: makeCollection(cards), loading: false, error: null },
+  });
+}
+
+describe('CollectionDetailComponent — onPanelDecrementNormal', () => {
+  let component: CollectionDetailComponent;
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await setupTestBed();
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+    store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    (store.dispatch as jasmine.Spy).calls.reset();
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches updateCard with quantity-1 when quantity > 1', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 3, quantityFoil: 1 })]);
+    component.onPanelDecrementNormal('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 1 } })
+    );
+  });
+
+  it('dispatches removeCard when normal is 1 and there is no foil', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 0 })]);
+    component.onPanelDecrementNormal('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+    );
+  });
+
+  it('dispatches updateCard (not removeCard) when normal is 1 but foil exists', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 2 })]);
+    component.onPanelDecrementNormal('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 0, quantityFoil: 2 } })
+    );
+  });
+
+  it('is a no-op when quantity is already 0', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 2 })]);
+    component.onPanelDecrementNormal('oracle-1');
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when oracleId is not in the collection', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 })]);
+    component.onPanelDecrementNormal('oracle-unknown');
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionDetailComponent — onPanelDecrementFoil', () => {
+  let component: CollectionDetailComponent;
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await setupTestBed();
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+    store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    (store.dispatch as jasmine.Spy).calls.reset();
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches updateCard with quantityFoil-1 when foil > 1', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 3 })]);
+    component.onPanelDecrementFoil('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 2 } })
+    );
+  });
+
+  it('dispatches removeCard when foil is 1 and there is no normal', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 1 })]);
+    component.onPanelDecrementFoil('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+    );
+  });
+
+  it('dispatches updateCard (not removeCard) when foil is 1 but normal exists', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 })]);
+    component.onPanelDecrementFoil('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+    );
+  });
+
+  it('is a no-op when quantityFoil is already 0', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 })]);
+    component.onPanelDecrementFoil('oracle-1');
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionDetailComponent — onPanelCardRemove', () => {
+  let component: CollectionDetailComponent;
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await setupTestBed();
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+    store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    (store.dispatch as jasmine.Spy).calls.reset();
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches removeCard for the matching oracleId', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 })]);
+    component.onPanelCardRemove('oracle-1');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+    );
+  });
+
+  it('is a no-op when oracleId is not in the collection', () => {
+    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1' })]);
+    component.onPanelCardRemove('oracle-not-there');
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+});
+
+// ── Modal quantity controls ──────────────────────────────────────────────────
+
+describe('CollectionDetailComponent — modalDecrementNormal', () => {
+  let component: CollectionDetailComponent;
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await setupTestBed();
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+    store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    (store.dispatch as jasmine.Spy).calls.reset();
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches updateCard with quantity-1 (not removeCard) when copies remain', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 3, quantityFoil: 0 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementNormal(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+    );
+  });
+
+  it('dispatches removeCard only when the last copy of any kind is removed', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 0 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementNormal(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+    );
+  });
+
+  it('dispatches updateCard to zero when foil copies still exist', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 2 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementNormal(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 0, quantityFoil: 2 } })
+    );
+  });
+
+  it('is a no-op when quantity is already 0', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 0, quantityFoil: 1 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementNormal(col, card);
+
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionDetailComponent — modalDecrementFoil', () => {
+  let component: CollectionDetailComponent;
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await setupTestBed();
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+    store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    (store.dispatch as jasmine.Spy).calls.reset();
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('dispatches updateCard with quantityFoil-1 (not removeCard) when foil copies remain', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 3 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementFoil(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 2 } })
+    );
+  });
+
+  it('dispatches removeCard only when the last foil and no normal remain', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 0, quantityFoil: 1 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementFoil(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+    );
+  });
+
+  it('dispatches updateCard to zero when normal copies still exist', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 2, quantityFoil: 1 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementFoil(col, card);
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+    );
+  });
+
+  it('is a no-op when quantityFoil is already 0', () => {
+    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 2, quantityFoil: 0 });
+    const col  = makeCollection([card]);
+    component.modalViewScryfallId = 'scry-1';
+
+    component.modalDecrementFoil(col, card);
+
+    expect(store.dispatch).not.toHaveBeenCalled();
   });
 });

@@ -179,7 +179,7 @@
             title="Flip card">⟲</button>
         </div>
 
-        <!-- Name -->
+        <!-- Name + violation badges -->
         <div class="result-info">
           <span class="result-name">
             <ng-container *ngFor="let part of highlightParts(card.name)">
@@ -187,6 +187,8 @@
               <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
             </ng-container>
           </span>
+          <span class="violation-badge color-violation" *ngIf="isColorViolation(card)" title="Outside commander color identity">⬡ Color</span>
+          <span class="violation-badge singleton-violation" *ngIf="isSingletonViolation(card)" title="Already in deck (singleton)">⊕ Copy</span>
         </div>
 
         <!-- Set / printing selector -->
@@ -249,13 +251,22 @@
           </span>
         </div>
 
-        <!-- Add button -->
+        <!-- Add / remove -->
         <div class="result-action">
-          <span class="owned-qty" *ngIf="ownedEntry(card.oracleId) as owned">
+          <!-- Collection context: show owned count -->
+          <span class="owned-qty" *ngIf="!isDeckContext && ownedEntry(card.oracleId) as owned">
             ×{{ owned.quantity + owned.quantityFoil }}
           </span>
-          <button class="add-result-btn" (click)="addCard(card)">
-            {{ ownedEntry(card.oracleId) ? '+1' : 'Add' }}
+          <!-- Deck context: show in-deck count + remove -->
+          <span class="deck-qty-badge" *ngIf="isDeckContext && deckCount(card.oracleId) as n">
+            {{ n }} in deck
+          </span>
+          <button class="add-result-btn" (click)="addCard(card)">Add</button>
+          <button class="remove-deck-btn"
+                  *ngIf="isDeckContext && isInDeck(card)"
+                  (click)="removeFromDeck(card)"
+                  title="Remove from deck">
+            <i class="bi bi-dash-lg"></i>
           </button>
         </div>
 
@@ -277,7 +288,7 @@
 
 </div>
 
-<!-- Preview modal (simple, no quantity controls) -->
+<!-- Preview modal -->
 <app-card-modal
   *ngIf="previewCard"
   [card]="previewCard"
@@ -285,4 +296,51 @@
   [(viewedScryfallId)]="previewScryfallId"
   [(flipped)]="previewFlipped"
   (closed)="closePreview()"
-></app-card-modal>
+>
+  <div extra class="modal-extra-wrap">
+    <!-- Collection context -->
+    <ng-container *ngIf="!isDeckContext">
+      <ng-container *ngIf="ownedEntry(previewCard!.oracleId) as owned">
+        <span class="modal-deck-badge">×{{ owned.quantity }}</span>
+        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewNormal()">
+          <i class="bi bi-plus-lg"></i> Normal
+        </button>
+        <button class="modal-action-btn modal-action-btn--remove"
+                [disabled]="owned.quantity <= 0"
+                (click)="decrementPreviewNormal()">
+          <i class="bi bi-dash-lg"></i> Normal
+        </button>
+        <span class="modal-group-sep"></span>
+        <span class="modal-deck-badge modal-deck-badge--foil">✦ ×{{ owned.quantityFoil }}</span>
+        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewFoil()">
+          <i class="bi bi-plus-lg"></i> Foil
+        </button>
+        <button class="modal-action-btn modal-action-btn--remove"
+                [disabled]="owned.quantityFoil <= 0"
+                (click)="decrementPreviewFoil()">
+          <i class="bi bi-dash-lg"></i> Foil
+        </button>
+      </ng-container>
+      <ng-container *ngIf="!ownedEntry(previewCard!.oracleId)">
+        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewNormal()">
+          <i class="bi bi-plus-lg"></i> Add Normal
+        </button>
+        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewFoil()">
+          ✦ Add Foil
+        </button>
+      </ng-container>
+    </ng-container>
+    <!-- Deck context -->
+    <ng-container *ngIf="isDeckContext">
+      <span class="modal-deck-badge" *ngIf="deckCount(previewCard!.oracleId) as n">{{ n }} in deck</span>
+      <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
+        <i class="bi bi-plus-lg"></i> {{ deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
+      </button>
+      <button class="modal-action-btn modal-action-btn--remove"
+              *ngIf="isInDeck(previewCard!)"
+              (click)="removePreviewCard()">
+        <i class="bi bi-dash-lg"></i> Remove
+      </button>
+    </ng-container>
+  </div>
+</app-card-modal>
