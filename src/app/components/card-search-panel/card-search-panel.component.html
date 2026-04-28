@@ -161,100 +161,109 @@
          draggable="true"
          (dragstart)="onDragStart(card, $event)">
 
-      <!-- Card art (click = preview modal) -->
-      <div
-        class="result-art result-art-clickable"
-        [style.backgroundImage]="cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'"
-        (click)="openPreview(card)"
-        title="Preview card"
-      >
-        <div class="art-placeholder sm" *ngIf="!cardImage(card)">◈</div>
-        <button
-          *ngIf="card.imageUriNormalBack"
-          class="result-flip-btn"
-          [class.is-flipped]="flippedIds.has(card.oracleId)"
-          (click)="toggleFlip(card.oracleId, $event)"
-          title="Flip card">⟲</button>
-      </div>
+      <div class="result-row-main">
 
-      <!-- Name -->
-      <div class="result-info">
-        <span class="result-name">
-          <ng-container *ngFor="let part of highlightParts(card.name)">
-            <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
-            <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
-          </ng-container>
-        </span>
-      </div>
+        <!-- Card art (click = preview modal) -->
+        <div
+          class="result-art result-art-clickable"
+          [style.backgroundImage]="cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'"
+          (click)="openPreview(card)"
+          title="Preview card"
+        >
+          <div class="art-placeholder sm" *ngIf="!cardImage(card)">◈</div>
+          <button
+            *ngIf="card.imageUriNormalBack"
+            class="result-flip-btn"
+            [class.is-flipped]="flippedIds.has(card.oracleId)"
+            (click)="toggleFlip(card.oracleId, $event)"
+            title="Flip card">⟲</button>
+        </div>
 
-      <!-- Set / printing selector -->
-      <div class="result-set-wrap">
-        <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
-          <span
-            *ngIf="prints.length === 1; else multiSelect"
-            class="result-set-single"
-            [title]="prints[0].setName">
-            {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
+        <!-- Name -->
+        <div class="result-info">
+          <span class="result-name">
+            <ng-container *ngFor="let part of highlightParts(card.name)">
+              <mark class="hl" *ngIf="part.match">{{ part.text }}</mark>
+              <ng-container *ngIf="!part.match">{{ part.text }}</ng-container>
+            </ng-container>
           </span>
-          <ng-template #multiSelect>
+        </div>
+
+        <!-- Set / printing selector -->
+        <div class="result-set-wrap">
+          <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
+            <span
+              *ngIf="prints.length === 1; else multiSelect"
+              class="result-set-single"
+              [title]="prints[0].setName">
+              {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
+            </span>
+            <ng-template #multiSelect>
+              <select
+                class="result-set-select"
+                [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+                [title]="setTooltip(card.oracleId)"
+                [class.has-error]="addErrors.has(card.oracleId)"
+                (focus)="onSelectFocus(card.oracleId)"
+                (ngModelChange)="onSetChange(card.oracleId, $event)"
+              >
+                <option value="" disabled>SET</option>
+                <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
+                  {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+                </option>
+              </select>
+            </ng-template>
+          </ng-container>
+          <ng-template #setLoading>
             <select
               class="result-set-select"
-              [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-              [title]="setTooltip(card.oracleId)"
+              ngModel
               [class.has-error]="addErrors.has(card.oracleId)"
               (focus)="onSelectFocus(card.oracleId)"
-              (ngModelChange)="onSetChange(card.oracleId, $event)"
             >
-              <option value="" disabled>SET</option>
-              <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-              </option>
+              <option value="" disabled selected>SET</option>
             </select>
           </ng-template>
-        </ng-container>
-        <ng-template #setLoading>
-          <select
-            class="result-set-select"
-            ngModel
-            [class.has-error]="addErrors.has(card.oracleId)"
-            (focus)="onSelectFocus(card.oracleId)"
-          >
-            <option value="" disabled selected>SET</option>
-          </select>
-        </ng-template>
-        <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
-      </div>
+          <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
+        </div>
 
-      <!-- Synergy fit button (commander only) -->
-      <div class="result-fit" *ngIf="commanderCard">
-        <button class="fit-btn"
-                *ngIf="!synergyScores.has(card.oracleId)"
+        <!-- Synergy fit button (commander only) -->
+        <div class="result-fit" *ngIf="commanderCard">
+          <button class="fit-btn"
+                  *ngIf="!synergyScores.has(card.oracleId)"
+                  (click)="requestFit(card, $event)"
+                  title="Analyze fit with commander">
+            <i class="bi bi-stars"></i> Fit?
+          </button>
+          <span class="fit-loading" *ngIf="isSynergyLoading(card.oracleId)">
+            <i class="bi bi-arrow-repeat"></i>
+          </span>
+          <span class="fit-score"
+                *ngIf="getSynergyScore(card.oracleId) as score"
+                [class.score-high]="score.score >= 70"
+                [class.score-mid]="score.score >= 40 && score.score < 70"
+                [class.score-low]="score.score < 40"
                 (click)="requestFit(card, $event)"
-                title="Analyze fit with commander">
-          <i class="bi bi-stars"></i>
-        </button>
-        <span class="fit-loading" *ngIf="isSynergyLoading(card.oracleId)">
-          <i class="bi bi-arrow-repeat"></i>
-        </span>
-        <span class="fit-score"
-              *ngIf="getSynergyScore(card.oracleId) as score"
-              [class.score-high]="score.score >= 70"
-              [class.score-mid]="score.score >= 40 && score.score < 70"
-              [class.score-low]="score.score < 40"
-              [title]="score.reason"
-              (click)="requestFit(card, $event)">
-          {{ score.score }}%
-        </span>
+                title="Re-analyze">
+            {{ score.score }}%
+          </span>
+        </div>
+
+        <!-- Add button -->
+        <div class="result-action">
+          <span class="owned-qty" *ngIf="ownedEntry(card.oracleId) as owned">
+            ×{{ owned.quantity + owned.quantityFoil }}
+          </span>
+          <button class="add-result-btn" (click)="addCard(card)">
+            {{ ownedEntry(card.oracleId) ? '+1' : 'Add' }}
+          </button>
+        </div>
+
       </div>
 
-      <!-- Add button -->
-      <div class="result-action">
-        <span class="owned-qty" *ngIf="ownedEntry(card.oracleId) as owned">
-          ×{{ owned.quantity + owned.quantityFoil }}
-        </span>
-        <button class="add-result-btn" (click)="addCard(card)">
-          {{ ownedEntry(card.oracleId) ? '+1' : 'Add' }}
-        </button>
+      <!-- Reason spans full width below the row -->
+      <div class="fit-reason" *ngIf="getSynergyScore(card.oracleId) as score">
+        {{ score.reason }}
       </div>
 
     </div>

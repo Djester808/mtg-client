@@ -66,6 +66,7 @@ export interface SynergyRequest {
   cardOracleId: string;
   cardName: string;
   cardText: string;
+  deckCardNames?: string[];
 }
 
 export interface SynergyResult {

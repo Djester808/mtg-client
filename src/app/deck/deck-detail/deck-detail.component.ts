@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, mergeMap, takeUntil, of, catchError, map, filter, take,
+  Observable, Subject, mergeMap, switchMap, takeUntil, of, catchError, map, filter, take,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
@@ -1483,14 +1483,37 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   onFitRequested(event: { card: CardDto; commanderCard: CardDto }): void {
     const { card, commanderCard } = event;
-    this.deckApi.analyzeSynergy({
-      commanderOracleId: commanderCard.oracleId,
-      commanderName:     commanderCard.name,
-      commanderText:     commanderCard.oracleText,
-      cardOracleId:      card.oracleId,
-      cardName:          card.name,
-      cardText:          card.oracleText,
-    }).pipe(
+
+    const cmdColors = new Set((commanderCard.colorIdentity ?? []).map(c => String(c)));
+    const isColorViolation = (card.colorIdentity ?? []).some(c => !cmdColors.has(String(c)));
+
+    if (isColorViolation) {
+      this.searchPanel?.setSynergyScore(card.oracleId, {
+        score: 0,
+        reason: `Color identity violation — cannot be played in a ${commanderCard.name} deck.`,
+      });
+      return;
+    }
+
+    this.deck$.pipe(
+      take(1),
+      switchMap(deck => {
+        const deckCardNames = (deck?.cards ?? [])
+          .filter(c => c.cardDetails?.oracleId !== card.oracleId &&
+                       c.cardDetails?.oracleId !== commanderCard.oracleId)
+          .map(c => c.cardDetails?.name)
+          .filter((n): n is string => !!n);
+
+        return this.deckApi.analyzeSynergy({
+          commanderOracleId: commanderCard.oracleId,
+          commanderName:     commanderCard.name,
+          commanderText:     commanderCard.oracleText,
+          cardOracleId:      card.oracleId,
+          cardName:          card.name,
+          cardText:          card.oracleText,
+          deckCardNames,
+        });
+      }),
       takeUntil(this.destroy$),
       catchError(() => of({ score: 0, reason: 'Failed to get synergy score.' })),
     ).subscribe(result => {
