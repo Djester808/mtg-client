@@ -14,7 +14,7 @@
       <!-- Editable name -->
       <div class="header-name-wrap" *ngIf="!isRenaming" (dblclick)="startRename(deck)" title="Double-click to rename">
         <h1 class="header-name">{{ deck.name }}</h1>
-        <button class="rename-btn" (click)="startRename(deck)" title="Rename deck">✎</button>
+        <button class="rename-btn" (click)="startRename(deck)" title="Rename deck"><i class="bi bi-pencil"></i></button>
       </div>
       <div class="header-name-wrap" *ngIf="isRenaming">
         <input
@@ -45,9 +45,9 @@
 
         <!-- View toggle -->
         <div class="sort-group view-toggle">
-          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view">☰</button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view">⊞</button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange">⠿</button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view"><i class="bi bi-list"></i></button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view"><i class="bi bi-grid"></i></button>
+          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange"><i class="bi bi-columns-gap"></i></button>
         </div>
 
 
@@ -58,7 +58,7 @@
                   [class.has-violations]="hasCommanderViolations(deck)"
                   (click)="toggleFormatMenu()">
             {{ deck.format === 'commander' ? 'CMDR' : 'FORMAT' }}
-            <span class="format-caret">▾</span>
+            <span class="format-caret"><i class="bi bi-chevron-down"></i></span>
           </button>
           <div class="format-menu" *ngIf="showFormatMenu">
             <button class="format-menu-item" [class.is-active]="!deck.format"
@@ -75,10 +75,10 @@
         </span>
 
         <button class="stats-btn" [class.is-active]="showSidePanel" (click)="toggleSidePanel()">
-          ☰ Stats
+          <i class="bi bi-bar-chart-line"></i> Stats
         </button>
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
-          {{ showSearchPanel ? '✕ Close' : '+ Add Cards' }}
+          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
       </div>
 
@@ -97,8 +97,8 @@
         <div class="vbar-cover-art"
              [style.backgroundImage]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
              [class.no-cover]="!deck.coverUri">
-          <span class="vbar-cover-placeholder" *ngIf="!deck.coverUri">◈</span>
-          <div class="vbar-cover-overlay">✎</div>
+          <span class="vbar-cover-placeholder" *ngIf="!deck.coverUri"><i class="bi bi-image"></i></span>
+          <div class="vbar-cover-overlay"><i class="bi bi-pencil"></i></div>
         </div>
       </div>
 
@@ -106,45 +106,159 @@
       <div class="vbar-right">
         <div class="vbar-row">
           <span class="cp-check" [class.ok]="totalCount(deck) === 100" [class.bad]="totalCount(deck) !== 100">
-            <span class="cp-check-icon">{{ totalCount(deck) === 100 ? '✓' : '✕' }}</span>
+            <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="totalCount(deck) === 100" [class.bi-x-lg]="totalCount(deck) !== 100"></i></span>
             {{ totalCount(deck) }}/100
           </span>
           <span class="cp-check" [class.ok]="!!deck.commanderOracleId" [class.bad]="!deck.commanderOracleId">
-            <span class="cp-check-icon">{{ deck.commanderOracleId ? '✓' : '✕' }}</span>
+            <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="!!deck.commanderOracleId" [class.bi-x-lg]="!deck.commanderOracleId"></i></span>
             Commander
           </span>
           <span class="cp-check"
                 [class.ok]="singletonViolations(deck).length === 0"
                 [class.bad-singleton]="singletonViolations(deck).length > 0"
-                [title]="singletonViolationNames(deck)">
-            <span class="cp-check-icon">{{ singletonViolations(deck).length === 0 ? '✓' : '✕' }}</span>
+                [class.is-open]="violationPanelType === 'singleton'"
+                [class.clickable]="singletonViolations(deck).length > 0"
+                (click)="singletonViolations(deck).length > 0 && openViolationPanel('singleton', $event)">
+            <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="singletonViolations(deck).length === 0" [class.bi-x-lg]="singletonViolations(deck).length > 0"></i></span>
             Singleton<ng-container *ngIf="singletonViolations(deck).length > 0"> ({{ singletonViolations(deck).length }})</ng-container>
           </span>
           <span class="cp-check"
                 [class.ok]="colorIdentityViolations(deck).length === 0"
                 [class.bad-color-id]="colorIdentityViolations(deck).length > 0"
-                [title]="colorIdentityViolationNames(deck)">
-            <span class="cp-check-icon">{{ colorIdentityViolations(deck).length === 0 ? '✓' : '✕' }}</span>
+                [class.is-open]="violationPanelType === 'color-id'"
+                [class.clickable]="colorIdentityViolations(deck).length > 0"
+                (click)="colorIdentityViolations(deck).length > 0 && openViolationPanel('color-id', $event)">
+            <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="colorIdentityViolations(deck).length === 0" [class.bi-x-lg]="colorIdentityViolations(deck).length > 0"></i></span>
             Color ID<ng-container *ngIf="colorIdentityViolations(deck).length > 0"> ({{ colorIdentityViolations(deck).length }})</ng-container>
           </span>
           <span class="cp-check"
                 [class.ok]="bannedInCommander(deck).length === 0"
                 [class.bad-banned]="bannedInCommander(deck).length > 0"
-                [title]="bannedViolationNames(deck)">
-            <span class="cp-check-icon">{{ bannedInCommander(deck).length === 0 ? '✓' : '✕' }}</span>
+                [class.is-open]="violationPanelType === 'banned'"
+                [class.clickable]="bannedInCommander(deck).length > 0"
+                (click)="bannedInCommander(deck).length > 0 && openViolationPanel('banned', $event)">
+            <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="bannedInCommander(deck).length === 0" [class.bi-x-lg]="bannedInCommander(deck).length > 0"></i></span>
             Banned<ng-container *ngIf="bannedInCommander(deck).length > 0"> ({{ bannedInCommander(deck).length }})</ng-container>
           </span>
           <span class="cp-check info-gc"
                 *ngIf="gameChangerCards(deck).length > 0"
                 [title]="gameChangerNames(deck)">
-            ⚡ Game Changers ({{ gameChangerCards(deck).length }})
+            <i class="bi bi-fire"></i> Game Changers ({{ gameChangerCards(deck).length }})
           </span>
+          <div class="cp-bracket-wrapper">
+            <span class="cp-bracket bracket-{{ commanderBracket(deck) }}"
+                  [class.is-open]="bracketInfoOpen"
+                  (click)="toggleBracketInfo($event)">
+              <i class="bi bi-shield-fill"></i> Bracket {{ commanderBracket(deck) }}
+            </span>
+            <div class="bracket-info-overlay" *ngIf="bracketInfoOpen" (click)="closeBracketInfo()"></div>
+            <div class="bracket-info-panel" *ngIf="bracketInfoOpen" (click)="$event.stopPropagation()">
+              <div class="bip-header">
+                <span class="bip-title"><i class="bi bi-shield-fill"></i> Commander Brackets</span>
+                <button class="bip-close" (click)="closeBracketInfo()"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <div class="bip-note">Auto-estimated from deck contents. Bracket 5 requires manual assignment.</div>
+              <div class="bip-rows">
+                <div class="bip-row bip-row-1" [class.is-current]="commanderBracket(deck) === 1">
+                  <span class="bip-num">1</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Exhibition</span>
+                    <span class="bip-criteria">No game changers · No MLD · No extra turns · No 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-2" [class.is-current]="commanderBracket(deck) === 2">
+                  <span class="bip-num">2</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Core</span>
+                    <span class="bip-criteria">No game changers · No MLD · No chaining extra turns · No 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-3" [class.is-current]="commanderBracket(deck) === 3">
+                  <span class="bip-num">3</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Upgraded</span>
+                    <span class="bip-criteria">1–3 game changers · No MLD · No chaining extra turns · No fast 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-4" [class.is-current]="commanderBracket(deck) === 4">
+                  <span class="bip-num">4</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Optimized</span>
+                    <span class="bip-criteria">Highly tuned · No deck restrictions</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-5 bip-manual">
+                  <span class="bip-num">5</span>
+                  <div class="bip-info">
+                    <span class="bip-name">cEDH</span>
+                    <span class="bip-criteria">Metagame competitive · Intent-based</span>
+                  </div>
+                </div>
+              </div>
+              <ng-container *ngIf="commanderBracket(deck) > 1 || extraTurnCards(deck).length > 0 || mldCards(deck).length > 0">
+                <div class="bip-flags-title">Detected flags</div>
+                <div class="bip-flags">
+                  <div class="bip-flag bip-flag-gc" *ngIf="gameChangerCards(deck).length > 0">
+                    <i class="bi bi-fire"></i>
+                    <span><strong>{{ gameChangerCards(deck).length }} Game Changer{{ gameChangerCards(deck).length > 1 ? 's' : '' }}:</strong> {{ gameChangerNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-mld" *ngIf="mldCards(deck).length > 0">
+                    <i class="bi bi-slash-circle-fill"></i>
+                    <span><strong>MLD:</strong> {{ mldCardNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-chain" *ngIf="hasChainingExtraTurns(deck)">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span><strong>Chaining extra turns:</strong> {{ extraTurnCardNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-et" *ngIf="!hasChainingExtraTurns(deck) && extraTurnCards(deck).length > 0">
+                    <i class="bi bi-clock-history"></i>
+                    <span><strong>Extra turn:</strong> {{ extraTurnCardNames(deck) }}</span>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
         </div>
         <div class="vbar-row vbar-legend-row" *ngIf="hasCommanderViolations(deck)">
           <span class="cp-legend-item"><span class="cp-legend-dot dot-singleton"></span>Too many</span>
           <span class="cp-legend-item"><span class="cp-legend-dot dot-color-id"></span>Wrong color</span>
           <span class="cp-legend-item"><span class="cp-legend-dot dot-both"></span>Both</span>
           <span class="cp-legend-item"><span class="cp-legend-dot dot-banned"></span>Banned</span>
+        </div>
+      </div>
+
+      <!-- Violation detail panel -->
+      <div class="violation-overlay" *ngIf="violationPanelType" (click)="closeViolationPanel()"></div>
+      <div class="violation-panel" *ngIf="violationPanelType" [class.vp-banned]="violationPanelType === 'banned'" [class.vp-singleton]="violationPanelType === 'singleton'" [class.vp-color-id]="violationPanelType === 'color-id'">
+        <div class="vp-header">
+          <span class="vp-title">{{ violationPanelTitle() }}</span>
+          <span class="vp-hint">Click a card to view · <i class="bi bi-trash3"></i> to remove</span>
+          <button class="vp-close" (click)="closeViolationPanel()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="vp-cards">
+          <div class="vp-card-item" *ngFor="let c of violationPanelCards(deck)">
+            <div class="vp-thumb"
+                 [style.backgroundImage]="c.cardDetails?.imageUriSmall ? 'url(' + c.cardDetails!.imageUriSmall + ')' : 'none'"
+                 (click)="openCard(c)">
+              <div class="vp-thumb-placeholder" *ngIf="!c.cardDetails?.imageUriSmall">◈</div>
+            </div>
+            <div class="vp-card-info">
+              <span class="vp-card-name" (click)="openCard(c)">{{ c.cardDetails?.name ?? c.oracleId }}</span>
+              <span class="vp-card-type">{{ cardTypeLine(c) }}</span>
+              <span class="vp-card-note" *ngIf="violationPanelType === 'singleton'">
+                {{ totalOracleCount(c, deck) }} copies in deck
+              </span>
+              <span class="vp-card-note" *ngIf="violationPanelType === 'color-id'">
+                Illegal colors: {{ colorIdViolationColors(c, deck) }}
+              </span>
+              <span class="vp-card-note" *ngIf="violationPanelType === 'banned'">
+                Banned in Commander
+              </span>
+            </div>
+            <button class="vp-remove-btn" (click)="removeViolatingCard(c)" title="Remove from deck">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -165,7 +279,7 @@
       <!-- Filter bar (list / visual only) -->
       <div class="filter-bar" *ngIf="viewMode !== 'free'">
         <div class="filter-wrap">
-          <span class="filter-icon">⌕</span>
+          <span class="filter-icon"><i class="bi bi-search"></i></span>
           <input
             class="filter-input"
             type="text"
@@ -175,15 +289,15 @@
         </div>
         <!-- List density: thumbnail vs text -->
         <div class="density-picker" *ngIf="viewMode === 'list'">
-          <button class="density-btn" [class.is-active]="!textStyle" (click)="setTextStyle(false)" title="Thumbnail">⊟</button>
-          <button class="density-btn" [class.is-active]="textStyle"  (click)="setTextStyle(true)"  title="Text list">☰</button>
+          <button class="density-btn" [class.is-active]="!textStyle" (click)="setTextStyle(false)" title="Thumbnail"><i class="bi bi-image"></i></button>
+          <button class="density-btn" [class.is-active]="textStyle"  (click)="setTextStyle(true)"  title="Text list"><i class="bi bi-list"></i></button>
         </div>
         <!-- Visual density + text -->
         <div class="density-picker" *ngIf="viewMode === 'visual'">
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
-          <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list">☰</button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card"><i class="bi bi-grid-fill"></i></button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card"><i class="bi bi-layers-half"></i></button>
+          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
+          <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
         </div>
         <div class="sort-group zoom-group">
           <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -197,7 +311,7 @@
 
       <!-- Empty -->
       <div class="empty-state" *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length === 0">
-        <div class="empty-icon">⊗</div>
+        <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub">Click "Add Cards" to search and add cards to your deck.</p>
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
@@ -298,7 +412,7 @@
                 <div class="card-bottom" (click)="$event.stopPropagation()">
                   <div class="ctrl-row">
                     <button class="ctrl-btn ctrl-dec" (click)="decrement(card)">−</button>
-                    <span class="ctrl-label">◈ {{ cardCount(card) }}</span>
+                    <span class="ctrl-label"><i class="bi bi-layers"></i> {{ cardCount(card) }}</span>
                     <button class="ctrl-btn ctrl-inc" (click)="increment(card)">+</button>
                   </div>
                 </div>
@@ -313,14 +427,14 @@
       <ng-container *ngIf="viewMode === 'free' && !(loading$ | async)">
         <div class="free-toolbar">
           <button class="free-save-btn" [class.is-saved]="layoutSaved" (click)="saveLayoutExplicit()">
-            {{ layoutSaved ? '✓ Saved' : '⬡ Save Layout' }}
+            <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i> {{ layoutSaved ? 'Saved' : 'Save Layout' }}
           </button>
-          <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset columns to CMC groups">↺ Reset</button>
+          <button class="free-reset-btn" (click)="resetFreeLayout(deck)" title="Reset columns to CMC groups"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
           <div class="density-picker">
-            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card">▦</button>
-            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card">▤</button>
-            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only">≡</button>
-            <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list">☰</button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card"><i class="bi bi-grid-fill"></i></button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card"><i class="bi bi-layers-half"></i></button>
+            <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
+            <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
           </div>
           <div class="sort-group zoom-group">
             <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -366,18 +480,18 @@
                       draggable="true"
                       (dragstart)="onColHeaderDragStart(col, $event)"
                       (dragend)="onColDragEnd()"
-                      title="Drag to reorder">⠿</span>
+                      title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                 <span class="group-label free-col-label"
                       (dblclick)="startEditColumnLabel(col)"
                       title="Double-click to rename">{{ col.label }}</span>
                 <span class="col-edit-hint"
                       (click)="$event.stopPropagation(); startEditColumnLabel(col)"
-                      title="Rename column">✎</span>
+                      title="Rename column"><i class="bi bi-pencil"></i></span>
                 <span class="group-count">{{ getCardsForColumn(col, deck).length }}</span>
                 <button class="col-remove-btn"
                         *ngIf="freeColumns.length > 1"
                         (click)="$event.stopPropagation(); removeColumn(col.id)"
-                        title="Remove column">✕</button>
+                        title="Remove column"><i class="bi bi-x"></i></button>
               </ng-container>
               <input *ngIf="editingColumnId === col.id"
                      class="col-label-input"
@@ -422,7 +536,7 @@
                 <div class="card-bottom" (click)="$event.stopPropagation()">
                   <div class="ctrl-row">
                     <button class="ctrl-btn ctrl-dec" (click)="freeDecrement(card, col.id)">−</button>
-                    <span class="ctrl-label">◈ {{ totalOracleCount(card, deck) }}</span>
+                    <span class="ctrl-label"><i class="bi bi-layers"></i> {{ totalOracleCount(card, deck) }}</span>
                     <button class="ctrl-btn ctrl-inc" (click)="freeIncrement(card, col.id)">+</button>
                   </div>
                 </div>
@@ -468,7 +582,7 @@
     <aside class="side-panel" [class.is-open]="showSidePanel && !showSearchPanel">
       <div class="side-panel-header">
         <span class="side-panel-title">Stats</span>
-        <button class="side-panel-close" (click)="toggleSidePanel()">✕</button>
+        <button class="side-panel-close" (click)="toggleSidePanel()"><i class="bi bi-x-lg"></i></button>
       </div>
       <ng-container *ngIf="deck$ | async as deck">
 
@@ -497,17 +611,17 @@
                           title="View card details">View Details</button>
                   <button class="cp-search-btn"
                           (click)="openCommanderSearch(); $event.stopPropagation()"
-                          title="Search for new commander">⊕ Change</button>
+                          title="Search for new commander"><i class="bi bi-search"></i> Change</button>
                   <button class="cp-clear-btn-overlay"
                           (click)="setCommander(null, deck); $event.stopPropagation()"
-                          title="Remove commander">✕ Remove</button>
+                          title="Remove commander"><i class="bi bi-x"></i> Remove</button>
                 </div>
               </ng-container>
               <ng-template #noCommander>
                 <div class="cp-portrait no-art"
                      (click)="openCommanderSearch(); $event.stopPropagation()"
                      title="Search for commander">
-                  <div class="cp-no-cmdr">⊛<br>Click or drop<br>to assign</div>
+                  <div class="cp-no-cmdr"><i class="bi bi-person-plus"></i><br>Click or drop<br>to assign</div>
                 </div>
               </ng-template>
             </div>
@@ -613,6 +727,8 @@
       [(flipped)]="modalFlipped"
       [primaryScryfallId]="selectedCard.scryfallId"
       [alsoOwnedIds]="getAlsoOwnedIds(deck)"
+      [isGameChanger]="deck.format === 'commander' && (selectedCard.cardDetails?.gameChanger === true)"
+      [isBanned]="deck.format === 'commander' && (selectedCard.cardDetails?.legalities?.['commander'] === 'banned')"
       (closed)="closeCard()"
     >
       <div extra class="modal-extra-wrap">
@@ -622,7 +738,7 @@
                     (click)="decrement(selectedCard)"
                     [disabled]="cardCount(selectedCard) <= 0">−</button>
             <span class="modal-qty-row">
-              <span class="modal-qty-icon">◈</span>
+              <span class="modal-qty-icon"><i class="bi bi-layers"></i></span>
               <span class="modal-qty-num">{{ cardCount(selectedCard) }}</span>
             </span>
             <button class="modal-qty-btn modal-qty-inc"

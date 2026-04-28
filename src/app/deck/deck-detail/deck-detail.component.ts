@@ -1702,6 +1702,125 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return this.gameChangerCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
   }
 
+  /** Cards that grant an extra turn. */
+  extraTurnCards(deck: DeckDetailDto): CollectionCardDto[] {
+    return deck.cards.filter(c => /takes? an extra turn/i.test(c.cardDetails?.oracleText ?? ''));
+  }
+
+  /** Cards that destroy or exile all (or all nonbasic) lands. */
+  mldCards(deck: DeckDetailDto): CollectionCardDto[] {
+    return deck.cards.filter(c => {
+      const text = c.cardDetails?.oracleText ?? '';
+      return /destroy all (?:nonbasic )?lands/i.test(text)
+          || /exile all (?:\w+, )*lands/i.test(text)
+          || /destroy all permanents/i.test(text)
+          || /exile all permanents/i.test(text);
+    });
+  }
+
+  /** True if the deck can chain extra turns (2+ extra-turn spells, or 1 + graveyard recursion). */
+  hasChainingExtraTurns(deck: DeckDetailDto): boolean {
+    const etCards = this.extraTurnCards(deck);
+    if (etCards.length === 0) return false;
+    if (etCards.length >= 2) return true;
+    return deck.cards.some(c => {
+      const text = c.cardDetails?.oracleText ?? '';
+      return /return target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
+          || /cast target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
+          || /you may cast (?:a card|target (?:instant or sorcery|instant|sorcery)) from your graveyard/i.test(text);
+    });
+  }
+
+  /** Estimated Commander Bracket (1–4). Bracket 5 is intent-based and not computed. */
+  commanderBracket(deck: DeckDetailDto): number {
+    const gcCount = this.gameChangerCards(deck).length;
+    const mld     = this.mldCards(deck).length > 0;
+    const chain   = this.hasChainingExtraTurns(deck);
+    if (gcCount > 3 || mld || chain) return 4;
+    if (gcCount > 0) return 3;
+    if (this.extraTurnCards(deck).length > 0) return 2;
+    return 1;
+  }
+
+  commanderBracketTooltip(deck: DeckDetailDto): string {
+    const reasons: string[] = [];
+    const gcCount = this.gameChangerCards(deck).length;
+    if (gcCount > 0) reasons.push(`${gcCount} Game Changer${gcCount > 1 ? 's' : ''}: ${this.gameChangerNames(deck)}`);
+    const mld = this.mldCards(deck);
+    if (mld.length > 0) reasons.push(`MLD: ${mld.map(c => c.cardDetails?.name ?? '').join(', ')}`);
+    const et = this.extraTurnCards(deck);
+    if (et.length > 0) {
+      const label = this.hasChainingExtraTurns(deck) ? 'Chaining extra turns' : 'Extra turn';
+      reasons.push(`${label}: ${et.map(c => c.cardDetails?.name ?? '').join(', ')}`);
+    }
+    return reasons.length ? reasons.join(' | ') : 'No power-level flags detected';
+  }
+
+  mldCardNames(deck: DeckDetailDto): string {
+    return this.mldCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+  }
+
+  extraTurnCardNames(deck: DeckDetailDto): string {
+    return this.extraTurnCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+  }
+
+  bracketInfoOpen = false;
+
+  toggleBracketInfo(e: MouseEvent): void {
+    e.stopPropagation();
+    this.violationPanelType = null;
+    this.bracketInfoOpen = !this.bracketInfoOpen;
+  }
+
+  closeBracketInfo(): void { this.bracketInfoOpen = false; }
+
+  // ---- Violation detail panel ------------------------------------
+
+  violationPanelType: 'banned' | 'singleton' | 'color-id' | null = null;
+
+  openViolationPanel(type: 'banned' | 'singleton' | 'color-id', e: MouseEvent): void {
+    e.stopPropagation();
+    this.bracketInfoOpen = false;
+    this.violationPanelType = this.violationPanelType === type ? null : type;
+  }
+
+  closeViolationPanel(): void { this.violationPanelType = null; }
+
+  violationPanelCards(deck: DeckDetailDto): CollectionCardDto[] {
+    switch (this.violationPanelType) {
+      case 'banned':    return this.bannedInCommander(deck);
+      case 'singleton': return this.singletonViolations(deck);
+      case 'color-id':  return this.colorIdentityViolations(deck);
+      default: return [];
+    }
+  }
+
+  violationPanelTitle(): string {
+    switch (this.violationPanelType) {
+      case 'banned':    return 'Banned Cards';
+      case 'singleton': return 'Singleton Violations';
+      case 'color-id':  return 'Color Identity Violations';
+      default: return '';
+    }
+  }
+
+  colorIdViolationColors(card: CollectionCardDto, deck: DeckDetailDto): string {
+    const cmdr = this.commanderCard(deck);
+    if (!cmdr?.cardDetails) return '';
+    const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
+    return (card.cardDetails?.colorIdentity ?? [])
+      .filter(col => !allowed.has(col))
+      .join('');
+  }
+
+  cardTypeLine(card: CollectionCardDto): string {
+    return card.cardDetails ? buildTypeLine(card.cardDetails) : '';
+  }
+
+  removeViolatingCard(card: CollectionCardDto): void {
+    this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
+  }
+
   /** Non-basic cards with more than one total copy — violates singleton.
    *  Counts across all records sharing the same oracleId (different printings
    *  of the same card each contribute their quantity). */

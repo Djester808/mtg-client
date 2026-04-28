@@ -2512,3 +2512,300 @@ describe('DeckDetailComponent — cardViolationClass game changer', () => {
     expect(component.cardViolationClass(card, deck)).toBe('');
   });
 });
+
+// ── extraTurnCards ────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — extraTurnCards', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns cards whose oracle text contains "take an extra turn"', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const norm = makeDeckCard({ id: 'norm', cardDetails: makeCard({ oracleText: 'Draw two cards.' }) });
+    const result = component.extraTurnCards(makeDeck([et, norm]));
+    expect(result).toHaveSize(1);
+    expect(result[0].id).toBe('et');
+  });
+
+  it('is case-insensitive', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'You Take An Extra Turn after this one.' }) });
+    expect(component.extraTurnCards(makeDeck([et]))).toHaveSize(1);
+  });
+
+  it('returns empty when no extra-turn cards present', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Deal 3 damage to any target.' }) });
+    expect(component.extraTurnCards(makeDeck([card]))).toHaveSize(0);
+  });
+
+  it('returns empty for a card with no cardDetails', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ id: 'c1', cardDetails: null });
+    expect(component.extraTurnCards(makeDeck([card]))).toHaveSize(0);
+  });
+});
+
+// ── mldCards ──────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — mldCards', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('detects "Destroy all lands."', async () => {
+    const { component } = await setup();
+    const mld = makeDeckCard({ id: 'arm', cardDetails: makeCard({ oracleText: 'Destroy all lands.' }) });
+    expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
+  });
+
+  it('detects "Destroy all nonbasic lands."', async () => {
+    const { component } = await setup();
+    const mld = makeDeckCard({ id: 'ruin', cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }) });
+    expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
+  });
+
+  it('detects "Destroy all permanents."', async () => {
+    const { component } = await setup();
+    const mld = makeDeckCard({ id: 'oblit', cardDetails: makeCard({ oracleText: "Can't be countered. Destroy all permanents." }) });
+    expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
+  });
+
+  it('detects "Exile all permanents."', async () => {
+    const { component } = await setup();
+    const mld = makeDeckCard({ id: 'decree', cardDetails: makeCard({ oracleText: 'Exile all permanents. Players discard their hands.' }) });
+    expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
+  });
+
+  it('does not flag targeted single-land destruction', async () => {
+    const { component } = await setup();
+    const strip = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Destroy target land.' }) });
+    expect(component.mldCards(makeDeck([strip]))).toHaveSize(0);
+  });
+
+  it('returns empty for a clean deck', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Draw two cards.' }) });
+    expect(component.mldCards(makeDeck([card]))).toHaveSize(0);
+  });
+});
+
+// ── hasChainingExtraTurns ─────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — hasChainingExtraTurns', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns false for a deck with no extra-turn cards', async () => {
+    const { component } = await setup();
+    expect(component.hasChainingExtraTurns(makeDeck([]))).toBeFalse();
+  });
+
+  it('returns false for a single extra-turn card with no recursion', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const norm = makeDeckCard({ id: 'n', cardDetails: makeCard({ oracleText: 'Tap: add one mana.' }) });
+    expect(component.hasChainingExtraTurns(makeDeck([et, norm]))).toBeFalse();
+  });
+
+  it('returns true when there are 2 extra-turn cards', async () => {
+    const { component } = await setup();
+    const et1 = makeDeckCard({ id: 'et1', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const et2 = makeDeckCard({ id: 'et2', cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }) });
+    expect(component.hasChainingExtraTurns(makeDeck([et1, et2]))).toBeTrue();
+  });
+
+  it('returns true when 1 extra-turn card is paired with generic graveyard recursion', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const witness = makeDeckCard({ id: 'ew', cardDetails: makeCard({ oracleText: 'Return target card from your graveyard to your hand.' }) });
+    expect(component.hasChainingExtraTurns(makeDeck([et, witness]))).toBeTrue();
+  });
+
+  it('returns true when 1 extra-turn card is paired with instant/sorcery recursion', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const arch = makeDeckCard({ id: 'arch', cardDetails: makeCard({ oracleText: 'Return target instant or sorcery card from your graveyard to your hand.' }) });
+    expect(component.hasChainingExtraTurns(makeDeck([et, arch]))).toBeTrue();
+  });
+
+  it('returns true when 1 extra-turn card is paired with cast-from-graveyard effect', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const snap = makeDeckCard({ id: 'snap', cardDetails: makeCard({ oracleText: 'You may cast target instant or sorcery card from your graveyard.' }) });
+    expect(component.hasChainingExtraTurns(makeDeck([et, snap]))).toBeTrue();
+  });
+});
+
+// ── commanderBracket ──────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — commanderBracket', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns 1 for a clean deck with no flags', async () => {
+    const { component } = await setup();
+    const card = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Draw two cards.' }) });
+    expect(component.commanderBracket(makeDeck([card]))).toBe(1);
+  });
+
+  it('returns 2 for a deck with a single extra-turn card and no recursion', async () => {
+    const { component } = await setup();
+    const et = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    expect(component.commanderBracket(makeDeck([et]))).toBe(2);
+  });
+
+  it('returns 3 for a deck with 1 game changer', async () => {
+    const { component } = await setup();
+    const gc = makeDeckCard({ cardDetails: makeCard({ gameChanger: true }) });
+    expect(component.commanderBracket(makeDeck([gc]))).toBe(3);
+  });
+
+  it('returns 3 for a deck with exactly 3 game changers', async () => {
+    const { component } = await setup();
+    const cards = Array.from({ length: 3 }, (_, i) =>
+      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) })
+    );
+    expect(component.commanderBracket(makeDeck(cards))).toBe(3);
+  });
+
+  it('returns 4 for a deck with 4 game changers', async () => {
+    const { component } = await setup();
+    const cards = Array.from({ length: 4 }, (_, i) =>
+      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) })
+    );
+    expect(component.commanderBracket(makeDeck(cards))).toBe(4);
+  });
+
+  it('returns 4 when MLD is present regardless of GC count', async () => {
+    const { component } = await setup();
+    const mld = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Destroy all lands.' }) });
+    expect(component.commanderBracket(makeDeck([mld]))).toBe(4);
+  });
+
+  it('returns 4 when extra turns chain', async () => {
+    const { component } = await setup();
+    const et1 = makeDeckCard({ id: 'et1', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const et2 = makeDeckCard({ id: 'et2', cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }) });
+    expect(component.commanderBracket(makeDeck([et1, et2]))).toBe(4);
+  });
+
+  it('returns 4 when MLD is present alongside game changers', async () => {
+    const { component } = await setup();
+    const gc = makeDeckCard({ id: 'gc', cardDetails: makeCard({ gameChanger: true }) });
+    const mld = makeDeckCard({ id: 'mld', cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }) });
+    expect(component.commanderBracket(makeDeck([gc, mld]))).toBe(4);
+  });
+});
+
+// ── Violation panel ───────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — violation panel', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('violationPanelTitle returns "Banned Cards" for banned', async () => {
+    const { component } = await setup();
+    component.violationPanelType = 'banned';
+    expect(component.violationPanelTitle()).toBe('Banned Cards');
+  });
+
+  it('violationPanelTitle returns "Singleton Violations" for singleton', async () => {
+    const { component } = await setup();
+    component.violationPanelType = 'singleton';
+    expect(component.violationPanelTitle()).toBe('Singleton Violations');
+  });
+
+  it('violationPanelTitle returns "Color Identity Violations" for color-id', async () => {
+    const { component } = await setup();
+    component.violationPanelType = 'color-id';
+    expect(component.violationPanelTitle()).toBe('Color Identity Violations');
+  });
+
+  it('violationPanelCards returns banned cards', async () => {
+    const { component } = await setup();
+    const banned = makeDeckCard({ id: 'b', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const ok = makeDeckCard({ id: 'ok', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    component.violationPanelType = 'banned';
+    const result = component.violationPanelCards({ ...makeDeck([banned, ok]), format: 'commander' });
+    expect(result).toHaveSize(1);
+    expect(result[0].id).toBe('b');
+  });
+
+  it('violationPanelCards returns singleton violators', async () => {
+    const { component } = await setup();
+    const d1 = makeDeckCard({ id: 'd1', oracleId: 'dup', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
+    const d2 = makeDeckCard({ id: 'd2', oracleId: 'dup', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    component.violationPanelType = 'singleton';
+    const result = component.violationPanelCards({ ...makeDeck([d1, d2]), format: 'commander' });
+    expect(result.map(c => c.id)).toContain('d1');
+    expect(result.map(c => c.id)).toContain('d2');
+  });
+
+  it('violationPanelCards returns color-id violators', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    component.violationPanelType = 'color-id';
+    const result = component.violationPanelCards({ ...makeDeck([cmdr, bad]), format: 'commander', commanderOracleId: 'cmdr-o' });
+    expect(result.map(c => c.id)).toContain('bad');
+    expect(result.map(c => c.id)).not.toContain('cmdr');
+  });
+
+  it('violationPanelCards returns empty when type is null', async () => {
+    const { component } = await setup();
+    component.violationPanelType = null;
+    expect(component.violationPanelCards(makeDeck([]))).toHaveSize(0);
+  });
+
+  it('openViolationPanel sets type and closes bracket panel', async () => {
+    const { component } = await setup();
+    component.bracketInfoOpen = true;
+    component.openViolationPanel('banned', new MouseEvent('click'));
+    expect(component.violationPanelType).toBe('banned');
+    expect(component.bracketInfoOpen).toBeFalse();
+  });
+
+  it('openViolationPanel toggles off when same type clicked again', async () => {
+    const { component } = await setup();
+    component.openViolationPanel('singleton', new MouseEvent('click'));
+    component.openViolationPanel('singleton', new MouseEvent('click'));
+    expect(component.violationPanelType).toBeNull();
+  });
+
+  it('openViolationPanel switches type when a different type is clicked', async () => {
+    const { component } = await setup();
+    component.openViolationPanel('singleton', new MouseEvent('click'));
+    component.openViolationPanel('banned', new MouseEvent('click'));
+    expect(component.violationPanelType).toBe('banned');
+  });
+
+  it('closeViolationPanel sets type to null', async () => {
+    const { component } = await setup();
+    component.violationPanelType = 'banned';
+    component.closeViolationPanel();
+    expect(component.violationPanelType).toBeNull();
+  });
+
+  it('removeViolatingCard dispatches DeckActions.removeCard', async () => {
+    const { component, store } = await setup();
+    const card = makeDeckCard({ id: 'bad-card' });
+    component.removeViolatingCard(card);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'bad-card' })
+    );
+  });
+
+  it('colorIdViolationColors returns only illegal colors', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }) });
+    const deck = { ...makeDeck([cmdr, bad]), commanderOracleId: 'cmdr-o' };
+    const result = component.colorIdViolationColors(bad, deck);
+    expect(result).toContain(ManaColor.Red);
+    expect(result).not.toContain(ManaColor.White);
+  });
+
+  it('colorIdViolationColors returns empty string when commander has no cardDetails', async () => {
+    const { component } = await setup();
+    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: null });
+    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const deck = { ...makeDeck([cmdr, bad]), commanderOracleId: 'cmdr-o' };
+    expect(component.colorIdViolationColors(bad, deck)).toBe('');
+  });
+});
