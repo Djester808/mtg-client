@@ -42,3 +42,7 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# E2E tests
+e2e/.env
+e2e/node_modules/

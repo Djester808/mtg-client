@@ -1,0 +1,17 @@
+{
+  "name": "mtg-client-e2e",
+  "version": "1.0.0",
+  "description": "Selenium regression tests for MTG client",
+  "private": true,
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:auth": "jest --runInBand tests/auth.test.js",
+    "test:decks": "jest --runInBand tests/deck-list.test.js tests/deck-detail.test.js",
+    "test:collection": "jest --runInBand tests/collection.test.js"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "jest": "^29.7.0",
+    "selenium-webdriver": "^4.27.0"
+  }
+}
