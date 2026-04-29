@@ -1,7 +1,12 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component, Input, Output, EventEmitter, OnChanges, OnInit, OnDestroy,
+  SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CollectionCardDto, CardType } from '../../models/game.models';
-import { DeckDetailDto } from '../../services/deck-api.service';
+import { DeckDetailDto, DeckApiService, ManaFineTuneDto } from '../../services/deck-api.service';
 
 type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 
@@ -20,6 +25,7 @@ export interface ManaAnalysis {
   colorSources: ColorSource[];
   tips: string[];
   isEmpty: boolean;
+  landReason: string;
 }
 
 function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
@@ -32,7 +38,6 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
     while ((m = re.exec(manaCost)) !== null) {
       const sym = m[1].toUpperCase();
       if (sym.includes('/')) {
-        // Hybrid pip: count each colored side as 1/n so total = 1 pip
         const parts = sym.split('/').filter(p => colors.has(p));
         if (parts.length > 0) {
           for (const p of parts)
@@ -43,7 +48,6 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
       }
     }
   } else {
-    // Plain format: "2WW", "WUBRGC"
     for (const ch of manaCost.toUpperCase()) {
       if (colors.has(ch))
         counts[ch as ManaColor] = (counts[ch as ManaColor] ?? 0) + 1;
@@ -60,7 +64,7 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
   styleUrls: ['./mana-suggest-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManaSuggestPanelComponent {
+export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   @Input() deck: DeckDetailDto | null = null;
   @Output() panelClose = new EventEmitter<void>();
 
@@ -69,6 +73,64 @@ export class ManaSuggestPanelComponent {
   };
 
   private readonly ALL_COLORS: ManaColor[] = ['W', 'U', 'B', 'R', 'G'];
+
+  fineTuneState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
+  fineTuneResult: ManaFineTuneDto | null = null;
+
+  private readonly deckChange$ = new Subject<DeckDetailDto>();
+  private sub!: Subscription;
+
+  constructor(private deckApi: DeckApiService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
+    this.sub = this.deckChange$.pipe(
+      debounceTime(1200),
+      distinctUntilChanged((a, b) => this.deckKey(a) === this.deckKey(b)),
+      switchMap(deck => {
+        const a = this.compute(deck);
+        if (a.isEmpty) return [];
+
+        this.fineTuneState = 'loading';
+        this.fineTuneResult = null;
+        this.cdr.markForCheck();
+
+        return this.deckApi.getManaFineTune({
+          format:           deck.format ?? '',
+          deckCardNames:    deck.cards.map(c => c.cardDetails?.name ?? '').filter(Boolean),
+          currentLands:     a.currentLands,
+          recommendedLands: a.recommendedLands,
+          avgCmc:           a.avgCmc,
+          activeColors:     a.colorSources.map(cs => cs.color),
+        });
+      }),
+    ).subscribe({
+      next: result => {
+        this.fineTuneResult = result;
+        this.fineTuneState  = 'done';
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.fineTuneState = 'error';
+        this.cdr.markForCheck();
+      },
+    });
+
+    // ngOnChanges fires before ngOnInit, so the initial deck push was emitted
+    // before the subscription above existed. Re-push it now.
+    if (this.deck) {
+      this.deckChange$.next(this.deck);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['deck'] && this.deck) {
+      this.deckChange$.next(this.deck);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
 
   get analysis(): ManaAnalysis {
     return this.deck ? this.compute(this.deck) : this.empty();
@@ -92,8 +154,13 @@ export class ManaSuggestPanelComponent {
 
   close(): void { this.panelClose.emit(); }
 
+  private deckKey(deck: DeckDetailDto): string {
+    return deck.cards.map(c => `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil}`).sort().join('|')
+      + '|' + (deck.format ?? '');
+  }
+
   private empty(): ManaAnalysis {
-    return { currentLands: 0, recommendedLands: 0, landDelta: 0, avgCmc: 0, colorSources: [], tips: [], isEmpty: true };
+    return { currentLands: 0, recommendedLands: 0, landDelta: 0, avgCmc: 0, colorSources: [], tips: [], isEmpty: true, landReason: '' };
   }
 
   private compute(deck: DeckDetailDto): ManaAnalysis {
@@ -107,12 +174,10 @@ export class ManaSuggestPanelComponent {
 
     if (totalNL === 0 && currentLands === 0) return this.empty();
 
-    // Avg CMC (non-lands only)
     const avgCmc = totalNL > 0
       ? nonLands.reduce((s, c) => s + (c.cardDetails?.manaValue ?? 0) * qty(c), 0) / totalNL
       : 0;
 
-    // Aggregate colored pip counts weighted by quantity
     const totalPips: Record<ManaColor, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
     for (const card of nonLands) {
       const cost = card.cardDetails?.manaCost ?? '';
@@ -125,15 +190,20 @@ export class ManaSuggestPanelComponent {
     const totalColoredPips = this.ALL_COLORS.reduce((s, c) => s + totalPips[c], 0);
     const activeColors     = this.ALL_COLORS.filter(c => totalPips[c] > 0);
 
-    // Recommended land count based on format and avg CMC
     const isLargeFormat = ['commander', 'brawl', 'oathbreaker'].includes(deck.format ?? '');
+    const formatLabel = isLargeFormat ? 'Commander base: 36' : 'Standard base: 24';
     let recommended = isLargeFormat ? 36 : 24;
-    if      (avgCmc < 2.0)  recommended -= 2;
-    else if (avgCmc < 2.5)  recommended -= 1;
-    else if (avgCmc >= 4.0) recommended += 2;
-    else if (avgCmc >= 3.5) recommended += 1;
+    let cmcAdjust = 0;
+    if      (avgCmc < 2.0)  { recommended -= 2; cmcAdjust = -2; }
+    else if (avgCmc < 2.5)  { recommended -= 1; cmcAdjust = -1; }
+    else if (avgCmc >= 4.0) { recommended += 2; cmcAdjust = +2; }
+    else if (avgCmc >= 3.5) { recommended += 1; cmcAdjust = +1; }
 
-    // Colored source targets: ~88% of recommended lands should be colored
+    const cmcPart = cmcAdjust !== 0
+      ? `${cmcAdjust > 0 ? '+' : ''}${cmcAdjust} for ${cmcAdjust > 0 ? 'high' : 'low'} curve (${avgCmc.toFixed(1)} avg CMC)`
+      : `no adjustment (${avgCmc.toFixed(1)} avg CMC)`;
+    const landReason = `${formatLabel} lands, ${cmcPart}`;
+
     const coloredSlots = activeColors.length > 0 ? Math.round(recommended * 0.88) : 0;
     const colorSources: ColorSource[] = activeColors
       .map(color => ({
@@ -144,7 +214,6 @@ export class ManaSuggestPanelComponent {
       }))
       .sort((a, b) => b.pips - a.pips);
 
-    // Tips
     const tips: string[] = [];
     if (avgCmc >= 4.0)
       tips.push(`High curve (avg ${avgCmc.toFixed(1)} CMC) — target ${recommended} lands and 10–12 ramp pieces.`);
@@ -163,7 +232,7 @@ export class ManaSuggestPanelComponent {
 
     return {
       currentLands, recommendedLands: recommended, landDelta: recommended - currentLands,
-      avgCmc, colorSources, tips, isEmpty: false,
+      avgCmc, colorSources, tips, isEmpty: false, landReason,
     };
   }
 }

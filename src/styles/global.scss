@@ -2,6 +2,9 @@
 // MTG ENGINE — Global Styles
 // ============================================================
 
+@tailwind components;
+@tailwind utilities;
+
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
 
 // ---- Design Tokens ----------------------------------------
@@ -142,6 +145,50 @@ a.kw-link {
 body.is-dragging-card,
 body.is-dragging-card * {
   cursor: grabbing !important;
+}
+
+// ---- Shared component patterns ----------------------------
+// (hover:not(:disabled) and ::placeholder can't be expressed as pure utilities)
+@layer components {
+  .btn-gold {
+    width: 100%;
+    padding: 14px;
+    background: var(--gold);
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #0e0c08;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: #dbb954;
+      box-shadow: 0 4px 24px rgba(201, 168, 76, 0.35);
+      transform: translateY(-1px);
+    }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .field-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-void);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+
+    &::placeholder { color: var(--text-dim); }
+    &:focus { border-color: var(--gold); }
+  }
 }
 
 // ---- Animations -------------------------------------------

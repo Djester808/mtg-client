@@ -1,14 +1,15 @@
 <div class="cp-overlay" (click)="overlayClick($event)">
   <div class="cp-modal">
-    <div class="cp-header">
-      <h2>Set Cover Image</h2>
-      <button class="cp-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    <div class="cp-header flex items-center justify-between pt-5 px-6">
+      <h2 class="font-display text-[16px] font-bold tracking-[0.1em] uppercase text-parchment m-0">Set Cover Image</h2>
+      <button class="cp-close bg-transparent border-none text-parchment-faint cursor-pointer text-[16px] py-1 px-1.5 rounded transition-colors duration-200 hover:text-parchment"
+              (click)="close()"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <div class="cp-search">
-      <span class="cp-search-icon"><i class="bi bi-search"></i></span>
+    <div class="cp-search-wrap relative flex items-center px-6 pt-3.5 pb-2.5">
+      <span class="cp-search-icon absolute left-[38px] text-parchment-faint text-[18px] pointer-events-none"><i class="bi bi-search"></i></span>
       <input
-        class="cp-search-input"
+        class="cp-search-input w-full bg-raised border border-solid border-subtle rounded-lg text-parchment font-body text-[14px] py-[9px] pl-9 pr-3.5 outline-none transition-[border-color] duration-200"
         type="text"
         [(ngModel)]="searchText"
         (input)="onInput()"
@@ -17,12 +18,12 @@
       />
     </div>
 
-    <div class="cp-body">
-      <div class="cp-hint" *ngIf="!searched && !loading">Type a card name to search.</div>
-      <div class="cp-loading" *ngIf="loading">Searching…</div>
-      <div class="cp-empty" *ngIf="searched && !loading && results.length === 0">No results found.</div>
+    <div class="cp-body flex-1 overflow-y-auto px-6 pb-6 pt-1 min-h-0">
+      <div class="font-body text-[13px] text-parchment-faint text-center py-10 italic" *ngIf="!searched && !loading">Type a card name to search.</div>
+      <div class="cp-loading font-display text-[11px] font-bold tracking-[0.12em] uppercase text-parchment-faint text-center py-10" *ngIf="loading">Searching…</div>
+      <div class="font-body text-[13px] text-parchment-faint text-center py-10 italic" *ngIf="searched && !loading && results.length === 0">No results found.</div>
 
-      <div class="cp-grid" *ngIf="results.length > 0">
+      <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr))" *ngIf="results.length > 0">
         <div
           class="cp-thumb"
           *ngFor="let card of results"
@@ -30,13 +31,11 @@
           (click)="selectCard(card)"
           [title]="card.name"
         >
-          <img
-            *ngIf="cardImageUri(card)"
-            [src]="cardImageUri(card)"
-            [alt]="card.name"
-          />
-          <div class="cp-no-img" *ngIf="!cardImageUri(card)"><i class="bi bi-image"></i></div>
-          <div class="cp-check" *ngIf="isSelected(card)"><i class="bi bi-check-lg"></i></div>
+          <img *ngIf="cardImageUri(card)" [src]="cardImageUri(card)" [alt]="card.name" />
+          <div class="w-full aspect-[5/7] flex items-center justify-center bg-raised rounded-[6px] text-[28px] text-parchment-faint opacity-30"
+               *ngIf="!cardImageUri(card)"><i class="bi bi-image"></i></div>
+          <div class="absolute top-1 right-1 bg-[#a78bfa] text-white text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center"
+               *ngIf="isSelected(card)"><i class="bi bi-check-lg"></i></div>
         </div>
       </div>
     </div>

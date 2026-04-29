@@ -6,8 +6,6 @@
   background: var(--bg-surface);
 }
 
-// ---- Header -------------------------------------------------------
-
 .mana-header {
   display: flex;
   align-items: center;
@@ -18,85 +16,55 @@
 }
 
 .mana-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  i { color: #60a5fa; }
 }
 
 .mana-close {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--text-dim);
   cursor: pointer;
-  padding: 4px;
-  font-size: 14px;
+  padding: 4px 6px;
   border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-dim);
+  transition: color 0.15s, background 0.15s;
   &:hover { color: var(--text-primary); background: var(--bg-raised); }
 }
-
-// ---- Body ---------------------------------------------------------
 
 .mana-body {
   flex: 1;
   overflow-y: auto;
   padding: 4px 0 16px;
-  scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 }
 
-// ---- Empty state --------------------------------------------------
-
-.mana-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 48px 24px;
-  text-align: center;
-
-  i {
-    font-size: 32px;
-    color: #60a5fa;
-    opacity: 0.6;
-  }
-
-  p {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    max-width: 240px;
-  }
-}
-
-// ---- Section ------------------------------------------------------
-
 .mana-section {
   padding: 14px 16px 12px;
   border-bottom: 1px solid var(--border-subtle);
-
   &:last-child { border-bottom: none; }
-  &--meta { padding-top: 10px; padding-bottom: 10px; }
+
+  // First child = section label div (no class name)
+  > div:first-child:not(.mana-land-row):not(.mana-color-row):not(.mana-tip):not(.mana-meta-row):not(.mana-land-delta) {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
 }
 
-.mana-section-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 12px;
-}
-
-// ---- Land count ---------------------------------------------------
+// ── Land count ───────────────────────────────────────────────
 
 .mana-land-row {
   display: flex;
@@ -104,13 +72,13 @@
   justify-content: center;
   gap: 20px;
   margin-bottom: 12px;
-}
 
-.mana-land-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
+  > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
 }
 
 .mana-land-num {
@@ -119,20 +87,17 @@
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
-
-  &--target { color: #60a5fa; }
 }
 
-.mana-land-sub {
-  font-size: 10px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
+.mana-land-num--target { color: #60a5fa; }
 
-.mana-arrow {
-  font-size: 20px;
+.mana-land-reason {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
 }
 
 .mana-land-delta {
@@ -150,7 +115,7 @@
   &.delta--high { background: rgba(96, 165, 250, 0.12);  color: #60a5fa; }
 }
 
-// ---- Color sources ------------------------------------------------
+// ── Color sources ────────────────────────────────────────────
 
 .mana-color-row {
   display: flex;
@@ -158,26 +123,19 @@
   gap: 8px;
   margin-bottom: 9px;
 
-  i.ms {
-    font-size: 16px;
-    flex-shrink: 0;
-    width: 18px;
+  > div {  // bar track
+    flex: 1;
+    height: 8px;
+    background: var(--bg-raised);
+    border-radius: 4px;
+    overflow: hidden;
   }
-}
-
-.mana-color-bar-track {
-  flex: 1;
-  height: 8px;
-  background: var(--bg-card);
-  border-radius: 4px;
-  overflow: hidden;
 }
 
 .mana-color-bar {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.35s ease;
-
+  transition: width 350ms ease-out;
   &--w { background: #e8dfc4; }
   &--u { background: #3b82f6; }
   &--b { background: #a855f7; }
@@ -196,7 +154,6 @@
 .mana-color-rec {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
   width: 44px;
   text-align: right;
   flex-shrink: 0;
@@ -209,7 +166,7 @@
   line-height: 1.4;
 }
 
-// ---- Tips ---------------------------------------------------------
+// ── Tips ─────────────────────────────────────────────────────
 
 .mana-tip {
   display: flex;
@@ -219,18 +176,10 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--text-secondary);
-
   &:last-child { margin-bottom: 0; }
-
-  i {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: #facc15;
-    font-size: 13px;
-  }
 }
 
-// ---- Meta ---------------------------------------------------------
+// ── Avg CMC ──────────────────────────────────────────────────
 
 .mana-meta-row {
   display: flex;
@@ -238,13 +187,83 @@
   align-items: center;
 }
 
-.mana-meta-label {
-  font-size: 12px;
+.mana-meta-label { font-size: 12px; color: var(--text-dim); }
+.mana-meta-val   { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+
+// ── AI Insight (auto) ────────────────────────────────────────
+
+.mana-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-dim);
+  margin-bottom: 10px;
 }
 
-.mana-meta-val {
-  font-size: 13px;
+.mana-spin {
+  display: inline-block;
+  animation: mana-rotate 0.8s linear infinite;
+}
+
+@keyframes mana-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.mana-skeleton {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--bg-raised);
+  margin-bottom: 7px;
+  width: 100%;
+  animation: mana-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mana-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.7; }
+}
+
+.mana-ai-error {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.mana-finetune-sublabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.mana-finetune-lands {
+  margin-top: 12px;
+}
+
+.mana-land-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+  &:last-child { margin-bottom: 0; }
+}
+
+.mana-land-suggestion-name {
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.mana-land-suggestion-reason {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
 }

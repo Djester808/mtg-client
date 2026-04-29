@@ -1,22 +1,6 @@
 :host { display: block; height: 100%; }
 
-.lobby-shell {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: var(--bg-void);
-  overflow: hidden;
-}
-
 // ---- Animated background orbs ----------------------------
-
-.lobby-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
 
 .bg-orb {
   position: absolute;
@@ -30,7 +14,6 @@
   width: 500px; height: 500px;
   background: radial-gradient(circle, #c9a84c, transparent 70%);
   top: -100px; left: -100px;
-  animation-delay: 0s;
 }
 
 .orb-2 {
@@ -66,7 +49,6 @@
   box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.08);
   animation: scale-in 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
 
-  // Top gold line
   &::before {
     content: '';
     position: absolute;
@@ -78,70 +60,9 @@
   }
 }
 
-// ---- Header ----------------------------------------------
+// ---- Lobby field (different padding/font from global field-input) ---------
 
-.lobby-header {
-  text-align: center;
-  margin-bottom: 36px;
-}
-
-.logo-mark {
-  font-size: 28px;
-  color: var(--gold);
-  line-height: 1;
-  margin-bottom: 10px;
-  display: block;
-  animation: pulse-gold 3s ease-in-out infinite;
-}
-
-.lobby-title {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  margin: 0 0 6px;
-}
-
-.lobby-subtitle {
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  font-family: var(--font-display);
-}
-
-// ---- Form ------------------------------------------------
-
-.lobby-form {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.field-label {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-}
-
-.field-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-}
-
-.field {
-  flex: 1;
-  position: relative;
-}
-
-.field-input {
+.lobby-field {
   width: 100%;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -161,23 +82,7 @@
   }
 }
 
-.vs-divider {
-  font-family: var(--font-display);
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  color: var(--text-dim);
-  padding-bottom: 10px;
-  flex-shrink: 0;
-}
-
-// ---- Deck selector ---------------------------------------
-
-.deck-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 8px;
-}
+// ---- Deck preset grid ------------------------------------
 
 .deck-option {
   background: var(--bg-surface);
@@ -190,27 +95,17 @@
   gap: 10px;
   transition: all 0.15s;
 
-  &:hover {
-    border-color: var(--border-subtle);
-    background: var(--bg-raised);
-  }
-
+  &:hover { border-color: var(--border-subtle); background: var(--bg-raised); }
   &.selected {
     border-color: var(--gold-dim);
     background: rgba(201,168,76,0.05);
     box-shadow: 0 0 12px rgba(201,168,76,0.08);
   }
-}
-
-.deck-colors {
-  display: flex;
-  gap: 3px;
-  flex-shrink: 0;
+  &.selected span:last-child { color: var(--text-primary); }
 }
 
 .color-pip {
-  width: 18px;
-  height: 18px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -225,27 +120,6 @@
   &.pip-B { background: #2a1a3a; color: var(--mana-B); }
   &.pip-R { background: #3a1a1a; color: var(--mana-R); }
   &.pip-G { background: #1a3a1a; color: var(--mana-G); }
-}
-
-.deck-name {
-  font-family: var(--font-display);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-}
-
-.deck-option.selected .deck-name { color: var(--text-primary); }
-
-// ---- Error -----------------------------------------------
-
-.error-msg {
-  background: rgba(192, 57, 43, 0.1);
-  border: 1px solid rgba(192, 57, 43, 0.3);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
-  color: #e07060;
-  font-style: italic;
 }
 
 // ---- Start button ----------------------------------------
@@ -281,12 +155,10 @@
   }
 
   &:active:not(:disabled) { transform: translateY(0); }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
+
+// ---- Loading dots ----------------------------------------
 
 .loading-dots {
   display: inline-flex;
@@ -307,16 +179,4 @@
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
   40%           { transform: scale(1);   opacity: 1; }
-}
-
-// ---- Footer ----------------------------------------------
-
-.lobby-footer {
-  text-align: center;
-  margin-top: 28px;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  font-family: var(--font-display);
-  text-transform: uppercase;
 }

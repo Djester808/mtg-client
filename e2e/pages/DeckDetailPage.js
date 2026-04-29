@@ -88,6 +88,30 @@ class DeckDetailPage extends BasePage {
     `);
   }
 
+  async getManaSuggestFineTuneState() {
+    return this.driver.executeScript(`
+      try {
+        const el = document.querySelector('app-mana-suggest-panel');
+        if (!el) return null;
+        const comp = ng.getComponent(el);
+        if (!comp) return null;
+        return comp.fineTuneState;
+      } catch(e) { return 'error:' + e.message; }
+    `);
+  }
+
+  async getManaSuggestFineTuneResult() {
+    return this.driver.executeScript(`
+      try {
+        const el = document.querySelector('app-mana-suggest-panel');
+        if (!el) return null;
+        const comp = ng.getComponent(el);
+        if (!comp) return null;
+        return comp.fineTuneResult ? JSON.parse(JSON.stringify(comp.fineTuneResult)) : null;
+      } catch(e) { return 'error:' + e.message; }
+    `);
+  }
+
   async getDetailPanelState() {
     return this.driver.executeScript(`
       try {

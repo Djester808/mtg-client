@@ -7,27 +7,12 @@
 }
 
 .toast-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
+  @apply flex flex-col gap-1.5 items-end;
 }
 
 .toast {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-raised);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  cursor: pointer;
-  pointer-events: all;
-  white-space: nowrap;
-  max-width: 280px;
+  @apply flex items-center gap-2 py-2 px-3.5 rounded-lg border border-solid border-subtle bg-raised shadow-[0_4px_20px_rgba(0,0,0,0.5)] cursor-pointer pointer-events-auto whitespace-nowrap max-w-[280px];
 
-  &.info    { border-color: var(--border-subtle); }
   &.success { border-color: rgba(39,174,96,0.4);  background: rgba(39,174,96,0.06); }
   &.warn    { border-color: rgba(230,126,34,0.4); background: rgba(230,126,34,0.06); }
   &.damage  { border-color: rgba(231,76,60,0.4);  background: rgba(231,76,60,0.06); }
@@ -36,8 +21,7 @@
 }
 
 .toast-icon {
-  font-size: 11px;
-  flex-shrink: 0;
+  @apply text-[11px] shrink-0;
 
   .info    & { color: var(--text-secondary); }
   .success & { color: var(--mana-G); }
@@ -48,10 +32,5 @@
 }
 
 .toast-msg {
-  font-family: var(--font-display);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @apply font-display text-[11px] tracking-[0.06em] text-parchment-muted overflow-hidden text-ellipsis;
 }

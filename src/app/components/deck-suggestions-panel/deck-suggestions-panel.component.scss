@@ -46,7 +46,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: var(--bg-card);
+  background: var(--bg-raised);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -187,10 +187,6 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
 
 .sugg-error {
   padding: 20px 16px;
@@ -314,7 +310,7 @@
   width: 36px;
   height: 36px;
   border-radius: 4px;
-  background: var(--bg-card);
+  background: var(--bg-deep);
   display: flex;
   align-items: center;
   justify-content: center;

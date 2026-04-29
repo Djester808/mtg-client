@@ -1,12 +1,12 @@
-<div class="auth-shell">
-  <div class="auth-card">
-    <div class="auth-logo">&#9670;</div>
-    <h1 class="auth-title">Sign In</h1>
-    <p class="auth-sub">Welcome back to MTG Engine</p>
+<div class="flex items-center justify-center h-full bg-void">
+  <div class="w-full max-w-[400px] px-10 py-12 bg-surface border border-solid border-dim rounded-2xl animate-fade-up">
+    <div class="text-[28px] text-gold text-center mb-5 drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]">&#9670;</div>
+    <h1 class="font-display text-[28px] font-bold tracking-[0.1em] uppercase text-parchment text-center mb-2">Sign In</h1>
+    <p class="text-[13px] text-parchment-muted text-center mb-8">Welcome back to MTG Engine</p>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
-      <div class="field">
-        <label class="field-label" for="username">Email or Username</label>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form flex flex-col gap-5">
+      <div class="flex flex-col gap-1.5">
+        <label class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted" for="username">Email or Username</label>
         <input
           id="username"
           class="field-input"
@@ -17,8 +17,8 @@
         />
       </div>
 
-      <div class="field">
-        <label class="field-label" for="password">Password</label>
+      <div class="flex flex-col gap-1.5">
+        <label class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted" for="password">Password</label>
         <input
           id="password"
           class="field-input"
@@ -29,10 +29,10 @@
         />
       </div>
 
-      <p class="auth-error" *ngIf="error$ | async as error">{{ error }}</p>
+      <p class="auth-error text-[13px] text-[#e74c3c] text-center m-0" *ngIf="error$ | async as error">{{ error }}</p>
 
       <button
-        class="submit-btn"
+        class="btn-gold submit-btn mt-1"
         type="submit"
         [disabled]="(loading$ | async) || form.invalid"
       >
@@ -41,8 +41,8 @@
       </button>
     </form>
 
-    <p class="auth-link">
-      No account? <a routerLink="/register">Create one</a>
+    <p class="text-[13px] text-parchment-muted text-center mt-6">
+      No account? <a routerLink="/register" class="text-gold no-underline hover:underline">Create one</a>
     </p>
   </div>
 </div>

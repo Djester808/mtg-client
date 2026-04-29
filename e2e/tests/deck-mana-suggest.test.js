@@ -350,4 +350,150 @@ describe('Mana Suggest Panel', () => {
     const text = await note.getText();
     expect(text).toContain(String(analysis.recommendedLands));
   });
+
+  // ── AI Insight (auto) ─────────────────────────────────────────────────────────
+
+  test('AI Insight section is present when panel opens', async () => {
+    await page.openManaSuggestPanel();
+    const present = await page.isPresent(By.css('.mana-ai-header'), 3000);
+    expect(present).toBe(true);
+  });
+
+  test('AI Insight header contains "AI Insight" text', async () => {
+    await page.openManaSuggestPanel();
+    const header = await driver.findElement(By.css('.mana-ai-header'));
+    const text = await header.getText();
+    expect(text.toLowerCase()).toContain('ai insight');
+  });
+
+  test('loading skeleton appears while AI call is in flight', async () => {
+    await page.openManaSuggestPanel();
+    // The debounce is 1.2s — check for skeleton before it resolves
+    const skeletonPresent = await page.isPresent(By.css('.mana-skeleton'), 1500);
+    const state = await page.getManaSuggestFineTuneState();
+    // Skeleton should be visible while loading, or state already resolved fast
+    if (state === 'loading') {
+      expect(skeletonPresent).toBe(true);
+    } else {
+      // Already resolved — skeleton should be gone
+      expect(['done', 'error']).toContain(state);
+    }
+  });
+
+  test('fineTuneState starts as idle or loading when panel opens', async () => {
+    await page.openManaSuggestPanel();
+    // Check immediately — debounce hasn't fired yet
+    const state = await page.getManaSuggestFineTuneState();
+    expect(['idle', 'loading']).toContain(state);
+  });
+
+  test('fineTuneState transitions to done or error within 30s', async () => {
+    await page.openManaSuggestPanel();
+
+    await driver.wait(async () => {
+      const state = await page.getManaSuggestFineTuneState();
+      return state === 'done' || state === 'error';
+    }, 35000, 'fineTuneState never left "loading"');
+
+    const finalState = await page.getManaSuggestFineTuneState();
+    expect(['done', 'error']).toContain(finalState);
+  });
+
+  test('skeleton is gone after AI response settles', async () => {
+    await page.openManaSuggestPanel();
+
+    await driver.wait(async () => {
+      const state = await page.getManaSuggestFineTuneState();
+      return state === 'done' || state === 'error';
+    }, 35000, 'fineTuneState never settled');
+
+    const stillHasSkeleton = await page.isPresent(By.css('.mana-skeleton'), 500);
+    expect(stillHasSkeleton).toBe(false);
+  });
+
+  test('on success, advice tips or land suggestions are rendered in the DOM', async () => {
+    await page.openManaSuggestPanel();
+
+    await driver.wait(async () => {
+      const state = await page.getManaSuggestFineTuneState();
+      return state === 'done' || state === 'error';
+    }, 35000, 'fineTuneState never settled');
+
+    const state = await page.getManaSuggestFineTuneState();
+    if (state !== 'done') return; // AI unavailable in this environment — skip
+
+    const result = await page.getManaSuggestFineTuneResult();
+    expect(result).not.toBeNull();
+
+    const hasAdvice = result.advice && result.advice.length > 0;
+    const hasLands  = result.landSuggestions && result.landSuggestions.length > 0;
+    expect(hasAdvice || hasLands).toBe(true);
+
+    // Verify DOM reflects the result
+    if (hasAdvice) {
+      const tips = await driver.findElements(By.css('.mana-ai-header ~ * i.bi-stars'));
+      expect(tips.length).toBeGreaterThan(0);
+    }
+    if (hasLands) {
+      const suggestions = await driver.findElements(By.css('.mana-land-suggestion'));
+      expect(suggestions.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('on success, each land suggestion has a name and reason', async () => {
+    await page.openManaSuggestPanel();
+
+    await driver.wait(async () => {
+      const state = await page.getManaSuggestFineTuneState();
+      return state === 'done' || state === 'error';
+    }, 35000, 'fineTuneState never settled');
+
+    const state = await page.getManaSuggestFineTuneState();
+    if (state !== 'done') return;
+
+    const suggestions = await driver.findElements(By.css('.mana-land-suggestion'));
+    for (const s of suggestions) {
+      const nameEl   = await s.findElements(By.css('.mana-land-suggestion-name'));
+      const reasonEl = await s.findElements(By.css('.mana-land-suggestion-reason'));
+      expect(nameEl.length).toBe(1);
+      expect(reasonEl.length).toBe(1);
+      const name   = await nameEl[0].getText();
+      const reason = await reasonEl[0].getText();
+      expect(name.trim().length).toBeGreaterThan(0);
+      expect(reason.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  test('reopening panel resets fineTuneState to idle then loading', async () => {
+    // Wait for a settled state first
+    await page.openManaSuggestPanel();
+    await driver.wait(async () => {
+      const s = await page.getManaSuggestFineTuneState();
+      return s === 'done' || s === 'error';
+    }, 30000, 'fineTuneState never settled on first open');
+
+    // Close and reopen — *ngIf destroys and recreates the component
+    await page.closeManaSuggestPanel();
+    await page.openManaSuggestPanel();
+
+    // Component is fresh; debounce hasn't fired yet
+    const freshState = await page.getManaSuggestFineTuneState();
+    expect(['idle', 'loading']).toContain(freshState);
+  });
+
+  test('error state shows mana-ai-error element', async () => {
+    // This test only verifies DOM when state is error — it may be skipped
+    // if the real API is reachable.
+    await page.openManaSuggestPanel();
+    await driver.wait(async () => {
+      const s = await page.getManaSuggestFineTuneState();
+      return s === 'done' || s === 'error';
+    }, 35000, 'fineTuneState never settled');
+
+    const state = await page.getManaSuggestFineTuneState();
+    if (state !== 'error') return; // API reachable — skip
+
+    const errPresent = await page.isPresent(By.css('.mana-ai-error'), 1000);
+    expect(errPresent).toBe(true);
+  });
 });

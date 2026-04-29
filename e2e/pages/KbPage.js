@@ -19,6 +19,13 @@ class KbPage extends BasePage {
     this.groupLabels   = By.css('.group-label');
   }
 
+  // Override to use JS click — the decorative bg-grid overlay intercepts
+  // ChromeDriver's synthetic click even with pointer-events:none on the grid.
+  async click(locator) {
+    const el = await this.waitForVisible(locator);
+    await this.driver.executeScript('arguments[0].click()', el);
+  }
+
   async navigate() {
     await super.navigate('/kb');
   }
@@ -31,7 +38,7 @@ class KbPage extends BasePage {
   async clickFirstItem() {
     const items = await this.driver.findElements(this.sidebarItems);
     if (items.length === 0) throw new Error('No sidebar items');
-    await items[0].click();
+    await this.driver.executeScript('arguments[0].click()', items[0]);
     await this.driver.sleep(300);
   }
 
@@ -47,7 +54,8 @@ class KbPage extends BasePage {
   }
 
   async clearSearch() {
-    await this.click(this.searchClear);
+    const el = await this.waitForVisible(this.searchClear);
+    await this.driver.executeScript('arguments[0].click()', el);
     await this.driver.sleep(200);
   }
 }

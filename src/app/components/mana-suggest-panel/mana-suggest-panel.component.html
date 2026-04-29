@@ -1,71 +1,114 @@
-<div class="mana-header">
-  <span class="mana-title">
-    <i class="bi bi-droplet-half"></i> Mana Suggestions
+<div class="mana-header flex items-center justify-between px-4 pt-3.5 pb-3 border-b border-solid border-subtle shrink-0">
+  <span class="mana-title font-display text-[15px] font-semibold text-parchment flex items-center gap-[7px]">
+    <i class="bi bi-droplet-half text-[#60a5fa]"></i> Mana Suggestions
   </span>
-  <button class="mana-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+  <button class="mana-close bg-transparent border-none text-parchment-faint cursor-pointer p-1 text-[14px] rounded-[4px] hover:text-parchment hover:bg-raised"
+          (click)="close()"><i class="bi bi-x-lg"></i></button>
 </div>
 
-<div class="mana-body">
+<div class="mana-body flex-1 overflow-y-auto py-1 pb-4" style="scrollbar-width:thin">
 
   <!-- Empty state -->
-  <div class="mana-empty" *ngIf="analysis.isEmpty">
-    <i class="bi bi-droplet"></i>
-    <p>Add cards to your deck to see mana base suggestions.</p>
+  <div class="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center" *ngIf="analysis.isEmpty">
+    <i class="bi bi-droplet text-[32px] text-[#60a5fa] opacity-60"></i>
+    <p class="text-[13px] text-parchment-muted leading-[1.5] max-w-[240px]">Add cards to your deck to see mana base suggestions.</p>
   </div>
 
   <ng-container *ngIf="!analysis.isEmpty">
 
     <!-- Land Count -->
-    <div class="mana-section">
-      <div class="mana-section-label">Land Count</div>
-      <div class="mana-land-row">
-        <div class="mana-land-stat">
-          <span class="mana-land-num">{{ analysis.currentLands }}</span>
-          <span class="mana-land-sub">Current</span>
+    <div class="mana-section px-4 pt-3.5 pb-3 border-b border-solid border-subtle last:border-0">
+      <div class="text-[10px] font-bold tracking-[0.12em] uppercase text-parchment-faint mb-3">Land Count</div>
+      <div class="mana-land-row flex items-center justify-center gap-5 mb-3">
+        <div class="flex flex-col items-center gap-[3px]">
+          <span class="mana-land-num font-display text-[32px] font-bold text-parchment leading-none">{{ analysis.currentLands }}</span>
+          <span class="text-[10px] text-parchment-faint uppercase tracking-[0.08em]">Current</span>
         </div>
-        <i class="bi bi-arrow-right mana-arrow"></i>
-        <div class="mana-land-stat">
-          <span class="mana-land-num mana-land-num--target">{{ analysis.recommendedLands }}</span>
-          <span class="mana-land-sub">Recommended</span>
+        <i class="bi bi-arrow-right text-[20px] text-parchment-faint"></i>
+        <div class="flex flex-col items-center gap-[3px]">
+          <span class="mana-land-num mana-land-num--target font-display text-[32px] font-bold leading-none">{{ analysis.recommendedLands }}</span>
+          <span class="text-[10px] text-parchment-faint uppercase tracking-[0.08em]">Recommended</span>
         </div>
       </div>
-      <div class="mana-land-delta" [ngClass]="landDeltaClass">{{ landDeltaLabel }}</div>
+      <div class="mana-land-delta flex justify-center text-[12px] font-semibold py-1 px-3.5 rounded-xl w-fit mx-auto" [ngClass]="landDeltaClass">{{ landDeltaLabel }}</div>
+      <p class="mana-land-reason">{{ analysis.landReason }}</p>
     </div>
 
     <!-- Color Sources -->
-    <div class="mana-section" *ngIf="analysis.colorSources.length > 0">
-      <div class="mana-section-label">Color Sources</div>
-      <div class="mana-color-row" *ngFor="let cs of analysis.colorSources">
-        <i class="ms ms-cost ms-{{ cs.color | lowercase }}" [title]="COLOR_LABEL[cs.color]"></i>
-        <div class="mana-color-bar-track">
-          <div class="mana-color-bar"
+    <div class="mana-section px-4 pt-3.5 pb-3 border-b border-solid border-subtle last:border-0" *ngIf="analysis.colorSources.length > 0">
+      <div class="text-[10px] font-bold tracking-[0.12em] uppercase text-parchment-faint mb-3">Color Sources</div>
+      <div class="mana-color-row flex items-center gap-2 mb-[9px]" *ngFor="let cs of analysis.colorSources">
+        <i class="ms ms-cost ms-{{ cs.color | lowercase }} text-[16px] shrink-0 w-[18px]" [title]="COLOR_LABEL[cs.color]"></i>
+        <div class="flex-1 h-2 bg-raised rounded overflow-hidden">
+          <div class="mana-color-bar h-full rounded transition-[width] duration-[350ms] ease-out"
                [ngClass]="'mana-color-bar--' + (cs.color | lowercase)"
                [style.width.%]="barPct(cs)">
           </div>
         </div>
-        <span class="mana-color-pct">{{ barPct(cs) }}%</span>
-        <span class="mana-color-rec">~{{ cs.recommended }}</span>
+        <span class="mana-color-pct text-[11px] text-parchment-faint w-8 text-right shrink-0">{{ barPct(cs) }}%</span>
+        <span class="mana-color-rec text-[12px] font-semibold text-parchment-muted w-11 text-right shrink-0">~{{ cs.recommended }}</span>
       </div>
-      <div class="mana-color-note">
+      <div class="mana-color-note text-[10px] text-parchment-faint mt-1.5 leading-[1.4]">
         Recommended colored sources out of {{ analysis.recommendedLands }} total lands
       </div>
     </div>
 
     <!-- Tips -->
-    <div class="mana-section" *ngIf="analysis.tips.length > 0">
-      <div class="mana-section-label">Tips</div>
-      <div class="mana-tip" *ngFor="let tip of analysis.tips">
-        <i class="bi bi-lightbulb"></i>
+    <div class="mana-section px-4 pt-3.5 pb-3 border-b border-solid border-subtle last:border-0" *ngIf="analysis.tips.length > 0">
+      <div class="text-[10px] font-bold tracking-[0.12em] uppercase text-parchment-faint mb-3">Tips</div>
+      <div class="mana-tip flex items-start gap-2 mb-[9px] text-[12px] leading-[1.5] text-parchment-muted last:mb-0" *ngFor="let tip of analysis.tips">
+        <i class="bi bi-lightbulb shrink-0 mt-[2px] text-[#facc15] text-[13px]"></i>
         <span>{{ tip }}</span>
       </div>
     </div>
 
     <!-- Avg CMC -->
-    <div class="mana-section mana-section--meta">
-      <div class="mana-meta-row">
-        <span class="mana-meta-label">Avg. CMC (non-land)</span>
-        <span class="mana-meta-val">{{ analysis.avgCmc | number:'1.1-1' }}</span>
+    <div class="mana-section px-4 pt-2.5 pb-2.5 border-b border-solid border-subtle last:border-0">
+      <div class="mana-meta-row flex justify-between items-center">
+        <span class="mana-meta-label text-[12px] text-parchment-faint">Avg. CMC (non-land)</span>
+        <span class="mana-meta-val text-[13px] font-semibold text-parchment-muted">{{ analysis.avgCmc | number:'1.1-1' }}</span>
       </div>
+    </div>
+
+    <!-- AI Insight (auto) -->
+    <div class="mana-section px-4 pt-3 pb-3">
+      <div class="mana-ai-header">
+        <i class="bi bi-stars text-[#a78bfa] text-[11px]"></i>
+        <span>AI Insight</span>
+        <i class="bi bi-arrow-repeat mana-spin text-[10px] text-parchment-faint" *ngIf="fineTuneState === 'loading'"></i>
+      </div>
+
+      <!-- Loading skeleton -->
+      <ng-container *ngIf="fineTuneState === 'loading'">
+        <div class="mana-skeleton"></div>
+        <div class="mana-skeleton" style="width:80%"></div>
+        <div class="mana-skeleton" style="width:90%; margin-top:12px"></div>
+        <div class="mana-skeleton" style="width:70%"></div>
+      </ng-container>
+
+      <!-- Error -->
+      <p class="mana-ai-error" *ngIf="fineTuneState === 'error'">Could not load AI insight.</p>
+
+      <!-- Results -->
+      <ng-container *ngIf="fineTuneState === 'done' && fineTuneResult">
+
+        <div *ngIf="fineTuneResult.advice.length > 0">
+          <div class="mana-tip flex items-start gap-2 mb-[9px] text-[12px] leading-[1.5] last:mb-0"
+               *ngFor="let tip of fineTuneResult.advice">
+            <i class="bi bi-stars shrink-0 mt-[2px] text-[13px] text-[#a78bfa]"></i>
+            <span>{{ tip }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="fineTuneResult.landSuggestions.length > 0" class="mana-finetune-lands">
+          <div class="mana-finetune-sublabel">Suggested Lands</div>
+          <div class="mana-land-suggestion" *ngFor="let ls of fineTuneResult.landSuggestions">
+            <span class="mana-land-suggestion-name">{{ ls.name }}</span>
+            <span class="mana-land-suggestion-reason">{{ ls.reason }}</span>
+          </div>
+        </div>
+
+      </ng-container>
     </div>
 
   </ng-container>

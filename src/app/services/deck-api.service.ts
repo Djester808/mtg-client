@@ -100,6 +100,25 @@ export interface DeckSuggestionsRequest {
   suggestionTags?:   string[];
 }
 
+export interface ManaFineTuneRequest {
+  format:           string;
+  deckCardNames:    string[];
+  currentLands:     number;
+  recommendedLands: number;
+  avgCmc:           number;
+  activeColors:     string[];
+}
+
+export interface ManaLandSuggestion {
+  name:   string;
+  reason: string;
+}
+
+export interface ManaFineTuneDto {
+  advice:          string[];
+  landSuggestions: ManaLandSuggestion[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DeckApiService {
   private readonly base = '/api/decks';
@@ -148,6 +167,10 @@ export class DeckApiService {
 
   getSuggestions(req: DeckSuggestionsRequest): Observable<DeckSuggestionsDto> {
     return this.http.post<DeckSuggestionsDto>(`${this.base}/suggestions`, req);
+  }
+
+  getManaFineTune(req: ManaFineTuneRequest): Observable<ManaFineTuneDto> {
+    return this.http.post<ManaFineTuneDto>(`${this.base}/mana-tune`, req);
   }
 
   getPrintings(oracleId: string): Observable<PrintingDto[]> {

@@ -1,34 +1,45 @@
-<nav class="navbar">
-  <a class="nav-logo" routerLink="/">
-    <span class="nav-logo-diamond">&#9670;</span>
-    <span class="nav-logo-text">MTG Engine</span>
+<nav class="fixed top-0 left-0 right-0 z-[1000] h-[52px] flex items-center px-6 gap-8 bg-[rgba(8,8,8,0.85)] backdrop-blur-[12px] border-b border-solid border-dim">
+  <a class="nav-logo flex items-center gap-2 no-underline shrink-0" routerLink="/">
+    <span class="text-[14px] text-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.5)]">&#9670;</span>
+    <span class="font-display text-[14px] font-bold tracking-[0.12em] uppercase text-parchment">MTG Engine</span>
   </a>
 
-  <div class="nav-links">
-    <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
-    <a class="nav-link" routerLink="/kb" routerLinkActive="active">Rules KB</a>
-    <a class="nav-link" routerLink="/collection" routerLinkActive="active">Collection</a>
-    <a class="nav-link" routerLink="/deck" routerLinkActive="active">Decks</a>
-    <a class="nav-link" routerLink="/lobby" routerLinkActive="active">Play</a>
+  <div class="nav-links flex items-center gap-1 flex-1">
+    <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+       routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+    <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+       routerLink="/kb" routerLinkActive="active">Rules KB</a>
+    <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+       routerLink="/collection" routerLinkActive="active">Collection</a>
+    <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+       routerLink="/deck" routerLinkActive="active">Decks</a>
+    <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+       routerLink="/lobby" routerLinkActive="active">Play</a>
   </div>
 
-  <div class="account-menu">
+  <div class="account-menu flex items-center gap-2 relative shrink-0">
     <ng-container *ngIf="isLoggedIn$ | async; else loggedOut">
-      <button class="account-btn" (click)="toggleAccount()">
-        <span class="account-icon">&#9670;</span>
-        <span class="account-name">{{ username$ | async }}</span>
-        <span class="account-caret" [class.open]="accountOpen()">&#9660;</span>
+      <button class="account-btn flex items-center gap-2 py-1.5 px-3 bg-raised border border-solid border-dim rounded-lg cursor-pointer transition-[border-color,background] duration-150 hover:border-subtle hover:bg-elevated"
+              (click)="toggleAccount()">
+        <span class="text-[10px] text-gold">&#9670;</span>
+        <span class="account-name font-display text-[11px] font-semibold tracking-[0.08em] text-parchment max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{{ username$ | async }}</span>
+        <span class="account-caret text-[8px] text-parchment-faint transition-transform duration-200" [class.open]="accountOpen()">&#9660;</span>
       </button>
-      <div class="account-dropdown" *ngIf="accountOpen()">
-        <a class="dropdown-item" routerLink="/account">Profile</a>
-        <div class="dropdown-divider"></div>
-        <button class="dropdown-item danger" (click)="signOut()">Sign Out</button>
+      <div class="account-dropdown absolute top-[calc(100%+6px)] right-0 min-w-[160px] bg-surface border border-solid border-subtle rounded-[10px] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] animate-dropdown-in"
+           *ngIf="accountOpen()">
+        <a class="dropdown-item block w-full py-2 px-3 font-body text-[13px] text-parchment-muted no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms] hover:bg-raised hover:text-parchment"
+           routerLink="/account">Profile</a>
+        <div class="h-px bg-[rgba(255,255,255,0.06)] my-1"></div>
+        <button class="dropdown-item danger block w-full py-2 px-3 font-body text-[13px] no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms]"
+                (click)="signOut()">Sign Out</button>
       </div>
     </ng-container>
 
     <ng-template #loggedOut>
-      <a class="nav-link" routerLink="/login">Sign In</a>
-      <a class="nav-btn" routerLink="/register">Create Account</a>
+      <a class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+         routerLink="/login">Sign In</a>
+      <a class="nav-btn py-[7px] px-4 bg-gold rounded-[7px] font-display text-[11px] font-bold tracking-[0.1em] uppercase text-[#0e0c08] no-underline transition-[background,box-shadow] duration-150 hover:bg-[#dbb954] hover:shadow-[0_2px_16px_rgba(201,168,76,0.3)]"
+         routerLink="/register">Create Account</a>
     </ng-template>
   </div>
 </nav>
