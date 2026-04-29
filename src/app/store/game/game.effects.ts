@@ -12,8 +12,6 @@ import { GameApiService } from '../../services/game-api.service';
 import {
   selectPendingAttackers,
   selectPendingBlockers,
-  selectPendingTargets,
-  selectSelectedCardId,
 } from '../selectors';
 
 @Injectable()

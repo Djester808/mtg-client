@@ -1,7 +1,7 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { GameState } from './game/game.reducer';
 import { UIState } from './ui/ui.reducer';
-import { Phase, Step, CardType, PermanentDto } from '../models/game.models';
+import { Phase, Step } from '../models/game.models';
 
 // ---- Feature selectors ------------------------------------
 export const selectGameFeature = createFeatureSelector<GameState>('game');
@@ -10,9 +10,6 @@ export const selectUIFeature   = createFeatureSelector<UIState>('ui');
 // ---- Game selectors ---------------------------------------
 export const selectGameState       = createSelector(selectGameFeature, s => s.gameState);
 export const selectLocalPlayerId   = createSelector(selectGameFeature, s => s.localPlayerId);
-export const selectConnected       = createSelector(selectGameFeature, s => s.connected);
-export const selectConnectionError = createSelector(selectGameFeature, s => s.connectionError);
-export const selectCardCache       = createSelector(selectGameFeature, s => s.cardCache);
 
 export const selectPlayers = createSelector(
   selectGameState, g => g?.players ?? []
@@ -90,34 +87,12 @@ export const selectOpponentPermanents = createSelector(
   (bf, localId) => bf.filter(p => p.controllerId !== localId)
 );
 
-export const selectLocalCreatures = createSelector(
-  selectLocalPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Creature))
-);
-
-export const selectLocalLands = createSelector(
-  selectLocalPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Land))
-);
-
-export const selectOpponentCreatures = createSelector(
-  selectOpponentPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Creature))
-);
-
-export const selectOpponentLands = createSelector(
-  selectOpponentPermanents,
-  perms => perms.filter(p => p.sourceCard.cardTypes.includes(CardType.Land))
-);
-
 // ---- UI selectors -----------------------------------------
 export const selectUIMode           = createSelector(selectUIFeature, s => s.mode);
 export const selectSelectedPermId   = createSelector(selectUIFeature, s => s.selectedPermanentId);
 export const selectSelectedCardId   = createSelector(selectUIFeature, s => s.selectedCardId);
-export const selectHoveredCard      = createSelector(selectUIFeature, s => s.hoveredCard);
 export const selectPendingAttackers = createSelector(selectUIFeature, s => s.pendingAttackerIds);
 export const selectPendingBlockers  = createSelector(selectUIFeature, s => s.pendingBlockerAssignments);
-export const selectPendingTargets   = createSelector(selectUIFeature, s => s.pendingTargetIds);
 export const selectZoneViewerOpen   = createSelector(selectUIFeature, s => s.zoneViewerOpen);
 export const selectZoneViewer       = createSelector(selectUIFeature, s => ({
   open: s.zoneViewerOpen,
