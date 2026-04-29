@@ -1,0 +1,73 @@
+<div class="mana-header">
+  <span class="mana-title">
+    <i class="bi bi-droplet-half"></i> Mana Suggestions
+  </span>
+  <button class="mana-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+</div>
+
+<div class="mana-body">
+
+  <!-- Empty state -->
+  <div class="mana-empty" *ngIf="analysis.isEmpty">
+    <i class="bi bi-droplet"></i>
+    <p>Add cards to your deck to see mana base suggestions.</p>
+  </div>
+
+  <ng-container *ngIf="!analysis.isEmpty">
+
+    <!-- Land Count -->
+    <div class="mana-section">
+      <div class="mana-section-label">Land Count</div>
+      <div class="mana-land-row">
+        <div class="mana-land-stat">
+          <span class="mana-land-num">{{ analysis.currentLands }}</span>
+          <span class="mana-land-sub">Current</span>
+        </div>
+        <i class="bi bi-arrow-right mana-arrow"></i>
+        <div class="mana-land-stat">
+          <span class="mana-land-num mana-land-num--target">{{ analysis.recommendedLands }}</span>
+          <span class="mana-land-sub">Recommended</span>
+        </div>
+      </div>
+      <div class="mana-land-delta" [ngClass]="landDeltaClass">{{ landDeltaLabel }}</div>
+    </div>
+
+    <!-- Color Sources -->
+    <div class="mana-section" *ngIf="analysis.colorSources.length > 0">
+      <div class="mana-section-label">Color Sources</div>
+      <div class="mana-color-row" *ngFor="let cs of analysis.colorSources">
+        <i class="ms ms-cost ms-{{ cs.color | lowercase }}" [title]="COLOR_LABEL[cs.color]"></i>
+        <div class="mana-color-bar-track">
+          <div class="mana-color-bar"
+               [ngClass]="'mana-color-bar--' + (cs.color | lowercase)"
+               [style.width.%]="barPct(cs)">
+          </div>
+        </div>
+        <span class="mana-color-pct">{{ barPct(cs) }}%</span>
+        <span class="mana-color-rec">~{{ cs.recommended }}</span>
+      </div>
+      <div class="mana-color-note">
+        Recommended colored sources out of {{ analysis.recommendedLands }} total lands
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="mana-section" *ngIf="analysis.tips.length > 0">
+      <div class="mana-section-label">Tips</div>
+      <div class="mana-tip" *ngFor="let tip of analysis.tips">
+        <i class="bi bi-lightbulb"></i>
+        <span>{{ tip }}</span>
+      </div>
+    </div>
+
+    <!-- Avg CMC -->
+    <div class="mana-section mana-section--meta">
+      <div class="mana-meta-row">
+        <span class="mana-meta-label">Avg. CMC (non-land)</span>
+        <span class="mana-meta-val">{{ analysis.avgCmc | number:'1.1-1' }}</span>
+      </div>
+    </div>
+
+  </ng-container>
+
+</div>

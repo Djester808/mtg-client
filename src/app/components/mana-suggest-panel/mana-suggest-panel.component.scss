@@ -1,0 +1,250 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+// ---- Header -------------------------------------------------------
+
+.mana-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.mana-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  i { color: #60a5fa; }
+}
+
+.mana-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+  border-radius: 4px;
+  &:hover { color: var(--text-primary); background: var(--bg-raised); }
+}
+
+// ---- Body ---------------------------------------------------------
+
+.mana-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+}
+
+// ---- Empty state --------------------------------------------------
+
+.mana-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+
+  i {
+    font-size: 32px;
+    color: #60a5fa;
+    opacity: 0.6;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 240px;
+  }
+}
+
+// ---- Section ------------------------------------------------------
+
+.mana-section {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+
+  &:last-child { border-bottom: none; }
+  &--meta { padding-top: 10px; padding-bottom: 10px; }
+}
+
+.mana-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+// ---- Land count ---------------------------------------------------
+
+.mana-land-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.mana-land-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.mana-land-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+
+  &--target { color: #60a5fa; }
+}
+
+.mana-land-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mana-arrow {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+.mana-land-delta {
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 12px;
+  width: fit-content;
+  margin: 0 auto;
+
+  &.delta--ok   { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+  &.delta--low  { background: rgba(251, 146, 60, 0.12);  color: #fb923c; }
+  &.delta--high { background: rgba(96, 165, 250, 0.12);  color: #60a5fa; }
+}
+
+// ---- Color sources ------------------------------------------------
+
+.mana-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+
+  i.ms {
+    font-size: 16px;
+    flex-shrink: 0;
+    width: 18px;
+  }
+}
+
+.mana-color-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mana-color-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.35s ease;
+
+  &--w { background: #e8dfc4; }
+  &--u { background: #3b82f6; }
+  &--b { background: #a855f7; }
+  &--r { background: #ef4444; }
+  &--g { background: #22c55e; }
+}
+
+.mana-color-pct {
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.mana-color-rec {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.mana-color-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+// ---- Tips ---------------------------------------------------------
+
+.mana-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+
+  &:last-child { margin-bottom: 0; }
+
+  i {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #facc15;
+    font-size: 13px;
+  }
+}
+
+// ---- Meta ---------------------------------------------------------
+
+.mana-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mana-meta-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.mana-meta-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}

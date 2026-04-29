@@ -9,6 +9,8 @@ class DeckDetailPage extends BasePage {
     this.sortSelect     = By.css('.sort-select');
     this.addCardsBtn    = By.css('.add-btn');
     this.statsBtn       = By.css('.stats-btn');
+    this.manaBtn        = By.css('.mana-btn');
+    this.manaPanelHeader = By.css('.mana-header');
     this.sidePanel      = By.css('.side-panel');
     this.cardRows       = By.css('.card-row');
     this.headerCount    = By.css('.header-count');
@@ -53,6 +55,53 @@ class DeckDetailPage extends BasePage {
 
   async toggleStats() {
     await this.click(this.statsBtn);
+  }
+
+  async openManaSuggestPanel() {
+    await this.closeManaSuggestPanel(); // ensure closed before opening fresh
+    const el = await this.driver.findElement(this.manaBtn);
+    await this.driver.executeScript('arguments[0].click()', el);
+    await this.waitForVisible(this.manaPanelHeader, 3000);
+    // Wait one extra tick for the async pipe to bind deck data to the component
+    await this.driver.sleep(300);
+  }
+
+  async closeManaSuggestPanel() {
+    const open = await this.isPresent(this.manaPanelHeader, 800);
+    if (!open) return;
+    const closeBtn = await this.driver.findElement(By.css('.mana-close'));
+    await this.driver.executeScript('arguments[0].click()', closeBtn);
+    await this.driver.wait(async () => {
+      return !(await this.isPresent(this.manaPanelHeader, 300));
+    }, 3000, 'Mana panel did not close');
+  }
+
+  async getManaSuggestAnalysis() {
+    return this.driver.executeScript(`
+      try {
+        const el = document.querySelector('app-mana-suggest-panel');
+        if (!el) return null;
+        const comp = ng.getComponent(el);
+        if (!comp) return null;
+        return JSON.parse(JSON.stringify(comp.analysis));
+      } catch(e) { return 'error:' + e.message; }
+    `);
+  }
+
+  async getDetailPanelState() {
+    return this.driver.executeScript(`
+      try {
+        const el = document.querySelector('app-deck-detail');
+        if (!el) return null;
+        const comp = ng.getComponent(el);
+        if (!comp) return null;
+        return {
+          showManaSuggestPanel: comp.showManaSuggestPanel,
+          showSearchPanel:      comp.showSearchPanel,
+          showSuggestionsPanel: comp.showSuggestionsPanel,
+        };
+      } catch(e) { return null; }
+    `);
   }
 
   async isSidePanelOpen() {

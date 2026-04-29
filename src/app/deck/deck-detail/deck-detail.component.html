@@ -110,10 +110,15 @@
         <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
+        <button class="mana-btn"
+                [class.is-active]="showManaSuggestPanel"
+                (click)="showManaSuggestPanel = !showManaSuggestPanel; showSuggestionsPanel = false; showSearchPanel = false">
+          <i class="bi bi-droplet-half"></i> Mana
+        </button>
         <button class="suggest-btn"
                 *ngIf="(commanderCardDetails$ | async)"
                 [class.is-active]="showSuggestionsPanel"
-                (click)="showSuggestionsPanel = !showSuggestionsPanel; showSearchPanel = false">
+                (click)="showSuggestionsPanel = !showSuggestionsPanel; showManaSuggestPanel = false; showSearchPanel = false">
           <i class="bi bi-magic"></i> Suggest
         </button>
       </div>
@@ -757,6 +762,15 @@
         (cardRemove)="removeSuggestedCard($event)"
         (panelClose)="showSuggestionsPanel = false"
       ></app-deck-suggestions-panel>
+    </div>
+
+    <!-- Mana suggestions panel -->
+    <div class="mana-panel-wrap" [class.is-open]="showManaSuggestPanel">
+      <app-mana-suggest-panel
+        *ngIf="showManaSuggestPanel"
+        [deck]="deck$ | async"
+        (panelClose)="showManaSuggestPanel = false"
+      ></app-mana-suggest-panel>
     </div>
 
   </div><!-- /detail-body -->

@@ -26,6 +26,7 @@ import { CardModalComponent } from '../../components/card-modal/card-modal.compo
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
+import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/mana-suggest-panel.component';
 
 export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set';
 export type ViewMode = 'list' | 'visual' | 'free';
@@ -62,7 +63,7 @@ export interface DeckStats {
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent],
+  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent, ManaSuggestPanelComponent],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,9 +78,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   viewMode: ViewMode = 'list';
   textStyle       = false;
   zoomLevel = 1.0;
-  showSearchPanel    = false;
+  showSearchPanel      = false;
   showSuggestionsPanel = false;
-  showSidePanel   = false;
+  showManaSuggestPanel = false;
+  showSidePanel        = false;
 
   freeColumns: FreeColumn[] = [];
   selectedFreeColId: string | null = null;
@@ -1461,7 +1463,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   toggleSearchPanel(): void {
     this.showSearchPanel = !this.showSearchPanel;
-    if (!this.showSearchPanel) this.commanderSearchMode = false;
+    if (this.showSearchPanel) {
+      this.showManaSuggestPanel = false;
+      this.showSuggestionsPanel = false;
+    } else {
+      this.commanderSearchMode = false;
+    }
   }
 
   openCommanderSearch(): void {
