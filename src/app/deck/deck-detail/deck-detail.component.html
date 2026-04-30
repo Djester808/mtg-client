@@ -28,100 +28,73 @@
       </div>
 
       <!-- Deck tags -->
-      <div class="deck-tags-row">
-        <span class="deck-tag" *ngFor="let t of (deck.tags ?? [])">
-          {{ t }}<button class="deck-tag-remove" (click)="removeTag(deck, t)" title="Remove tag"><i class="bi bi-x"></i></button>
-        </span>
-        <input class="deck-tag-input"
-               [(ngModel)]="tagDraft"
-               placeholder="+ tag"
-               (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
-               (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
+      <div class="header-labeled-group">
+        <span class="header-label">Tags</span>
+        <div class="deck-tags-row">
+          <span class="deck-tag" *ngFor="let t of (deck.tags ?? [])">
+            {{ t }}<button class="deck-tag-remove" (click)="removeTag(deck, t)" title="Remove tag"><i class="bi bi-x"></i></button>
+          </span>
+          <input class="deck-tag-input"
+                 [(ngModel)]="tagDraft"
+                 placeholder="+ tag"
+                 (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
+                 (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
+        </div>
       </div>
 
-      <div class="header-right">
-        <!-- Sort controls -->
-        <div class="sort-group">
-          <select class="sort-select" [ngModel]="sortMode" (ngModelChange)="setSortMode($event, deck)">
-            <option value="cmc">CMC</option>
-            <option value="type">Type</option>
-            <option value="name">Name</option>
-            <option value="subtype">Subtype</option>
-            <option value="color">Color</option>
-            <option value="color-identity">Color Identity</option>
-            <option value="rarity">Rarity</option>
-            <option value="artist">Artist</option>
-            <option value="set">Set</option>
-          </select>
+      <div class="header-spacer"></div>
+
+      <!-- Format selector -->
+      <div class="header-labeled-group" (click)="$event.stopPropagation()">
+        <span class="header-label">Format</span>
+        <div class="format-wrap">
+        <button class="format-btn"
+                [class.has-format]="deck.format"
+                [class.has-violations]="hasFormatViolations(deck)"
+                (click)="toggleFormatMenu()">
+          {{ formatLabel(deck.format) }}
+          <span class="format-caret"><i class="bi bi-chevron-down"></i></span>
+        </button>
+        <div class="format-menu" *ngIf="showFormatMenu">
+          <button class="format-menu-item" [class.is-active]="!deck.format"
+                  (click)="setFormat(null, deck)">No Format</button>
+          <div class="format-menu-sep"></div>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'commander'"
+                  (click)="setFormat('commander', deck)">Commander</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'brawl'"
+                  (click)="setFormat('brawl', deck)">Brawl</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'oathbreaker'"
+                  (click)="setFormat('oathbreaker', deck)">Oathbreaker</button>
+          <div class="format-menu-sep"></div>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'standard'"
+                  (click)="setFormat('standard', deck)">Standard</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'pioneer'"
+                  (click)="setFormat('pioneer', deck)">Pioneer</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'modern'"
+                  (click)="setFormat('modern', deck)">Modern</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'legacy'"
+                  (click)="setFormat('legacy', deck)">Legacy</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'vintage'"
+                  (click)="setFormat('vintage', deck)">Vintage</button>
+          <button class="format-menu-item" [class.is-active]="deck.format === 'pauper'"
+                  (click)="setFormat('pauper', deck)">Pauper</button>
         </div>
-
-        <!-- View toggle -->
-        <div class="sort-group view-toggle">
-          <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view"><i class="bi bi-list"></i></button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view"><i class="bi bi-grid"></i></button>
-          <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange"><i class="bi bi-columns-gap"></i></button>
         </div>
+      </div>
 
-
-        <!-- Format selector -->
-        <div class="format-wrap" (click)="$event.stopPropagation()">
-          <button class="format-btn"
-                  [class.has-format]="deck.format"
-                  [class.has-violations]="hasFormatViolations(deck)"
-                  (click)="toggleFormatMenu()">
-            {{ formatLabel(deck.format) }}
-            <span class="format-caret"><i class="bi bi-chevron-down"></i></span>
-          </button>
-          <div class="format-menu" *ngIf="showFormatMenu">
-            <button class="format-menu-item" [class.is-active]="!deck.format"
-                    (click)="setFormat(null, deck)">No Format</button>
-            <div class="format-menu-sep"></div>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'commander'"
-                    (click)="setFormat('commander', deck)">Commander</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'brawl'"
-                    (click)="setFormat('brawl', deck)">Brawl</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'oathbreaker'"
-                    (click)="setFormat('oathbreaker', deck)">Oathbreaker</button>
-            <div class="format-menu-sep"></div>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'standard'"
-                    (click)="setFormat('standard', deck)">Standard</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'pioneer'"
-                    (click)="setFormat('pioneer', deck)">Pioneer</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'modern'"
-                    (click)="setFormat('modern', deck)">Modern</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'legacy'"
-                    (click)="setFormat('legacy', deck)">Legacy</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'vintage'"
-                    (click)="setFormat('vintage', deck)">Vintage</button>
-            <button class="format-menu-item" [class.is-active]="deck.format === 'pauper'"
-                    (click)="setFormat('pauper', deck)">Pauper</button>
-          </div>
-        </div>
-
+      <div class="header-labeled-group">
+        <span class="header-label">Card Count</span>
         <span class="header-count"
               [class.count-ok]="totalCount(deck) === targetCount(deck)"
               [class.count-bad]="totalCount(deck) !== targetCount(deck) && deck.format">
           {{ totalCount(deck) }} / {{ targetCount(deck) }}
         </span>
-
-        <button class="stats-btn" [class.is-active]="showSidePanel" (click)="toggleSidePanel()">
-          <i class="bi bi-bar-chart-line"></i> Stats
-        </button>
-        <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
-          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
-        </button>
-        <button class="mana-btn"
-                [class.is-active]="showManaSuggestPanel"
-                (click)="showManaSuggestPanel = !showManaSuggestPanel; showSuggestionsPanel = false; showSearchPanel = false">
-          <i class="bi bi-droplet-half"></i> Mana
-        </button>
-        <button class="suggest-btn"
-                *ngIf="(commanderCardDetails$ | async)"
-                [class.is-active]="showSuggestionsPanel"
-                (click)="showSuggestionsPanel = !showSuggestionsPanel; showManaSuggestPanel = false; showSearchPanel = false">
-          <i class="bi bi-magic"></i> Suggest
-        </button>
       </div>
+
+      <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+        <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
+        {{ showSearchPanel ? 'Close' : 'Add Cards' }}
+      </button>
 
     </ng-container>
     <ng-template #loadingHeader>
@@ -129,22 +102,27 @@
     </ng-template>
   </header>
 
+
   <!-- Validation bar (commander only) — pills on left, cover image on right -->
   <ng-container *ngIf="deck$ | async as deck">
     <div class="validation-bar" *ngIf="deck.format === 'commander'">
 
       <!-- Left column: deck cover image -->
-      <div class="vbar-cover" (click)="openDetailCoverPicker(deck)" title="Change cover image">
-        <div class="vbar-cover-art"
-             [style.backgroundImage]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
-             [class.no-cover]="!deck.coverUri">
-          <span class="vbar-cover-placeholder" *ngIf="!deck.coverUri"><i class="bi bi-image"></i></span>
-          <div class="vbar-cover-overlay"><i class="bi bi-pencil"></i></div>
+      <div class="vbar-cover-group">
+        <span class="vbar-section-label">Deck Image</span>
+        <div class="vbar-cover" (click)="openDetailCoverPicker(deck)" title="Change cover image">
+          <div class="vbar-cover-art"
+               [style.backgroundImage]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
+               [class.no-cover]="!deck.coverUri">
+            <span class="vbar-cover-placeholder" *ngIf="!deck.coverUri"><i class="bi bi-image"></i></span>
+            <div class="vbar-cover-overlay"><i class="bi bi-pencil"></i></div>
+          </div>
         </div>
       </div>
 
       <!-- Right column: row 1 = checks, row 2 = legend -->
       <div class="vbar-right">
+        <span class="vbar-section-label">Validation</span>
         <div class="vbar-row">
           <span class="cp-check" [class.ok]="totalCount(deck) === 100" [class.bad]="totalCount(deck) !== 100">
             <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="totalCount(deck) === 100" [class.bi-x-lg]="totalCount(deck) !== 100"></i></span>
@@ -186,78 +164,22 @@
                 [title]="gameChangerNames(deck)">
             <i class="bi bi-fire"></i> Game Changers ({{ gameChangerCards(deck).length }})
           </span>
-          <div class="cp-bracket-wrapper">
-            <span class="cp-bracket bracket-{{ commanderBracket(deck) }}"
-                  [class.is-open]="bracketInfoOpen"
-                  (click)="toggleBracketInfo($event)">
-              <i class="bi bi-shield-fill"></i> Bracket {{ commanderBracket(deck) }}
-            </span>
-            <div class="bracket-info-overlay" *ngIf="bracketInfoOpen" (click)="closeBracketInfo()"></div>
-            <div class="bracket-info-panel" *ngIf="bracketInfoOpen" (click)="$event.stopPropagation()">
-              <div class="bip-header">
-                <span class="bip-title"><i class="bi bi-shield-fill"></i> Commander Brackets</span>
-                <button class="bip-close" (click)="closeBracketInfo()"><i class="bi bi-x-lg"></i></button>
-              </div>
-              <div class="bip-note">Auto-estimated from deck contents. Bracket 5 requires manual assignment.</div>
-              <div class="bip-rows">
-                <div class="bip-row bip-row-1" [class.is-current]="commanderBracket(deck) === 1">
-                  <span class="bip-num">1</span>
-                  <div class="bip-info">
-                    <span class="bip-name">Exhibition</span>
-                    <span class="bip-criteria">No game changers · No MLD · No extra turns · No 2-card combos</span>
-                  </div>
-                </div>
-                <div class="bip-row bip-row-2" [class.is-current]="commanderBracket(deck) === 2">
-                  <span class="bip-num">2</span>
-                  <div class="bip-info">
-                    <span class="bip-name">Core</span>
-                    <span class="bip-criteria">No game changers · No MLD · No chaining extra turns · No 2-card combos</span>
-                  </div>
-                </div>
-                <div class="bip-row bip-row-3" [class.is-current]="commanderBracket(deck) === 3">
-                  <span class="bip-num">3</span>
-                  <div class="bip-info">
-                    <span class="bip-name">Upgraded</span>
-                    <span class="bip-criteria">1–3 game changers · No MLD · No chaining extra turns · No fast 2-card combos</span>
-                  </div>
-                </div>
-                <div class="bip-row bip-row-4" [class.is-current]="commanderBracket(deck) === 4">
-                  <span class="bip-num">4</span>
-                  <div class="bip-info">
-                    <span class="bip-name">Optimized</span>
-                    <span class="bip-criteria">Highly tuned · No deck restrictions</span>
-                  </div>
-                </div>
-                <div class="bip-row bip-row-5 bip-manual">
-                  <span class="bip-num">5</span>
-                  <div class="bip-info">
-                    <span class="bip-name">cEDH</span>
-                    <span class="bip-criteria">Metagame competitive · Intent-based</span>
-                  </div>
-                </div>
-              </div>
-              <ng-container *ngIf="commanderBracket(deck) > 1 || extraTurnCards(deck).length > 0 || mldCards(deck).length > 0">
-                <div class="bip-flags-title">Detected flags</div>
-                <div class="bip-flags">
-                  <div class="bip-flag bip-flag-gc" *ngIf="gameChangerCards(deck).length > 0">
-                    <i class="bi bi-fire"></i>
-                    <span><strong>{{ gameChangerCards(deck).length }} Game Changer{{ gameChangerCards(deck).length > 1 ? 's' : '' }}:</strong> {{ gameChangerNames(deck) }}</span>
-                  </div>
-                  <div class="bip-flag bip-flag-mld" *ngIf="mldCards(deck).length > 0">
-                    <i class="bi bi-slash-circle-fill"></i>
-                    <span><strong>MLD:</strong> {{ mldCardNames(deck) }}</span>
-                  </div>
-                  <div class="bip-flag bip-flag-chain" *ngIf="hasChainingExtraTurns(deck)">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span><strong>Chaining extra turns:</strong> {{ extraTurnCardNames(deck) }}</span>
-                  </div>
-                  <div class="bip-flag bip-flag-et" *ngIf="!hasChainingExtraTurns(deck) && extraTurnCards(deck).length > 0">
-                    <i class="bi bi-clock-history"></i>
-                    <span><strong>Extra turn:</strong> {{ extraTurnCardNames(deck) }}</span>
-                  </div>
-                </div>
-              </ng-container>
-            </div>
+
+          <div class="vbar-panel-btns">
+            <button class="tool-btn" [class.is-active]="showSidePanel" (click)="toggleSidePanel()" title="Stats">
+              <i class="bi bi-bar-chart-line"></i><span>Stats</span>
+            </button>
+            <button class="tool-btn tool-btn--mana" [class.is-active]="showManaSuggestPanel"
+                    (click)="showManaSuggestPanel = !showManaSuggestPanel; showSuggestionsPanel = false; showSearchPanel = false"
+                    title="Mana analysis">
+              <i class="bi bi-droplet-half"></i><span>Mana</span>
+            </button>
+            <button class="tool-btn tool-btn--suggest"
+                    [class.is-active]="showSuggestionsPanel"
+                    (click)="showSuggestionsPanel = !showSuggestionsPanel; showManaSuggestPanel = false; showSearchPanel = false"
+                    title="Card suggestions">
+              <i class="bi bi-stars"></i><span>Suggest</span>
+            </button>
           </div>
         </div>
         <div class="vbar-row vbar-legend-row" *ngIf="hasCommanderViolations(deck)">
@@ -317,34 +239,77 @@
           (dragover)="onGroupsAreaDragOver($event)"
           (drop)="onGroupsAreaDrop($event)">
 
-      <!-- Filter bar (list / visual only) -->
-      <div class="filter-bar" *ngIf="viewMode !== 'free'">
-        <div class="filter-wrap">
-          <span class="filter-icon"><i class="bi bi-search"></i></span>
-          <input
-            class="filter-input"
-            type="text"
-            [(ngModel)]="filterQuery"
-            placeholder="Filter cards…"
-          />
-        </div>
-        <!-- List density: thumbnail vs text -->
-        <div class="density-picker" *ngIf="viewMode === 'list'">
-          <button class="density-btn" [class.is-active]="!textStyle" (click)="setTextStyle(false)" title="Thumbnail"><i class="bi bi-image"></i></button>
-          <button class="density-btn" [class.is-active]="textStyle"  (click)="setTextStyle(true)"  title="Text list"><i class="bi bi-list"></i></button>
-        </div>
-        <!-- Visual density + text -->
-        <div class="density-picker" *ngIf="viewMode === 'visual'">
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card"><i class="bi bi-grid-fill"></i></button>
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card"><i class="bi bi-layers-half"></i></button>
-          <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
-          <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
-        </div>
-        <div class="sort-group zoom-group">
-          <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
-          <span class="zoom-label">{{ zoomLabel }}</span>
-          <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
-        </div>
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <!-- Sort + view: always left, so free-mode users can switch views -->
+        <ng-container *ngIf="deck$ | async as deck">
+          <div class="fbar-labeled-group">
+            <span class="fbar-label">Group By</span>
+            <div class="sort-group">
+              <select class="sort-select" [ngModel]="sortMode" (ngModelChange)="setSortMode($event, deck)">
+                <option value="cmc">CMC</option>
+                <option value="type">Type</option>
+                <option value="name">Name</option>
+                <option value="subtype">Subtype</option>
+                <option value="color">Color</option>
+                <option value="color-identity">Color Identity</option>
+                <option value="rarity">Rarity</option>
+                <option value="artist">Artist</option>
+                <option value="set">Set</option>
+              </select>
+            </div>
+          </div>
+          <div class="fbar-labeled-group">
+            <span class="fbar-label">Layout</span>
+            <div class="sort-group view-toggle">
+              <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view"><i class="bi bi-list"></i></button>
+              <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view"><i class="bi bi-grid"></i></button>
+              <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange"><i class="bi bi-columns-gap"></i></button>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Filter input: centred -->
+        <ng-container *ngIf="viewMode !== 'free'">
+          <div class="filter-bar-spacer"></div>
+          <div class="fbar-labeled-group fbar-filter">
+            <span class="fbar-label">Filter Cards</span>
+            <div class="filter-wrap">
+              <span class="filter-icon"><i class="bi bi-search"></i></span>
+              <input
+                class="filter-input"
+                type="text"
+                [(ngModel)]="filterQuery"
+                placeholder="Search…"
+              />
+            </div>
+          </div>
+          <div class="filter-bar-spacer"></div>
+
+          <!-- Display controls -->
+          <div class="fbar-labeled-group">
+            <span class="fbar-label">Display</span>
+            <div class="fbar-display-controls">
+              <!-- List density -->
+              <div class="density-picker" *ngIf="viewMode === 'list'">
+                <button class="density-btn" [class.is-active]="!textStyle" (click)="setTextStyle(false)" title="Thumbnail"><i class="bi bi-image"></i></button>
+                <button class="density-btn" [class.is-active]="textStyle"  (click)="setTextStyle(true)"  title="Text list"><i class="bi bi-list"></i></button>
+              </div>
+              <!-- Visual density -->
+              <div class="density-picker" *ngIf="viewMode === 'visual'">
+                <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'full'" (click)="setStackDensity('full')" title="Full card"><i class="bi bi-grid-fill"></i></button>
+                <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card"><i class="bi bi-layers-half"></i></button>
+                <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
+                <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
+              </div>
+              <div class="sort-group zoom-group">
+                <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
+                <span class="zoom-label">{{ zoomLabel }}</span>
+                <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Loading -->
@@ -667,6 +632,79 @@
               </ng-template>
             </div>
 
+          </div>
+
+          <!-- Bracket badge -->
+          <div class="cp-bracket-wrapper">
+            <span class="cp-bracket bracket-{{ commanderBracket(deck) }}"
+                  [class.is-open]="bracketInfoOpen"
+                  (click)="toggleBracketInfo($event)">
+              <i class="bi bi-shield-fill"></i> Bracket {{ commanderBracket(deck) }}
+            </span>
+            <div class="bracket-info-panel" *ngIf="bracketInfoOpen">
+              <div class="bip-header">
+                <span class="bip-title"><i class="bi bi-shield-fill"></i> Commander Brackets</span>
+              </div>
+              <div class="bip-note">Auto-estimated from deck contents. Bracket 5 requires manual assignment.</div>
+              <div class="bip-rows">
+                <div class="bip-row bip-row-1" [class.is-current]="commanderBracket(deck) === 1">
+                  <span class="bip-num">1</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Exhibition</span>
+                    <span class="bip-criteria">No game changers · No MLD · No extra turns · No 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-2" [class.is-current]="commanderBracket(deck) === 2">
+                  <span class="bip-num">2</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Core</span>
+                    <span class="bip-criteria">No game changers · No MLD · No chaining extra turns · No 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-3" [class.is-current]="commanderBracket(deck) === 3">
+                  <span class="bip-num">3</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Upgraded</span>
+                    <span class="bip-criteria">1–3 game changers · No MLD · No chaining extra turns · No fast 2-card combos</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-4" [class.is-current]="commanderBracket(deck) === 4">
+                  <span class="bip-num">4</span>
+                  <div class="bip-info">
+                    <span class="bip-name">Optimized</span>
+                    <span class="bip-criteria">Highly tuned · No deck restrictions</span>
+                  </div>
+                </div>
+                <div class="bip-row bip-row-5 bip-manual">
+                  <span class="bip-num">5</span>
+                  <div class="bip-info">
+                    <span class="bip-name">cEDH</span>
+                    <span class="bip-criteria">Metagame competitive · Intent-based</span>
+                  </div>
+                </div>
+              </div>
+              <ng-container *ngIf="commanderBracket(deck) > 1 || extraTurnCards(deck).length > 0 || mldCards(deck).length > 0">
+                <div class="bip-flags-title">Detected flags</div>
+                <div class="bip-flags">
+                  <div class="bip-flag bip-flag-gc" *ngIf="gameChangerCards(deck).length > 0">
+                    <i class="bi bi-fire"></i>
+                    <span><strong>{{ gameChangerCards(deck).length }} Game Changer{{ gameChangerCards(deck).length > 1 ? 's' : '' }}:</strong> {{ gameChangerNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-mld" *ngIf="mldCards(deck).length > 0">
+                    <i class="bi bi-slash-circle-fill"></i>
+                    <span><strong>MLD:</strong> {{ mldCardNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-chain" *ngIf="hasChainingExtraTurns(deck)">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span><strong>Chaining extra turns:</strong> {{ extraTurnCardNames(deck) }}</span>
+                  </div>
+                  <div class="bip-flag bip-flag-et" *ngIf="!hasChainingExtraTurns(deck) && extraTurnCards(deck).length > 0">
+                    <i class="bi bi-clock-history"></i>
+                    <span><strong>Extra turn:</strong> {{ extraTurnCardNames(deck) }}</span>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
           </div>
         </ng-container>
 

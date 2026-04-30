@@ -42,12 +42,31 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 16px 28px;
+  gap: 16px;
+  padding: 14px 28px;
   border-bottom: 1px solid var(--border-dim);
   backdrop-filter: blur(8px);
   background: rgba(8,8,8,0.65);
   flex-shrink: 0;
+}
+
+.header-spacer { flex: 1; }
+
+.header-labeled-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+
+.header-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .back-btn {
@@ -183,11 +202,63 @@
   }
 }
 
-.header-right {
+// ---- Sub-toolbar -----------------------------------------
+
+.detail-toolbar {
+  position: relative;
+  z-index: 9;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+  padding: 5px 28px;
+  background: rgba(8,8,8,0.45);
+  border-bottom: 1px solid var(--border-dim);
   flex-shrink: 0;
+}
+
+.toolbar-spacer { flex: 1; }
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+
+  i { font-size: 13px; }
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+    background: var(--bg-raised);
+  }
+
+  &.is-active {
+    color: #a78bfa;
+    border-color: rgba(167,139,250,0.3);
+    background: rgba(167,139,250,0.1);
+  }
+
+  &.tool-btn--mana {
+    &.is-active { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.1); }
+    &:hover:not(.is-active) { color: #60a5fa; }
+  }
+
+  &.tool-btn--suggest {
+    &.is-active { color: var(--gold); border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.1); }
+    &:hover:not(.is-active) { color: var(--gold); }
+  }
 }
 
 .sort-group {
@@ -319,6 +390,32 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.filter-bar-spacer { flex: 1; }
+
+.fbar-labeled-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &.fbar-filter { min-width: 260px; }
+}
+
+.fbar-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding-left: 2px;
+}
+
+.fbar-display-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .filter-wrap {
@@ -1398,65 +1495,6 @@
   display: none;
 }
 
-// ---- Mana button -----------------------------------------
-
-.mana-btn {
-  padding: 9px 16px;
-  background: transparent;
-  border: 1px solid #60a5fa;
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #60a5fa;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-
-  &:hover:not(.is-active) {
-    background: rgba(96, 165, 250, 0.1);
-  }
-
-  &.is-active {
-    background: rgba(96, 165, 250, 0.15);
-    color: #60a5fa;
-  }
-}
-
-// ---- Suggest button --------------------------------------
-
-.suggest-btn {
-  padding: 9px 16px;
-  background: transparent;
-  border: 1px solid var(--gold);
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-
-  &:hover:not(.is-active) {
-    background: rgba(201, 168, 76, 0.1);
-  }
-
-  &.is-active {
-    background: rgba(201, 168, 76, 0.15);
-    color: var(--gold);
-  }
-}
 
 // ---- Suggestions panel -----------------------------------
 
@@ -1563,29 +1601,6 @@
   }
 }
 
-.stats-btn {
-  background: none;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-family: var(--font-display);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-
-  &:hover {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
-
-  &.is-active {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: var(--gold);
-    color: var(--gold);
-  }
-}
 
 // ---- Deck Stats ------------------------------------------
 
@@ -1984,10 +1999,25 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  min-height: 72px;
+  min-height: 92px;
   background: rgba(8,8,8,0.75);
   border-bottom: 1px solid var(--border-dim);
   backdrop-filter: blur(8px);
+}
+
+.vbar-cover-group {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-right: 1px solid var(--border-dim);
+  margin-left: 24px;
+
+  .vbar-cover {
+    flex: 1;
+    border-right: none;
+    min-height: 0;
+  }
 }
 
 .vbar-cover {
@@ -2003,7 +2033,7 @@
 
 .vbar-cover-art {
   position: absolute;
-  inset: 0 0 0 32px;
+  inset: 0;
   background-size: cover;
   background-position: center;
   display: flex;
@@ -2031,13 +2061,24 @@
   transition: opacity 0.15s;
 }
 
+.vbar-section-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 5px 0 4px 2px;
+  display: block;
+}
+
 .vbar-right {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 5px;
-  padding: 8px 16px 8px 20px;
+  padding: 0 16px 8px 20px;
 }
 
 .vbar-row {
@@ -2049,6 +2090,14 @@
 
 .vbar-legend-row {
   gap: 12px;
+}
+
+.vbar-panel-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 // ---- Deck cover (in sidebar, below commander) ------------
@@ -2471,7 +2520,8 @@
 
 .cp-bracket-wrapper {
   position: relative;
-  margin-left: auto;
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid var(--border-dim);
 }
 
 .cp-bracket {
@@ -2672,16 +2722,11 @@
 .cp-check.is-open { filter: brightness(1.3); }
 
 .bracket-info-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 380px;
-  background: var(--bg-raised, #1a1a2e);
+  margin-top: 10px;
+  background: var(--bg-surface);
   border: 1px solid var(--border-dim);
-  border-radius: 10px;
-  padding: 16px;
-  z-index: 200;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .bip-header {
