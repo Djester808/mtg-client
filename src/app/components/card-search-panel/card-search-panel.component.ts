@@ -170,6 +170,21 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   readonly cmcOptions: CmcOption[] = ['0','1','2','3','4','5','6+'];
 
+  // ---- Search history -----------------------------------------------
+
+  searchHistory: string[] = [];
+
+  private loadSearchHistory(): void {
+    try { this.searchHistory = JSON.parse(localStorage.getItem('mtg-search-history') || '[]'); }
+    catch { this.searchHistory = []; }
+  }
+
+  private saveSearchTerm(name: string): void {
+    if (!name) return;
+    this.searchHistory = [...new Set([name, ...this.searchHistory])].slice(0, 200);
+    localStorage.setItem('mtg-search-history', JSON.stringify(this.searchHistory));
+  }
+
   // ---- Per-result state ---------------------------------------------
 
   searchSelectedScryfallId = new Map<string, string>();
@@ -203,9 +218,12 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   onDocClick(e: MouseEvent): void {
     if (this.setDropOpen && !this.elRef.nativeElement.querySelector('.set-dropdown-wrap')?.contains(e.target))
       this.setDropOpen = false;
+    if (this.previewCard && !this.elRef.nativeElement.contains(e.target as Node))
+      this.closePreview();
   }
 
   ngOnInit(): void {
+    this.loadSearchHistory();
     // Load sets (filtered by current non-set query)
     combineLatest([
       this.searchText.valueChanges.pipe(startWith('')),
@@ -385,6 +403,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return card.imageUriSmall;
   }
 
+
   onSelectFocus(oracleId: string): void {
     if (!this.printingsCache.has(oracleId)) this.printingsLoad$.next(oracleId);
   }
@@ -439,6 +458,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     const isLegendary = card.supertypes?.includes('Legendary') ?? false;
     const isCreatureOrPw = (card.cardTypes?.includes(CardType.Creature) || card.cardTypes?.includes(CardType.Planeswalker)) ?? false;
     this.cardAdd.emit({ oracleId: card.oracleId, scryfallId, isCommanderEligible: isLegendary && isCreatureOrPw });
+    if (card.name) this.saveSearchTerm(card.name);
   }
 
   onDragStart(card: CardDto, event: DragEvent): void {

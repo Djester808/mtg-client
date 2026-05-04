@@ -18,9 +18,13 @@
       type="text"
       [formControl]="searchText"
       placeholder="Search cards…"
+      list="card-search-hist"
       autocomplete="off"
       spellcheck="false"
     />
+    <datalist id="card-search-hist">
+      <option *ngFor="let h of searchHistory" [value]="h"></option>
+    </datalist>
     <div class="search-flags">
       <button class="search-flag-btn" [class.is-active]="matchCase" (click)="toggleMatchCase()" title="Match case">Aa</button>
       <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
@@ -191,41 +195,22 @@
           <span class="violation-badge singleton-violation" *ngIf="isSingletonViolation(card)" title="Already in deck (singleton)">⊕ Copy</span>
         </div>
 
-        <!-- Set / printing selector -->
+        <!-- Set / printing selector: always a single stable <select> so native dropdowns
+             are never closed by Angular switching between templates as printings load. -->
         <div class="result-set-wrap">
-          <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else setLoading">
-            <span
-              *ngIf="prints.length === 1; else multiSelect"
-              class="result-set-single"
-              [title]="prints[0].setName">
-              {{ prints[0].setCode.toUpperCase() }} #{{ prints[0].collectorNumber }}
-            </span>
-            <ng-template #multiSelect>
-              <select
-                class="result-set-select"
-                [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-                [title]="setTooltip(card.oracleId)"
-                [class.has-error]="addErrors.has(card.oracleId)"
-                (focus)="onSelectFocus(card.oracleId)"
-                (ngModelChange)="onSetChange(card.oracleId, $event)"
-              >
-                <option value="" disabled>SET</option>
-                <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                  {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                </option>
-              </select>
-            </ng-template>
-          </ng-container>
-          <ng-template #setLoading>
-            <select
-              class="result-set-select"
-              ngModel
-              [class.has-error]="addErrors.has(card.oracleId)"
-              (focus)="onSelectFocus(card.oracleId)"
-            >
-              <option value="" disabled selected>SET</option>
-            </select>
-          </ng-template>
+          <select
+            class="result-set-select"
+            [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
+            [title]="setTooltip(card.oracleId)"
+            [class.has-error]="addErrors.has(card.oracleId)"
+            (focus)="onSelectFocus(card.oracleId)"
+            (ngModelChange)="onSetChange(card.oracleId, $event)"
+          >
+            <option value="" disabled>SET</option>
+            <option *ngFor="let p of (printingsCache.get(card.oracleId) ?? [])" [value]="p.scryfallId" [title]="p.setName">
+              {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
+            </option>
+          </select>
           <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
         </div>
 
@@ -295,6 +280,7 @@
   [printings]="previewPrintings"
   [(viewedScryfallId)]="previewScryfallId"
   [(flipped)]="previewFlipped"
+  [showOverlay]="false"
   (closed)="closePreview()"
 >
   <div extra class="modal-extra-wrap">
