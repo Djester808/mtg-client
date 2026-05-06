@@ -1,0 +1,185 @@
+:host { display: block; }
+
+// ── Horizontal bar chart ──────────────────────────────
+
+.sc-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-height: 80px;
+  padding: 2px 0 8px;
+}
+
+.sc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sc-label {
+  width: 78px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-track {
+  flex: 1;
+  height: 10px;
+  background: var(--bg-raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sc-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.35s ease;
+  min-width: 2px;
+}
+
+.sc-val {
+  width: 22px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+// ── Vertical bar chart ────────────────────────────────
+
+.sc-vbars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 110px;
+  padding: 4px 0 8px;
+  overflow-x: auto;
+}
+
+.sc-vbar-col {
+  flex: 1 0 28px;
+  min-width: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 2px;
+}
+
+.sc-vbar-val {
+  font-size: 9px;
+  color: var(--text-dim);
+  min-height: 12px;
+  line-height: 12px;
+}
+
+.sc-vbar-track {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-raised);
+  border-radius: 3px 3px 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.sc-vbar-fill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.35s ease;
+  min-height: 2px;
+}
+
+.sc-vbar-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  text-align: center;
+}
+
+// ── Pie chart ─────────────────────────────────────────
+
+.sc-pie {
+  padding: 2px 0 8px;
+}
+
+// ── Stacked bar chart ─────────────────────────────────
+
+.sc-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 8px;
+}
+
+.sc-stacked-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100px;
+}
+
+.sc-stacked-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+}
+
+.sc-stacked-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+  border-radius: 3px 3px 0 0;
+  background: var(--bg-raised);
+  transition: height 0.35s ease;
+  min-height: 2px;
+}
+
+.sc-stacked-seg {
+  min-height: 1px;
+  width: 100%;
+  transition: flex 0.35s ease;
+}
+
+.sc-stacked-label {
+  font-size: 14px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-stacked-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sc-stacked-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+// ── Empty state ───────────────────────────────────────
+
+.sc-empty {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 0;
+  text-align: center;
+}

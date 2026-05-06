@@ -1,0 +1,157 @@
+<div class="detail-shell">
+  <div class="detail-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <div class="detail-content" *ngIf="post$ | async as post; else loadingTpl">
+
+    <!-- Header -->
+    <header class="detail-header"
+            [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
+      <div class="header-overlay"></div>
+      <div class="header-inner">
+        <a class="back-btn" routerLink="/forum">← Community Decks</a>
+        <div class="header-meta">
+          <div class="header-format" *ngIf="post.deckFormat">{{ formatLabel(post.deckFormat) }}</div>
+          <div class="header-pips" *ngIf="post.colorIdentity?.length">
+            <span class="color-pip" *ngFor="let c of post.colorIdentity" [ngClass]="colorClass(c)"></span>
+          </div>
+        </div>
+        <h1 class="header-title">{{ post.deckName }}</h1>
+        <div class="header-byline">
+          by <strong>{{ post.authorUsername }}</strong>
+          &nbsp;·&nbsp; {{ timeAgo(post.publishedAt) }}
+          &nbsp;·&nbsp; {{ totalCards(post) }} cards
+        </div>
+        <p class="header-desc" *ngIf="post.description">{{ post.description }}</p>
+        <button class="delete-post-btn"
+                *ngIf="(username$ | async) === post.authorUsername"
+                (click)="deletePost(post.id)">
+          <i class="bi bi-trash3"></i> Delete Post
+        </button>
+      </div>
+    </header>
+
+    <div class="detail-body">
+
+      <!-- Left: card list -->
+      <section class="card-list-section">
+        <div class="board-tabs" *ngIf="totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0">
+          <button class="board-tab" [class.active]="activeTab === 'main'" (click)="activeTab = 'main'">
+            Mainboard ({{ totalCards(post) }})
+          </button>
+          <button class="board-tab" [class.active]="activeTab === 'side'"
+                  *ngIf="totalCards(post, 'side') > 0" (click)="activeTab = 'side'">
+            Sideboard ({{ totalCards(post, 'side') }})
+          </button>
+          <button class="board-tab" [class.active]="activeTab === 'maybe'"
+                  *ngIf="totalCards(post, 'maybe') > 0" (click)="activeTab = 'maybe'">
+            Maybeboard ({{ totalCards(post, 'maybe') }})
+          </button>
+        </div>
+
+        <div class="card-groups">
+          <div class="card-group" *ngFor="let group of getGroups(post)">
+            <div class="group-header">
+              <span class="group-label">{{ group.label }}</span>
+              <span class="group-count">{{ group.total }}</span>
+            </div>
+            <div class="card-row" *ngFor="let card of group.cards">
+              <span class="card-qty">{{ cardCount(card) }}</span>
+              <span class="card-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+              <app-mana-cost
+                *ngIf="card.cardDetails?.manaCost"
+                [cost]="card.cardDetails!.manaCost"
+                class="card-cost">
+              </app-mana-cost>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: stats + comments -->
+      <aside class="side-panel">
+
+        <!-- Stats -->
+        <div class="panel-block">
+          <h3 class="panel-title">Mana Curve</h3>
+          <app-stats-chart
+            [data]="getCurveData(post)"
+            type="vbar">
+          </app-stats-chart>
+        </div>
+
+        <div class="panel-block">
+          <h3 class="panel-title">Card Types</h3>
+          <app-stats-chart
+            [data]="getTypeData(post)"
+            type="bar">
+          </app-stats-chart>
+        </div>
+
+        <!-- Comments -->
+        <div class="panel-block comments-block">
+          <h3 class="panel-title">
+            Comments
+            <span class="comment-count">{{ post.comments.length }}</span>
+          </h3>
+
+          <div class="comments-list">
+            <div class="comment-empty" *ngIf="post.comments.length === 0">
+              No comments yet. Be the first!
+            </div>
+
+            <div class="comment" *ngFor="let c of post.comments">
+              <div class="comment-header">
+                <span class="comment-author">{{ c.authorUsername }}</span>
+                <span class="comment-time">{{ timeAgo(c.createdAt) }}</span>
+                <div class="comment-actions" *ngIf="(username$ | async) === c.authorUsername">
+                  <button class="comment-action-btn" (click)="startEdit(c)">Edit</button>
+                  <button class="comment-action-btn danger" (click)="deleteComment(post.id, c.id)">Delete</button>
+                </div>
+              </div>
+
+              <div *ngIf="editingCommentId !== c.id" class="comment-body">{{ c.content }}</div>
+
+              <div *ngIf="editingCommentId === c.id" class="comment-edit">
+                <textarea class="comment-textarea" [(ngModel)]="editDraft" rows="3"></textarea>
+                <div class="comment-edit-actions">
+                  <button class="comment-submit-btn" (click)="submitEdit(post.id, c.id)">Save</button>
+                  <button class="comment-cancel-btn" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="comment-form" *ngIf="isLoggedIn$ | async; else signInPrompt">
+            <textarea class="comment-textarea"
+                      [(ngModel)]="commentDraft"
+                      placeholder="Leave a comment or suggestion..."
+                      rows="3">
+            </textarea>
+            <button class="comment-submit-btn"
+                    [disabled]="!commentDraft.trim()"
+                    (click)="submitComment(post.id)">
+              Post Comment
+            </button>
+          </div>
+
+          <ng-template #signInPrompt>
+            <p class="sign-in-prompt">
+              <a routerLink="/login">Sign in</a> to leave a comment.
+            </p>
+          </ng-template>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+
+  <ng-template #loadingTpl>
+    <div class="loading-state" *ngIf="loading$ | async">
+      <div class="spinner"></div>
+      <span>Loading deck...</span>
+    </div>
+  </ng-template>
+</div>

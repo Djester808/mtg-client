@@ -38,6 +38,9 @@ export class CardModalComponent implements OnInit, OnChanges {
   @Input() alsoOwnedIds: string[] = [];
 
   @Input() isGameChanger = false;
+  /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
+   *  in a panel and click-outside is handled by the parent). */
+  @Input() showOverlay = true;
   @Input() isBanned = false;
 
   // Position / size — managed internally, centred on first render

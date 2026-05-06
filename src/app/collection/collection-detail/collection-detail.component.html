@@ -38,15 +38,21 @@
           (drop)="onAreaDrop($event)">
 
       <!-- Filter bar (only when cards exist) -->
-      <div class="filter-bar" *ngIf="(collection$ | async)?.cards?.length">
+      <ng-container *ngIf="collection$ | async as col">
+      <div class="filter-bar" *ngIf="col.cards.length">
         <div class="filter-wrap">
           <span class="filter-icon"><i class="bi bi-search"></i></span>
           <input
             class="filter-input"
             type="text"
             [(ngModel)]="filterQuery"
+            list="col-filter-sugg"
+            autocomplete="off"
             placeholder="Filter cards in collection…"
           />
+          <datalist id="col-filter-sugg">
+            <option *ngFor="let n of collectionCardNames(col)" [value]="n"></option>
+          </datalist>
         </div>
         <div class="zoom-group">
           <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -54,6 +60,7 @@
           <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
         </div>
       </div>
+      </ng-container>
 
       <!-- Legend -->
       <div class="legend" *ngIf="(collection$ | async)?.cards?.length">

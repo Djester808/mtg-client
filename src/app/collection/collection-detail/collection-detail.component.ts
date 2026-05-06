@@ -264,6 +264,12 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card list helpers -----------------------------------------
 
+  collectionCardNames(collection: CollectionDetailDto): string[] {
+    return [...new Set(
+      collection.cards.map(c => c.cardDetails?.name).filter((n): n is string => !!n)
+    )].sort();
+  }
+
   filteredCards(collection: CollectionDetailDto): CollectionCardDto[] {
     if (!this.filterQuery.trim()) return collection.cards;
     const q = this.filterQuery.toLowerCase();

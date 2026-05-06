@@ -8,8 +8,9 @@ class DeckDetailPage extends BasePage {
     this.filterInput    = By.css('.filter-input');
     this.sortSelect     = By.css('.sort-select');
     this.addCardsBtn    = By.css('.add-btn');
-    this.statsBtn       = By.css('.stats-btn');
-    this.manaBtn        = By.css('.mana-btn');
+    this.statsBtn       = By.css('.tool-btn[title="Stats"]');
+    this.commanderBtn   = By.css('.tool-btn--cmdr');
+    this.manaBtn        = By.css('.tool-btn--mana');
     this.manaPanelHeader = By.css('.mana-header');
     this.sidePanel      = By.css('.side-panel');
     this.cardRows       = By.css('.card-row');
@@ -137,7 +138,7 @@ class DeckDetailPage extends BasePage {
   }
 
   async openCommanderSearch() {
-    await this.click(this.statsBtn);
+    await this.click(this.commanderBtn);
     await this.waitForVisible(By.css('.side-panel.is-open'));
     // When no commander is set, click the portrait placeholder; otherwise use the Change button
     const hasChangeBtn = await this.isPresent(this.cpSearchBtn, 1000);
@@ -471,6 +472,60 @@ class DeckDetailPage extends BasePage {
 
     if (typeof result !== 'string' || !result.startsWith('ok'))
       throw new Error('multiDragFreeCardsByNg failed: ' + result);
+  }
+
+  // ── Board tabs ────────────────────────────────────────────────────────────
+
+  /** Returns the label of the currently active board tab. */
+  async getActiveBoard() {
+    const active = await this.driver.findElement(By.css('.board-tab.is-active'));
+    return (await active.getText()).split('\n')[0].trim();
+  }
+
+  /** Clicks the board tab with the given label: 'Main Deck', 'Sideboard', or 'Maybeboard'. */
+  async switchToBoard(label) {
+    const labelUpper = label.toUpperCase();
+    const tabs = await this.driver.findElements(By.css('.board-tab'));
+    for (const tab of tabs) {
+      const text = (await tab.getText()).toUpperCase();
+      if (text.includes(labelUpper)) {
+        await this.driver.executeScript('arguments[0].click()', tab);
+        await this.driver.wait(async () => {
+          const active = await this.driver.findElement(By.css('.board-tab.is-active'));
+          return (await active.getText()).toUpperCase().includes(labelUpper);
+        }, 3000, `Board tab "${label}" did not become active`);
+        return;
+      }
+    }
+    throw new Error(`Board tab "${label}" not found`);
+  }
+
+  /** Returns the numeric count shown on a board tab. Returns 0 if badge not present. */
+  async getBoardTabCount(label) {
+    const labelUpper = label.toUpperCase();
+    const tabs = await this.driver.findElements(By.css('.board-tab'));
+    for (const tab of tabs) {
+      const text = (await tab.getText()).toUpperCase();
+      if (text.includes(labelUpper)) {
+        const counts = await tab.findElements(By.css('.board-tab-count'));
+        if (counts.length === 0) return 0;
+        const countText = await counts[0].getText();
+        return parseInt(countText.trim(), 10) || 0;
+      }
+    }
+    return 0;
+  }
+
+  /** Returns activeBoard value from the component. */
+  async getActiveBoardState() {
+    return this.driver.executeScript(`
+      try {
+        const el = document.querySelector('app-deck-detail');
+        if (!el) return null;
+        const comp = ng.getComponent(el);
+        return comp ? comp.activeBoard : null;
+      } catch(e) { return 'error:' + e.message; }
+    `);
   }
 
   /** Increment a card's qty in free mode (first .ctrl-inc button). */

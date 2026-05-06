@@ -57,6 +57,8 @@ describe('Deck Detail', () => {
 
   test('stats panel toggles open', async () => {
     if (!hasDecks) return;
+    const hasStatsBtn = await page.isPresent(page.statsBtn, 1000);
+    if (!hasStatsBtn) return; // stats button only present for commander-format decks
     await page.toggleStats();
     const open = await page.isSidePanelOpen();
     expect(open).toBe(true);

@@ -9,10 +9,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { StatsChartComponent, ChartEntry, StackedBarEntry } from '../../components/stats-chart/stats-chart.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, mergeMap, switchMap, takeUntil, of, catchError, map, filter, take,
+  Observable, Subject, mergeMap, switchMap, takeUntil, of, catchError, map, filter, take, forkJoin,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
@@ -27,6 +28,8 @@ import { CardSearchPanelComponent } from '../../components/card-search-panel/car
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
 import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/mana-suggest-panel.component';
+import { ForumActions } from '../../store/forum/forum.actions';
+import { selectForumPublishLoading } from '../../store/forum/forum.selectors';
 
 export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set';
 export type ViewMode = 'list' | 'visual' | 'free';
@@ -58,12 +61,19 @@ export interface DeckStats {
   avgCmc: number;
   curve: { cmc: number; count: number; label: string }[];
   curveMax: number;
+  manaPips: { color: string; count: number }[];
+  manaProduction: { color: string; count: number }[];
+  creatureSubtypes: { name: string; count: number }[];
+  colorByCmc: StackedBarEntry[];
+  landSubtypes: { name: string; count: number; deckCard: CollectionCardDto | null }[];
+  tokensNeeded: { tokenName: string; description: string; creatorCard: CollectionCardDto }[];
+  emblemSources: { name: string; imageUri: string | null; manaCost: string; sourceCard: CollectionCardDto }[];
 }
 
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent, ManaSuggestPanelComponent],
+  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent, ManaSuggestPanelComponent, StatsChartComponent],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,14 +84,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   commanderCardDetails$: Observable<CardDto | null>;
 
   filterQuery     = '';
+  filterCardNames: string[] = [];
   sortMode: SortMode = 'cmc';
   viewMode: ViewMode = 'list';
   textStyle       = false;
   zoomLevel = 1.0;
+  activeBoard: 'main' | 'side' | 'maybe' = 'main';
   showSearchPanel      = false;
   showSuggestionsPanel = false;
   showManaSuggestPanel = false;
   showSidePanel        = false;
+  sideTab: 'stats' | 'commander' = 'stats';
 
   freeColumns: FreeColumn[] = [];
   selectedFreeColId: string | null = null;
@@ -101,8 +114,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   showDetailCoverPicker = false;
 
+  showPublishModal  = false;
+  publishDescription = '';
+  publishLoading    = false;
+
+  tokenCardCache = new Map<string, CardDto | null>();
+  landCardCache  = new Map<string, CardDto | null>();
+
+  currentDeck: DeckDetailDto | null = null;
+
   selectedCard: CollectionCardDto | null = null;
   modalViewScryfallId: string | null = null;
+
   modalSlotKey: string | null = null;
   private _modalFlipped = false;
   get modalFlipped(): boolean { return this._modalFlipped; }
@@ -176,8 +199,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadTagHistory();
     this.deckId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(DeckActions.loadDeck({ id: this.deckId }));
+
+    this.store.select(selectForumPublishLoading).pipe(takeUntil(this.destroy$)).subscribe(loading => {
+      this.publishLoading = loading;
+      this.cdr.markForCheck();
+    });
     const savedZoom = localStorage.getItem('deck-zoom');
     if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
 
@@ -198,6 +227,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }
 
     this.deck$.pipe(takeUntil(this.destroy$)).subscribe(deck => {
+      this.currentDeck = deck;
+      this.filterCardNames = deck
+        ? [...new Set(deck.cards.map(c => c.cardDetails?.name).filter((n): n is string => !!n))].sort()
+        : [];
+      if (deck && !this.notesInitialized) {
+        this.notesDraft = deck.notes ?? '';
+        this.notesInitialized = true;
+      }
       if (this.selectedCard && deck) {
         const updated = deck.cards.find(c => c.id === this.selectedCard!.id);
         if (updated) { this.selectedCard = updated; this.cdr.markForCheck(); }
@@ -207,6 +244,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.syncFreeColumns(deck);
         this.cdr.markForCheck();
       }
+      if (deck) this.loadTokenImages(deck);
     });
 
     this.printingsLoad$.pipe(
@@ -234,6 +272,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void { this.checkUnsaved(() => this.router.navigate(['/deck'])); }
+
+  openPublishModal(): void {
+    this.showPublishModal = true;
+    this.publishDescription = '';
+  }
+
+  closePublishModal(): void {
+    this.showPublishModal = false;
+  }
+
+  submitPublish(): void {
+    if (!this.currentDeck) return;
+    this.store.dispatch(ForumActions.publishDeck({
+      deckId: this.currentDeck.id,
+      description: this.publishDescription.trim() || null,
+    }));
+    this.showPublishModal = false;
+  }
 
   // ---- Sort & filter ----------------------------------------
 
@@ -1120,7 +1176,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   totalCount(deck: DeckDetailDto): number {
-    return deck.cards.reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
+    return deck.cards
+      .filter(c => (c.board ?? 'main') === 'main')
+      .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
   }
 
   cardCount(card: CollectionCardDto): number {
@@ -1128,7 +1186,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   private isLand(card: CollectionCardDto): boolean {
-    return card.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
+    return card.cardDetails?.cardTypes?.includes(CardType.Land) ?? false;
   }
 
   getGroups(deck: DeckDetailDto): CmcGroup[] {
@@ -1149,7 +1207,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       const groups: CmcGroup[] = [];
       for (const type of order) {
         const cards = filtered
-          .filter(c => c.cardDetails?.cardTypes.includes(type))
+          .filter(c => c.cardDetails?.cardTypes?.includes(type))
           .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
                         || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
         if (cards.length)
@@ -1415,19 +1473,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   trackByGroupKey(_index: number, group: CmcGroup): string { return group.key; }
 
   filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
-    const cards = deck.commanderOracleId
-      ? deck.cards.filter(c => c.oracleId !== deck.commanderOracleId)
-      : deck.cards;
+    const board = this.activeBoard;
+    let cards = deck.cards.filter(c => (c.board ?? 'main') === board);
+    if (board === 'main' && deck.commanderOracleId) {
+      cards = cards.filter(c => c.oracleId !== deck.commanderOracleId);
+    }
     if (!this.filterQuery.trim()) return cards;
     const q = this.filterQuery.toLowerCase();
     return cards.filter(c => c.cardDetails?.name.toLowerCase().includes(q));
   }
 
+  boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {
+    return deck.cards
+      .filter(c => (c.board ?? 'main') === board)
+      .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
+  }
+
   getDeckStats(deck: DeckDetailDto): DeckStats {
-    const cards = deck.cards;
+    const cards = deck.cards.filter(c => (c.board ?? 'main') === 'main');
     const total = cards.reduce((s, c) => s + this.cardCount(c), 0);
     const countOf = (type: CardType) =>
-      cards.filter(c => c.cardDetails?.cardTypes.includes(type)).reduce((s, c) => s + this.cardCount(c), 0);
+      cards.filter(c => c.cardDetails?.cardTypes?.includes(type)).reduce((s, c) => s + this.cardCount(c), 0);
 
     const lands        = countOf(CardType.Land);
     const creatures    = countOf(CardType.Creature);
@@ -1451,7 +1517,184 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const curve = [1, 2, 3, 4, 5, 6, 7].map(cmc => ({ cmc, count: curveData.get(cmc) ?? 0, label: cmc === 7 ? '7+' : String(cmc) }));
     const curveMax = Math.max(...curve.map(b => b.count), 1);
 
-    return { total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other, avgCmc, curve, curveMax };
+    const ALL_COLORS = ['W', 'U', 'B', 'R', 'G'];
+    const ALL_COLORS_C = [...ALL_COLORS, 'C'];
+
+    // Mana pip breakdown across all non-land costs
+    const pipCounts: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+    for (const c of nonLandCards) {
+      const cost = c.cardDetails?.manaCost ?? '';
+      if (!cost) continue;
+      const re = /\{([^}]+)\}/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(cost)) !== null) {
+        const sym = m[1].toUpperCase();
+        if (sym.includes('/')) {
+          const parts = sym.split('/').filter(p => Object.prototype.hasOwnProperty.call(pipCounts, p));
+          if (parts.length > 0) for (const p of parts) pipCounts[p] += this.cardCount(c) / parts.length;
+        } else if (Object.prototype.hasOwnProperty.call(pipCounts, sym)) {
+          pipCounts[sym] += this.cardCount(c);
+        }
+      }
+    }
+    const manaPips = ALL_COLORS_C
+      .map(color => ({ color, count: Math.round(pipCounts[color] * 10) / 10 }))
+      .filter(p => p.count > 0);
+
+    // Mana production — parse oracle text for "add {X}" patterns
+    const prodCounts: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+    for (const c of cards) {
+      const text = c.cardDetails?.oracleText ?? '';
+      if (!text.toLowerCase().includes('add')) continue;
+      const qty = this.cardCount(c);
+      if (/add (?:one mana of any color|mana of any color|any amount of mana of any)/i.test(text)) {
+        for (const col of ALL_COLORS) prodCounts[col] += qty;
+        continue;
+      }
+      const addRe = /add[^.;\n]*?\{([^}]+)\}/gi;
+      let am: RegExpExecArray | null;
+      while ((am = addRe.exec(text)) !== null) {
+        const sym = am[1].toUpperCase();
+        if (sym.includes('/')) {
+          const parts = sym.split('/').filter(p => Object.prototype.hasOwnProperty.call(prodCounts, p));
+          for (const p of parts) prodCounts[p] += qty;
+        } else if (Object.prototype.hasOwnProperty.call(prodCounts, sym)) {
+          prodCounts[sym] += qty;
+        }
+      }
+    }
+    const manaProduction = ALL_COLORS_C
+      .map(color => ({ color, count: prodCounts[color] }))
+      .filter(p => p.count > 0);
+
+    // Creature subtypes (top 10 by count)
+    const creatureSubMap = new Map<string, number>();
+    for (const c of cards.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Creature))) {
+      const qty = this.cardCount(c);
+      for (const sub of (c.cardDetails?.subtypes ?? [])) {
+        creatureSubMap.set(sub, (creatureSubMap.get(sub) ?? 0) + qty);
+      }
+    }
+    const creatureSubtypes = [...creatureSubMap.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    // Land subtypes
+    const landSubMap = new Map<string, number>();
+    for (const c of cards.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Land))) {
+      const qty = this.cardCount(c);
+      for (const sub of (c.cardDetails?.subtypes ?? [])) {
+        landSubMap.set(sub, (landSubMap.get(sub) ?? 0) + qty);
+      }
+    }
+    const landSubtypes = [...landSubMap.entries()]
+      .map(([name, count]) => ({
+        name,
+        count,
+        deckCard: cards.find(c =>
+          c.cardDetails?.cardTypes?.includes(CardType.Land) &&
+          c.cardDetails?.subtypes?.includes(name)
+        ) ?? null,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Tokens needed — deduplicated list of token types this deck creates
+    const tokenMap = new Map<string, { description: string; creatorCard: CollectionCardDto }>();
+    for (const c of cards) {
+      const text = c.cardDetails?.oracleText ?? '';
+      const tokenRe = /create (?:a|an|one|two|three|four|five|\d+|X|that many) ([^.•\n]+?) tokens?/gi;
+      let tm: RegExpExecArray | null;
+      while ((tm = tokenRe.exec(text)) !== null) {
+        const description = tm[1].trim();
+        const tokenName = description
+          .replace(/^\d+\/[\d*]+\s*/i, '')
+          .replace(/\b(white|blue|black|red|green|colorless|legendary|aura|artifact|creature|enchantment|token)\b/gi, '')
+          .replace(/\s+/g, ' ').trim();
+        if (tokenName && !tokenMap.has(tokenName)) tokenMap.set(tokenName, { description, creatorCard: c });
+      }
+    }
+    const tokensNeeded = [...tokenMap.entries()].map(([tokenName, { description, creatorCard }]) => ({ tokenName, description, creatorCard }));
+
+    // Emblem sources
+    const emblemSources: DeckStats['emblemSources'] = cards
+      .filter(c => (c.cardDetails?.oracleText ?? '').toLowerCase().includes('emblem') && c.cardDetails)
+      .map(c => ({
+        name: c.cardDetails!.name,
+        imageUri: c.cardDetails!.imageUriSmall ?? null,
+        manaCost: c.cardDetails!.manaCost ?? '',
+        sourceCard: c,
+      }));
+
+    // Color breakdown by CMC (non-land cards, buckets 1–7+)
+    const CMC_COLOR_ORDER = ['w', 'u', 'b', 'r', 'g', 'm', 'c'];
+    const CMC_COLOR_MAP: Record<string, string> = {
+      w: '#f0ead6', u: '#60a5fa', b: '#9ca3af', r: '#f87171', g: '#4ade80', m: '#fbbf24', c: '#d1d5db',
+    };
+    const cmcColorBuckets = new Map<number, Map<string, number>>();
+    for (let i = 1; i <= 7; i++) cmcColorBuckets.set(i, new Map());
+    for (const c of nonLandCards) {
+      const cmc = Math.min(Math.max(Math.round(c.cardDetails?.manaValue ?? 0), 1), 7);
+      const qty = this.cardCount(c);
+      const ci = (c.cardDetails?.colorIdentity ?? []).map((x: string) => x.toLowerCase());
+      const key = ci.length === 0 ? 'c' : ci.length === 1 ? ci[0] : 'm';
+      const m = cmcColorBuckets.get(cmc)!;
+      m.set(key, (m.get(key) ?? 0) + qty);
+    }
+    const colorByCmc: StackedBarEntry[] = [1, 2, 3, 4, 5, 6, 7]
+      .map(cmc => ({
+        label: cmc === 7 ? '7+' : String(cmc),
+        segments: CMC_COLOR_ORDER
+          .filter(col => (cmcColorBuckets.get(cmc)?.get(col) ?? 0) > 0)
+          .map(col => ({
+            manaColor: col,
+            value: cmcColorBuckets.get(cmc)!.get(col) ?? 0,
+            label: col === 'm' ? 'Multi' : col.toUpperCase(),
+            color: CMC_COLOR_MAP[col],
+          })),
+      }))
+      .filter(b => b.segments.length > 0);
+
+    return {
+      total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other, avgCmc, curve, curveMax,
+      colorByCmc, manaPips, manaProduction, creatureSubtypes, landSubtypes, tokensNeeded, emblemSources,
+    };
+  }
+
+  // ---- Token image loading ----------------------------------
+
+  private loadTokenImages(deck: DeckDetailDto): void {
+    const stats = this.getDeckStats(deck);
+
+    for (const { tokenName } of stats.tokensNeeded) {
+      if (this.tokenCardCache.has(tokenName)) continue;
+      this.tokenCardCache.set(tokenName, null);
+      this.deckApi.getCardByName(tokenName).pipe(takeUntil(this.destroy$))
+        .subscribe(card => { this.tokenCardCache.set(tokenName, card); this.cdr.markForCheck(); });
+    }
+
+    for (const { name } of stats.landSubtypes) {
+      if (this.landCardCache.has(name)) continue;
+      this.landCardCache.set(name, null);
+      this.deckApi.getCardByName(name).pipe(takeUntil(this.destroy$))
+        .subscribe(card => { this.landCardCache.set(name, card); this.cdr.markForCheck(); });
+    }
+  }
+
+  openExternalCard(card: CardDto | null): void {
+    if (!card) return;
+    const synthetic: CollectionCardDto = {
+      id: card.cardId,
+      oracleId: card.oracleId,
+      scryfallId: null,
+      quantity: 1,
+      quantityFoil: 0,
+      notes: null,
+      board: 'main',
+      addedAt: '',
+      cardDetails: card,
+    };
+    this.openCard(synthetic);
   }
 
   // ---- Side panel / Search panel ----------------------------
@@ -1461,11 +1704,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  openSidePanel(tab: 'stats' | 'commander'): void {
+    this.showSidePanel = this.sideTab === tab ? !this.showSidePanel : true;
+    this.sideTab = tab;
+    this.showSearchPanel = false;
+    this.showManaSuggestPanel = false;
+    this.showSuggestionsPanel = false;
+    this.cdr.markForCheck();
+  }
+
   toggleSearchPanel(): void {
     this.showSearchPanel = !this.showSearchPanel;
     if (this.showSearchPanel) {
       this.showManaSuggestPanel = false;
       this.showSuggestionsPanel = false;
+      this.showSidePanel = false;
     } else {
       this.commanderSearchMode = false;
     }
@@ -1480,7 +1733,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   onPanelCardAdd(event: { oracleId: string; scryfallId: string; isCommanderEligible?: boolean }): void {
     this.store.dispatch(DeckActions.addCard({
       deckId: this.deckId,
-      request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId },
+      request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId, board: this.activeBoard },
     }));
     if (this.commanderSearchMode) {
       if (event.isCommanderEligible) {
@@ -1599,7 +1852,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card modal --------------------------------------------
 
+  openStatCard(card: CollectionCardDto | null): void {
+    console.log('[openStatCard] called, card:', card?.cardDetails?.name ?? card?.oracleId ?? 'null');
+    if (!card) return;
+    this.openCard(card);
+  }
+
   openCard(card: CollectionCardDto, slotKey?: string): void {
+    console.log('[openCard] called, card:', card?.cardDetails?.name ?? card?.oracleId);
     this.selectedCard = card;
     this.modalSlotKey = slotKey ?? null;
     this._modalFlipped = slotKey ? this.flippedCardIds.has(slotKey) : false;
@@ -1607,9 +1867,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
     if (!cached) this.printingsLoad$.next(card.oracleId);
     this.cdr.markForCheck();
+    console.log('[openCard] selectedCard set:', !!this.selectedCard);
   }
 
   closeCard(): void { this.selectedCard = null; this.modalSlotKey = null; this.cdr.markForCheck(); }
+
 
   toggleTileFlip(slotKey: string, _card: CollectionCardDto, event: MouseEvent): void {
     event.stopPropagation();
@@ -1664,6 +1926,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const t = tag.trim().toLowerCase();
     if (!t || (deck.tags ?? []).includes(t)) return;
     const tags = [...(deck.tags ?? []), t];
+    this.saveTagToHistory(t);
     this.store.dispatch(DeckActions.updateDeckMeta({ id: deck.id, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags }));
   }
 
@@ -1700,6 +1963,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   showCommanderPicker = false;
   cpSlotDragOver      = false;
   commanderSearchMode = false;
+  aiBuilding          = false;
+  aiBuildResult: { cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number } | null = null;
+  aiBuildError: string | null = null;
+  aiBuildBracket      = 3;
+  aiBuildPrice        = 'any';
+  aiBuildSideboard    = false;
+  aiBuildMaybeboard   = false;
+
+  notesDraft          = '';
+  private notesInitialized = false;
 
   toggleFormatMenu(): void {
     this.showFormatMenu = !this.showFormatMenu;
@@ -1708,6 +1981,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   setFormat(format: string | null, deck: DeckDetailDto): void {
     this.showFormatMenu = false;
+    if (format !== 'commander' && this.sideTab === 'commander' && this.showSidePanel) {
+      this.showSidePanel = false;
+    }
     // Clearing format also clears the commander
     const commanderOracleId = format === 'commander' ? (deck.commanderOracleId ?? null) : null;
     this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format, commanderOracleId, tags: deck.tags ?? [] }));
@@ -1718,6 +1994,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.showCommanderPicker = false;
     this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: oracleId, tags: deck.tags ?? [] }));
     this.cdr.markForCheck();
+  }
+
+  saveNotes(deck: DeckDetailDto): void {
+    this.store.dispatch(DeckActions.updateDeckMeta({
+      id: this.deckId,
+      name: deck.name,
+      coverUri: deck.coverUri ?? null,
+      format: deck.format ?? null,
+      commanderOracleId: deck.commanderOracleId ?? null,
+      tags: deck.tags ?? [],
+      notes: this.notesDraft,
+    }));
   }
 
   onCpSlotDragOver(event: DragEvent, deck: DeckDetailDto): void {
@@ -1758,6 +2046,29 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  aiBuildDeck(deck: DeckDetailDto): void {
+    if (!deck.commanderOracleId || this.aiBuilding) return;
+    this.aiBuilding   = true;
+    this.aiBuildResult = null;
+    this.aiBuildError  = null;
+    this.cdr.markForCheck();
+    this.deckApi.aiBuildDeck(deck.id, deck.commanderOracleId, this.aiBuildBracket, this.aiBuildPrice, this.aiBuildSideboard, this.aiBuildMaybeboard).pipe(
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: result => {
+        this.aiBuilding    = false;
+        this.aiBuildResult = result;
+        this.store.dispatch(DeckActions.loadDeck({ id: deck.id }));
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.aiBuilding   = false;
+        this.aiBuildError = 'Build failed. Please try again.';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   /** Cards eligible to be commander: legendary creatures or planeswalkers. */
   eligibleCommanders(deck: DeckDetailDto): CollectionCardDto[] {
     return deck.cards.filter(c => {
@@ -1777,7 +2088,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   /** Cards that are banned in Commander. */
   bannedInCommander(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => c.cardDetails?.legalities?.['commander'] === 'banned');
+    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && c.cardDetails?.legalities?.['commander'] === 'banned');
   }
 
   bannedViolationNames(deck: DeckDetailDto): string {
@@ -1786,7 +2097,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   /** Cards on the Commander game changers list (legal but flagged as highly impactful). */
   gameChangerCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => c.cardDetails?.gameChanger === true);
+    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && c.cardDetails?.gameChanger === true);
   }
 
   gameChangerNames(deck: DeckDetailDto): string {
@@ -1795,12 +2106,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   /** Cards that grant an extra turn. */
   extraTurnCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => /takes? an extra turn/i.test(c.cardDetails?.oracleText ?? ''));
+    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && /takes? an extra turn/i.test(c.cardDetails?.oracleText ?? ''));
   }
 
   /** Cards that destroy or exile all (or all nonbasic) lands. */
   mldCards(deck: DeckDetailDto): CollectionCardDto[] {
     return deck.cards.filter(c => {
+      if ((c.board ?? 'main') !== 'main') return false;
       const text = c.cardDetails?.oracleText ?? '';
       return /destroy all (?:nonbasic )?lands/i.test(text)
           || /exile all (?:\w+, )*lands/i.test(text)
@@ -1814,7 +2126,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const etCards = this.extraTurnCards(deck);
     if (etCards.length === 0) return false;
     if (etCards.length >= 2) return true;
-    return deck.cards.some(c => {
+    return deck.cards.filter(c => (c.board ?? 'main') === 'main').some(c => {
       const text = c.cardDetails?.oracleText ?? '';
       return /return target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
           || /cast target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
@@ -1916,20 +2228,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
    *  Counts across all records sharing the same oracleId (different printings
    *  of the same card each contribute their quantity). */
   singletonViolations(deck: DeckDetailDto): CollectionCardDto[] {
+    const mainCards = deck.cards.filter(c => (c.board ?? 'main') === 'main');
     const totalByOracle = new Map<string, number>();
-    for (const c of deck.cards) {
+    for (const c of mainCards) {
       if (!this.isBasicLand(c))
         totalByOracle.set(c.oracleId, (totalByOracle.get(c.oracleId) ?? 0) + this.cardCount(c));
     }
-    return deck.cards.filter(c =>
+    return mainCards.filter(c =>
       !this.isBasicLand(c) && (totalByOracle.get(c.oracleId) ?? 0) > 1
     );
   }
 
-  /** Total copies of a card across all records with the same oracleId. */
+  /** Total copies of a card across all records with the same oracleId on the same board. */
   totalOracleCount(card: CollectionCardDto, deck: DeckDetailDto): number {
     return deck.cards
-      .filter(c => c.oracleId === card.oracleId)
+      .filter(c => c.oracleId === card.oracleId && (c.board ?? 'main') === (card.board ?? 'main'))
       .reduce((sum, c) => sum + this.cardCount(c), 0);
   }
 
@@ -1939,6 +2252,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (!cmdr?.cardDetails) return [];
     const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
     return deck.cards.filter(c => {
+      if ((c.board ?? 'main') !== 'main') return false;
       if (c.oracleId === cmdr.oracleId) return false;
       return (c.cardDetails?.colorIdentity ?? []).some(col => !allowed.has(col));
     });
@@ -2016,5 +2330,79 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (deck.format === 'commander') return 100;
     if (deck.format === 'brawl' || deck.format === 'oathbreaker') return 60;
     return 60;
+  }
+
+  // ── Stats chart ────────────────────────────────────────────────────────────
+
+  private readonly MANA_COLORS: Record<string, string> = {
+    w: '#f0ead6', u: '#60a5fa', b: '#9ca3af', r: '#f87171', g: '#4ade80', c: '#d1d5db',
+  };
+
+  tagHistory: string[] = [];
+
+  private loadTagHistory(): void {
+    try { this.tagHistory = JSON.parse(localStorage.getItem('mtg-tag-history') || '[]'); }
+    catch { this.tagHistory = []; }
+  }
+
+  private saveTagToHistory(tag: string): void {
+    this.tagHistory = [...new Set([tag, ...this.tagHistory])].slice(0, 200);
+    localStorage.setItem('mtg-tag-history', JSON.stringify(this.tagHistory));
+  }
+
+  deckCardNames(deck: DeckDetailDto): string[] {
+    return [...new Set(
+      deck.cards.map(c => c.cardDetails?.name).filter((n): n is string => !!n)
+    )].sort();
+  }
+
+  sectionChartType: Record<string, 'bar' | 'vbar' | 'pie' | 'stacked'> = {};
+
+  getChartType(section: string): 'bar' | 'vbar' | 'pie' | 'stacked' {
+    return this.sectionChartType[section] ?? 'bar';
+  }
+
+  setChartType(section: string, type: 'bar' | 'vbar' | 'pie' | 'stacked'): void {
+    this.sectionChartType[section] = type;
+    this.cdr.markForCheck();
+  }
+
+  cardTypeData(stats: DeckStats): ChartEntry[] {
+    return [
+      { label: 'Creatures',     value: stats.creatures },
+      { label: 'Lands',         value: stats.lands },
+      { label: 'Instants',      value: stats.instants },
+      { label: 'Sorceries',     value: stats.sorceries },
+      { label: 'Enchantments',  value: stats.enchantments },
+      { label: 'Artifacts',     value: stats.artifacts },
+      { label: 'Planeswalkers', value: stats.planeswalkers },
+      { label: 'Other',         value: stats.other },
+    ].filter(e => e.value > 0);
+  }
+
+  manaPipData(stats: DeckStats): ChartEntry[] {
+    return stats.manaPips.map(p => ({
+      label: p.color === 'm' ? 'Multi' : p.color.toUpperCase(),
+      value: p.count,
+      color: this.MANA_COLORS[p.color.toLowerCase()],
+      manaSymbol: p.color.toLowerCase(),
+    }));
+  }
+
+  manaProductionData(stats: DeckStats): ChartEntry[] {
+    return stats.manaProduction.map(p => ({
+      label: p.color === 'm' ? 'Multi' : p.color.toUpperCase(),
+      value: p.count,
+      color: this.MANA_COLORS[p.color.toLowerCase()],
+      manaSymbol: p.color.toLowerCase(),
+    }));
+  }
+
+  subtypeData(stats: DeckStats): ChartEntry[] {
+    return stats.creatureSubtypes.map(s => ({ label: s.name, value: s.count }));
+  }
+
+  colorByCmcData(stats: DeckStats): StackedBarEntry[] {
+    return stats.colorByCmc;
   }
 }

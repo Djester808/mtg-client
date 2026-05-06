@@ -248,6 +248,23 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
     expect(chips.length).toBeGreaterThan(0);
   });
 
+  test('modal shows notes textarea for owned card', async () => {
+    const hasNotes = await page.isPresent(By.css('.modal-notes-input'), 3000);
+    expect(hasNotes).toBe(true);
+  });
+
+  test('notes textarea accepts input and persists after blur', async () => {
+    const textarea = await driver.findElement(By.css('.modal-notes-input'));
+    await textarea.clear();
+    await textarea.sendKeys('e2e test note');
+    // Blur to trigger save
+    await driver.executeScript('arguments[0].blur()', textarea);
+    await driver.sleep(400);
+    // Re-read value — it should still be our text
+    const val = await textarea.getAttribute('value');
+    expect(val).toContain('e2e test note');
+  });
+
   test('closing modal returns to collection grid', async () => {
     await page.closeModal();
     const gone = !(await page.isPresent(page.cardModal, 2000));

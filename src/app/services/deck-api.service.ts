@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   CollectionCardDto,
   AddCardToCollectionRequest,
@@ -27,6 +28,7 @@ export interface DeckDetailDto {
   format: string | null;
   commanderOracleId: string | null;
   tags: string[];
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
   cards: CollectionCardDto[];
@@ -45,6 +47,7 @@ export interface UpdateDeckRequest {
   format?: string | null;
   commanderOracleId?: string | null;
   tags?: string[];
+  notes?: string | null;
 }
 
 export interface ImportDeckRequest {
@@ -179,5 +182,26 @@ export class DeckApiService {
 
   getCardByScryfallId(scryfallId: string): Observable<CardDto> {
     return this.http.get<CardDto>(`/api/cards/scryfall/${scryfallId}`);
+  }
+
+  getCardByName(name: string): Observable<CardDto | null> {
+    const n = encodeURIComponent(name);
+    return this.http.get<CardDto>(`/api/cards/named?name=${n}`).pipe(
+      catchError(() => of(null)),
+    );
+  }
+
+  aiBuildDeck(
+    deckId: string,
+    commanderOracleId: string,
+    bracket: number = 3,
+    priceRange: string = 'any',
+    includeSideboard: boolean = false,
+    includeMaybeboard: boolean = false,
+  ): Observable<{ cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number }> {
+    return this.http.post<{ cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number }>(
+      `${this.base}/${deckId}/ai-build`,
+      { commanderOracleId, bracket, priceRange, includeSideboard, includeMaybeboard },
+    );
   }
 }

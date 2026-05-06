@@ -1,0 +1,64 @@
+<div class="forum-shell">
+  <div class="forum-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <div class="forum-content">
+    <header class="forum-header">
+      <div class="forum-header-left">
+        <h1 class="forum-title">Community Decks</h1>
+        <p class="forum-subtitle">Browse decks shared by other players</p>
+      </div>
+      <ng-container *ngIf="isLoggedIn$ | async">
+        <a class="publish-btn" routerLink="/deck">
+          <i class="bi bi-share"></i> Publish a Deck
+        </a>
+      </ng-container>
+    </header>
+
+    <div class="posts-loading" *ngIf="loading$ | async">
+      <div class="spinner"></div>
+      <span>Loading decks...</span>
+    </div>
+
+    <div class="posts-empty" *ngIf="!(loading$ | async) && (posts$ | async)?.length === 0">
+      <i class="bi bi-collection"></i>
+      <p>No decks published yet. Be the first!</p>
+    </div>
+
+    <div class="posts-grid" *ngIf="!(loading$ | async) && (posts$ | async)?.length">
+      <a class="post-card" *ngFor="let post of posts$ | async"
+         [routerLink]="['/forum', post.id]">
+
+        <div class="post-cover"
+             [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
+          <div class="post-cover-overlay"></div>
+          <div class="post-format-badge" *ngIf="post.deckFormat">
+            {{ formatLabel(post.deckFormat) }}
+          </div>
+          <div class="post-pips" *ngIf="post.colorIdentity?.length">
+            <span class="color-pip" *ngFor="let c of post.colorIdentity"
+                  [ngClass]="colorClass(c)"></span>
+          </div>
+        </div>
+
+        <div class="post-body">
+          <h2 class="post-deck-name">{{ post.deckName }}</h2>
+          <p class="post-author">by {{ post.authorUsername }}</p>
+          <p class="post-desc" *ngIf="post.description">{{ post.description }}</p>
+          <div class="post-meta">
+            <span class="post-meta-item">
+              <i class="bi bi-collection"></i> {{ post.cardCount }} cards
+            </span>
+            <span class="post-meta-item">
+              <i class="bi bi-chat"></i> {{ post.commentCount }}
+            </span>
+            <span class="post-meta-item post-time">{{ timeAgo(post.publishedAt) }}</span>
+          </div>
+        </div>
+
+      </a>
+    </div>
+  </div>
+</div>

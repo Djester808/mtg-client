@@ -33,6 +33,7 @@ export interface SuggestionCategory {
 export class DeckSuggestionsPanelComponent {
   @Input() deck: DeckDetailDto | null = null;
   @Input() commanderCard: CardDto | null = null;
+  @Input() tagSuggestions: string[] = [];
 
   @Output() cardAdd    = new EventEmitter<{ oracleId: string; scryfallId: string }>();
   @Output() cardRemove = new EventEmitter<string>(); // emits oracleId

@@ -19,8 +19,8 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
   };
 }
 
-function makeDeck(cards: CollectionCardDto[] = []): DeckDetailDto {
-  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], cards };
+function makeDeck(cards: CollectionCardDto[] = [], format: string | null = null): DeckDetailDto {
+  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], cards };
 }
 
 const INITIAL_STATE = {
@@ -194,6 +194,215 @@ describe('DeckDetailComponent — getGroups (CMC sort)', () => {
     const groups = component.getGroups(makeDeck(cards));
     const keys = groups.map(g => g.key);
     expect(keys.indexOf('type-Creature')).toBeLessThan(keys.indexOf('type-Instant'));
+  });
+});
+
+// ── cardCount ────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — cardCount', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('sums quantity and quantityFoil', async () => {
+    const { component } = await setup();
+    expect(component.cardCount(makeDeckCard({ quantity: 2, quantityFoil: 1 }))).toBe(3);
+  });
+
+  it('returns quantity when quantityFoil is 0', async () => {
+    const { component } = await setup();
+    expect(component.cardCount(makeDeckCard({ quantity: 4, quantityFoil: 0 }))).toBe(4);
+  });
+
+  it('returns quantityFoil when quantity is 0', async () => {
+    const { component } = await setup();
+    expect(component.cardCount(makeDeckCard({ quantity: 0, quantityFoil: 2 }))).toBe(2);
+  });
+});
+
+// ── totalCount ───────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — totalCount', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns 0 for an empty deck', async () => {
+    const { component } = await setup();
+    expect(component.totalCount(makeDeck([]))).toBe(0);
+  });
+
+  it('sums quantity + quantityFoil across all cards', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 1 }),
+      makeDeckCard({ id: 'c2', quantity: 2, quantityFoil: 0 }),
+    ];
+    expect(component.totalCount(makeDeck(cards))).toBe(6);
+  });
+
+  it('counts to 100 for a full commander deck', async () => {
+    const { component } = await setup();
+    const cards = Array.from({ length: 100 }, (_, i) =>
+      makeDeckCard({ id: `c${i}`, oracleId: `oracle-${i}`, quantity: 1, quantityFoil: 0 })
+    );
+    expect(component.totalCount(makeDeck(cards))).toBe(100);
+  });
+});
+
+// ── targetCount ──────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — targetCount', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns 100 for commander', async () => {
+    const { component } = await setup();
+    expect(component.targetCount({ ...makeDeck(), format: 'commander' })).toBe(100);
+  });
+
+  it('returns 60 for standard', async () => {
+    const { component } = await setup();
+    expect(component.targetCount({ ...makeDeck(), format: 'standard' })).toBe(60);
+  });
+
+  it('returns 60 for null format', async () => {
+    const { component } = await setup();
+    expect(component.targetCount(makeDeck())).toBe(60);
+  });
+
+  it('returns 60 for brawl', async () => {
+    const { component } = await setup();
+    expect(component.targetCount({ ...makeDeck(), format: 'brawl' })).toBe(60);
+  });
+});
+
+// ── singletonViolations ──────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — singletonViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty when every oracle id appears once', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1 }),
+      makeDeckCard({ id: 'c2', oracleId: 'o2', quantity: 1 }),
+    ];
+    expect(component.singletonViolations(makeDeck(cards))).toHaveSize(0);
+  });
+
+  it('flags a card with quantity > 1', async () => {
+    const { component } = await setup();
+    const cards = [makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2 })];
+    expect(component.singletonViolations(makeDeck(cards))).toHaveSize(1);
+  });
+
+  it('flags two different printings of the same oracle id', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', oracleId: 'shared', quantity: 1, quantityFoil: 0 }),
+      makeDeckCard({ id: 'c2', oracleId: 'shared', quantity: 1, quantityFoil: 0 }),
+    ];
+    expect(component.singletonViolations(makeDeck(cards))).toHaveSize(2);
+  });
+
+  it('exempts basic lands from singleton rule', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({
+        id: 'f1', oracleId: 'forest', quantity: 10,
+        cardDetails: makeCard({ supertypes: ['Basic'], cardTypes: [CardType.Land], name: 'Forest' }),
+      }),
+    ];
+    expect(component.singletonViolations(makeDeck(cards))).toHaveSize(0);
+  });
+});
+
+// ── colorIdentityViolations ──────────────────────────────────────────────────
+
+describe('DeckDetailComponent — colorIdentityViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty when deck has no commander', async () => {
+    const { component } = await setup();
+    const cards = [makeDeckCard({ cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) })];
+    expect(component.colorIdentityViolations(makeDeck(cards))).toHaveSize(0);
+  });
+
+  it('returns empty when all cards match commander color identity', async () => {
+    const { component } = await setup();
+    const commander = makeDeckCard({
+      id: 'cmdr', oracleId: 'cmdr-oracle',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
+    const spell = makeDeckCard({
+      id: 'spell', oracleId: 'spell-oracle',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
+    const deck = { ...makeDeck([commander, spell]), commanderOracleId: 'cmdr-oracle' };
+    expect(component.colorIdentityViolations(deck)).toHaveSize(0);
+  });
+
+  it('flags cards outside the commander color identity', async () => {
+    const { component } = await setup();
+    const commander = makeDeckCard({
+      id: 'cmdr', oracleId: 'cmdr-oracle',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
+    const offColor = makeDeckCard({
+      id: 'blue-spell', oracleId: 'blue-oracle',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
+    });
+    const deck = { ...makeDeck([commander, offColor]), commanderOracleId: 'cmdr-oracle' };
+    expect(component.colorIdentityViolations(deck).map(c => c.id)).toContain('blue-spell');
+  });
+});
+
+// ── bannedInCommander ────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — bannedInCommander', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty when no cards are banned', async () => {
+    const { component } = await setup();
+    const cards = [makeDeckCard({ cardDetails: makeCard({ legalities: { commander: 'legal' } }) })];
+    expect(component.bannedInCommander(makeDeck(cards))).toHaveSize(0);
+  });
+
+  it('returns banned cards', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'ok',     cardDetails: makeCard({ legalities: { commander: 'legal' } }) }),
+      makeDeckCard({ id: 'banned', cardDetails: makeCard({ legalities: { commander: 'banned' } }) }),
+    ];
+    const result = component.bannedInCommander(makeDeck(cards));
+    expect(result).toHaveSize(1);
+    expect(result[0].id).toBe('banned');
+  });
+});
+
+// ── hasFormatViolations ──────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — hasFormatViolations', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns false for a deck with no format', async () => {
+    const { component } = await setup();
+    expect(component.hasFormatViolations(makeDeck())).toBeFalse();
+  });
+
+  it('returns true for commander deck not at 100 cards', async () => {
+    const { component } = await setup();
+    const cards = [makeDeckCard({ quantity: 99 })];
+    const deck = { ...makeDeck(cards), format: 'commander', commanderOracleId: 'oracle-1' };
+    expect(component.hasFormatViolations(deck)).toBeTrue();
+  });
+
+  it('returns false for a valid 100-card commander deck', async () => {
+    const { component } = await setup();
+    const cards = Array.from({ length: 100 }, (_, i) =>
+      makeDeckCard({
+        id: `c${i}`, oracleId: `oracle-${i}`, quantity: 1,
+        cardDetails: makeCard({ oracleId: `oracle-${i}`, colorIdentity: [ManaColor.Green] }),
+      })
+    );
+    const deck = { ...makeDeck(cards), format: 'commander', commanderOracleId: 'oracle-0' };
+    expect(component.hasFormatViolations(deck)).toBeFalse();
   });
 });
 
@@ -604,20 +813,23 @@ describe('DeckDetailComponent — side panel', () => {
     expect(panel.classList.contains('is-open')).toBeFalse();
   });
 
-  it('stats-btn has is-active class when showSidePanel is true', async () => {
-    const { component, fixture } = await setup();
+  it('stats tool-btn has is-active class when showSidePanel is true', async () => {
+    const { component, fixture, store } = await setup();
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null } });
     component.showSidePanel = true;
     fixture.detectChanges();
-    const btn: HTMLElement = fixture.nativeElement.querySelector('.stats-btn');
+    const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
     expect(btn).toBeTruthy();
     expect(btn.classList.contains('is-active')).toBeTrue();
   });
 
-  it('stats-btn does not have is-active class when showSidePanel is false', async () => {
-    const { component, fixture } = await setup();
+  it('stats tool-btn does not have is-active class when showSidePanel is false', async () => {
+    const { component, fixture, store } = await setup();
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null } });
     component.showSidePanel = false;
     fixture.detectChanges();
-    const btn: HTMLElement = fixture.nativeElement.querySelector('.stats-btn');
+    const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
+    expect(btn).toBeTruthy();
     expect(btn.classList.contains('is-active')).toBeFalse();
   });
 });
@@ -1810,6 +2022,10 @@ describe('DeckDetailComponent — Commander format', () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     fixture.detectChanges();
 
+    // Open the commander tab in the side panel
+    component.openSidePanel('commander');
+    fixture.detectChanges();
+
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.querySelector('.cp-panel'))
@@ -2815,5 +3031,84 @@ describe('DeckDetailComponent — violation panel', () => {
     const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
     const deck = { ...makeDeck([cmdr, bad]), commanderOracleId: 'cmdr-o' };
     expect(component.colorIdViolationColors(bad, deck)).toBe('');
+  });
+});
+
+// ── deckCardNames ─────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — deckCardNames', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('returns empty array for a deck with no cards', async () => {
+    const { component } = await setup();
+    expect(component.deckCardNames(makeDeck([]))).toEqual([]);
+  });
+
+  it('returns sorted unique card names', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Zebra' }) }),
+      makeDeckCard({ id: 'c2', cardDetails: makeCard({ name: 'Ant' }) }),
+      makeDeckCard({ id: 'c3', cardDetails: makeCard({ name: 'Mole' }) }),
+    ];
+    expect(component.deckCardNames(makeDeck(cards))).toEqual(['Ant', 'Mole', 'Zebra']);
+  });
+
+  it('deduplicates names when multiple cards share the same name', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Forest' }) }),
+      makeDeckCard({ id: 'c2', cardDetails: makeCard({ name: 'Forest' }) }),
+    ];
+    const names = component.deckCardNames(makeDeck(cards));
+    expect(names).toEqual(['Forest']);
+  });
+
+  it('omits cards whose cardDetails is null', async () => {
+    const { component } = await setup();
+    const cards = [
+      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Bolt' }) }),
+      makeDeckCard({ id: 'c2', cardDetails: null }),
+    ];
+    const names = component.deckCardNames(makeDeck(cards));
+    expect(names).toEqual(['Bolt']);
+  });
+});
+
+// ── tagHistory ────────────────────────────────────────────────────────────────
+
+describe('DeckDetailComponent — tagHistory', () => {
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('tagHistory is empty on init when localStorage has no entry', async () => {
+    const { component } = await setup();
+    expect(component.tagHistory).toEqual([]);
+  });
+
+  it('tagHistory is loaded from localStorage on init', async () => {
+    localStorage.setItem('mtg-tag-history', JSON.stringify(['aggro', 'combo']));
+    const { component } = await setup();
+    expect(component.tagHistory).toEqual(['aggro', 'combo']);
+  });
+
+  it('addTag saves tag to localStorage and prepends to tagHistory', async () => {
+    const { component } = await setup();
+    component.addTag(makeDeck(), 'ramp');
+    expect(component.tagHistory[0]).toBe('ramp');
+    expect(JSON.parse(localStorage.getItem('mtg-tag-history') || '[]')[0]).toBe('ramp');
+  });
+
+  it('tagHistory deduplicates: re-adding a tag moves it to front', async () => {
+    localStorage.setItem('mtg-tag-history', JSON.stringify(['ramp', 'aggro']));
+    const { component } = await setup();
+    component.addTag(makeDeck(), 'aggro');
+    expect(component.tagHistory[0]).toBe('aggro');
+    expect(component.tagHistory.filter(t => t === 'aggro')).toHaveSize(1);
+  });
+
+  it('tagHistory survives corrupt localStorage gracefully', async () => {
+    localStorage.setItem('mtg-tag-history', 'not-json');
+    const { component } = await setup();
+    expect(component.tagHistory).toEqual([]);
   });
 });

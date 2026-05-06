@@ -7,6 +7,8 @@ import { CollectionListComponent } from './collection/collection-list/collection
 import { CollectionDetailComponent } from './collection/collection-detail/collection-detail.component';
 import { DeckListComponent } from './deck/deck-list/deck-list.component';
 import { DeckDetailComponent } from './deck/deck-detail/deck-detail.component';
+import { ForumListComponent } from './forum/forum-list/forum-list.component';
+import { ForumDetailComponent } from './forum/forum-detail/forum-detail.component';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { authGuard } from './guards/auth.guard';
@@ -58,5 +60,13 @@ export const routes: Routes = [
     path: 'deck/:id',
     component: DeckDetailComponent,
     canActivate: [authGuard],
+  },
+  {
+    path: 'forum',
+    component: ForumListComponent,
+  },
+  {
+    path: 'forum/:id',
+    component: ForumDetailComponent,
   },
 ];

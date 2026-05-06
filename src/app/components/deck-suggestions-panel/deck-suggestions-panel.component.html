@@ -28,8 +28,13 @@
     <input class="sugg-tag-input"
            [(ngModel)]="tagDraft"
            placeholder="+ focus"
+           list="sugg-tag-list"
+           autocomplete="off"
            (keydown.enter)="commitTagInput(); $event.preventDefault()"
            (keydown.comma)="commitTagInput(); $event.preventDefault()" />
+    <datalist id="sugg-tag-list">
+      <option *ngFor="let t of tagSuggestions" [value]="t"></option>
+    </datalist>
   </div>
 </div>
 

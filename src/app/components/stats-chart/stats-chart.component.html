@@ -1,0 +1,68 @@
+<ng-container *ngIf="(type !== 'stacked' ? data.length : stackedData.length) > 0; else noData">
+
+  <!-- Horizontal bar chart -->
+  <div class="sc-bars" *ngIf="type === 'bar'">
+    <div class="sc-bar-row" *ngFor="let d of data; let i = index">
+      <span class="sc-label" [title]="d.label">
+        <i *ngIf="d.manaSymbol" class="ms ms-cost ms-shadow" [ngClass]="'ms-' + d.manaSymbol"></i>
+        <span *ngIf="!d.manaSymbol">{{ d.label }}</span>
+      </span>
+      <div class="sc-track">
+        <div class="sc-fill" [style.width.%]="barPct(d.value)" [style.background]="color(i, d.color)"></div>
+      </div>
+      <span class="sc-val">{{ d.value }}</span>
+    </div>
+  </div>
+
+  <!-- Vertical bar chart -->
+  <div class="sc-vbars" *ngIf="type === 'vbar'">
+    <div class="sc-vbar-col" *ngFor="let d of data; let i = index">
+      <span class="sc-vbar-val">{{ d.value }}</span>
+      <div class="sc-vbar-track">
+        <div class="sc-vbar-fill" [style.height.%]="barPct(d.value)" [style.background]="color(i, d.color)"></div>
+      </div>
+      <span class="sc-vbar-label" [title]="d.label">
+        <i *ngIf="d.manaSymbol" class="ms ms-cost ms-shadow" [ngClass]="'ms-' + d.manaSymbol"></i>
+        <span *ngIf="!d.manaSymbol">{{ d.label }}</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Pie chart -->
+  <div class="sc-pie" *ngIf="type === 'pie'">
+    <app-pie-chart [slices]="pieSlices"></app-pie-chart>
+  </div>
+
+  <!-- Stacked vertical bar chart (CMC × color) -->
+  <div class="sc-stacked" *ngIf="type === 'stacked'">
+    <div class="sc-stacked-chart">
+      <div class="sc-stacked-col" *ngFor="let col of stackedData">
+        <div class="sc-stacked-bar" [style.height.%]="colHeightPct(col)">
+          <div class="sc-stacked-seg"
+               *ngFor="let seg of col.segments"
+               [style.flex]="seg.value"
+               [style.background]="seg.color"
+               [title]="seg.label + ': ' + seg.value">
+          </div>
+        </div>
+        <div class="sc-stacked-label">
+          <i *ngIf="isCmcNumeric(col.label)" class="ms ms-cost ms-shadow" [ngClass]="'ms-' + col.label"></i>
+          <span *ngIf="!isCmcNumeric(col.label)">{{ col.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sc-stacked-legend">
+      <div class="sc-stacked-legend-row" *ngFor="let entry of stackedLegend">
+        <i class="ms ms-cost ms-shadow sc-legend-ms" [ngClass]="'ms-' + entry.manaColor"></i>
+        <span class="sc-legend-label">{{ entry.label }}</span>
+        <span class="sc-legend-pct">{{ entry.total }}</span>
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<ng-template #noData>
+  <div class="sc-empty">No data</div>
+</ng-template>

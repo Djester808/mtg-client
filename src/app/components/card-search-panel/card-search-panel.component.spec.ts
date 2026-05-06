@@ -508,6 +508,73 @@ describe('CardSearchPanelComponent — addPreviewNormal / addPreviewFoil', () =>
   });
 });
 
+// ── Search history ────────────────────────────────────────────────────────────
+
+describe('CardSearchPanelComponent — search history', () => {
+  let component: CardSearchPanelComponent;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    const { gameApi, collectionApi } = makeSpies();
+    await buildModule(gameApi, collectionApi);
+    component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
+  });
+
+  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+
+  it('searchHistory is empty when localStorage has no entry', () => {
+    component.ngOnInit();
+    expect(component.searchHistory).toEqual([]);
+  });
+
+  it('ngOnInit loads searchHistory from localStorage', () => {
+    localStorage.setItem('mtg-search-history', JSON.stringify(['Lightning Bolt', 'Counterspell']));
+    component.ngOnInit();
+    expect(component.searchHistory).toEqual(['Lightning Bolt', 'Counterspell']);
+  });
+
+  it('addCard saves card name to searchHistory', () => {
+    const card = makeCard({ oracleId: 'oracle-bolt', name: 'Lightning Bolt' });
+    component.searchSelectedScryfallId.set('oracle-bolt', 'scry-bolt');
+    component.addCard(card);
+    expect(component.searchHistory[0]).toBe('Lightning Bolt');
+    expect(JSON.parse(localStorage.getItem('mtg-search-history') || '[]')[0]).toBe('Lightning Bolt');
+  });
+
+  it('addCard prepends new term so most recent appears first', () => {
+    localStorage.setItem('mtg-search-history', JSON.stringify(['Counterspell']));
+    component.ngOnInit();
+    const card = makeCard({ oracleId: 'oracle-bolt', name: 'Lightning Bolt' });
+    component.searchSelectedScryfallId.set('oracle-bolt', 'scry-bolt');
+    component.addCard(card);
+    expect(component.searchHistory[0]).toBe('Lightning Bolt');
+    expect(component.searchHistory[1]).toBe('Counterspell');
+  });
+
+  it('addCard deduplicates: re-adding moves term to front', () => {
+    localStorage.setItem('mtg-search-history', JSON.stringify(['Lightning Bolt', 'Counterspell']));
+    component.ngOnInit();
+    const card = makeCard({ oracleId: 'oracle-cs', name: 'Counterspell' });
+    component.searchSelectedScryfallId.set('oracle-cs', 'scry-cs');
+    component.addCard(card);
+    expect(component.searchHistory[0]).toBe('Counterspell');
+    expect(component.searchHistory.filter(t => t === 'Counterspell')).toHaveSize(1);
+  });
+
+  it('addCard does not emit and does not save when no printing is selected', () => {
+    const card = makeCard({ oracleId: 'oracle-x', name: 'Mystery Card' });
+    component.addCard(card);
+    expect(component.searchHistory).toEqual([]);
+    expect(localStorage.getItem('mtg-search-history')).toBeNull();
+  });
+
+  it('searchHistory survives a corrupt localStorage gracefully', () => {
+    localStorage.setItem('mtg-search-history', 'not-json');
+    component.ngOnInit();
+    expect(component.searchHistory).toEqual([]);
+  });
+});
+
 describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreviewFoil', () => {
   let component: CardSearchPanelComponent;
 

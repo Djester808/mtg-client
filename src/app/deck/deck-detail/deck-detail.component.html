@@ -20,6 +20,7 @@
         <input
           class="rename-input"
           [(ngModel)]="renameDraft"
+          autocomplete="off"
           (keydown.enter)="commitRename(deck)"
           (keydown.escape)="cancelRename()"
           (blur)="commitRename(deck)"
@@ -37,8 +38,13 @@
           <input class="deck-tag-input"
                  [(ngModel)]="tagDraft"
                  placeholder="+ tag"
+                 list="deck-tag-sugg"
+                 autocomplete="off"
                  (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
                  (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
+          <datalist id="deck-tag-sugg">
+            <option *ngFor="let t of tagHistory" [value]="t"></option>
+          </datalist>
         </div>
       </div>
 
@@ -82,21 +88,38 @@
         </div>
       </div>
 
-      <div class="header-labeled-group">
-        <span class="header-label">Card Count</span>
-        <span class="header-count"
-              [class.count-ok]="totalCount(deck) === targetCount(deck)"
-              [class.count-bad]="totalCount(deck) !== targetCount(deck) && deck.format">
-          {{ totalCount(deck) }} / {{ targetCount(deck) }}
-        </span>
-      </div>
-
       <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
         <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
         {{ showSearchPanel ? 'Close' : 'Add Cards' }}
       </button>
 
+      <button class="publish-btn" (click)="openPublishModal()" title="Share this deck on the community forum">
+        <i class="bi bi-share"></i> Publish
+      </button>
+
     </ng-container>
+
+    <!-- Publish modal -->
+    <div class="publish-modal-backdrop" *ngIf="showPublishModal" (click)="closePublishModal()">
+      <div class="publish-modal" (click)="$event.stopPropagation()">
+        <h3 class="publish-modal-title">Publish to Forum</h3>
+        <p class="publish-modal-hint">Share this deck with the community. Others can view and comment on it.</p>
+        <textarea class="publish-modal-textarea"
+                  [(ngModel)]="publishDescription"
+                  placeholder="Optional description or notes for the community..."
+                  rows="4">
+        </textarea>
+        <div class="publish-modal-actions">
+          <button class="publish-modal-submit"
+                  [disabled]="publishLoading"
+                  (click)="submitPublish()">
+            <ng-container *ngIf="!publishLoading">Publish</ng-container>
+            <ng-container *ngIf="publishLoading">Publishing...</ng-container>
+          </button>
+          <button class="publish-modal-cancel" (click)="closePublishModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
     <ng-template #loadingHeader>
       <div class="header-center"><h1 class="header-name is-loading">Loading…</h1></div>
     </ng-template>
@@ -126,7 +149,7 @@
         <div class="vbar-row">
           <span class="cp-check" [class.ok]="totalCount(deck) === 100" [class.bad]="totalCount(deck) !== 100">
             <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="totalCount(deck) === 100" [class.bi-x-lg]="totalCount(deck) !== 100"></i></span>
-            {{ totalCount(deck) }}/100
+            Card Count {{ totalCount(deck) }}/100
           </span>
           <span class="cp-check" [class.ok]="!!deck.commanderOracleId" [class.bad]="!deck.commanderOracleId">
             <span class="cp-check-icon"><i class="bi" [class.bi-check-lg]="!!deck.commanderOracleId" [class.bi-x-lg]="!deck.commanderOracleId"></i></span>
@@ -166,8 +189,11 @@
           </span>
 
           <div class="vbar-panel-btns">
-            <button class="tool-btn" [class.is-active]="showSidePanel" (click)="toggleSidePanel()" title="Stats">
+            <button class="tool-btn" [class.is-active]="showSidePanel && sideTab === 'stats'" (click)="openSidePanel('stats')" title="Stats">
               <i class="bi bi-bar-chart-line"></i><span>Stats</span>
+            </button>
+            <button class="tool-btn tool-btn--cmdr" [class.is-active]="showSidePanel && sideTab === 'commander'" (click)="openSidePanel('commander')" title="Commander">
+              <i class="bi bi-person-badge"></i><span>Commander</span>
             </button>
             <button class="tool-btn tool-btn--mana" [class.is-active]="showManaSuggestPanel"
                     (click)="showManaSuggestPanel = !showManaSuggestPanel; showSuggestionsPanel = false; showSearchPanel = false"
@@ -181,6 +207,7 @@
               <i class="bi bi-stars"></i><span>Suggest</span>
             </button>
           </div>
+
         </div>
         <div class="vbar-row vbar-legend-row" *ngIf="hasCommanderViolations(deck)">
           <span class="cp-legend-item"><span class="cp-legend-dot dot-singleton"></span>Too many</span>
@@ -226,6 +253,7 @@
       </div>
 
     </div>
+
   </ng-container>
 
   <!-- Body -->
@@ -238,6 +266,22 @@
           (mouseleave)="onGroupsAreaMouseLeave()"
           (dragover)="onGroupsAreaDragOver($event)"
           (drop)="onGroupsAreaDrop($event)">
+
+      <!-- Board tabs (list/visual only — free mode manages its own layout) -->
+      <div class="board-tabs" *ngIf="viewMode !== 'free'">
+        <button class="board-tab" [class.is-active]="activeBoard === 'main'" (click)="activeBoard = 'main'">
+          Main Deck
+          <span class="board-tab-count">{{ boardCount(deck, 'main') }}</span>
+        </button>
+        <button class="board-tab" [class.is-active]="activeBoard === 'side'" (click)="activeBoard = 'side'">
+          Sideboard
+          <span class="board-tab-count" *ngIf="boardCount(deck, 'side') > 0">{{ boardCount(deck, 'side') }}</span>
+        </button>
+        <button class="board-tab" [class.is-active]="activeBoard === 'maybe'" (click)="activeBoard = 'maybe'">
+          Maybeboard
+          <span class="board-tab-count" *ngIf="boardCount(deck, 'maybe') > 0">{{ boardCount(deck, 'maybe') }}</span>
+        </button>
+      </div>
 
       <!-- Filter bar -->
       <div class="filter-bar">
@@ -272,7 +316,7 @@
         <!-- Filter input: centred -->
         <ng-container *ngIf="viewMode !== 'free'">
           <div class="filter-bar-spacer"></div>
-          <div class="fbar-labeled-group fbar-filter">
+          <div class="fbar-labeled-group fbar-filter" (click)="$event.stopPropagation()">
             <span class="fbar-label">Filter Cards</span>
             <div class="filter-wrap">
               <span class="filter-icon"><i class="bi bi-search"></i></span>
@@ -280,8 +324,13 @@
                 class="filter-input"
                 type="text"
                 [(ngModel)]="filterQuery"
+                list="deck-filter-sugg"
+                autocomplete="off"
                 placeholder="Search…"
               />
+              <datalist id="deck-filter-sugg">
+                <option *ngFor="let n of filterCardNames" [value]="n"></option>
+              </datalist>
             </div>
           </div>
           <div class="filter-bar-spacer"></div>
@@ -310,21 +359,24 @@
             </div>
           </div>
         </ng-container>
+
       </div>
 
       <!-- Loading -->
       <div class="loading-state" *ngIf="loading$ | async">Loading deck…</div>
 
       <!-- Empty -->
-      <div class="empty-state" *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length === 0">
+      <div class="empty-state" *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length === 0">
         <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
-        <p class="empty-sub">Click "Add Cards" to search and add cards to your deck.</p>
+        <p class="empty-sub" *ngIf="activeBoard === 'main'">Click "Add Cards" to search and add cards to your deck.</p>
+        <p class="empty-sub" *ngIf="activeBoard === 'side'">Switch to the Sideboard tab in the search panel to add cards here.</p>
+        <p class="empty-sub" *ngIf="activeBoard === 'maybe'">Switch to the Maybeboard tab in the search panel to add cards here.</p>
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
       </div>
 
       <!-- CMC / Type / Name groups (list + visual + stack) -->
-      <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && deck.cards.length > 0">
+      <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length > 0">
         <div class="groups-list" [class.is-visual]="viewMode === 'visual'">
           <div class="cmc-group" *ngFor="let group of getGroups(deck); trackBy: trackByGroupKey">
 
@@ -502,6 +554,7 @@
               <input *ngIf="editingColumnId === col.id"
                      class="col-label-input"
                      [(ngModel)]="columnLabelDraft"
+                     autocomplete="off"
                      (keydown.enter)="commitColumnLabel()"
                      (keydown.escape)="cancelColumnLabel()"
                      (blur)="commitColumnLabel()"
@@ -584,16 +637,16 @@
 
     </main>
 
-    <!-- Stats drawer (overlays main content) -->
+    <!-- Stats / Commander drawer (overlays main content) -->
     <aside class="side-panel" [class.is-open]="showSidePanel && !showSearchPanel">
       <div class="side-panel-header">
-        <span class="side-panel-title">Stats</span>
+        <span class="side-panel-title">{{ sideTab === 'commander' ? 'Commander' : 'Stats' }}</span>
         <button class="side-panel-close" (click)="toggleSidePanel()"><i class="bi bi-x-lg"></i></button>
       </div>
       <ng-container *ngIf="deck$ | async as deck">
 
-        <!-- Commander panel (in sidebar) -->
-        <ng-container *ngIf="deck.format === 'commander'">
+        <!-- Commander tab -->
+        <ng-container *ngIf="sideTab === 'commander' && deck.format === 'commander'">
           <div class="cp-panel">
 
             <div class="cp-cmdr-label">Commander</div>
@@ -631,6 +684,83 @@
                 </div>
               </ng-template>
             </div>
+
+          <!-- AI Build Deck -->
+          <ng-container *ngIf="commanderCard(deck)">
+            <div class="cp-ai-build">
+              <div class="cp-ai-options">
+                <div class="cp-ai-option-row">
+                  <label class="cp-ai-label">Bracket</label>
+                  <select class="cp-ai-select"
+                          [disabled]="aiBuilding"
+                          (change)="aiBuildBracket = +$any($event.target).value">
+                    <option value="1" [selected]="aiBuildBracket === 1">1 – Casual</option>
+                    <option value="2" [selected]="aiBuildBracket === 2">2 – Core</option>
+                    <option value="3" [selected]="aiBuildBracket === 3">3 – Upgraded</option>
+                    <option value="4" [selected]="aiBuildBracket === 4">4 – Optimized</option>
+                    <option value="5" [selected]="aiBuildBracket === 5">5 – cEDH</option>
+                  </select>
+                </div>
+                <div class="cp-ai-option-row">
+                  <label class="cp-ai-label">Budget</label>
+                  <select class="cp-ai-select"
+                          [disabled]="aiBuilding"
+                          (change)="aiBuildPrice = $any($event.target).value">
+                    <option value="budget" [selected]="aiBuildPrice === 'budget'">Budget (&lt;$100)</option>
+                    <option value="mid" [selected]="aiBuildPrice === 'mid'">Mid (&lt;$500)</option>
+                    <option value="any" [selected]="aiBuildPrice === 'any'">No limit</option>
+                  </select>
+                </div>
+                <div class="cp-ai-option-row cp-ai-checks">
+                  <button type="button" class="cp-ai-toggle"
+                          [class.is-active]="aiBuildSideboard"
+                          [disabled]="aiBuilding"
+                          (click)="aiBuildSideboard = !aiBuildSideboard">
+                    <i class="bi" [class.bi-toggle2-on]="aiBuildSideboard" [class.bi-toggle2-off]="!aiBuildSideboard"></i>
+                    Sideboard
+                  </button>
+                  <button type="button" class="cp-ai-toggle"
+                          [class.is-active]="aiBuildMaybeboard"
+                          [disabled]="aiBuilding"
+                          (click)="aiBuildMaybeboard = !aiBuildMaybeboard">
+                    <i class="bi" [class.bi-toggle2-on]="aiBuildMaybeboard" [class.bi-toggle2-off]="!aiBuildMaybeboard"></i>
+                    Maybeboard
+                  </button>
+                </div>
+              </div>
+              <button class="cp-ai-build-btn"
+                      [disabled]="aiBuilding"
+                      (click)="aiBuildDeck(deck)"
+                      title="Let Claude build a full 99-card deck around your commander">
+                <span *ngIf="!aiBuilding"><i class="bi bi-stars"></i> AI Build Deck</span>
+                <span *ngIf="aiBuilding" class="cp-ai-build-loading">
+                  <i class="bi bi-arrow-repeat cp-ai-spin"></i> Building…
+                </span>
+              </button>
+              <div class="cp-ai-result" *ngIf="aiBuildResult">
+                <i class="bi bi-check-circle-fill"></i>
+                Added {{ aiBuildResult.cardsAdded }} card{{ aiBuildResult.cardsAdded !== 1 ? 's' : '' }}
+                <ng-container *ngIf="aiBuildResult.sideboardAdded"> · {{ aiBuildResult.sideboardAdded }} side</ng-container>
+                <ng-container *ngIf="aiBuildResult.maybeboardAdded"> · {{ aiBuildResult.maybeboardAdded }} maybe</ng-container>
+                <span *ngIf="aiBuildResult.cardsSkipped"> · {{ aiBuildResult.cardsSkipped }} skipped</span>
+              </div>
+              <div class="cp-ai-error" *ngIf="aiBuildError">
+                <i class="bi bi-exclamation-triangle"></i> {{ aiBuildError }}
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Deck Notes -->
+          <div class="cp-notes">
+            <label class="cp-notes-label">Notes</label>
+            <textarea
+              class="cp-notes-textarea"
+              [(ngModel)]="notesDraft"
+              placeholder="Add deck notes, strategy, combos…"
+              rows="5"
+              (blur)="saveNotes(deck)"
+            ></textarea>
+          </div>
 
           </div>
 
@@ -706,9 +836,11 @@
               </ng-container>
             </div>
           </div>
+
         </ng-container>
 
-        <div class="stats-section" *ngIf="!(loading$ | async)">
+        <!-- Stats tab -->
+        <div class="stats-section" *ngIf="sideTab === 'stats' && !(loading$ | async)">
           <ng-container *ngIf="getDeckStats(deck) as stats">
 
             <div class="stats-header">Deck Stats</div>
@@ -717,42 +849,20 @@
               <span class="stat-label">Total Cards</span>
               <span class="stat-val" [class.over-limit]="stats.total > 60">{{ stats.total }}</span>
             </div>
-            <div class="stat-row" *ngIf="stats.lands > 0">
-              <span class="stat-label">Lands</span>
-              <span class="stat-val">{{ stats.lands }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.creatures > 0">
-              <span class="stat-label">Creatures</span>
-              <span class="stat-val">{{ stats.creatures }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.instants > 0">
-              <span class="stat-label">Instants</span>
-              <span class="stat-val">{{ stats.instants }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.sorceries > 0">
-              <span class="stat-label">Sorceries</span>
-              <span class="stat-val">{{ stats.sorceries }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.enchantments > 0">
-              <span class="stat-label">Enchantments</span>
-              <span class="stat-val">{{ stats.enchantments }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.artifacts > 0">
-              <span class="stat-label">Artifacts</span>
-              <span class="stat-val">{{ stats.artifacts }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.planeswalkers > 0">
-              <span class="stat-label">Planeswalkers</span>
-              <span class="stat-val">{{ stats.planeswalkers }}</span>
-            </div>
-            <div class="stat-row" *ngIf="stats.other > 0">
-              <span class="stat-label">Other</span>
-              <span class="stat-val">{{ stats.other }}</span>
-            </div>
             <div class="stat-row" *ngIf="stats.avgCmc > 0">
               <span class="stat-label">Avg. CMC</span>
               <span class="stat-val">{{ stats.avgCmc }}</span>
             </div>
+
+            <div class="curve-header chart-section-header">
+              Card Types
+              <div class="chart-type-toggle">
+                <button class="ctt-btn" [class.is-active]="getChartType('cardTypes') === 'bar'"  (click)="setChartType('cardTypes', 'bar')"  title="Horizontal bars"><i class="bi bi-bar-chart-fill" style="transform:rotate(90deg)"></i></button>
+                <button class="ctt-btn" [class.is-active]="getChartType('cardTypes') === 'vbar'" (click)="setChartType('cardTypes', 'vbar')" title="Vertical bars"><i class="bi bi-bar-chart-fill"></i></button>
+                <button class="ctt-btn" [class.is-active]="getChartType('cardTypes') === 'pie'"  (click)="setChartType('cardTypes', 'pie')"  title="Pie chart"><i class="bi bi-pie-chart-fill"></i></button>
+              </div>
+            </div>
+            <app-stats-chart [data]="cardTypeData(stats)" [type]="getChartType('cardTypes')"></app-stats-chart>
 
             <div class="curve-header">Mana Curve</div>
             <div class="curve-chart">
@@ -770,9 +880,46 @@
               </div>
             </div>
 
+            <ng-container *ngIf="stats.manaPips.length > 0">
+              <div class="curve-header chart-section-header">
+                Mana Cost Pips
+                <div class="chart-type-toggle">
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaPips') === 'bar'"  (click)="setChartType('manaPips', 'bar')"  title="Horizontal bars"><i class="bi bi-bar-chart-fill" style="transform:rotate(90deg)"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaPips') === 'vbar'" (click)="setChartType('manaPips', 'vbar')" title="Vertical bars"><i class="bi bi-bar-chart-fill"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaPips') === 'pie'"  (click)="setChartType('manaPips', 'pie')"  title="Pie chart"><i class="bi bi-pie-chart-fill"></i></button>
+                </div>
+              </div>
+              <app-stats-chart [data]="manaPipData(stats)" [type]="getChartType('manaPips')"></app-stats-chart>
+            </ng-container>
+
+            <ng-container *ngIf="stats.manaProduction.length > 0">
+              <div class="curve-header chart-section-header">
+                Mana Production
+                <div class="chart-type-toggle">
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaProduction') === 'bar'"  (click)="setChartType('manaProduction', 'bar')"  title="Horizontal bars"><i class="bi bi-bar-chart-fill" style="transform:rotate(90deg)"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaProduction') === 'vbar'" (click)="setChartType('manaProduction', 'vbar')" title="Vertical bars"><i class="bi bi-bar-chart-fill"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('manaProduction') === 'pie'"  (click)="setChartType('manaProduction', 'pie')"  title="Pie chart"><i class="bi bi-pie-chart-fill"></i></button>
+                </div>
+              </div>
+              <app-stats-chart [data]="manaProductionData(stats)" [type]="getChartType('manaProduction')"></app-stats-chart>
+            </ng-container>
+
+            <ng-container *ngIf="stats.creatureSubtypes.length > 0">
+              <div class="curve-header chart-section-header">
+                Creature Types
+                <div class="chart-type-toggle">
+                  <button class="ctt-btn" [class.is-active]="getChartType('subtypes') === 'bar'"  (click)="setChartType('subtypes', 'bar')"  title="Horizontal bars"><i class="bi bi-bar-chart-fill" style="transform:rotate(90deg)"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('subtypes') === 'vbar'" (click)="setChartType('subtypes', 'vbar')" title="Vertical bars"><i class="bi bi-bar-chart-fill"></i></button>
+                  <button class="ctt-btn" [class.is-active]="getChartType('subtypes') === 'pie'"  (click)="setChartType('subtypes', 'pie')"  title="Pie chart"><i class="bi bi-pie-chart-fill"></i></button>
+                </div>
+              </div>
+              <app-stats-chart [data]="subtypeData(stats)" [type]="getChartType('subtypes')"></app-stats-chart>
+            </ng-container>
+
           </ng-container>
         </div>
       </ng-container>
+
     </aside>
 
     <!-- Search panel (shared component, slides in from right) -->
@@ -796,6 +943,7 @@
         *ngIf="showSuggestionsPanel"
         [deck]="deck$ | async"
         [commanderCard]="commanderCardDetails$ | async"
+        [tagSuggestions]="tagHistory"
         (cardAdd)="addSuggestedCard($event)"
         (cardRemove)="removeSuggestedCard($event)"
         (panelClose)="showSuggestionsPanel = false"
@@ -824,33 +972,34 @@
   </ng-container>
 
   <!-- Card detail modal -->
-  <ng-container *ngIf="deck$ | async as deck">
-    <app-card-modal
-      *ngIf="selectedCard"
-      [card]="selectedCard.cardDetails ?? null"
-      [printings]="modalPrintings"
-      [(viewedScryfallId)]="modalViewScryfallId"
-      [(flipped)]="modalFlipped"
-      [primaryScryfallId]="selectedCard.scryfallId"
-      [alsoOwnedIds]="getAlsoOwnedIds(deck)"
-      [isGameChanger]="deck.format === 'commander' && (selectedCard.cardDetails?.gameChanger === true)"
-      [isBanned]="deck.format === 'commander' && (selectedCard.cardDetails?.legalities?.['commander'] === 'banned')"
-      (closed)="closeCard()"
-    >
-      <div extra class="modal-extra-wrap">
-        <span class="modal-deck-badge" *ngIf="cardCount(selectedCard) as n">{{ n }} in deck</span>
-        <button class="modal-action-btn"
-                (click)="increment(selectedCard)">
-          <i class="bi bi-plus-lg"></i> Add Another
-        </button>
-        <button class="modal-action-btn modal-action-btn--remove"
-                [disabled]="cardCount(selectedCard) <= 0"
-                (click)="decrement(selectedCard)"
-                title="Remove one from deck">
-          <i class="bi bi-dash-lg"></i> Remove
-        </button>
-      </div>
-    </app-card-modal>
+  <ng-container *ngIf="deck$ | async as modalDeck">
+  <ng-container *ngIf="selectedCard as card">
+  <app-card-modal
+    [card]="card.cardDetails ?? null"
+    [printings]="modalPrintings"
+    [(viewedScryfallId)]="modalViewScryfallId"
+    [(flipped)]="modalFlipped"
+    [primaryScryfallId]="card.scryfallId"
+    [alsoOwnedIds]="getAlsoOwnedIds(modalDeck)"
+    [isGameChanger]="modalDeck.format === 'commander' && (card.cardDetails?.gameChanger === true)"
+    [isBanned]="modalDeck.format === 'commander' && (card.cardDetails?.legalities?.['commander'] === 'banned')"
+    (closed)="closeCard()"
+  >
+    <div extra class="modal-extra-wrap">
+      <span class="modal-deck-badge" *ngIf="cardCount(card) as n">{{ n }}<span class="modal-btn-label">in deck</span></span>
+      <button class="modal-action-btn"
+              (click)="increment(card)">
+        <i class="bi bi-plus-lg"></i><span class="modal-btn-label"> Add Another</span>
+      </button>
+      <button class="modal-action-btn modal-action-btn--remove"
+              [disabled]="cardCount(card) <= 0"
+              (click)="decrement(card)"
+              title="Remove one from deck">
+        <i class="bi bi-dash-lg"></i><span class="modal-btn-label"> Remove</span>
+      </button>
+    </div>
+  </app-card-modal>
+  </ng-container>
   </ng-container>
 
   <!-- Sort reset warning -->

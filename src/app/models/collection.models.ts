@@ -17,6 +17,7 @@ export interface CollectionCardDto {
   quantity: number;
   quantityFoil: number;
   notes: string | null;
+  board?: string;
   addedAt: string;
   cardDetails: CardDto | null;
 }
@@ -48,6 +49,7 @@ export interface AddCardToCollectionRequest {
   quantity?: number;
   quantityFoil?: number;
   notes?: string | null;
+  board?: string;
 }
 
 export interface UpdateCollectionCardRequest {
