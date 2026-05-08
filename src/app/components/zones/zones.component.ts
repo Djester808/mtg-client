@@ -1,11 +1,14 @@
 import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
-import { combineLatest, map, Observable } from 'rxjs';
+import { combineLatest, map } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../../store';
 import {
-  selectUIMode, selectPendingAttackers, selectSelectedPermId,
-  selectCombatState, selectIsActivePlayer,
+  selectUIMode,
+  selectPendingAttackers,
+  selectSelectedPermId,
+  selectCombatState,
+  selectIsActivePlayer,
 } from '../../store/selectors';
 import { PermanentDto, CardDto, CardType } from '../../models/game.models';
 import { CardComponent } from '../card/card.component';
@@ -31,31 +34,35 @@ export class ZonesComponent {
     this.store.select(selectIsActivePlayer),
   ]).pipe(
     map(([mode, pendingAttackers, selectedPermId, combat, isActive]) => ({
-      mode, pendingAttackers, selectedPermId, combat, isActive,
-    }))
+      mode,
+      pendingAttackers,
+      selectedPermId,
+      combat,
+      isActive,
+    })),
   );
 
   dropActive = false;
 
-  constructor(private store: Store<AppState>, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private store: Store<AppState>,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   get creatures(): PermanentDto[] {
-    return this.permanents.filter(p =>
-      p.sourceCard.cardTypes.includes(CardType.Creature)
-    );
+    return this.permanents.filter((p) => p.sourceCard.cardTypes.includes(CardType.Creature));
   }
 
   get nonCreatureNonLand(): PermanentDto[] {
-    return this.permanents.filter(p =>
-      !p.sourceCard.cardTypes.includes(CardType.Creature) &&
-      !p.sourceCard.cardTypes.includes(CardType.Land)
+    return this.permanents.filter(
+      (p) =>
+        !p.sourceCard.cardTypes.includes(CardType.Creature) &&
+        !p.sourceCard.cardTypes.includes(CardType.Land),
     );
   }
 
   get lands(): PermanentDto[] {
-    return this.permanents.filter(p =>
-      p.sourceCard.cardTypes.includes(CardType.Land)
-    );
+    return this.permanents.filter((p) => p.sourceCard.cardTypes.includes(CardType.Land));
   }
 
   isAttacking(permanentId: string, combat: any): boolean {
@@ -64,14 +71,19 @@ export class ZonesComponent {
 
   isBlocking(permanentId: string, combat: any): boolean {
     const blockers = Object.values(combat?.attackersToBlockers ?? {}) as string[][];
-    return blockers.some(list => list.includes(permanentId));
+    return blockers.some((list) => list.includes(permanentId));
   }
 
   isPendingAttacker(permanentId: string, pendingAttackers: string[]): boolean {
     return pendingAttackers.includes(permanentId);
   }
 
-  onCardClick(permanent: PermanentDto, mode: string, isActive: boolean, pendingAttackers: string[]): void {
+  onCardClick(
+    permanent: PermanentDto,
+    mode: string,
+    isActive: boolean,
+    _pendingAttackers: string[],
+  ): void {
     if (mode === 'declaring-attackers' && !this.isOpponent && isActive) {
       this.store.dispatch(UIActions.toggleAttacker({ permanentId: permanent.permanentId }));
     } else if (mode === 'declaring-blockers' && this.isOpponent) {

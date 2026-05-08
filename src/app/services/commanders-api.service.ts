@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CommanderSummary, CommanderProfile, CommanderCards, CommanderHistoryPoint, SimilarCommander, CommanderDeck } from '../models/commander.models';
+import {
+  CommanderSummary,
+  CommanderProfile,
+  CommanderCards,
+  CommanderHistoryPoint,
+  SimilarCommander,
+  CommanderDeck,
+} from '../models/commander.models';
 import { DeckSuggestionsDto } from './deck-api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -29,11 +36,15 @@ export class CommandersApiService {
   }
 
   getCommanderHistory(oracleId: string, months = 12): Observable<CommanderHistoryPoint[]> {
-    return this.http.get<CommanderHistoryPoint[]>(`${this.base}/${oracleId}/history`, { params: { months } });
+    return this.http.get<CommanderHistoryPoint[]>(`${this.base}/${oracleId}/history`, {
+      params: { months },
+    });
   }
 
   getSimilarCommanders(oracleId: string, limit = 6): Observable<SimilarCommander[]> {
-    return this.http.get<SimilarCommander[]>(`${this.base}/${oracleId}/similar`, { params: { limit } });
+    return this.http.get<SimilarCommander[]>(`${this.base}/${oracleId}/similar`, {
+      params: { limit },
+    });
   }
 
   getCommanderDecks(oracleId: string, limit = 50): Observable<CommanderDeck[]> {

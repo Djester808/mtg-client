@@ -1,7 +1,4 @@
-import {
-  Component, Input, Output, EventEmitter,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PermanentDto, CardDto, ManaColor, CardType } from '../../models/game.models';
 import { buildTypeLine } from '../../utils/card.utils';
@@ -18,20 +15,20 @@ import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 })
 export class CardComponent {
   @Input() permanent?: PermanentDto;
-  @Input() card?: CardDto;          // for hand cards
+  @Input() card?: CardDto; // for hand cards
   @Input() isSelected = false;
   @Input() isAttacking = false;
-  @Input() isBlocking  = false;
-  @Input() isTargeted  = false;
+  @Input() isBlocking = false;
+  @Input() isTargeted = false;
   @Input() isPendingAttacker = false;
   @Input() isCastable = false;
-  @Input() showBack = false;        // library / face-down
-  @Input() showInfo = false;        // bottom info panel (hand)
+  @Input() showBack = false; // library / face-down
+  @Input() showInfo = false; // bottom info panel (hand)
 
-  @Output() clicked     = new EventEmitter<void>();
-  @Output() dblClicked  = new EventEmitter<void>();
-  @Output() hoverEnter  = new EventEmitter<CardDto>();
-  @Output() hoverLeave  = new EventEmitter<void>();
+  @Output() clicked = new EventEmitter<void>();
+  @Output() dblClicked = new EventEmitter<void>();
+  @Output() hoverEnter = new EventEmitter<CardDto>();
+  @Output() hoverLeave = new EventEmitter<void>();
 
   // Resolved card def (from permanent or direct card)
   get cardData(): CardDto | null {
@@ -88,12 +85,21 @@ export class CardComponent {
     const c = cd.colorIdentity[0];
     if (cd.cardTypes.includes(CardType.Land)) {
       const names: Record<string, string> = {
-        Plains: '☀️', Island: '🌊', Swamp: '🌑', Mountain: '🌋', Forest: '🌿'
+        Plains: '☀️',
+        Island: '🌊',
+        Swamp: '🌑',
+        Mountain: '🌋',
+        Forest: '🌿',
       };
       return names[cd.name] ?? '🌍';
     }
     const map: Record<string, string> = {
-      W: '⚔️', U: '💧', B: '💀', R: '🔥', G: '🌿', C: '⚙️'
+      W: '⚔️',
+      U: '💧',
+      B: '💀',
+      R: '🔥',
+      G: '🌿',
+      C: '⚙️',
     };
     return map[c] ?? '✨';
   }

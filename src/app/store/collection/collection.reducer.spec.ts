@@ -14,18 +14,25 @@ function initialState(): CollectionState {
 
 function makeCollectionDto(overrides: Partial<CollectionDto> = {}): CollectionDto {
   return {
-    id: 'col-1', name: 'My Collection',
-    description: null, coverUri: null, cardCount: 0,
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 'col-1',
+    name: 'My Collection',
+    description: null,
+    coverUri: null,
+    cardCount: 0,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
     ...overrides,
   };
 }
 
 function makeCollectionDetail(overrides: Partial<CollectionDetailDto> = {}): CollectionDetailDto {
   return {
-    id: 'col-1', name: 'My Collection',
-    description: null, coverUri: null,
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 'col-1',
+    name: 'My Collection',
+    description: null,
+    coverUri: null,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
     cards: [],
     ...overrides,
   };
@@ -33,15 +40,19 @@ function makeCollectionDetail(overrides: Partial<CollectionDetailDto> = {}): Col
 
 function makeCollectionCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
-    id: 'cc-1', oracleId: 'oracle-1', scryfallId: 'sf-1',
-    quantity: 1, quantityFoil: 0, notes: null,
-    addedAt: '2024-01-01', cardDetails: makeCard(),
+    id: 'cc-1',
+    oracleId: 'oracle-1',
+    scryfallId: 'sf-1',
+    quantity: 1,
+    quantityFoil: 0,
+    notes: null,
+    addedAt: '2024-01-01',
+    cardDetails: makeCard(),
     ...overrides,
   };
 }
 
 describe('collectionReducer', () => {
-
   // ---- loadCollections ----------------------------------------
 
   it('sets loading on loadCollections', () => {
@@ -99,7 +110,10 @@ describe('collectionReducer', () => {
       ...initialState(),
       collections: [makeCollectionDto({ id: 'existing' })],
     };
-    const state = collectionReducer(base, CollectionActions.createCollectionSuccess({ collection: detail }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.createCollectionSuccess({ collection: detail }),
+    );
     expect(state.collections).toHaveSize(2);
     expect(state.collections[1].id).toBe('new-col');
     expect(state.collections[1].cardCount).toBe(0);
@@ -112,7 +126,10 @@ describe('collectionReducer', () => {
       ...initialState(),
       collections: [makeCollectionDto({ id: 'col-1' }), makeCollectionDto({ id: 'col-2' })],
     };
-    const state = collectionReducer(base, CollectionActions.deleteCollectionSuccess({ id: 'col-1' }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.deleteCollectionSuccess({ id: 'col-1' }),
+    );
     expect(state.collections).toHaveSize(1);
     expect(state.collections[0].id).toBe('col-2');
   });
@@ -188,10 +205,20 @@ describe('collectionReducer', () => {
   it('updates name, description, and coverUri in collections list on updateCollectionMetaSuccess', () => {
     const base: CollectionState = {
       ...initialState(),
-      collections: [makeCollectionDto({ id: 'col-1', name: 'Old', description: null, coverUri: null })],
+      collections: [
+        makeCollectionDto({ id: 'col-1', name: 'Old', description: null, coverUri: null }),
+      ],
     };
-    const updated = makeCollectionDetail({ id: 'col-1', name: 'New', description: 'desc', coverUri: 'art.jpg' });
-    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    const updated = makeCollectionDetail({
+      id: 'col-1',
+      name: 'New',
+      description: 'desc',
+      coverUri: 'art.jpg',
+    });
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCollectionMetaSuccess({ collection: updated }),
+    );
     expect(state.collections[0].name).toBe('New');
     expect(state.collections[0].description).toBe('desc');
     expect(state.collections[0].coverUri).toBe('art.jpg');
@@ -204,7 +231,10 @@ describe('collectionReducer', () => {
       activeCollection: makeCollectionDetail({ id: 'col-1', name: 'Old', coverUri: null }),
     };
     const updated = makeCollectionDetail({ id: 'col-1', name: 'New', coverUri: 'art.jpg' });
-    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCollectionMetaSuccess({ collection: updated }),
+    );
     expect(state.activeCollection!.name).toBe('New');
     expect(state.activeCollection!.coverUri).toBe('art.jpg');
   });
@@ -217,7 +247,10 @@ describe('collectionReducer', () => {
       activeCollection: active,
     };
     const updated = makeCollectionDetail({ id: 'col-1', name: 'Changed' });
-    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCollectionMetaSuccess({ collection: updated }),
+    );
     expect(state.activeCollection).toBe(active);
   });
 
@@ -230,24 +263,36 @@ describe('collectionReducer', () => {
       ],
     };
     const updated = makeCollectionDetail({ id: 'col-1', name: 'Updated' });
-    const state = collectionReducer(base, CollectionActions.updateCollectionMetaSuccess({ collection: updated }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCollectionMetaSuccess({ collection: updated }),
+    );
     expect(state.collections[1].name).toBe('Other');
   });
 
   // ---- failure actions ----------------------------------------
 
   it('stores error on addCardFailure', () => {
-    const state = collectionReducer(initialState(), CollectionActions.addCardFailure({ error: 'conflict' }));
+    const state = collectionReducer(
+      initialState(),
+      CollectionActions.addCardFailure({ error: 'conflict' }),
+    );
     expect(state.error).toBe('conflict');
   });
 
   it('stores error on updateCardFailure', () => {
-    const state = collectionReducer(initialState(), CollectionActions.updateCardFailure({ error: 'not found' }));
+    const state = collectionReducer(
+      initialState(),
+      CollectionActions.updateCardFailure({ error: 'not found' }),
+    );
     expect(state.error).toBe('not found');
   });
 
   it('stores error on removeCardFailure', () => {
-    const state = collectionReducer(initialState(), CollectionActions.removeCardFailure({ error: 'server error' }));
+    const state = collectionReducer(
+      initialState(),
+      CollectionActions.removeCardFailure({ error: 'server error' }),
+    );
     expect(state.error).toBe('server error');
   });
 });

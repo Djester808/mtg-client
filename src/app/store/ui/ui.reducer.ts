@@ -2,11 +2,7 @@ import { createReducer, on } from '@ngrx/store';
 import { CardDto } from '../../models/game.models';
 import { UIActions } from './ui.actions';
 
-export type UIMode =
-  | 'idle'
-  | 'targeting'
-  | 'declaring-attackers'
-  | 'declaring-blockers';
+export type UIMode = 'idle' | 'targeting' | 'declaring-attackers' | 'declaring-blockers';
 
 export interface UIState {
   mode: UIMode;
@@ -59,7 +55,7 @@ export const uiReducer = createReducer(
     selectedCardId: cardId ?? null,
   })),
 
-  on(UIActions.deselectCard, state => ({
+  on(UIActions.deselectCard, (state) => ({
     ...state,
     selectedPermanentId: null,
     selectedCardId: null,
@@ -79,7 +75,7 @@ export const uiReducer = createReducer(
     pendingTargetIds: [...state.pendingTargetIds, targetId],
   })),
 
-  on(UIActions.confirmTargets, state => ({
+  on(UIActions.confirmTargets, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     targetSourceCardId: null,
@@ -87,7 +83,7 @@ export const uiReducer = createReducer(
     pendingTargetIds: [],
   })),
 
-  on(UIActions.cancelTargetMode, state => ({
+  on(UIActions.cancelTargetMode, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     targetSourceCardId: null,
@@ -95,7 +91,7 @@ export const uiReducer = createReducer(
   })),
 
   // ---- Attackers ------------------------------------------
-  on(UIActions.enterAttackMode, state => ({
+  on(UIActions.enterAttackMode, (state) => ({
     ...state,
     mode: 'declaring-attackers' as UIMode,
     pendingAttackerIds: [],
@@ -106,25 +102,25 @@ export const uiReducer = createReducer(
     return {
       ...state,
       pendingAttackerIds: already
-        ? state.pendingAttackerIds.filter(id => id !== permanentId)
+        ? state.pendingAttackerIds.filter((id) => id !== permanentId)
         : [...state.pendingAttackerIds, permanentId],
     };
   }),
 
-  on(UIActions.confirmAttackers, state => ({
+  on(UIActions.confirmAttackers, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     pendingAttackerIds: [],
   })),
 
-  on(UIActions.cancelAttackMode, state => ({
+  on(UIActions.cancelAttackMode, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     pendingAttackerIds: [],
   })),
 
   // ---- Blockers -------------------------------------------
-  on(UIActions.enterBlockMode, state => ({
+  on(UIActions.enterBlockMode, (state) => ({
     ...state,
     mode: 'declaring-blockers' as UIMode,
     pendingBlockerAssignments: {},
@@ -138,13 +134,13 @@ export const uiReducer = createReducer(
     },
   })),
 
-  on(UIActions.confirmBlockers, state => ({
+  on(UIActions.confirmBlockers, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     pendingBlockerAssignments: {},
   })),
 
-  on(UIActions.cancelBlockMode, state => ({
+  on(UIActions.cancelBlockMode, (state) => ({
     ...state,
     mode: 'idle' as UIMode,
     pendingBlockerAssignments: {},
@@ -164,7 +160,7 @@ export const uiReducer = createReducer(
     zoneViewerZone: zone,
   })),
 
-  on(UIActions.closeZoneViewer, state => ({
+  on(UIActions.closeZoneViewer, (state) => ({
     ...state,
     zoneViewerOpen: false,
     zoneViewerPlayerId: null,

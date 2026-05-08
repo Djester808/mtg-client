@@ -3,15 +3,28 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { HandComponent } from './hand.component';
 import {
-  selectLocalPlayer, selectCurrentPhase, selectCurrentStep,
-  selectIsActivePlayer, selectHasPriority, selectUIMode, selectSelectedCardId,
+  selectLocalPlayer,
+  selectCurrentPhase,
+  selectCurrentStep,
+  selectIsActivePlayer,
+  selectHasPriority,
+  selectUIMode,
+  selectSelectedCardId,
 } from '../../store/selectors';
 import { GameActions, UIActions } from '../../store';
 import { CardType, ManaColor, Phase, Step } from '../../models/game.models';
 import { makeCard as makeCardBase, makePlayer } from '../../testing/test-factories';
 
 function makeCard(id: string, types: CardType[] = [CardType.Creature], cost = '1G') {
-  return makeCardBase({ cardId: id, oracleId: id, name: `Card-${id}`, manaCost: cost, cardTypes: types, subtypes: [], colorIdentity: [ManaColor.Green] });
+  return makeCardBase({
+    cardId: id,
+    oracleId: id,
+    name: `Card-${id}`,
+    manaCost: cost,
+    cardTypes: types,
+    subtypes: [],
+    colorIdentity: [ManaColor.Green],
+  });
 }
 
 describe('HandComponent', () => {
@@ -204,8 +217,8 @@ describe('HandComponent', () => {
     (component as any).draggingId = 'c1';
 
     const mockWrappers = [
-      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },  // c1 center=50
-      { getBoundingClientRect: () => ({ left: 150, width: 100 }) },  // c2 center=200
+      { getBoundingClientRect: () => ({ left: 0, width: 100 }) }, // c1 center=50
+      { getBoundingClientRect: () => ({ left: 150, width: 100 }) }, // c2 center=200
     ];
     spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
     component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 200 }));
@@ -225,8 +238,8 @@ describe('HandComponent', () => {
     (component as any).draggingId = 'c1';
 
     const mockWrappers = [
-      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },  // c1 center=50
-      { getBoundingClientRect: () => ({ left: 150, width: 100 }) },  // c2 center=200
+      { getBoundingClientRect: () => ({ left: 0, width: 100 }) }, // c1 center=50
+      { getBoundingClientRect: () => ({ left: 150, width: 100 }) }, // c2 center=200
     ];
     spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
     // Move toward c1's own center (x=50)
@@ -247,7 +260,7 @@ describe('HandComponent', () => {
     (component as any).draggingId = 'c1';
 
     const mockWrappers = [
-      { getBoundingClientRect: () => ({ left: 0,   width: 100 }) },
+      { getBoundingClientRect: () => ({ left: 0, width: 100 }) },
       { getBoundingClientRect: () => ({ left: 150, width: 100 }) },
     ];
     spyOn(document, 'querySelectorAll').and.returnValue(mockWrappers as any);
@@ -343,7 +356,7 @@ describe('HandComponent', () => {
     component.onCardDblClick(hc);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      GameActions.castSpell({ cardId: 'c1', targetIds: [] })
+      GameActions.castSpell({ cardId: 'c1', targetIds: [] }),
     );
   });
 

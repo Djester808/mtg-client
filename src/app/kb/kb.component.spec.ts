@@ -10,33 +10,57 @@ import { KbComponent, KbDto, KbEntry } from './kb.component';
 
 const MOCK_KB: KbDto = {
   keywords: [
-    { name: 'Flying',    status: 'implemented', description: 'Can only be blocked by flyers or reach.',  rulesRef: 'CR 702.9'  },
-    { name: 'Trample',   status: 'implemented', description: 'Excess damage goes to defending player.',  rulesRef: 'CR 702.19' },
-    { name: 'Hexproof',  status: 'stub',        description: 'Cannot be targeted by opponents.',         rulesRef: 'CR 702.11' },
-    { name: 'Menace',    status: 'partial',     description: 'Must be blocked by two or more.',          rulesRef: 'CR 702.110'},
+    {
+      name: 'Flying',
+      status: 'implemented',
+      description: 'Can only be blocked by flyers or reach.',
+      rulesRef: 'CR 702.9',
+    },
+    {
+      name: 'Trample',
+      status: 'implemented',
+      description: 'Excess damage goes to defending player.',
+      rulesRef: 'CR 702.19',
+    },
+    {
+      name: 'Hexproof',
+      status: 'stub',
+      description: 'Cannot be targeted by opponents.',
+      rulesRef: 'CR 702.11',
+    },
+    {
+      name: 'Menace',
+      status: 'partial',
+      description: 'Must be blocked by two or more.',
+      rulesRef: 'CR 702.110',
+    },
   ],
   mechanics: [
     {
       name: 'Turn Structure',
       description: 'Five phases, twelve steps.',
       steps: [
-        { name: 'Untap',  description: 'Untap all permanents.' },
+        { name: 'Untap', description: 'Untap all permanents.' },
         { name: 'Upkeep', description: 'Priority window.' },
-        { name: 'Draw',   description: 'Draw a card.' },
+        { name: 'Draw', description: 'Draw a card.' },
       ],
     },
     {
       name: 'Zones',
       description: 'Seven distinct zones.',
       steps: [
-        { name: 'Library',   description: 'Shuffled deck.' },
-        { name: 'Hand',      description: 'Cards held.' },
+        { name: 'Library', description: 'Shuffled deck.' },
+        { name: 'Hand', description: 'Cards held.' },
       ],
     },
   ],
   stateBasedActions: [
-    { rulesRef: 'CR 704.5a', description: 'Player with 0 or less life loses.', status: 'implemented' },
-    { rulesRef: 'CR 704.5i', description: 'Aura with no legal target.',         status: 'stub'        },
+    {
+      rulesRef: 'CR 704.5a',
+      description: 'Player with 0 or less life loses.',
+      status: 'implemented',
+    },
+    { rulesRef: 'CR 704.5i', description: 'Aura with no legal target.', status: 'stub' },
   ],
 };
 
@@ -44,11 +68,7 @@ const MOCK_KB: KbDto = {
 
 function setup() {
   TestBed.configureTestingModule({
-    imports: [
-      KbComponent,
-      HttpClientTestingModule,
-      RouterTestingModule,
-    ],
+    imports: [KbComponent, HttpClientTestingModule, RouterTestingModule],
     schemas: [NO_ERRORS_SCHEMA],
   });
 
@@ -129,7 +149,8 @@ describe('KbComponent', () => {
     fixture.detectChanges();
     flush(http, fixture);
     tick();
-    const total = MOCK_KB.keywords.length + MOCK_KB.mechanics.length + MOCK_KB.stateBasedActions.length;
+    const total =
+      MOCK_KB.keywords.length + MOCK_KB.mechanics.length + MOCK_KB.stateBasedActions.length;
     expect(component.allEntries.length).toBe(total);
   }));
 
@@ -138,10 +159,10 @@ describe('KbComponent', () => {
     fixture.detectChanges();
     flush(http, fixture);
     tick();
-    const kinds = component.allEntries.map(e => e.kind);
-    expect(kinds.filter(k => k === 'keyword').length).toBe(MOCK_KB.keywords.length);
-    expect(kinds.filter(k => k === 'mechanic').length).toBe(MOCK_KB.mechanics.length);
-    expect(kinds.filter(k => k === 'sba').length).toBe(MOCK_KB.stateBasedActions.length);
+    const kinds = component.allEntries.map((e) => e.kind);
+    expect(kinds.filter((k) => k === 'keyword').length).toBe(MOCK_KB.keywords.length);
+    expect(kinds.filter((k) => k === 'mechanic').length).toBe(MOCK_KB.mechanics.length);
+    expect(kinds.filter((k) => k === 'sba').length).toBe(MOCK_KB.stateBasedActions.length);
   }));
 
   // ---- filteredKeywords (no query) -----------------------
@@ -271,7 +292,8 @@ describe('KbComponent', () => {
     fixture.detectChanges();
     flush(http, fixture);
     tick();
-    const total = MOCK_KB.keywords.length + MOCK_KB.mechanics.length + MOCK_KB.stateBasedActions.length;
+    const total =
+      MOCK_KB.keywords.length + MOCK_KB.mechanics.length + MOCK_KB.stateBasedActions.length;
     expect(component.totalFiltered).toBe(total);
   }));
 
@@ -292,8 +314,11 @@ describe('KbComponent', () => {
     // "library" appears in Zones step name — only mechanics should match
     component.searchQuery = 'library';
     expect(component.totalFiltered).toBeGreaterThanOrEqual(1);
-    expect(component.filteredKeywords.length + component.filteredMechanics.length + component.filteredSba.length)
-      .toBe(component.totalFiltered);
+    expect(
+      component.filteredKeywords.length +
+        component.filteredMechanics.length +
+        component.filteredSba.length,
+    ).toBe(component.totalFiltered);
   }));
 
   // ---- clearSearch ---------------------------------------
@@ -345,7 +370,7 @@ describe('KbComponent', () => {
     fixture.detectChanges();
     flush(http, fixture);
     tick();
-    const flying:  KbEntry = { kind: 'keyword', data: MOCK_KB.keywords[0] };
+    const flying: KbEntry = { kind: 'keyword', data: MOCK_KB.keywords[0] };
     const trample: KbEntry = { kind: 'keyword', data: MOCK_KB.keywords[1] };
     component.select(flying);
     expect(component.isSelected(trample)).toBeFalse();
@@ -356,8 +381,8 @@ describe('KbComponent', () => {
     fixture.detectChanges();
     flush(http, fixture);
     tick();
-    const kwEntry:  KbEntry = { kind: 'keyword',  data: MOCK_KB.keywords[0] };
-    const sbaEntry: KbEntry = { kind: 'sba',       data: MOCK_KB.stateBasedActions[0] };
+    const kwEntry: KbEntry = { kind: 'keyword', data: MOCK_KB.keywords[0] };
+    const sbaEntry: KbEntry = { kind: 'sba', data: MOCK_KB.stateBasedActions[0] };
     component.select(kwEntry);
     expect(component.isSelected(sbaEntry)).toBeFalse();
   }));

@@ -17,14 +17,17 @@ import { selectAuthLoading, selectAuthError } from '../../store/auth/auth.select
 export class RegisterComponent {
   form = this.fb.nonNullable.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
-    email:    ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   loading$ = this.store.select(selectAuthLoading);
-  error$   = this.store.select(selectAuthError);
+  error$ = this.store.select(selectAuthError);
 
-  constructor(private fb: FormBuilder, private store: Store) {}
+  constructor(
+    private fb: FormBuilder,
+    private store: Store,
+  ) {}
 
   submit(): void {
     if (this.form.invalid) return;

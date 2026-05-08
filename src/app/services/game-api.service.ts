@@ -9,7 +9,7 @@ import { AppState } from '../store';
 interface CreateGameRequest {
   player1Name: string;
   player2Name: string;
-  player1DeckList: string[];   // card names, resolved server-side
+  player1DeckList: string[]; // card names, resolved server-side
   player2DeckList: string[];
 }
 
@@ -56,9 +56,9 @@ export class GameApiService {
    * Dispatches CardLoaded to the store for caching.
    */
   loadCard(oracleId: string): Observable<CardDto> {
-    return this.http.get<CardDto>(`${this.base}/cards/${oracleId}`).pipe(
-      tap(card => this.store.dispatch(GameActions.cardLoaded({ card }))),
-    );
+    return this.http
+      .get<CardDto>(`${this.base}/cards/${oracleId}`)
+      .pipe(tap((card) => this.store.dispatch(GameActions.cardLoaded({ card }))));
   }
 
   /**
@@ -75,9 +75,14 @@ export class GameApiService {
   }
 
   searchCards(
-    query: string, limit = 60, offset = 0,
-    sortBy = 'name', sortDir = 'asc',
-    matchCase = false, matchWord = false, useRegex = false,
+    query: string,
+    limit = 60,
+    offset = 0,
+    sortBy = 'name',
+    sortDir = 'asc',
+    matchCase = false,
+    matchWord = false,
+    useRegex = false,
   ): Observable<CardDto[]> {
     return this.http.get<CardDto[]>(`${this.base}/cards/search`, {
       params: { q: query, limit, offset, sortBy, sortDir, matchCase, matchWord, useRegex },

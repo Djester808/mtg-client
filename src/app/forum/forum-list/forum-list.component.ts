@@ -27,21 +27,32 @@ export class ForumListComponent implements OnInit {
   isLoggedIn$: Observable<boolean>;
 
   searchQuery = '';
-  selectedColors  = new Set<string>();
+  selectedColors = new Set<string>();
   selectedFormats = new Set<string>();
   sortBy: SortOption = 'newest';
 
-  readonly colorOptions  = ['W','U','B','R','G','C'];
-  readonly formatOptions = ['Commander','Standard','Pioneer','Modern','Legacy','Pauper','Vintage'];
+  readonly colorOptions = ['W', 'U', 'B', 'R', 'G', 'C'];
+  readonly formatOptions = [
+    'Commander',
+    'Standard',
+    'Pioneer',
+    'Modern',
+    'Legacy',
+    'Pauper',
+    'Vintage',
+  ];
   readonly sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'newest',   label: 'Newest' },
+    { value: 'newest', label: 'Newest' },
     { value: 'comments', label: 'Most Comments' },
-    { value: 'cards',    label: 'Most Cards' },
+    { value: 'cards', label: 'Most Cards' },
   ];
 
-  constructor(private store: Store<AppState>, readonly cdr: ChangeDetectorRef) {
-    this.posts$    = this.store.select(selectForumPosts);
-    this.loading$  = this.store.select(selectForumLoading);
+  constructor(
+    private store: Store<AppState>,
+    readonly cdr: ChangeDetectorRef,
+  ) {
+    this.posts$ = this.store.select(selectForumPosts);
+    this.loading$ = this.store.select(selectForumLoading);
     this.isLoggedIn$ = this.store.select(selectIsLoggedIn);
   }
 
@@ -50,7 +61,9 @@ export class ForumListComponent implements OnInit {
   }
 
   get hasActiveFilters(): boolean {
-    return !!this.searchQuery.trim() || this.selectedColors.size > 0 || this.selectedFormats.size > 0;
+    return (
+      !!this.searchQuery.trim() || this.selectedColors.size > 0 || this.selectedFormats.size > 0
+    );
   }
 
   toggleColor(c: string): void {
@@ -80,35 +93,41 @@ export class ForumListComponent implements OnInit {
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.deckName.toLowerCase().includes(q) ||
-        p.authorUsername.toLowerCase().includes(q)
+      result = result.filter(
+        (p) => p.deckName.toLowerCase().includes(q) || p.authorUsername.toLowerCase().includes(q),
       );
     }
 
     if (this.selectedColors.size > 0) {
-      result = result.filter(p =>
-        [...this.selectedColors].some(c => p.colorIdentity.includes(c))
+      result = result.filter((p) =>
+        [...this.selectedColors].some((c) => p.colorIdentity.includes(c)),
       );
     }
 
     if (this.selectedFormats.size > 0) {
-      result = result.filter(p =>
-        p.deckFormat && this.selectedFormats.has(
-          p.deckFormat.charAt(0).toUpperCase() + p.deckFormat.slice(1)
-        )
+      result = result.filter(
+        (p) =>
+          p.deckFormat &&
+          this.selectedFormats.has(p.deckFormat.charAt(0).toUpperCase() + p.deckFormat.slice(1)),
       );
     }
 
     return [...result].sort((a, b) => {
       if (this.sortBy === 'comments') return b.commentCount - a.commentCount;
-      if (this.sortBy === 'cards')    return b.cardCount - a.cardCount;
+      if (this.sortBy === 'cards') return b.cardCount - a.cardCount;
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
   }
 
   manaClass(c: string): string {
-    return ({ W:'ms-w', U:'ms-u', B:'ms-b', R:'ms-r', G:'ms-g', C:'ms-c' } as Record<string,string>)[c] ?? 'ms-c';
+    return (
+      (
+        { W: 'ms-w', U: 'ms-u', B: 'ms-b', R: 'ms-r', G: 'ms-g', C: 'ms-c' } as Record<
+          string,
+          string
+        >
+      )[c] ?? 'ms-c'
+    );
   }
 
   formatLabel(format: string | null): string {

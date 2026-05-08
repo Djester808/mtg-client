@@ -8,10 +8,17 @@ import { makeCard } from '../../testing/test-factories';
 
 function makePrinting(overrides: Partial<PrintingDto> = {}): PrintingDto {
   return {
-    scryfallId: 'scryfall-1', setCode: 'm21', setName: 'Core Set 2021',
-    collectorNumber: '123', imageUriSmall: null, imageUriNormal: null,
-    imageUriNormalBack: null, oracleText: null, flavorText: null,
-    artist: null, manaCost: null,
+    scryfallId: 'scryfall-1',
+    setCode: 'm21',
+    setName: 'Core Set 2021',
+    collectorNumber: '123',
+    imageUriSmall: null,
+    imageUriNormal: null,
+    imageUriNormalBack: null,
+    oracleText: null,
+    flavorText: null,
+    artist: null,
+    manaCost: null,
     ...overrides,
   };
 }
@@ -48,7 +55,10 @@ describe('CardModalComponent', () => {
   });
 
   it('displayName returns front name for DFC when not flipped', () => {
-    component.card = makeCard({ name: 'Delver of Secrets // Insectile Aberration', imageUriNormalBack: 'back.jpg' });
+    component.card = makeCard({
+      name: 'Delver of Secrets // Insectile Aberration',
+      imageUriNormalBack: 'back.jpg',
+    });
     component.printings = [makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' })];
     component.viewedScryfallId = 's1';
     component.flipped = false;
@@ -56,7 +66,10 @@ describe('CardModalComponent', () => {
   });
 
   it('displayName returns back name for DFC when flipped', () => {
-    component.card = makeCard({ name: 'Delver of Secrets // Insectile Aberration', imageUriNormalBack: 'back.jpg' });
+    component.card = makeCard({
+      name: 'Delver of Secrets // Insectile Aberration',
+      imageUriNormalBack: 'back.jpg',
+    });
     component.printings = [makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' })];
     component.viewedScryfallId = 's1';
     component.flipped = true;
@@ -72,7 +85,9 @@ describe('CardModalComponent', () => {
 
   it('displayOracleText returns front oracle text for DFC when not flipped', () => {
     component.card = makeCard({
-      name: 'Front // Back', oracleText: 'Front text\n//\nBack text', imageUriNormalBack: 'back.jpg',
+      name: 'Front // Back',
+      oracleText: 'Front text\n//\nBack text',
+      imageUriNormalBack: 'back.jpg',
     });
     component.printings = [makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' })];
     component.viewedScryfallId = 's1';
@@ -82,7 +97,9 @@ describe('CardModalComponent', () => {
 
   it('displayOracleText returns back oracle text for DFC when flipped', () => {
     component.card = makeCard({
-      name: 'Front // Back', oracleText: 'Front text\n//\nBack text', imageUriNormalBack: 'back.jpg',
+      name: 'Front // Back',
+      oracleText: 'Front text\n//\nBack text',
+      imageUriNormalBack: 'back.jpg',
     });
     component.printings = [makePrinting({ scryfallId: 's1', imageUriNormalBack: 'back.jpg' })];
     component.viewedScryfallId = 's1';
@@ -99,14 +116,18 @@ describe('CardModalComponent', () => {
 
   it('typeLine includes em dash and subtypes', () => {
     component.card = makeCard({
-      cardTypes: [CardType.Creature], subtypes: ['Human', 'Wizard'], supertypes: [],
+      cardTypes: [CardType.Creature],
+      subtypes: ['Human', 'Wizard'],
+      supertypes: [],
     });
     expect(component.typeLine).toBe('Creature — Human Wizard');
   });
 
   it('typeLine includes supertype prefix', () => {
     component.card = makeCard({
-      cardTypes: [CardType.Land], subtypes: ['Forest'], supertypes: ['Basic'],
+      cardTypes: [CardType.Land],
+      subtypes: ['Forest'],
+      supertypes: ['Basic'],
     });
     expect(component.typeLine).toBe('Basic Land — Forest');
   });
@@ -138,8 +159,10 @@ describe('CardModalComponent', () => {
   // ---- legalFormats ----------------------------------------
 
   it('legalFormats includes legal formats', () => {
-    component.card = makeCard({ legalities: { modern: 'legal', legacy: 'legal', standard: 'not_legal' } });
-    const labels = component.legalFormats.map(f => f.label);
+    component.card = makeCard({
+      legalities: { modern: 'legal', legacy: 'legal', standard: 'not_legal' },
+    });
+    const labels = component.legalFormats.map((f) => f.label);
     expect(labels).toContain('Modern');
     expect(labels).toContain('Legacy');
     expect(labels).not.toContain('Standard');
@@ -147,13 +170,13 @@ describe('CardModalComponent', () => {
 
   it('legalFormats includes restricted formats', () => {
     component.card = makeCard({ legalities: { vintage: 'restricted', modern: 'not_legal' } });
-    const labels = component.legalFormats.map(f => f.label);
+    const labels = component.legalFormats.map((f) => f.label);
     expect(labels).toContain('Vintage');
   });
 
   it('legalFormats excludes not_legal formats', () => {
     component.card = makeCard({ legalities: { standard: 'not_legal', modern: 'legal' } });
-    const labels = component.legalFormats.map(f => f.label);
+    const labels = component.legalFormats.map((f) => f.label);
     expect(labels).not.toContain('Standard');
   });
 
@@ -161,14 +184,16 @@ describe('CardModalComponent', () => {
 
   it('illegalFormats includes not_legal formats', () => {
     component.card = makeCard({ legalities: { standard: 'not_legal', modern: 'legal' } });
-    const labels = component.illegalFormats.map(f => f.label);
+    const labels = component.illegalFormats.map((f) => f.label);
     expect(labels).toContain('Standard');
     expect(labels).not.toContain('Modern');
   });
 
   it('illegalFormats excludes legal and restricted formats', () => {
-    component.card = makeCard({ legalities: { modern: 'legal', vintage: 'restricted', standard: 'not_legal' } });
-    const labels = component.illegalFormats.map(f => f.label);
+    component.card = makeCard({
+      legalities: { modern: 'legal', vintage: 'restricted', standard: 'not_legal' },
+    });
+    const labels = component.illegalFormats.map((f) => f.label);
     expect(labels).not.toContain('Modern');
     expect(labels).not.toContain('Vintage');
     expect(labels).toContain('Standard');
@@ -292,31 +317,35 @@ describe('CardModalComponent', () => {
   // ---- carousel ----------------------------------------
 
   it('carouselCanPrev is false when at start', () => {
-    component.printings = [1, 2, 3].map(i => makePrinting({ scryfallId: `s${i}` }));
+    component.printings = [1, 2, 3].map((i) => makePrinting({ scryfallId: `s${i}` }));
     component.carouselStart = 0;
     expect(component.carouselCanPrev).toBeFalse();
   });
 
   it('carouselCanNext is false when all fit on one page', () => {
-    component.printings = [1, 2].map(i => makePrinting({ scryfallId: `s${i}` }));
+    component.printings = [1, 2].map((i) => makePrinting({ scryfallId: `s${i}` }));
     expect(component.carouselCanNext).toBeFalse();
   });
 
   it('carouselCanNext is true when more printings exist beyond page', () => {
-    component.printings = [1, 2, 3, 4, 5, 6].map(i => makePrinting({ scryfallId: `s${i}` }));
+    component.printings = [1, 2, 3, 4, 5, 6].map((i) => makePrinting({ scryfallId: `s${i}` }));
     component.carouselStart = 0;
     expect(component.carouselCanNext).toBeTrue();
   });
 
   it('carouselNext advances by CAROUSEL_PAGE', () => {
-    component.printings = Array.from({ length: 10 }, (_, i) => makePrinting({ scryfallId: `s${i}` }));
+    component.printings = Array.from({ length: 10 }, (_, i) =>
+      makePrinting({ scryfallId: `s${i}` }),
+    );
     component.carouselStart = 0;
     component.carouselNext();
     expect(component.carouselStart).toBe(component.CAROUSEL_PAGE);
   });
 
   it('carouselPrev retreats by CAROUSEL_PAGE', () => {
-    component.printings = Array.from({ length: 10 }, (_, i) => makePrinting({ scryfallId: `s${i}` }));
+    component.printings = Array.from({ length: 10 }, (_, i) =>
+      makePrinting({ scryfallId: `s${i}` }),
+    );
     component.carouselStart = component.CAROUSEL_PAGE;
     component.carouselPrev();
     expect(component.carouselStart).toBe(0);

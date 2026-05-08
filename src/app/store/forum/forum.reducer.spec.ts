@@ -15,35 +15,54 @@ function initialState(): ForumState {
 
 function makePost(overrides: Partial<ForumPostSummary> = {}): ForumPostSummary {
   return {
-    id: 'post-1', deckId: 'deck-1', authorUsername: 'player1',
-    deckName: 'My Deck', deckCoverUri: null, deckFormat: 'commander',
-    description: null, colorIdentity: ['R', 'G'],
-    cardCount: 100, commentCount: 0, publishedAt: '2024-01-01T00:00:00Z',
+    id: 'post-1',
+    deckId: 'deck-1',
+    authorUsername: 'player1',
+    deckName: 'My Deck',
+    deckCoverUri: null,
+    deckFormat: 'commander',
+    description: null,
+    colorIdentity: ['R', 'G'],
+    cardCount: 100,
+    commentCount: 0,
+    publishedAt: '2024-01-01T00:00:00Z',
     ...overrides,
   };
 }
 
 function makePostDetail(overrides: Partial<ForumPostDetail> = {}): ForumPostDetail {
   return {
-    id: 'post-1', deckId: 'deck-1', authorId: 'user-1', authorUsername: 'player1',
-    deckName: 'My Deck', deckCoverUri: null, deckFormat: 'commander',
-    commanderOracleId: null, description: null, colorIdentity: ['R', 'G'],
-    publishedAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
-    cards: [], comments: [],
+    id: 'post-1',
+    deckId: 'deck-1',
+    authorId: 'user-1',
+    authorUsername: 'player1',
+    deckName: 'My Deck',
+    deckCoverUri: null,
+    deckFormat: 'commander',
+    commanderOracleId: null,
+    description: null,
+    colorIdentity: ['R', 'G'],
+    publishedAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    cards: [],
+    comments: [],
     ...overrides,
   };
 }
 
 function makeComment(overrides: Partial<ForumComment> = {}): ForumComment {
   return {
-    id: 'comment-1', authorId: 'user-1', authorUsername: 'player1',
-    content: 'Great deck!', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    id: 'comment-1',
+    authorId: 'user-1',
+    authorUsername: 'player1',
+    content: 'Great deck!',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
     ...overrides,
   };
 }
 
 describe('forumReducer', () => {
-
   // ── loadPosts ─────────────────────────────────────────────────────────────
 
   it('sets loading on loadPosts', () => {
@@ -54,13 +73,19 @@ describe('forumReducer', () => {
 
   it('stores posts and clears loading on loadPostsSuccess', () => {
     const posts = [makePost()];
-    const s = forumReducer({ ...initialState(), loading: true }, ForumActions.loadPostsSuccess({ posts }));
+    const s = forumReducer(
+      { ...initialState(), loading: true },
+      ForumActions.loadPostsSuccess({ posts }),
+    );
     expect(s.loading).toBeFalse();
     expect(s.posts).toEqual(posts);
   });
 
   it('stores error and clears loading on loadPostsFailure', () => {
-    const s = forumReducer({ ...initialState(), loading: true }, ForumActions.loadPostsFailure({ error: 'network error' }));
+    const s = forumReducer(
+      { ...initialState(), loading: true },
+      ForumActions.loadPostsFailure({ error: 'network error' }),
+    );
     expect(s.loading).toBeFalse();
     expect(s.error).toBe('network error');
   });
@@ -76,13 +101,19 @@ describe('forumReducer', () => {
 
   it('stores activePost on loadPostSuccess', () => {
     const post = makePostDetail();
-    const s = forumReducer({ ...initialState(), postLoading: true }, ForumActions.loadPostSuccess({ post }));
+    const s = forumReducer(
+      { ...initialState(), postLoading: true },
+      ForumActions.loadPostSuccess({ post }),
+    );
     expect(s.postLoading).toBeFalse();
     expect(s.activePost).toEqual(post);
   });
 
   it('stores error and clears postLoading on loadPostFailure', () => {
-    const s = forumReducer({ ...initialState(), postLoading: true }, ForumActions.loadPostFailure({ error: 'not found' }));
+    const s = forumReducer(
+      { ...initialState(), postLoading: true },
+      ForumActions.loadPostFailure({ error: 'not found' }),
+    );
     expect(s.postLoading).toBeFalse();
     expect(s.error).toBe('not found');
   });
@@ -90,15 +121,21 @@ describe('forumReducer', () => {
   // ── publishDeck ───────────────────────────────────────────────────────────
 
   it('sets publishLoading on publishDeck', () => {
-    const s = forumReducer(initialState(), ForumActions.publishDeck({ deckId: 'deck-1', description: null }));
+    const s = forumReducer(
+      initialState(),
+      ForumActions.publishDeck({ deckId: 'deck-1', description: null }),
+    );
     expect(s.publishLoading).toBeTrue();
     expect(s.error).toBeNull();
   });
 
   it('prepends new post on publishDeckSuccess when not already in list', () => {
     const existing = makePost({ id: 'old' });
-    const newPost  = makePost({ id: 'new-post' });
-    const s = forumReducer({ ...initialState(), posts: [existing] }, ForumActions.publishDeckSuccess({ post: newPost }));
+    const newPost = makePost({ id: 'new-post' });
+    const s = forumReducer(
+      { ...initialState(), posts: [existing] },
+      ForumActions.publishDeckSuccess({ post: newPost }),
+    );
     expect(s.publishLoading).toBeFalse();
     expect(s.posts[0].id).toBe('new-post');
     expect(s.posts).toHaveSize(2);
@@ -106,14 +143,20 @@ describe('forumReducer', () => {
 
   it('replaces existing post on publishDeckSuccess when id matches', () => {
     const original = makePost({ id: 'post-1', cardCount: 50 });
-    const updated  = makePost({ id: 'post-1', cardCount: 100 });
-    const s = forumReducer({ ...initialState(), posts: [original] }, ForumActions.publishDeckSuccess({ post: updated }));
+    const updated = makePost({ id: 'post-1', cardCount: 100 });
+    const s = forumReducer(
+      { ...initialState(), posts: [original] },
+      ForumActions.publishDeckSuccess({ post: updated }),
+    );
     expect(s.posts).toHaveSize(1);
     expect(s.posts[0].cardCount).toBe(100);
   });
 
   it('stores error and clears publishLoading on publishDeckFailure', () => {
-    const s = forumReducer({ ...initialState(), publishLoading: true }, ForumActions.publishDeckFailure({ error: 'unauthorized' }));
+    const s = forumReducer(
+      { ...initialState(), publishLoading: true },
+      ForumActions.publishDeckFailure({ error: 'unauthorized' }),
+    );
     expect(s.publishLoading).toBeFalse();
     expect(s.error).toBe('unauthorized');
   });

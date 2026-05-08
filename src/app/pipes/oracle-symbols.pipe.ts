@@ -2,21 +2,42 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 const SYMBOL_CLASS: Record<string, string> = {
-  T: 'ms-tap', Q: 'ms-untap', E: 'ms-e', S: 'ms-s',
-  W: 'ms-w', U: 'ms-u', B: 'ms-b', R: 'ms-r', G: 'ms-g', C: 'ms-c',
-  X: 'ms-x', Y: 'ms-y', Z: 'ms-z',
+  T: 'ms-tap',
+  Q: 'ms-untap',
+  E: 'ms-e',
+  S: 'ms-s',
+  W: 'ms-w',
+  U: 'ms-u',
+  B: 'ms-b',
+  R: 'ms-r',
+  G: 'ms-g',
+  C: 'ms-c',
+  X: 'ms-x',
+  Y: 'ms-y',
+  Z: 'ms-z',
 };
 
 // Longest phrases first so multi-word keywords match before their components.
 const KEYWORDS = [
-  'Double Strike', 'First Strike',
-  'Deathtouch', 'Indestructible', 'Lifelink',
-  'Vigilance', 'Hexproof', 'Trample', 'Menace',
-  'Protection', 'Shroud', 'Flying', 'Reach',
-  'Haste', 'Flash', 'Ward',
+  'Double Strike',
+  'First Strike',
+  'Deathtouch',
+  'Indestructible',
+  'Lifelink',
+  'Vigilance',
+  'Hexproof',
+  'Trample',
+  'Menace',
+  'Protection',
+  'Shroud',
+  'Flying',
+  'Reach',
+  'Haste',
+  'Flash',
+  'Ward',
 ];
 
-const _kwPattern = KEYWORDS.map(k => k.replace(/\s+/g, '\\s+')).join('|');
+const _kwPattern = KEYWORDS.map((k) => k.replace(/\s+/g, '\\s+')).join('|');
 // Alternation: match either a complete HTML tag (pass through) or a keyword (linkify).
 const KW_LINK_RE = new RegExp(`(<[^>]+>)|((?<!=)\\b(?:${_kwPattern})\\b)`, 'gi');
 
@@ -37,9 +58,7 @@ function symbolToClass(sym: string): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function linkKeywords(html: string): string {
@@ -63,17 +82,14 @@ export class OracleSymbolsPipe implements PipeTransform {
       .replace(/\n/g, '<br>');
 
     // Loyalty costs appear at the start of planeswalker ability lines: +1:, −2:, 0:
-    const withLoyalty = withSymbols.replace(
-      /(^|<br>)([-+−]?)(\d+|X):/g,
-      (_, prefix, sign, num) => {
-        const n = num.toLowerCase();
-        let cls: string;
-        if (sign === '+')                    cls = `ms-loyalty-up ms-loyalty-${n}`;
-        else if (sign === '-' || sign === '−') cls = `ms-loyalty-down ms-loyalty-${n}`;
-        else                                 cls = 'ms-loyalty-zero';
-        return `${prefix}<i class="ms ${cls}"></i>:`;
-      },
-    );
+    const withLoyalty = withSymbols.replace(/(^|<br>)([-+−]?)(\d+|X):/g, (_, prefix, sign, num) => {
+      const n = num.toLowerCase();
+      let cls: string;
+      if (sign === '+') cls = `ms-loyalty-up ms-loyalty-${n}`;
+      else if (sign === '-' || sign === '−') cls = `ms-loyalty-down ms-loyalty-${n}`;
+      else cls = 'ms-loyalty-zero';
+      return `${prefix}<i class="ms ${cls}"></i>:`;
+    });
 
     return this.sanitizer.bypassSecurityTrustHtml(linkKeywords(withLoyalty));
   }

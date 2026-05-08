@@ -1,38 +1,33 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import {
-  GameStateDto,
-  GameStateDiffDto,
-  CardDto,
-  PermanentDto,
-} from '../../models/game.models';
+import { GameStateDto, GameStateDiffDto, CardDto } from '../../models/game.models';
 
 export const GameActions = createActionGroup({
   source: 'Game',
   events: {
     // Connection
-    'Join Game':        props<{ gameId: string; playerToken: string }>(),
-    'Game Joined':      props<{ gameState: GameStateDto; localPlayerId: string }>(),
-    'Connection Lost':  emptyProps(),
+    'Join Game': props<{ gameId: string; playerToken: string }>(),
+    'Game Joined': props<{ gameState: GameStateDto; localPlayerId: string }>(),
+    'Connection Lost': emptyProps(),
     'Connection Error': props<{ error: string }>(),
 
     // Full state sync (on join / reconnect)
-    'State Synced':     props<{ gameState: GameStateDto }>(),
+    'State Synced': props<{ gameState: GameStateDto }>(),
 
     // Incremental diff from SignalR
-    'State Diff':       props<{ diff: GameStateDiffDto }>(),
+    'State Diff': props<{ diff: GameStateDiffDto }>(),
 
     // Player actions — sent to SignalR hub
-    'Play Land':        props<{ cardId: string }>(),
-    'Cast Spell':       props<{ cardId: string; targetIds: string[] }>(),
-    'Activate Mana':    props<{ permanentId: string }>(),
-    'Untap Land':       props<{ permanentId: string }>(),
-    'Pass Priority':    emptyProps(),
-    'Declare Attackers':props<{ attackerIds: string[] }>(),
+    'Play Land': props<{ cardId: string }>(),
+    'Cast Spell': props<{ cardId: string; targetIds: string[] }>(),
+    'Activate Mana': props<{ permanentId: string }>(),
+    'Untap Land': props<{ permanentId: string }>(),
+    'Pass Priority': emptyProps(),
+    'Declare Attackers': props<{ attackerIds: string[] }>(),
     'Declare Blockers': props<{ blockerToAttacker: Record<string, string> }>(),
-    'Set Blocker Order':props<{ attackerId: string; orderedBlockerIds: string[] }>(),
-    'Concede':          emptyProps(),
+    'Set Blocker Order': props<{ attackerId: string; orderedBlockerIds: string[] }>(),
+    Concede: emptyProps(),
 
     // Card cache (from Scryfall)
-    'Card Loaded':      props<{ card: CardDto }>(),
+    'Card Loaded': props<{ card: CardDto }>(),
   },
 });

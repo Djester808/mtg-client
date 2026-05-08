@@ -3,7 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { map, combineLatest } from 'rxjs';
 import { AppState } from '../../store';
-import { selectCurrentPhase, selectCurrentStep, selectTurn, selectActivePlayerId, selectPlayers } from '../../store/selectors';
+import {
+  selectCurrentPhase,
+  selectCurrentStep,
+  selectTurn,
+  selectActivePlayerId,
+  selectPlayers,
+} from '../../store/selectors';
 import { Phase, Step } from '../../models/game.models';
 
 interface PhasePip {
@@ -14,13 +20,13 @@ interface PhasePip {
 }
 
 const PHASE_PIPS: { label: string; phase: Phase; step: Step }[] = [
-  { label: 'UNT', phase: Phase.Beginning,      step: Step.Untap  },
-  { label: 'UPK', phase: Phase.Beginning,      step: Step.Upkeep },
-  { label: 'DRW', phase: Phase.Beginning,      step: Step.Draw   },
-  { label: 'M1',  phase: Phase.PreCombatMain,  step: Step.Main   },
-  { label: 'CMB', phase: Phase.Combat,         step: Step.DeclareAttackers },
-  { label: 'M2',  phase: Phase.PostCombatMain, step: Step.Main   },
-  { label: 'END', phase: Phase.Ending,         step: Step.End    },
+  { label: 'UNT', phase: Phase.Beginning, step: Step.Untap },
+  { label: 'UPK', phase: Phase.Beginning, step: Step.Upkeep },
+  { label: 'DRW', phase: Phase.Beginning, step: Step.Draw },
+  { label: 'M1', phase: Phase.PreCombatMain, step: Step.Main },
+  { label: 'CMB', phase: Phase.Combat, step: Step.DeclareAttackers },
+  { label: 'M2', phase: Phase.PostCombatMain, step: Step.Main },
+  { label: 'END', phase: Phase.Ending, step: Step.End },
 ];
 
 const PHASE_ORDER = [
@@ -47,11 +53,11 @@ export class PhaseTrackComponent {
     this.store.select(selectActivePlayerId),
     this.store.select(selectPlayers),
   ]).pipe(
-    map(([phase, step, turn, activeId, players]) => {
-      const activePlayer = players.find(p => p.playerId === activeId);
+    map(([phase, _step, turn, activeId, players]) => {
+      const activePlayer = players.find((p) => p.playerId === activeId);
       const currentPhaseIdx = PHASE_ORDER.indexOf(phase);
 
-      const pips: PhasePip[] = PHASE_PIPS.map(pip => {
+      const pips: PhasePip[] = PHASE_PIPS.map((pip) => {
         const pipPhaseIdx = PHASE_ORDER.indexOf(pip.phase);
         let state: PhasePip['state'];
         if (pipPhaseIdx < currentPhaseIdx) {
@@ -65,7 +71,7 @@ export class PhaseTrackComponent {
       });
 
       return { pips, turn, activePlayerName: activePlayer?.name ?? '' };
-    })
+    }),
   );
 
   constructor(private store: Store<AppState>) {}

@@ -1,6 +1,6 @@
 import { Directive, ElementRef, HostBinding, AfterViewInit, OnDestroy } from '@angular/core';
 
-@Directive({ selector: '[overflowScroll]', standalone: true })
+@Directive({ selector: '[appOverflowScroll]', standalone: true })
 export class OverflowScrollDirective implements AfterViewInit, OnDestroy {
   @HostBinding('class.should-scroll') shouldScroll = false;
   private observer?: ResizeObserver;
@@ -22,5 +22,7 @@ export class OverflowScrollDirective implements AfterViewInit, OnDestroy {
     this.shouldScroll = el.scrollHeight > parent.clientHeight;
   }
 
-  ngOnDestroy() { this.observer?.disconnect(); }
+  ngOnDestroy() {
+    this.observer?.disconnect();
+  }
 }

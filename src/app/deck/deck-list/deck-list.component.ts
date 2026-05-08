@@ -1,9 +1,18 @@
 import {
-  Component, OnInit, OnDestroy,
-  ChangeDetectionStrategy, ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
@@ -48,15 +57,15 @@ export class DeckListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   // ---- Import modal state --------------------------------
-  showImportModal  = false;
+  showImportModal = false;
   importTab: 'text' | 'url' = 'text';
-  importName   = '';
-  importText   = '';
-  importUrl    = '';
+  importName = '';
+  importText = '';
+  importUrl = '';
   importFormat: string | null = null;
   importState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
   importResult: ImportDeckResult | null = null;
-  importError  = '';
+  importError = '';
 
   constructor(
     private store: Store<AppState>,
@@ -68,7 +77,7 @@ export class DeckListComponent implements OnInit, OnDestroy {
     this.decks$ = this.store.select(selectDecks);
     this.loading$ = this.store.select(selectDeckLoading);
     this.createForm = this.fb.group({
-      name:   ['', [Validators.required, Validators.maxLength(256)]],
+      name: ['', [Validators.required, Validators.maxLength(256)]],
       format: [null as string | null],
     });
   }
@@ -76,10 +85,13 @@ export class DeckListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.store.dispatch(DeckActions.loadDecks());
 
-    this.store.select(selectDecks).pipe(takeUntil(this.destroy$)).subscribe(decks => {
-      this.applySavedOrder(decks);
-      this.cdr.markForCheck();
-    });
+    this.store
+      .select(selectDecks)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((decks) => {
+        this.applySavedOrder(decks);
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {
@@ -89,17 +101,20 @@ export class DeckListComponent implements OnInit, OnDestroy {
 
   private applySavedOrder(decks: DeckDto[]): void {
     const saved = localStorage.getItem(this.ORDER_KEY);
-    if (!saved) { this.sortedDecks = [...decks]; return; }
+    if (!saved) {
+      this.sortedDecks = [...decks];
+      return;
+    }
     const order: string[] = JSON.parse(saved);
-    const byId = new Map(decks.map(d => [d.id, d]));
-    const sorted = order.filter(id => byId.has(id)).map(id => byId.get(id)!);
+    const byId = new Map(decks.map((d) => [d.id, d]));
+    const sorted = order.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
     const inOrder = new Set(order);
     for (const d of decks) if (!inOrder.has(d.id)) sorted.push(d);
     this.sortedDecks = sorted;
   }
 
   private saveDeckOrder(): void {
-    localStorage.setItem(this.ORDER_KEY, JSON.stringify(this.sortedDecks.map(d => d.id)));
+    localStorage.setItem(this.ORDER_KEY, JSON.stringify(this.sortedDecks.map((d) => d.id)));
   }
 
   openDeck(id: string): void {
@@ -118,7 +133,9 @@ export class DeckListComponent implements OnInit, OnDestroy {
   submitCreate(): void {
     if (this.createForm.invalid) return;
     const { name, format } = this.createForm.value;
-    this.store.dispatch(DeckActions.createDeck({ name: name.trim(), coverUri: null, format: format ?? null }));
+    this.store.dispatch(
+      DeckActions.createDeck({ name: name.trim(), coverUri: null, format: format ?? null }),
+    );
     this.showCreateForm = false;
   }
 
@@ -142,13 +159,15 @@ export class DeckListComponent implements OnInit, OnDestroy {
   submitFormat(): void {
     const deck = this.formatModalDeck;
     if (!deck) return;
-    this.store.dispatch(DeckActions.updateDeckMeta({
-      id: deck.id,
-      name: deck.name,
-      coverUri: deck.coverUri ?? null,
-      format: this.formatDraft,
-      commanderOracleId: deck.commanderOracleId ?? null,
-    }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: deck.id,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: this.formatDraft,
+        commanderOracleId: deck.commanderOracleId ?? null,
+      }),
+    );
     this.closeFormatModal();
   }
 
@@ -191,13 +210,15 @@ export class DeckListComponent implements OnInit, OnDestroy {
   commitRename(deck: DeckDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== deck.name) {
-      this.store.dispatch(DeckActions.updateDeckMeta({
-        id: deck.id,
-        name,
-        coverUri: deck.coverUri ?? null,
-        format: deck.format ?? null,
-        commanderOracleId: deck.commanderOracleId ?? null,
-      }));
+      this.store.dispatch(
+        DeckActions.updateDeckMeta({
+          id: deck.id,
+          name,
+          coverUri: deck.coverUri ?? null,
+          format: deck.format ?? null,
+          commanderOracleId: deck.commanderOracleId ?? null,
+        }),
+      );
     }
     this.renamingDeckId = null;
     this.cdr.markForCheck();
@@ -211,14 +232,14 @@ export class DeckListComponent implements OnInit, OnDestroy {
   // ---- Import deck ----------------------------------------
 
   openImportModal(): void {
-    this.importName   = '';
-    this.importText   = '';
-    this.importUrl    = '';
+    this.importName = '';
+    this.importText = '';
+    this.importUrl = '';
     this.importFormat = null;
-    this.importTab    = 'text';
-    this.importState  = 'idle';
+    this.importTab = 'text';
+    this.importState = 'idle';
     this.importResult = null;
-    this.importError  = '';
+    this.importError = '';
     this.showImportModal = true;
     this.cdr.markForCheck();
   }
@@ -230,34 +251,34 @@ export class DeckListComponent implements OnInit, OnDestroy {
 
   submitImport(): void {
     const hasText = this.importTab === 'text' && this.importText.trim().length > 0;
-    const hasUrl  = this.importTab === 'url'  && this.importUrl.trim().length > 0;
+    const hasUrl = this.importTab === 'url' && this.importUrl.trim().length > 0;
     if (!hasText && !hasUrl) return;
 
     this.importState = 'loading';
     this.cdr.markForCheck();
 
-    this.deckApi.importDeck({
-      name:   this.importName.trim() || 'Imported Deck',
-      text:   this.importTab === 'text' ? this.importText : undefined,
-      url:    this.importTab === 'url'  ? this.importUrl.trim() : undefined,
-      format: this.importFormat,
-    }).subscribe({
-      next: result => {
-        this.importResult = result;
-        this.importState  = 'done';
-        this.store.dispatch(DeckActions.loadDecks());
-        this.cdr.markForCheck();
-      },
-      error: err => {
-        const body = err?.error;
-        this.importError =
-          (typeof body === 'string' ? body : body?.message)
-          ?? err?.message
-          ?? 'Import failed.';
-        this.importState = 'error';
-        this.cdr.markForCheck();
-      },
-    });
+    this.deckApi
+      .importDeck({
+        name: this.importName.trim() || 'Imported Deck',
+        text: this.importTab === 'text' ? this.importText : undefined,
+        url: this.importTab === 'url' ? this.importUrl.trim() : undefined,
+        format: this.importFormat,
+      })
+      .subscribe({
+        next: (result) => {
+          this.importResult = result;
+          this.importState = 'done';
+          this.store.dispatch(DeckActions.loadDecks());
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          const body = err?.error;
+          this.importError =
+            (typeof body === 'string' ? body : body?.message) ?? err?.message ?? 'Import failed.';
+          this.importState = 'error';
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   goToImportedDeck(): void {
@@ -282,13 +303,15 @@ export class DeckListComponent implements OnInit, OnDestroy {
   }
 
   onCoverSelected(deck: DeckDto, uri: string | null): void {
-    this.store.dispatch(DeckActions.updateDeckMeta({
-      id: deck.id,
-      name: deck.name,
-      coverUri: uri,
-      format: deck.format ?? null,
-      commanderOracleId: deck.commanderOracleId ?? null,
-    }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: deck.id,
+        name: deck.name,
+        coverUri: uri,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
+      }),
+    );
     this.closeCoverPicker();
   }
 
@@ -314,21 +337,21 @@ export class DeckListComponent implements OnInit, OnDestroy {
   onDeckDrop(deck: DeckDto, e: DragEvent): void {
     e.preventDefault();
     if (!this.dragDeckId || this.dragDeckId === deck.id) return;
-    const fromIdx = this.sortedDecks.findIndex(d => d.id === this.dragDeckId);
-    const toIdx   = this.sortedDecks.findIndex(d => d.id === deck.id);
+    const fromIdx = this.sortedDecks.findIndex((d) => d.id === this.dragDeckId);
+    const toIdx = this.sortedDecks.findIndex((d) => d.id === deck.id);
     if (fromIdx < 0 || toIdx < 0) return;
     const updated = [...this.sortedDecks];
     const [removed] = updated.splice(fromIdx, 1);
     updated.splice(toIdx, 0, removed);
     this.sortedDecks = updated;
     this.saveDeckOrder();
-    this.dragDeckId    = null;
+    this.dragDeckId = null;
     this.dragOverDeckId = null;
     this.cdr.markForCheck();
   }
 
   onDeckDragEnd(): void {
-    this.dragDeckId    = null;
+    this.dragDeckId = null;
     this.dragOverDeckId = null;
     this.cdr.markForCheck();
   }

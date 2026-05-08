@@ -25,25 +25,40 @@ export class PlayersListComponent implements OnInit {
   searchQuery = '';
   sortBy: 'decks' | 'comments' | 'name' = 'decks';
 
-  constructor(private http: HttpClient, readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private http: HttpClient,
+    readonly cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.http.get<PlayerSummary[]>('/api/users').subscribe({
-      next: (p) => { this.players = p; this.loading = false; this.cdr.markForCheck(); },
-      error: () => { this.loading = false; this.cdr.markForCheck(); },
+      next: (p) => {
+        this.players = p;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   get filteredPlayers(): PlayerSummary[] {
     const q = this.searchQuery.trim().toLowerCase();
-    let list = q ? this.players.filter(p => p.username.toLowerCase().includes(q)) : [...this.players];
+    const list = q
+      ? this.players.filter((p) => p.username.toLowerCase().includes(q))
+      : [...this.players];
     if (this.sortBy === 'decks') list.sort((a, b) => b.deckCount - a.deckCount);
     else if (this.sortBy === 'comments') list.sort((a, b) => b.commentCount - a.commentCount);
     else list.sort((a, b) => a.username.localeCompare(b.username));
     return list;
   }
 
-  setSortBy(s: 'decks' | 'comments' | 'name'): void { this.sortBy = s; this.cdr.markForCheck(); }
+  setSortBy(s: 'decks' | 'comments' | 'name'): void {
+    this.sortBy = s;
+    this.cdr.markForCheck();
+  }
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });

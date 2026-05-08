@@ -8,17 +8,31 @@ import { ForumPostSummary } from '../../models/forum.models';
 
 function makePost(overrides: Partial<ForumPostSummary> = {}): ForumPostSummary {
   return {
-    id: 'post-1', deckId: 'deck-1', authorUsername: 'player1',
-    deckName: 'My Deck', deckCoverUri: null, deckFormat: 'commander',
-    description: null, colorIdentity: ['R', 'G'],
-    cardCount: 100, commentCount: 5, publishedAt: new Date().toISOString(),
+    id: 'post-1',
+    deckId: 'deck-1',
+    authorUsername: 'player1',
+    deckName: 'My Deck',
+    deckCoverUri: null,
+    deckFormat: 'commander',
+    description: null,
+    colorIdentity: ['R', 'G'],
+    cardCount: 100,
+    commentCount: 5,
+    publishedAt: new Date().toISOString(),
     ...overrides,
   };
 }
 
 const INITIAL_STATE = {
-  forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
-  auth:  { isLoggedIn: false, user: null, token: null, loading: false, error: null },
+  forum: {
+    posts: [],
+    activePost: null,
+    loading: false,
+    postLoading: false,
+    publishLoading: false,
+    error: null,
+  },
+  auth: { isLoggedIn: false, user: null, token: null, loading: false, error: null },
 };
 
 async function setup() {
@@ -115,7 +129,10 @@ describe('ForumListComponent — filteredPosts search', () => {
 
   it('filters by deck name (case-insensitive)', async () => {
     const { component } = await setup();
-    const posts = [makePost({ deckName: 'Burn Aggro' }), makePost({ id: 'p2', deckName: 'Control' })];
+    const posts = [
+      makePost({ deckName: 'Burn Aggro' }),
+      makePost({ id: 'p2', deckName: 'Control' }),
+    ];
     component.searchQuery = 'burn';
     expect(component.filteredPosts(posts)).toHaveSize(1);
     expect(component.filteredPosts(posts)[0].deckName).toBe('Burn Aggro');
@@ -147,7 +164,10 @@ describe('ForumListComponent — filteredPosts color filter', () => {
 
   it('returns all posts when no colors selected', async () => {
     const { component } = await setup();
-    const posts = [makePost({ colorIdentity: ['R'] }), makePost({ id: 'p2', colorIdentity: ['U', 'B'] })];
+    const posts = [
+      makePost({ colorIdentity: ['R'] }),
+      makePost({ id: 'p2', colorIdentity: ['U', 'B'] }),
+    ];
     expect(component.filteredPosts(posts)).toHaveSize(2);
   });
 
@@ -228,7 +248,7 @@ describe('ForumListComponent — filteredPosts sort', () => {
   it('sorts by comment count descending when sortBy is comments', async () => {
     const { component } = await setup();
     const posts = [
-      makePost({ id: 'few',  commentCount: 2 }),
+      makePost({ id: 'few', commentCount: 2 }),
       makePost({ id: 'many', commentCount: 10 }),
     ];
     component.setSortBy('comments');

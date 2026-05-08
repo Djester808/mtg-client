@@ -1,7 +1,14 @@
 import {
-  CardDto, CardType, ManaColor, CounterType,
-  PermanentDto, PlayerStateDto, GameStateDto,
-  Phase, Step, GameResult,
+  CardDto,
+  CardType,
+  ManaColor,
+  CounterType,
+  PermanentDto,
+  PlayerStateDto,
+  GameStateDto,
+  Phase,
+  Step,
+  GameResult,
 } from '../models/game.models';
 
 export function makeCard(overrides: Partial<CardDto> = {}): CardDto {
@@ -36,11 +43,11 @@ export function makeCard(overrides: Partial<CardDto> = {}): CardDto {
 }
 
 export const emptyCounters: Record<CounterType, number> = {
-  [CounterType.PlusOnePlusOne]:   0,
+  [CounterType.PlusOnePlusOne]: 0,
   [CounterType.MinusOneMinusOne]: 0,
-  [CounterType.Loyalty]:          0,
-  [CounterType.Charge]:           0,
-  [CounterType.Poison]:           0,
+  [CounterType.Loyalty]: 0,
+  [CounterType.Charge]: 0,
+  [CounterType.Poison]: 0,
 };
 
 export function makePermanent(overrides: Partial<PermanentDto> = {}): PermanentDto {

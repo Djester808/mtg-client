@@ -9,9 +9,13 @@ import { CollectionDto } from '../../models/game.models';
 
 function makeCol(overrides: Partial<CollectionDto> = {}): CollectionDto {
   return {
-    id: 'col-1', name: 'My Collection',
-    description: null, coverUri: null, cardCount: 3,
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 'col-1',
+    name: 'My Collection',
+    description: null,
+    coverUri: null,
+    cardCount: 3,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
     ...overrides,
   };
 }
@@ -89,14 +93,22 @@ describe('CollectionListComponent — inline rename', () => {
 
   it('commitRename dispatches updateCollectionMeta when name changed', async () => {
     const { component, store } = await setup();
-    const col = makeCol({ id: 'col-1', name: 'Old Name', description: 'desc', coverUri: 'cover.jpg' });
+    const col = makeCol({
+      id: 'col-1',
+      name: 'Old Name',
+      description: 'desc',
+      coverUri: 'cover.jpg',
+    });
     component.renamingColId = 'col-1';
     component.renameDraft = 'New Name';
     component.commitRename(col);
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCollectionMeta({
-        id: 'col-1', name: 'New Name', description: 'desc', coverUri: 'cover.jpg',
-      })
+        id: 'col-1',
+        name: 'New Name',
+        description: 'desc',
+        coverUri: 'cover.jpg',
+      }),
     );
     expect(component.renamingColId).toBeNull();
   });
@@ -156,8 +168,11 @@ describe('CollectionListComponent — cover picker', () => {
     component.onCoverSelected(col, 'new-cover.jpg');
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCollectionMeta({
-        id: 'col-2', name: 'Art Deck', description: 'notes', coverUri: 'new-cover.jpg',
-      })
+        id: 'col-2',
+        name: 'Art Deck',
+        description: 'notes',
+        coverUri: 'new-cover.jpg',
+      }),
     );
     expect(component.coverPickerCol).toBeNull();
   });
@@ -168,8 +183,11 @@ describe('CollectionListComponent — cover picker', () => {
     component.onCoverSelected(col, null);
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCollectionMeta({
-        id: 'col-2', name: 'Art Deck', description: null, coverUri: null,
-      })
+        id: 'col-2',
+        name: 'Art Deck',
+        description: null,
+        coverUri: null,
+      }),
     );
   });
 });
@@ -183,7 +201,7 @@ describe('CollectionListComponent — delete and create', () => {
     const { component, store } = await setup();
     component.deleteCollection(new MouseEvent('click'), 'col-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.deleteCollection({ id: 'col-1' })
+      CollectionActions.deleteCollection({ id: 'col-1' }),
     );
   });
 
@@ -194,7 +212,7 @@ describe('CollectionListComponent — delete and create', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.createCollection({
         request: { name: 'My Deck', description: 'notes' },
-      })
+      }),
     );
     expect(component.showCreateForm).toBeFalse();
   });

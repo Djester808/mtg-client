@@ -21,8 +21,15 @@ describe('GameEffects', () => {
 
   beforeEach(() => {
     signalr = jasmine.createSpyObj<SignalRService>('SignalRService', [
-      'connect', 'concede', 'passpriority', 'castSpell', 'playLand',
-      'activateMana', 'untapLand', 'declareAttackers', 'declareBlockers',
+      'connect',
+      'concede',
+      'passpriority',
+      'castSpell',
+      'playLand',
+      'activateMana',
+      'untapLand',
+      'declareAttackers',
+      'declareBlockers',
     ]);
     api = jasmine.createSpyObj<GameApiService>('GameApiService', ['joinGame']);
 
@@ -38,7 +45,7 @@ describe('GameEffects', () => {
     });
 
     effects = TestBed.inject(GameEffects);
-    router  = TestBed.inject(Router);
+    router = TestBed.inject(Router);
     localStorage.clear();
   });
 
@@ -51,10 +58,12 @@ describe('GameEffects', () => {
       localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-1', playerToken: 'tok' }));
       spyOn(router, 'navigate');
 
-      actions$ = of(GameActions.gameJoined({
-        gameState: makeGameState(GameResult.Player1Wins),
-        localPlayerId: 'p1',
-      }));
+      actions$ = of(
+        GameActions.gameJoined({
+          gameState: makeGameState(GameResult.Player1Wins),
+          localPlayerId: 'p1',
+        }),
+      );
 
       effects.gameOverOnJoin$.subscribe();
 
@@ -65,10 +74,12 @@ describe('GameEffects', () => {
     it('does not navigate when game is still in progress', () => {
       spyOn(router, 'navigate');
 
-      actions$ = of(GameActions.gameJoined({
-        gameState: makeGameState(GameResult.InProgress),
-        localPlayerId: 'p1',
-      }));
+      actions$ = of(
+        GameActions.gameJoined({
+          gameState: makeGameState(GameResult.InProgress),
+          localPlayerId: 'p1',
+        }),
+      );
 
       effects.gameOverOnJoin$.subscribe();
 
@@ -79,10 +90,12 @@ describe('GameEffects', () => {
       localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-1', playerToken: 'tok' }));
       spyOn(router, 'navigate');
 
-      actions$ = of(GameActions.gameJoined({
-        gameState: makeGameState(GameResult.Draw),
-        localPlayerId: 'p1',
-      }));
+      actions$ = of(
+        GameActions.gameJoined({
+          gameState: makeGameState(GameResult.Draw),
+          localPlayerId: 'p1',
+        }),
+      );
 
       effects.gameOverOnJoin$.subscribe();
 

@@ -112,7 +112,7 @@ describe('ZonesComponent', () => {
     component.onZoneDrop(event);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      GameActions.castSpell({ cardId: 'spell-1', targetIds: [] })
+      GameActions.castSpell({ cardId: 'spell-1', targetIds: [] }),
     );
   });
 

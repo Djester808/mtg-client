@@ -3,9 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { combineLatest, map } from 'rxjs';
 import { AppState, UIActions } from '../../store';
-import {
-  selectZoneViewer, selectPlayers, selectLocalPlayerId,
-} from '../../store/selectors';
+import { selectZoneViewer, selectPlayers, selectLocalPlayerId } from '../../store/selectors';
 import { CardDto } from '../../models/game.models';
 import { CardComponent } from '../card/card.component';
 
@@ -26,19 +24,17 @@ export class ZoneViewerComponent {
     map(([viewer, players, localId]) => {
       if (!viewer.open || !viewer.playerId) return null;
 
-      const player = players.find(p => p.playerId === viewer.playerId);
+      const player = players.find((p) => p.playerId === viewer.playerId);
       if (!player) return null;
 
-      const cards: CardDto[] = viewer.zone === 'graveyard'
-        ? player.graveyard
-        : player.exile;
+      const cards: CardDto[] = viewer.zone === 'graveyard' ? player.graveyard : player.exile;
 
       const isLocal = viewer.playerId === localId;
       const ownerLabel = isLocal ? 'Your' : `${player.name}'s`;
       const zoneLabel = viewer.zone === 'graveyard' ? 'Graveyard' : 'Exile';
 
       return { cards, title: `${ownerLabel} ${zoneLabel}`, zone: viewer.zone };
-    })
+    }),
   );
 
   constructor(private store: Store<AppState>) {}

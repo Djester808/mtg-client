@@ -20,23 +20,34 @@ export const collectionReducer = createReducer(
   initialState,
 
   // Load all
-  on(CollectionActions.loadCollections, state => ({ ...state, loading: true, error: null })),
+  on(CollectionActions.loadCollections, (state) => ({ ...state, loading: true, error: null })),
   on(CollectionActions.loadCollectionsSuccess, (state, { collections }) => ({
-    ...state, loading: false, collections,
+    ...state,
+    loading: false,
+    collections,
   })),
   on(CollectionActions.loadCollectionsFailure, (state, { error }) => ({
-    ...state, loading: false, error,
+    ...state,
+    loading: false,
+    error,
   })),
 
   // Load one
-  on(CollectionActions.loadCollection, state => ({
-    ...state, loading: true, error: null, activeCollection: null,
+  on(CollectionActions.loadCollection, (state) => ({
+    ...state,
+    loading: true,
+    error: null,
+    activeCollection: null,
   })),
   on(CollectionActions.loadCollectionSuccess, (state, { collection }) => ({
-    ...state, loading: false, activeCollection: collection,
+    ...state,
+    loading: false,
+    activeCollection: collection,
   })),
   on(CollectionActions.loadCollectionFailure, (state, { error }) => ({
-    ...state, loading: false, error,
+    ...state,
+    loading: false,
+    error,
   })),
 
   // Create
@@ -59,29 +70,41 @@ export const collectionReducer = createReducer(
   // Delete
   on(CollectionActions.deleteCollectionSuccess, (state, { id }) => ({
     ...state,
-    collections: state.collections.filter(c => c.id !== id),
+    collections: state.collections.filter((c) => c.id !== id),
   })),
 
   // Update meta
   on(CollectionActions.updateCollectionMetaSuccess, (state, { collection }) => ({
     ...state,
-    collections: state.collections.map(c =>
+    collections: state.collections.map((c) =>
       c.id === collection.id
-        ? { ...c, name: collection.name, description: collection.description, coverUri: collection.coverUri ?? null }
-        : c
+        ? {
+            ...c,
+            name: collection.name,
+            description: collection.description,
+            coverUri: collection.coverUri ?? null,
+          }
+        : c,
     ),
-    activeCollection: state.activeCollection?.id === collection.id
-      ? { ...state.activeCollection, name: collection.name, description: collection.description, coverUri: collection.coverUri ?? null }
-      : state.activeCollection,
+    activeCollection:
+      state.activeCollection?.id === collection.id
+        ? {
+            ...state.activeCollection,
+            name: collection.name,
+            description: collection.description,
+            coverUri: collection.coverUri ?? null,
+          }
+        : state.activeCollection,
   })),
 
   // Add card (upsert into activeCollection)
   on(CollectionActions.addCardSuccess, (state, { card }) => {
     if (!state.activeCollection) return state;
-    const idx = state.activeCollection.cards.findIndex(c => c.id === card.id);
-    const cards = idx >= 0
-      ? state.activeCollection.cards.map((c, i) => i === idx ? card : c)
-      : [...state.activeCollection.cards, card];
+    const idx = state.activeCollection.cards.findIndex((c) => c.id === card.id);
+    const cards =
+      idx >= 0
+        ? state.activeCollection.cards.map((c, i) => (i === idx ? card : c))
+        : [...state.activeCollection.cards, card];
     return { ...state, activeCollection: { ...state.activeCollection, cards } };
   }),
 
@@ -92,7 +115,7 @@ export const collectionReducer = createReducer(
       ...state,
       activeCollection: {
         ...state.activeCollection,
-        cards: state.activeCollection.cards.map(c => c.id === card.id ? card : c),
+        cards: state.activeCollection.cards.map((c) => (c.id === card.id ? card : c)),
       },
     };
   }),
@@ -104,7 +127,7 @@ export const collectionReducer = createReducer(
       ...state,
       activeCollection: {
         ...state.activeCollection,
-        cards: state.activeCollection.cards.filter(c => c.id !== cardId),
+        cards: state.activeCollection.cards.filter((c) => c.id !== cardId),
       },
     };
   }),

@@ -71,17 +71,17 @@ export const routes: Routes = [
     path: 'community',
     component: CommunityComponent,
     children: [
-      { path: '',           redirectTo: 'forum', pathMatch: 'full' },
-      { path: 'forum',      component: ForumListComponent },
+      { path: '', redirectTo: 'forum', pathMatch: 'full' },
+      { path: 'forum', component: ForumListComponent },
       { path: 'commanders', component: CommanderListComponent },
-      { path: 'players',    component: PlayersListComponent },
+      { path: 'players', component: PlayersListComponent },
     ],
   },
   // Legacy redirects so old direct links still work
-  { path: 'forum',      redirectTo: '/community/forum',      pathMatch: 'full' },
+  { path: 'forum', redirectTo: '/community/forum', pathMatch: 'full' },
   { path: 'commanders', redirectTo: '/community/commanders', pathMatch: 'full' },
   // Detail pages stay at their own top-level routes
-  { path: 'forum/:id',            component: ForumDetailComponent },
+  { path: 'forum/:id', component: ForumDetailComponent },
   { path: 'commanders/:oracleId', component: CommanderDetailComponent },
-  { path: 'u/:username',          component: UserProfileComponent },
+  { path: 'u/:username', component: UserProfileComponent },
 ];

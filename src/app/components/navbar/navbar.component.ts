@@ -15,13 +15,13 @@ import { AuthActions } from '../../store/auth/auth.actions';
 })
 export class NavbarComponent {
   isLoggedIn$ = this.store.select(selectIsLoggedIn);
-  username$   = this.store.select(selectUsername);
+  username$ = this.store.select(selectUsername);
   accountOpen = signal(false);
 
   constructor(private store: Store) {}
 
   toggleAccount(): void {
-    this.accountOpen.update(v => !v);
+    this.accountOpen.update((v) => !v);
   }
 
   signOut(): void {

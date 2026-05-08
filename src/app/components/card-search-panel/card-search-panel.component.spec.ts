@@ -19,33 +19,49 @@ function makeCards(n: number): CardDto[] {
 
 function makePrinting(scryfallId: string, setCode = 'lea'): PrintingDto {
   return {
-    scryfallId, setCode, setName: 'Alpha', collectorNumber: '1',
-    imageUriSmall: null, imageUriNormal: null, imageUriNormalBack: null,
-    oracleText: null, flavorText: null, artist: null, manaCost: null,
+    scryfallId,
+    setCode,
+    setName: 'Alpha',
+    collectorNumber: '1',
+    imageUriSmall: null,
+    imageUriNormal: null,
+    imageUriNormalBack: null,
+    oracleText: null,
+    flavorText: null,
+    artist: null,
+    manaCost: null,
   };
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function buildModule(gameApi: jasmine.SpyObj<GameApiService>, collectionApi: jasmine.SpyObj<CollectionApiService>) {
+function buildModule(
+  gameApi: jasmine.SpyObj<GameApiService>,
+  collectionApi: jasmine.SpyObj<CollectionApiService>,
+) {
   return TestBed.configureTestingModule({
     imports: [CardSearchPanelComponent, CommonModule, ReactiveFormsModule, FormsModule],
     providers: [
-      { provide: GameApiService,       useValue: gameApi },
+      { provide: GameApiService, useValue: gameApi },
       { provide: CollectionApiService, useValue: collectionApi },
     ],
   })
-  .overrideComponent(CardSearchPanelComponent, {
-    remove: { imports: [ManaCostComponent, CardModalComponent] },
-  })
-  .compileComponents();
+    .overrideComponent(CardSearchPanelComponent, {
+      remove: { imports: [ManaCostComponent, CardModalComponent] },
+    })
+    .compileComponents();
 }
 
 function makeSpies() {
-  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards', 'getSets']);
+  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
+    'searchCards',
+    'getSets',
+  ]);
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
-  const collectionApi = jasmine.createSpyObj<CollectionApiService>('CollectionApiService', ['getPrintings']);
+  const collectionApi = jasmine.createSpyObj<CollectionApiService>('CollectionApiService', [
+    'getPrintings',
+  ]);
   collectionApi.getPrintings.and.returnValue(of([]));
   return { gameApi, collectionApi };
 }
@@ -53,7 +69,7 @@ function makeSpies() {
 /** Init component inside fakeAsync, flush the initial empty-query debounce. */
 function initComponent(fixture: ComponentFixture<CardSearchPanelComponent>): void {
   fixture.detectChanges(); // triggers ngOnInit inside fakeAsync zone
-  tick(400);               // flush the initial empty-query debounce (returns of(null))
+  tick(400); // flush the initial empty-query debounce (returns of(null))
 }
 
 // ── Search flags (toggle state) ───────────────────────────────────────────────
@@ -76,18 +92,24 @@ describe('CardSearchPanelComponent — search flags (state)', () => {
   });
 
   it('toggleMatchCase flips matchCase', () => {
-    component.toggleMatchCase(); expect(component.matchCase).toBeTrue();
-    component.toggleMatchCase(); expect(component.matchCase).toBeFalse();
+    component.toggleMatchCase();
+    expect(component.matchCase).toBeTrue();
+    component.toggleMatchCase();
+    expect(component.matchCase).toBeFalse();
   });
 
   it('toggleMatchWord flips matchWord', () => {
-    component.toggleMatchWord(); expect(component.matchWord).toBeTrue();
-    component.toggleMatchWord(); expect(component.matchWord).toBeFalse();
+    component.toggleMatchWord();
+    expect(component.matchWord).toBeTrue();
+    component.toggleMatchWord();
+    expect(component.matchWord).toBeFalse();
   });
 
   it('toggleUseRegex flips useRegex', () => {
-    component.toggleUseRegex(); expect(component.useRegex).toBeTrue();
-    component.toggleUseRegex(); expect(component.useRegex).toBeFalse();
+    component.toggleUseRegex();
+    expect(component.useRegex).toBeTrue();
+    component.toggleUseRegex();
+    expect(component.useRegex).toBeFalse();
   });
 });
 
@@ -115,7 +137,7 @@ describe('CardSearchPanelComponent — search flags (API args)', () => {
     tick(400);
 
     const args = gameApi.searchCards.calls.mostRecent().args;
-    expect(args[5]).toBeTrue();  // matchCase
+    expect(args[5]).toBeTrue(); // matchCase
     expect(args[6]).toBeFalse(); // matchWord
     expect(args[7]).toBeFalse(); // useRegex
   }));
@@ -258,7 +280,7 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
     component.searchText.setValue('rat');
     tick(400);
 
-    const ids = collectionApi.getPrintings.calls.allArgs().map(a => a[0] as string);
+    const ids = collectionApi.getPrintings.calls.allArgs().map((a) => a[0] as string);
     expect(ids).toContain('oracle-0');
     expect(ids).toContain('oracle-1');
     expect(ids).toContain('oracle-2');
@@ -272,7 +294,7 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
     tick(400);
 
     expect(collectionApi.getPrintings.calls.count()).toBe(2);
-    const ids = collectionApi.getPrintings.calls.allArgs().map(a => a[0] as string);
+    const ids = collectionApi.getPrintings.calls.allArgs().map((a) => a[0] as string);
     expect(ids).not.toContain('oracle-0');
   }));
 
@@ -338,12 +360,16 @@ describe('CardSearchPanelComponent — flip', () => {
   let component: CardSearchPanelComponent;
 
   const DFC = makeCard({
-    cardId: 'dfc-1', oracleId: 'oracle-dfc',
-    imageUriSmall: 'front-small.jpg', imageUriNormalBack: 'back-normal.jpg',
+    cardId: 'dfc-1',
+    oracleId: 'oracle-dfc',
+    imageUriSmall: 'front-small.jpg',
+    imageUriNormalBack: 'back-normal.jpg',
   });
   const NORMAL = makeCard({
-    cardId: 'normal-1', oracleId: 'oracle-normal',
-    imageUriSmall: 'front-small.jpg', imageUriNormalBack: null,
+    cardId: 'normal-1',
+    oracleId: 'oracle-normal',
+    imageUriSmall: 'front-small.jpg',
+    imageUriNormalBack: null,
   });
 
   beforeEach(async () => {
@@ -416,7 +442,7 @@ describe('CardSearchPanelComponent — addCard', () => {
     component.searchSelectedScryfallId.set('oracle-x', 'scry-x');
 
     const emitted: { oracleId: string; scryfallId: string }[] = [];
-    component.cardAdd.subscribe(e => emitted.push(e));
+    component.cardAdd.subscribe((e) => emitted.push(e));
 
     component.addCard(card);
 
@@ -465,7 +491,7 @@ describe('CardSearchPanelComponent — addPreviewNormal / addPreviewFoil', () =>
 
   it('addPreviewNormal emits cardAdd with foil:false', () => {
     const emitted: { oracleId: string; scryfallId: string; foil?: boolean }[] = [];
-    component.cardAdd.subscribe(e => emitted.push(e));
+    component.cardAdd.subscribe((e) => emitted.push(e));
 
     component.addPreviewNormal();
 
@@ -477,7 +503,7 @@ describe('CardSearchPanelComponent — addPreviewNormal / addPreviewFoil', () =>
 
   it('addPreviewFoil emits cardAdd with foil:true', () => {
     const emitted: { oracleId: string; scryfallId: string; foil?: boolean }[] = [];
-    component.cardAdd.subscribe(e => emitted.push(e));
+    component.cardAdd.subscribe((e) => emitted.push(e));
 
     component.addPreviewFoil();
 
@@ -520,7 +546,10 @@ describe('CardSearchPanelComponent — search history', () => {
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
   });
 
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('searchHistory is empty when localStorage has no entry', () => {
     component.ngOnInit();
@@ -538,7 +567,9 @@ describe('CardSearchPanelComponent — search history', () => {
     component.searchSelectedScryfallId.set('oracle-bolt', 'scry-bolt');
     component.addCard(card);
     expect(component.searchHistory[0]).toBe('Lightning Bolt');
-    expect(JSON.parse(localStorage.getItem('mtg-search-history') || '[]')[0]).toBe('Lightning Bolt');
+    expect(JSON.parse(localStorage.getItem('mtg-search-history') || '[]')[0]).toBe(
+      'Lightning Bolt',
+    );
   });
 
   it('addCard prepends new term so most recent appears first', () => {
@@ -558,7 +589,7 @@ describe('CardSearchPanelComponent — search history', () => {
     component.searchSelectedScryfallId.set('oracle-cs', 'scry-cs');
     component.addCard(card);
     expect(component.searchHistory[0]).toBe('Counterspell');
-    expect(component.searchHistory.filter(t => t === 'Counterspell')).toHaveSize(1);
+    expect(component.searchHistory.filter((t) => t === 'Counterspell')).toHaveSize(1);
   });
 
   it('addCard does not emit and does not save when no printing is selected', () => {
@@ -590,7 +621,7 @@ describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreview
 
   it('decrementPreviewNormal emits cardDecrementNormal with the preview oracleId', () => {
     const emitted: string[] = [];
-    component.cardDecrementNormal.subscribe(id => emitted.push(id));
+    component.cardDecrementNormal.subscribe((id) => emitted.push(id));
 
     component.decrementPreviewNormal();
 
@@ -599,7 +630,7 @@ describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreview
 
   it('decrementPreviewFoil emits cardDecrementFoil with the preview oracleId', () => {
     const emitted: string[] = [];
-    component.cardDecrementFoil.subscribe(id => emitted.push(id));
+    component.cardDecrementFoil.subscribe((id) => emitted.push(id));
 
     component.decrementPreviewFoil();
 

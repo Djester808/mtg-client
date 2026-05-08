@@ -23,27 +23,40 @@ const initialState: ForumState = {
 export const forumReducer = createReducer(
   initialState,
 
-  on(ForumActions.loadPosts, state => ({ ...state, loading: true, error: null })),
+  on(ForumActions.loadPosts, (state) => ({ ...state, loading: true, error: null })),
   on(ForumActions.loadPostsSuccess, (state, { posts }) => ({ ...state, loading: false, posts })),
   on(ForumActions.loadPostsFailure, (state, { error }) => ({ ...state, loading: false, error })),
 
-  on(ForumActions.loadPost, state => ({ ...state, postLoading: true, error: null, activePost: null })),
-  on(ForumActions.loadPostSuccess, (state, { post }) => ({ ...state, postLoading: false, activePost: post })),
+  on(ForumActions.loadPost, (state) => ({
+    ...state,
+    postLoading: true,
+    error: null,
+    activePost: null,
+  })),
+  on(ForumActions.loadPostSuccess, (state, { post }) => ({
+    ...state,
+    postLoading: false,
+    activePost: post,
+  })),
   on(ForumActions.loadPostFailure, (state, { error }) => ({ ...state, postLoading: false, error })),
 
-  on(ForumActions.publishDeck, state => ({ ...state, publishLoading: true, error: null })),
+  on(ForumActions.publishDeck, (state) => ({ ...state, publishLoading: true, error: null })),
   on(ForumActions.publishDeckSuccess, (state, { post }) => ({
     ...state,
     publishLoading: false,
-    posts: state.posts.some(p => p.id === post.id)
-      ? state.posts.map(p => p.id === post.id ? post : p)
+    posts: state.posts.some((p) => p.id === post.id)
+      ? state.posts.map((p) => (p.id === post.id ? post : p))
       : [post, ...state.posts],
   })),
-  on(ForumActions.publishDeckFailure, (state, { error }) => ({ ...state, publishLoading: false, error })),
+  on(ForumActions.publishDeckFailure, (state, { error }) => ({
+    ...state,
+    publishLoading: false,
+    error,
+  })),
 
   on(ForumActions.deletePostSuccess, (state, { id }) => ({
     ...state,
-    posts: state.posts.filter(p => p.id !== id),
+    posts: state.posts.filter((p) => p.id !== id),
     activePost: state.activePost?.id === id ? null : state.activePost,
   })),
 
@@ -64,7 +77,7 @@ export const forumReducer = createReducer(
       ...state,
       activePost: {
         ...state.activePost,
-        comments: state.activePost.comments.map(c => c.id === comment.id ? comment : c),
+        comments: state.activePost.comments.map((c) => (c.id === comment.id ? comment : c)),
       },
     };
   }),
@@ -75,7 +88,7 @@ export const forumReducer = createReducer(
       ...state,
       activePost: {
         ...state.activePost,
-        comments: state.activePost.comments.filter(c => c.id !== commentId),
+        comments: state.activePost.comments.filter((c) => c.id !== commentId),
       },
     };
   }),

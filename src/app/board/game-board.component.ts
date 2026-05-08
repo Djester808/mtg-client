@@ -1,19 +1,32 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, OnInit } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  HostListener,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { combineLatest, map } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../store';
 import {
-  selectLocalPlayer, selectOpponent,
-  selectLocalPermanents, selectOpponentPermanents,
-  selectHasPriority, selectIsActivePlayer,
-  selectCurrentPhase, selectCurrentStep,
-  selectGameResult, selectUIMode,
-  selectPendingAttackers, selectPreviewCard,
-  selectStack, selectZoneViewerOpen,
+  selectLocalPlayer,
+  selectOpponent,
+  selectLocalPermanents,
+  selectOpponentPermanents,
+  selectHasPriority,
+  selectIsActivePlayer,
+  selectCurrentPhase,
+  selectCurrentStep,
+  selectGameResult,
+  selectUIMode,
+  selectPendingAttackers,
+  selectPreviewCard,
+  selectStack,
+  selectZoneViewerOpen,
 } from '../store/selectors';
-import { Phase, Step, GameResult } from '../models/game.models';
+import { Phase, Step } from '../models/game.models';
 
 import { SignalRService } from '../services/signalr.service';
 import { buildTypeLine } from '../utils/card.utils';
@@ -53,7 +66,6 @@ import { OracleSymbolsPipe } from '../pipes/oracle-symbols.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameBoardComponent implements OnInit {
-
   vm$ = combineLatest([
     this.store.select(selectLocalPlayer),
     this.store.select(selectOpponent),
@@ -70,21 +82,53 @@ export class GameBoardComponent implements OnInit {
     this.store.select(selectStack),
     this.store.select(selectZoneViewerOpen),
   ]).pipe(
-    map(([
-      localPlayer, opponent, localPerms, opponentPerms,
-      hasPriority, isActive, phase, step, result,
-      uiMode, pendingAttackers, previewCard, stack, zoneViewerOpen,
-    ]) => ({
-      localPlayer, opponent, localPerms, opponentPerms,
-      hasPriority, isActive, phase, step, result,
-      uiMode, pendingAttackers, previewCard, zoneViewerOpen,
-      stackCount: stack.length,
-      statusMessage: this.buildStatusMessage(phase, step, hasPriority, isActive, uiMode, pendingAttackers.length),
-      showDeclareAttackersBtn: isActive && phase === Phase.Combat && step === Step.DeclareAttackers && uiMode === 'idle',
-      showConfirmAttackersBtn: uiMode === 'declaring-attackers',
-      showDeclareBlockersBtn:  !isActive && phase === Phase.Combat && step === Step.DeclareBlockers && uiMode === 'idle',
-      showConfirmBlockersBtn:  uiMode === 'declaring-blockers',
-    }))
+    map(
+      ([
+        localPlayer,
+        opponent,
+        localPerms,
+        opponentPerms,
+        hasPriority,
+        isActive,
+        phase,
+        step,
+        result,
+        uiMode,
+        pendingAttackers,
+        previewCard,
+        stack,
+        zoneViewerOpen,
+      ]) => ({
+        localPlayer,
+        opponent,
+        localPerms,
+        opponentPerms,
+        hasPriority,
+        isActive,
+        phase,
+        step,
+        result,
+        uiMode,
+        pendingAttackers,
+        previewCard,
+        zoneViewerOpen,
+        stackCount: stack.length,
+        statusMessage: this.buildStatusMessage(
+          phase,
+          step,
+          hasPriority,
+          isActive,
+          uiMode,
+          pendingAttackers.length,
+        ),
+        showDeclareAttackersBtn:
+          isActive && phase === Phase.Combat && step === Step.DeclareAttackers && uiMode === 'idle',
+        showConfirmAttackersBtn: uiMode === 'declaring-attackers',
+        showDeclareBlockersBtn:
+          !isActive && phase === Phase.Combat && step === Step.DeclareBlockers && uiMode === 'idle',
+        showConfirmBlockersBtn: uiMode === 'declaring-blockers',
+      }),
+    ),
   );
 
   handHeight = 400;
@@ -93,24 +137,24 @@ export class GameBoardComponent implements OnInit {
   private handResizeStartH = 0;
 
   // Default dimensions match the MTG card aspect ratio (63 × 88 mm)
-  previewWidth  = 220;
+  previewWidth = 220;
   previewHeight = 308;
-  previewLeft   = window.innerWidth - 460;
-  previewTop    = Math.floor(window.innerHeight / 2) - 154;
+  previewLeft = window.innerWidth - 460;
+  previewTop = Math.floor(window.innerHeight / 2) - 154;
 
   private resizeDir: string | null = null;
   private resizeStartX = 0;
   private resizeStartY = 0;
   private resizeOriginLeft = 0;
-  private resizeOriginTop  = 0;
-  private resizeOriginW    = 0;
-  private resizeOriginH    = 0;
+  private resizeOriginTop = 0;
+  private resizeOriginW = 0;
+  private resizeOriginH = 0;
 
   private previewDragging = false;
   private previewDragStartX = 0;
   private previewDragStartY = 0;
   private previewDragOriginLeft = 0;
-  private previewDragOriginTop  = 0;
+  private previewDragOriginTop = 0;
 
   get gridRows(): string {
     return `64px 1fr 1fr 44px ${this.handHeight}px`;
@@ -132,19 +176,19 @@ export class GameBoardComponent implements OnInit {
     this.previewDragStartX = e.clientX;
     this.previewDragStartY = e.clientY;
     this.previewDragOriginLeft = this.previewLeft;
-    this.previewDragOriginTop  = this.previewTop;
+    this.previewDragOriginTop = this.previewTop;
     e.preventDefault();
     e.stopPropagation();
   }
 
   startPreviewResize(e: MouseEvent, dir: string): void {
-    this.resizeDir       = dir;
-    this.resizeStartX    = e.clientX;
-    this.resizeStartY    = e.clientY;
+    this.resizeDir = dir;
+    this.resizeStartX = e.clientX;
+    this.resizeStartY = e.clientY;
     this.resizeOriginLeft = this.previewLeft;
-    this.resizeOriginTop  = this.previewTop;
-    this.resizeOriginW    = this.previewWidth;
-    this.resizeOriginH    = this.previewHeight;
+    this.resizeOriginTop = this.previewTop;
+    this.resizeOriginW = this.previewWidth;
+    this.resizeOriginH = this.previewHeight;
     e.preventDefault();
     e.stopPropagation();
   }
@@ -160,7 +204,8 @@ export class GameBoardComponent implements OnInit {
       const dx = e.clientX - this.resizeStartX;
       const dy = e.clientY - this.resizeStartY;
       const aspectRatio = this.resizeOriginW / this.resizeOriginH;
-      const minW = 120, maxW = 600;
+      const minW = 120,
+        maxW = 600;
       const d = this.resizeDir;
 
       // Diagonal delta: each corner uses the axis that grows when dragged outward
@@ -173,17 +218,17 @@ export class GameBoardComponent implements OnInit {
       const newW = Math.max(minW, Math.min(maxW, this.resizeOriginW + delta));
       const newH = Math.round(newW / aspectRatio);
 
-      this.previewWidth  = newW;
+      this.previewWidth = newW;
       this.previewHeight = newH;
 
       if (d.includes('w')) this.previewLeft = this.resizeOriginLeft + (this.resizeOriginW - newW);
-      if (d.includes('n')) this.previewTop  = this.resizeOriginTop  + (this.resizeOriginH - newH);
+      if (d.includes('n')) this.previewTop = this.resizeOriginTop + (this.resizeOriginH - newH);
 
       this.cdr.markForCheck();
     }
     if (this.previewDragging) {
       this.previewLeft = this.previewDragOriginLeft + (e.clientX - this.previewDragStartX);
-      this.previewTop  = this.previewDragOriginTop  + (e.clientY - this.previewDragStartY);
+      this.previewTop = this.previewDragOriginTop + (e.clientY - this.previewDragStartY);
       this.cdr.markForCheck();
     }
   }
@@ -205,7 +250,10 @@ export class GameBoardComponent implements OnInit {
 
   @HostListener('document:click')
   onDocumentClick(): void {
-    if (this.suppressNextClick) { this.suppressNextClick = false; return; }
+    if (this.suppressNextClick) {
+      this.suppressNextClick = false;
+      return;
+    }
     this.closePreview();
   }
 
@@ -239,10 +287,12 @@ export class GameBoardComponent implements OnInit {
       return;
     }
 
-    this.store.dispatch(GameActions.joinGame({
-      gameId,
-      playerToken: session.playerToken,
-    }));
+    this.store.dispatch(
+      GameActions.joinGame({
+        gameId,
+        playerToken: session.playerToken,
+      }),
+    );
   }
 
   // ---- Combat declaration ---------------------------------
@@ -314,9 +364,12 @@ export class GameBoardComponent implements OnInit {
   // ---- Status bar message ---------------------------------
 
   private buildStatusMessage(
-    phase: Phase, step: Step,
-    hasPriority: boolean, isActive: boolean,
-    uiMode: string, pendingAttackerCount: number,
+    phase: Phase,
+    step: Step,
+    hasPriority: boolean,
+    isActive: boolean,
+    uiMode: string,
+    pendingAttackerCount: number,
   ): string {
     if (uiMode === 'declaring-attackers') {
       return pendingAttackerCount > 0
@@ -330,10 +383,13 @@ export class GameBoardComponent implements OnInit {
 
     const phaseStep = `${phase} — ${step}`;
     if (phase === Phase.PreCombatMain || phase === Phase.PostCombatMain) {
-      return isActive ? 'Main phase — cast spells, play lands, or pass priority' : 'Waiting for opponent\'s main phase';
+      return isActive
+        ? 'Main phase — cast spells, play lands, or pass priority'
+        : "Waiting for opponent's main phase";
     }
     if (phase === Phase.Combat) {
-      if (step === Step.DeclareAttackers && isActive) return 'Declare attackers or pass to skip combat';
+      if (step === Step.DeclareAttackers && isActive)
+        return 'Declare attackers or pass to skip combat';
       if (step === Step.DeclareBlockers && !isActive) return 'Declare blockers';
       if (step === Step.CombatDamage) return 'Combat damage — pass priority to resolve';
     }

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { of, throwError } from 'rxjs';
 import { ManaSuggestPanelComponent } from './mana-suggest-panel.component';
 import { DeckApiService, DeckDetailDto, ManaFineTuneDto } from '../../services/deck-api.service';
-import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
+import { CollectionCardDto, CardType } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
 
 // ── Factories ─────────────────────────────────────────────────────────────────
@@ -98,11 +98,7 @@ describe('ManaSuggestPanelComponent — analysis: land count', () => {
   it('counts current lands correctly', async () => {
     const { component } = await setup();
     component.deck = makeDeck({
-      cards: [
-        makeSpell('Sol Ring', '{1}', 1),
-        makeLand('Forest'),
-        makeLand('Island'),
-      ],
+      cards: [makeSpell('Sol Ring', '{1}', 1), makeLand('Forest'), makeLand('Island')],
     });
     expect(component.analysis.currentLands).toBe(2);
   });
@@ -114,7 +110,12 @@ describe('ManaSuggestPanelComponent — analysis: land count', () => {
       oracleId: 'foil-land',
       quantity: 0,
       quantityFoil: 3,
-      cardDetails: makeCard({ name: 'Forest', manaCost: '', manaValue: 0, cardTypes: [CardType.Land] }),
+      cardDetails: makeCard({
+        name: 'Forest',
+        manaCost: '',
+        manaValue: 0,
+        cardTypes: [CardType.Land],
+      }),
     });
     component.deck = makeDeck({ cards: [makeSpell('Sol Ring', '{1}', 1), foilLand] });
     expect(component.analysis.currentLands).toBe(3);
@@ -189,10 +190,7 @@ describe('ManaSuggestPanelComponent — analysis: avgCmc', () => {
   it('excludes lands from avgCmc calculation', async () => {
     const { component } = await setup();
     component.deck = makeDeck({
-      cards: [
-        makeSpell('Two Drop', '{1}{G}', 2),
-        makeLand('Forest'),
-      ],
+      cards: [makeSpell('Two Drop', '{1}{G}', 2), makeLand('Forest')],
     });
     expect(component.analysis.avgCmc).toBe(2);
   });
@@ -206,12 +204,9 @@ describe('ManaSuggestPanelComponent — analysis: colorSources', () => {
   it('identifies active colors from mana costs', async () => {
     const { component } = await setup();
     component.deck = makeDeck({
-      cards: [
-        makeSpell('Lightning Bolt', '{R}', 1),
-        makeSpell('Counterspell', '{U}{U}', 2),
-      ],
+      cards: [makeSpell('Lightning Bolt', '{R}', 1), makeSpell('Counterspell', '{U}{U}', 2)],
     });
-    const colors = component.analysis.colorSources.map(cs => cs.color).sort();
+    const colors = component.analysis.colorSources.map((cs) => cs.color).sort();
     expect(colors).toEqual(['R', 'U']);
   });
 
@@ -219,12 +214,9 @@ describe('ManaSuggestPanelComponent — analysis: colorSources', () => {
     const { component } = await setup();
     // UU > R → blue first
     component.deck = makeDeck({
-      cards: [
-        makeSpell('Lightning Bolt', '{R}', 1),
-        makeSpell('Counterspell', '{U}{U}', 2),
-      ],
+      cards: [makeSpell('Lightning Bolt', '{R}', 1), makeSpell('Counterspell', '{U}{U}', 2)],
     });
-    const pips = component.analysis.colorSources.map(cs => cs.pips);
+    const pips = component.analysis.colorSources.map((cs) => cs.pips);
     for (let i = 1; i < pips.length; i++) {
       expect(pips[i]).toBeLessThanOrEqual(pips[i - 1]);
     }
@@ -275,7 +267,7 @@ describe('ManaSuggestPanelComponent — landDeltaLabel & landDeltaClass', () => 
     const { component } = await setup();
     component.deck = makeDeck({
       format: 'standard',
-      cards: [makeSpell('Three Drop', '{2}{G}', 3)],  // 0 lands, recommended 24
+      cards: [makeSpell('Three Drop', '{2}{G}', 3)], // 0 lands, recommended 24
     });
     expect(component.landDeltaLabel).toMatch(/^\+\d+ more lands suggested$/);
     expect(component.landDeltaClass).toBe('delta--low');

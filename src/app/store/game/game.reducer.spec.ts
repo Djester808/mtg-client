@@ -1,9 +1,6 @@
 import { gameReducer, GameState } from './game.reducer';
 import { GameActions } from './game.actions';
-import {
-  GameResult, Phase, Step,
-  GameStateDiffDto, PermanentDto,
-} from '../../models/game.models';
+import { GameResult, Phase, Step, GameStateDiffDto, PermanentDto } from '../../models/game.models';
 import { makeCard, makePermanent, makeGameState, makePlayer } from '../../testing/test-factories';
 
 function initialState(): GameState {
@@ -31,11 +28,13 @@ function stateWithGame(overrides: Partial<GameState> = {}): GameState {
 }
 
 describe('gameReducer', () => {
-
   // ---- joinGame ----------------------------------------
 
   it('sets loading and clears error on joinGame', () => {
-    const state = gameReducer(initialState(), GameActions.joinGame({ gameId: 'g1', playerToken: 'tok' }));
+    const state = gameReducer(
+      initialState(),
+      GameActions.joinGame({ gameId: 'g1', playerToken: 'tok' }),
+    );
     expect(state.loading).toBeTrue();
     expect(state.connectionError).toBeNull();
     expect(state.gameId).toBe('g1');
@@ -58,10 +57,7 @@ describe('gameReducer', () => {
   // ---- connectionLost ----------------------------------------
 
   it('clears connected flag on connectionLost', () => {
-    const state = gameReducer(
-      stateWithGame({ connected: true }),
-      GameActions.connectionLost(),
-    );
+    const state = gameReducer(stateWithGame({ connected: true }), GameActions.connectionLost());
     expect(state.connected).toBeFalse();
   });
 
@@ -81,10 +77,7 @@ describe('gameReducer', () => {
 
   it('replaces gameState on stateSynced', () => {
     const newGs = { ...makeGameState(), turn: 5 };
-    const state = gameReducer(
-      stateWithGame(),
-      GameActions.stateSynced({ gameState: newGs }),
-    );
+    const state = gameReducer(stateWithGame(), GameActions.stateSynced({ gameState: newGs }));
     expect(state.gameState!.turn).toBe(5);
     expect(state.loading).toBeFalse();
   });
@@ -145,7 +138,7 @@ describe('gameReducer', () => {
       combat: null,
     };
     const state = gameReducer(base, GameActions.stateDiff({ diff }));
-    expect(state.gameState!.battlefield.map(p => p.permanentId)).toEqual(['perm-2']);
+    expect(state.gameState!.battlefield.map((p) => p.permanentId)).toEqual(['perm-2']);
   });
 
   // ---- stateDiff: updates existing permanent ----------------------------------------
@@ -228,12 +221,12 @@ describe('gameReducer', () => {
       priorityPlayerId: 'p1',
       currentPhase: Phase.PreCombatMain,
       currentStep: Step.Main,
-      playerUpdates: [{ life: 10 }],  // no playerId
+      playerUpdates: [{ life: 10 }], // no playerId
       result: GameResult.InProgress,
       combat: null,
     };
     const state = gameReducer(base, GameActions.stateDiff({ diff }));
-    expect(state.gameState!.players[0].life).toBe(20);  // unchanged
+    expect(state.gameState!.players[0].life).toBe(20); // unchanged
   });
 
   // ---- stateDiff: phase/step/result forwarded ----------------------------------------

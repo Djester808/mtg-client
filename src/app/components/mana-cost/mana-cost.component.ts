@@ -1,7 +1,9 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-interface Pip { cls: string; }
+interface Pip {
+  cls: string;
+}
 
 @Component({
   selector: 'app-mana-cost',
@@ -12,8 +14,19 @@ interface Pip { cls: string; }
       <i *ngFor="let p of pips" class="ms ms-cost ms-shadow" [ngClass]="p.cls"></i>
     </span>
   `,
-  styles: [`:host { display: inline-flex; align-items: center; }
-            .mana-cost-row { display: inline-flex; gap: 1px; align-items: center; }`],
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        align-items: center;
+      }
+      .mana-cost-row {
+        display: inline-flex;
+        gap: 1px;
+        align-items: center;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ManaCostComponent {
@@ -26,9 +39,19 @@ export class ManaCostComponent {
 
 // Map symbol to mana-font class suffix
 const COLOR_CLASS: Record<string, string> = {
-  W: 'ms-w', U: 'ms-u', B: 'ms-b', R: 'ms-r', G: 'ms-g', C: 'ms-c',
-  X: 'ms-x', Y: 'ms-y', Z: 'ms-z',
-  T: 'ms-tap', Q: 'ms-untap', S: 'ms-s', E: 'ms-e',
+  W: 'ms-w',
+  U: 'ms-u',
+  B: 'ms-b',
+  R: 'ms-r',
+  G: 'ms-g',
+  C: 'ms-c',
+  X: 'ms-x',
+  Y: 'ms-y',
+  Z: 'ms-z',
+  T: 'ms-tap',
+  Q: 'ms-untap',
+  S: 'ms-s',
+  E: 'ms-e',
 };
 
 function parseCost(cost: string): Pip[] {

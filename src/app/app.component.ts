@@ -12,9 +12,18 @@ import { NavbarComponent } from './components/navbar/navbar.component';
       <router-outlet />
     </div>
   `,
-  styles: [`
-    :host { display: block; height: 100vh; }
-    .app-content { height: calc(100vh - 52px); margin-top: 52px; overflow-y: auto; }
-  `],
+  styles: [
+    `
+      :host {
+        display: block;
+        height: 100vh;
+      }
+      .app-content {
+        height: calc(100vh - 52px);
+        margin-top: 52px;
+        overflow-y: auto;
+      }
+    `,
+  ],
 })
 export class AppComponent {}

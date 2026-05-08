@@ -26,7 +26,7 @@ export class ToastService {
   }
 
   dismiss(id: number): void {
-    this._toasts$.next(this._toasts$.value.filter(t => t.id !== id));
+    this._toasts$.next(this._toasts$.value.filter((t) => t.id !== id));
   }
 
   // ---- Convenience helpers --------------------------------
@@ -48,12 +48,12 @@ export class ToastService {
 
   private iconFor(kind: ToastKind): string {
     return {
-      info:    '◆',
+      info: '◆',
       success: '✦',
-      warn:    '⚠',
-      damage:  '⚔',
-      death:   '☠',
-      cast:    '✧',
+      warn: '⚠',
+      damage: '⚔',
+      death: '☠',
+      cast: '✧',
     }[kind];
   }
 }

@@ -9,16 +9,35 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StatsChartComponent, ChartEntry, StackedBarEntry } from '../../components/stats-chart/stats-chart.component';
+import {
+  StatsChartComponent,
+  ChartEntry,
+  StackedBarEntry,
+} from '../../components/stats-chart/stats-chart.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import {
-  Observable, Subject, mergeMap, switchMap, takeUntil, of, catchError, map, filter, take, forkJoin,
+  Observable,
+  Subject,
+  mergeMap,
+  switchMap,
+  takeUntil,
+  of,
+  catchError,
+  map,
+  filter,
+  take,
 } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import { CollectionCardDto, PrintingDto, CardType, ManaColor, CardDto } from '../../models/game.models';
+import {
+  CollectionCardDto,
+  PrintingDto,
+  CardType,
+  ManaColor,
+  CardDto,
+} from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
@@ -32,7 +51,17 @@ import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/m
 import { ForumActions } from '../../store/forum/forum.actions';
 import { selectForumPublishLoading } from '../../store/forum/forum.selectors';
 
-export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set' | 'creature-split';
+export type SortMode =
+  | 'cmc'
+  | 'name'
+  | 'type'
+  | 'subtype'
+  | 'color'
+  | 'color-identity'
+  | 'rarity'
+  | 'artist'
+  | 'set'
+  | 'creature-split';
 export type ViewMode = 'list' | 'visual' | 'free';
 
 export interface FreeColumn {
@@ -68,13 +97,28 @@ export interface DeckStats {
   colorByCmc: StackedBarEntry[];
   landSubtypes: { name: string; count: number; deckCard: CollectionCardDto | null }[];
   tokensNeeded: { tokenName: string; description: string; creatorCard: CollectionCardDto }[];
-  emblemSources: { name: string; imageUri: string | null; manaCost: string; sourceCard: CollectionCardDto }[];
+  emblemSources: {
+    name: string;
+    imageUri: string | null;
+    manaCost: string;
+    sourceCard: CollectionCardDto;
+  }[];
 }
 
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, CardSearchPanelComponent, CoverPickerModalComponent, DeckSuggestionsPanelComponent, ManaSuggestPanelComponent, StatsChartComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ManaCostComponent,
+    CardModalComponent,
+    CardSearchPanelComponent,
+    CoverPickerModalComponent,
+    DeckSuggestionsPanelComponent,
+    ManaSuggestPanelComponent,
+    StatsChartComponent,
+  ],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,18 +128,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   loading$: Observable<boolean>;
   commanderCardDetails$: Observable<CardDto | null>;
 
-  filterQuery     = '';
+  filterQuery = '';
   filterCardNames: string[] = [];
   sortMode: SortMode = 'cmc';
 
   viewMode: ViewMode = 'list';
-  textStyle       = false;
+  textStyle = false;
   zoomLevel = 1.0;
   activeBoard: 'main' | 'side' | 'maybe' = 'main';
-  showSearchPanel      = false;
+  showSearchPanel = false;
   showSuggestionsPanel = false;
   showManaSuggestPanel = false;
-  showSidePanel        = false;
+  showSidePanel = false;
   sideTab: 'stats' | 'commander' = 'stats';
 
   freeColumns: FreeColumn[] = [];
@@ -110,18 +154,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   dragColId: string | null = null;
   dragOverColInsertIdx: number | null = null;
 
-  isRenaming  = false;
+  isRenaming = false;
   renameDraft = '';
-  tagDraft    = '';
+  tagDraft = '';
 
   showDetailCoverPicker = false;
 
-  showPublishModal  = false;
+  showPublishModal = false;
   publishDescription = '';
-  publishLoading    = false;
+  publishLoading = false;
 
   tokenCardCache = new Map<string, CardDto | null>();
-  landCardCache  = new Map<string, CardDto | null>();
+  landCardCache = new Map<string, CardDto | null>();
 
   currentDeck: DeckDetailDto | null = null;
 
@@ -130,7 +174,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   modalSlotKey: string | null = null;
   private _modalFlipped = false;
-  get modalFlipped(): boolean { return this._modalFlipped; }
+  get modalFlipped(): boolean {
+    return this._modalFlipped;
+  }
   set modalFlipped(val: boolean) {
     this._modalFlipped = val;
     if (this.modalSlotKey) {
@@ -206,7 +252,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
     this.commanderCardDetails$ = this.deck$.pipe(
-      map(deck => (deck?.format === 'commander' ? (this.commanderCard(deck)?.cardDetails ?? null) : null)),
+      map((deck) =>
+        deck?.format === 'commander' ? (this.commanderCard(deck)?.cardDetails ?? null) : null,
+      ),
     );
   }
 
@@ -215,45 +263,59 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.deckId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(DeckActions.loadDeck({ id: this.deckId }));
 
-    this.store.select(selectForumPublishLoading).pipe(takeUntil(this.destroy$)).subscribe(loading => {
-      this.publishLoading = loading;
-      this.cdr.markForCheck();
-    });
+    this.store
+      .select(selectForumPublishLoading)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((loading) => {
+        this.publishLoading = loading;
+        this.cdr.markForCheck();
+      });
     const savedZoom = localStorage.getItem('deck-zoom');
     if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
 
     if (localStorage.getItem(`deck-free-${this.deckId}`)) {
       this.viewMode = 'free';
       // Initialise free columns once deck data arrives
-      this.deck$.pipe(
-        filter((deck): deck is DeckDetailDto => deck != null && this.freeColumns.length === 0),
-        take(1),
-        takeUntil(this.destroy$),
-      ).subscribe(deck => {
-        this.enterFreeMode(deck);
-        this.cdr.markForCheck();
-      });
+      this.deck$
+        .pipe(
+          filter((deck): deck is DeckDetailDto => deck != null && this.freeColumns.length === 0),
+          take(1),
+          takeUntil(this.destroy$),
+        )
+        .subscribe((deck) => {
+          this.enterFreeMode(deck);
+          this.cdr.markForCheck();
+        });
     } else {
       this.stackDensity = 'half';
-      this.prefs.load().pipe(take(1), takeUntil(this.destroy$)).subscribe(p => {
-        this.viewMode = p.deckLayout ?? 'visual';
-        this.cdr.markForCheck();
-      });
+      this.prefs
+        .load()
+        .pipe(take(1), takeUntil(this.destroy$))
+        .subscribe((p) => {
+          this.viewMode = p.deckLayout ?? 'visual';
+          this.cdr.markForCheck();
+        });
     }
 
-    this.deck$.pipe(takeUntil(this.destroy$)).subscribe(deck => {
+    this.deck$.pipe(takeUntil(this.destroy$)).subscribe((deck) => {
       this.currentDeck = deck;
       this.filterCardNames = deck
-        ? [...new Set(deck.cards.map(c => c.cardDetails?.name).filter((n): n is string => !!n))].sort()
+        ? [
+            ...new Set(deck.cards.map((c) => c.cardDetails?.name).filter((n): n is string => !!n)),
+          ].sort()
         : [];
       if (deck && !this.notesInitialized) {
         this.notesDraft = deck.notes ?? '';
         this.notesInitialized = true;
       }
       if (this.selectedCard && deck) {
-        const updated = deck.cards.find(c => c.id === this.selectedCard!.id);
-        if (updated) { this.selectedCard = updated; this.cdr.markForCheck(); }
-        else { this.closeCard(); }
+        const updated = deck.cards.find((c) => c.id === this.selectedCard!.id);
+        if (updated) {
+          this.selectedCard = updated;
+          this.cdr.markForCheck();
+        } else {
+          this.closeCard();
+        }
       }
       if (deck && this.viewMode === 'free' && this.freeColumns.length > 0) {
         this.syncFreeColumns(deck);
@@ -262,22 +324,28 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (deck) this.loadTokenImages(deck);
     });
 
-    this.printingsLoad$.pipe(
-      mergeMap(oracleId => {
-        if (this.printingsCache.has(oracleId))
-          return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-        return this.collectionApi.getPrintings(oracleId).pipe(
-          map(printings => ({ oracleId, printings })),
-          catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-        );
-      }),
-      takeUntil(this.destroy$),
-    ).subscribe(({ oracleId, printings }) => {
-      this.printingsCache.set(oracleId, printings);
-      if (this.selectedCard?.oracleId === oracleId && !this.modalViewScryfallId && printings.length)
-        this.modalViewScryfallId = printings[0].scryfallId;
-      this.cdr.markForCheck();
-    });
+    this.printingsLoad$
+      .pipe(
+        mergeMap((oracleId) => {
+          if (this.printingsCache.has(oracleId))
+            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
+          return this.collectionApi.getPrintings(oracleId).pipe(
+            map((printings) => ({ oracleId, printings })),
+            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(({ oracleId, printings }) => {
+        this.printingsCache.set(oracleId, printings);
+        if (
+          this.selectedCard?.oracleId === oracleId &&
+          !this.modalViewScryfallId &&
+          printings.length
+        )
+          this.modalViewScryfallId = printings[0].scryfallId;
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {
@@ -286,7 +354,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.stopEdgeScroll();
   }
 
-  goBack(): void { this.checkUnsaved(() => this.router.navigate(['/deck'])); }
+  goBack(): void {
+    this.checkUnsaved(() => this.router.navigate(['/deck']));
+  }
 
   openPublishModal(): void {
     this.showPublishModal = true;
@@ -299,10 +369,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   submitPublish(): void {
     if (!this.currentDeck) return;
-    this.store.dispatch(ForumActions.publishDeck({
-      deckId: this.currentDeck.id,
-      description: this.publishDescription.trim() || null,
-    }));
+    this.store.dispatch(
+      ForumActions.publishDeck({
+        deckId: this.currentDeck.id,
+        description: this.publishDescription.trim() || null,
+      }),
+    );
     this.showPublishModal = false;
   }
 
@@ -404,19 +476,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  zoomIn():  void { this.zoomLevel = Math.min(2.0, +(this.zoomLevel + 0.25).toFixed(2)); localStorage.setItem('deck-zoom', String(this.zoomLevel)); }
-  zoomOut(): void { this.zoomLevel = Math.max(0.5, +(this.zoomLevel - 0.25).toFixed(2)); localStorage.setItem('deck-zoom', String(this.zoomLevel)); }
-  get zoomLabel(): string { return Math.round(this.zoomLevel * 100) + '%'; }
+  zoomIn(): void {
+    this.zoomLevel = Math.min(2.0, +(this.zoomLevel + 0.25).toFixed(2));
+    localStorage.setItem('deck-zoom', String(this.zoomLevel));
+  }
+  zoomOut(): void {
+    this.zoomLevel = Math.max(0.5, +(this.zoomLevel - 0.25).toFixed(2));
+    localStorage.setItem('deck-zoom', String(this.zoomLevel));
+  }
+  get zoomLabel(): string {
+    return Math.round(this.zoomLevel * 100) + '%';
+  }
 
   // ---- Free mode layout ------------------------------------
 
   private rebuildFreeColumns(deck: DeckDetailDto): void {
     const prevFilter = this.filterQuery;
     this.filterQuery = '';
-    this.freeColumns = this.getGroups(deck).map(g => ({
+    this.freeColumns = this.getGroups(deck).map((g) => ({
       id: crypto.randomUUID(),
       label: g.label,
-      cardIds: g.cards.flatMap(c => Array(this.cardCount(c)).fill(c.id)),
+      cardIds: g.cards.flatMap((c) => Array(this.cardCount(c)).fill(c.id)),
     }));
     this.filterQuery = prevFilter;
   }
@@ -433,7 +513,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           this.syncFreeColumns(deck);
           return;
         }
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     this.rebuildFreeColumns(deck);
     this.freeLayoutDirty = false;
@@ -442,8 +524,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private syncFreeColumns(deck: DeckDetailDto): void {
     const assignedCounts = new Map<string, number>();
     for (const col of this.freeColumns)
-      for (const id of col.cardIds)
-        assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
+      for (const id of col.cardIds) assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
 
     const extra: string[] = [];
     for (const card of deck.cards) {
@@ -453,9 +534,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }
 
     if (extra.length) {
-      const targetIdx = Math.max(0, this.freeColumns.findIndex(c => c.id === this.selectedFreeColId));
+      const targetIdx = Math.max(
+        0,
+        this.freeColumns.findIndex((c) => c.id === this.selectedFreeColId),
+      );
       this.freeColumns = this.freeColumns.map((col, i) =>
-        i === targetIdx ? { ...col, cardIds: [...col.cardIds, ...extra] } : col
+        i === targetIdx ? { ...col, cardIds: [...col.cardIds, ...extra] } : col,
       );
       this.freeLayoutDirty = true;
     }
@@ -470,7 +554,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.freeLayoutDirty = false;
     this.layoutSaved = true;
     this.cdr.markForCheck();
-    setTimeout(() => { this.layoutSaved = false; this.cdr.markForCheck(); }, 1800);
+    setTimeout(() => {
+      this.layoutSaved = false;
+      this.cdr.markForCheck();
+    }, 1800);
   }
 
   resetFreeLayout(deck: DeckDetailDto): void {
@@ -483,16 +570,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   getCardsForColumn(col: FreeColumn, deck: DeckDetailDto): CollectionCardDto[] {
-    const isCommander = (c: CollectionCardDto) => deck.commanderOracleId ? c.oracleId === deck.commanderOracleId : false;
+    const isCommander = (c: CollectionCardDto) =>
+      deck.commanderOracleId ? c.oracleId === deck.commanderOracleId : false;
     const cards = col.cardIds
-      .map(id => deck.cards.find(c => c.id === id))
+      .map((id) => deck.cards.find((c) => c.id === id))
       .filter((c): c is CollectionCardDto => c != null && !isCommander(c));
     const targetId = this.selectedFreeColId ?? this.freeColumns[0]?.id;
     if (col.id === targetId) {
       const assignedCounts = new Map<string, number>();
       for (const fc of this.freeColumns)
-        for (const id of fc.cardIds)
-          assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
+        for (const id of fc.cardIds) assignedCounts.set(id, (assignedCounts.get(id) ?? 0) + 1);
       const unassigned: CollectionCardDto[] = [];
       for (const card of deck.cards) {
         if (isCommander(card)) continue;
@@ -516,7 +603,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.dragSelectJustEnded = false;
       return;
     }
-    if (this.selectedFreeColId || this.dragSelectedColIds.size > 0 || this.selectedCardSlots.size > 0) {
+    if (
+      this.selectedFreeColId ||
+      this.dragSelectedColIds.size > 0 ||
+      this.selectedCardSlots.size > 0
+    ) {
       this.selectedFreeColId = null;
       this.dragSelectedColIds = new Set();
       this.selectedCardSlots = new Map();
@@ -556,7 +647,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   private deleteSelectedCards(): void {
-    this.deck$.pipe(take(1)).subscribe(deck => {
+    this.deck$.pipe(take(1)).subscribe((deck) => {
       if (!deck) return;
       const removals = new Map<string, number>(); // cardId → copies to remove
       const splices: Array<{ col: FreeColumn; idx: number }> = [];
@@ -564,7 +655,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         const slashIdx = slotKey.lastIndexOf('/');
         const colId = slotKey.slice(0, slashIdx);
         const renderedIdx = parseInt(slotKey.slice(slashIdx + 1), 10);
-        const col = this.freeColumns.find(c => c.id === colId);
+        const col = this.freeColumns.find((c) => c.id === colId);
         if (col != null && renderedIdx < col.cardIds.length) {
           splices.push({ col, idx: renderedIdx });
         }
@@ -573,16 +664,20 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       splices.sort((a, b) => b.idx - a.idx);
       for (const { col, idx } of splices) col.cardIds.splice(idx, 1);
       for (const [cardId, count] of removals) {
-        const card = deck.cards.find(c => c.id === cardId);
+        const card = deck.cards.find((c) => c.id === cardId);
         if (!card) continue;
         if (this.cardCount(card) - count <= 0) {
           this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId }));
         } else {
-          const newQty  = Math.max(0, card.quantity - count);
+          const newQty = Math.max(0, card.quantity - count);
           const newFoil = Math.max(0, card.quantityFoil - Math.max(0, count - card.quantity));
-          this.store.dispatch(DeckActions.updateCard({
-            deckId: this.deckId, cardId, request: { quantity: newQty, quantityFoil: newFoil },
-          }));
+          this.store.dispatch(
+            DeckActions.updateCard({
+              deckId: this.deckId,
+              cardId,
+              request: { quantity: newQty, quantityFoil: newFoil },
+            }),
+          );
         }
       }
       this.selectedCardSlots = new Map();
@@ -600,8 +695,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cy = event.clientY - r.top + el.scrollTop;
     const { x: ox, y: oy } = this.dragSelectOrigin;
     const newBox = {
-      x: Math.min(ox, cx), y: Math.min(oy, cy),
-      w: Math.abs(cx - ox), h: Math.abs(cy - oy),
+      x: Math.min(ox, cx),
+      y: Math.min(oy, cy),
+      w: Math.abs(cx - ox),
+      h: Math.abs(cy - oy),
     };
     if (!this.isDragSelecting && (newBox.w > 4 || newBox.h > 4)) {
       this.isDragSelecting = true;
@@ -622,7 +719,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   @HostListener('document:mouseup')
   onDocumentMouseUp(): void {
     if (!this.dragSelectListEl) return;
-    if (this.isDragSelecting && (this.dragSelectedColIds.size > 0 || this.selectedCardSlots.size > 0)) {
+    if (
+      this.isDragSelecting &&
+      (this.dragSelectedColIds.size > 0 || this.selectedCardSlots.size > 0)
+    ) {
       this.dragSelectJustEnded = true;
     }
     this.isDragSelecting = false;
@@ -655,12 +755,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const el = this.dragSelectListEl;
     const elRect = el.getBoundingClientRect();
     const newIds = new Set<string>();
-    el.querySelectorAll<HTMLElement>('[data-col-id]').forEach(colEl => {
+    el.querySelectorAll<HTMLElement>('[data-col-id]').forEach((colEl) => {
       const r = colEl.getBoundingClientRect();
-      const left  = r.left  - elRect.left + el.scrollLeft;
-      const top   = r.top   - elRect.top  + el.scrollTop;
-      const right  = left + r.width;
-      const bottom = top  + r.height;
+      const left = r.left - elRect.left + el.scrollLeft;
+      const top = r.top - elRect.top + el.scrollTop;
+      const right = left + r.width;
+      const bottom = top + r.height;
       if (left < box.x + box.w && right > box.x && top < box.y + box.h && bottom > box.y) {
         const id = colEl.getAttribute('data-col-id');
         if (id) newIds.add(id);
@@ -678,14 +778,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const el = this.dragSelectListEl;
     const elRect = el.getBoundingClientRect();
     const newSlots = new Map<string, string>();
-    el.querySelectorAll<HTMLElement>('[data-slot-key]').forEach(cardEl => {
+    el.querySelectorAll<HTMLElement>('[data-slot-key]').forEach((cardEl) => {
       const r = cardEl.getBoundingClientRect();
-      const left   = r.left  - elRect.left + el.scrollLeft;
-      const top    = r.top   - elRect.top  + el.scrollTop;
-      const right  = left + r.width;
-      const bottom = top  + r.height;
+      const left = r.left - elRect.left + el.scrollLeft;
+      const top = r.top - elRect.top + el.scrollTop;
+      const right = left + r.width;
+      const bottom = top + r.height;
       if (left < box.x + box.w && right > box.x && top < box.y + box.h && bottom > box.y) {
-        const slot   = cardEl.getAttribute('data-slot-key');
+        const slot = cardEl.getAttribute('data-slot-key');
         const cardId = cardEl.getAttribute('data-card-id');
         if (slot && cardId) newSlots.set(slot, cardId);
       }
@@ -694,18 +794,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   addFreeColumn(): void {
-    this.freeColumns = [...this.freeColumns, {
-      id: crypto.randomUUID(), label: 'New Column', cardIds: [],
-    }];
+    this.freeColumns = [
+      ...this.freeColumns,
+      {
+        id: crypto.randomUUID(),
+        label: 'New Column',
+        cardIds: [],
+      },
+    ];
     this.freeLayoutDirty = true;
     this.cdr.markForCheck();
   }
 
   removeColumn(colId: string): void {
     if (this.freeColumns.length <= 1) return;
-    const col = this.freeColumns.find(c => c.id === colId);
+    const col = this.freeColumns.find((c) => c.id === colId);
     if (!col) return;
-    const remaining = this.freeColumns.filter(c => c.id !== colId);
+    const remaining = this.freeColumns.filter((c) => c.id !== colId);
     remaining[0] = { ...remaining[0], cardIds: [...remaining[0].cardIds, ...col.cardIds] };
     this.freeColumns = remaining;
     this.freeLayoutDirty = true;
@@ -724,7 +829,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     const onMove = (e: PointerEvent) => {
       const newWidth = Math.max(120, startWidth + (e.clientX - startX));
-      this.freeColumns = this.freeColumns.map(c => c.id === colId ? { ...c, width: newWidth } : c);
+      this.freeColumns = this.freeColumns.map((c) =>
+        c.id === colId ? { ...c, width: newWidth } : c,
+      );
       this.freeLayoutDirty = true;
       this.cdr.markForCheck();
     };
@@ -740,7 +847,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   resetColWidth(colId: string): void {
-    this.freeColumns = this.freeColumns.map(c => c.id === colId ? { ...c, width: undefined } : c);
+    this.freeColumns = this.freeColumns.map((c) =>
+      c.id === colId ? { ...c, width: undefined } : c,
+    );
     this.freeLayoutDirty = true;
     this.cdr.markForCheck();
   }
@@ -755,8 +864,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (!this.editingColumnId) return;
     const label = this.columnLabelDraft.trim();
     if (label) {
-      this.freeColumns = this.freeColumns.map(c =>
-        c.id === this.editingColumnId ? { ...c, label } : c
+      this.freeColumns = this.freeColumns.map((c) =>
+        c.id === this.editingColumnId ? { ...c, label } : c,
       );
       this.freeLayoutDirty = true;
     }
@@ -774,17 +883,31 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private rafCheck(): void {
     if (this._rafPending) return;
     this._rafPending = true;
-    requestAnimationFrame(() => { this._rafPending = false; this.cdr.markForCheck(); });
+    requestAnimationFrame(() => {
+      this._rafPending = false;
+      this.cdr.markForCheck();
+    });
   }
 
-  private animateGhostDrop(ghost: HTMLElement, x: number, y: number, grabOffsetX: number, grabOffsetY: number, done: () => void): void {
+  private animateGhostDrop(
+    ghost: HTMLElement,
+    x: number,
+    y: number,
+    grabOffsetX: number,
+    grabOffsetY: number,
+    done: () => void,
+  ): void {
     ghost.style.transition = 'transform 0.18s cubic-bezier(0.2,0,0.2,1), opacity 0.15s ease';
     ghost.style.transform = `translate3d(${x - grabOffsetX}px,${y - grabOffsetY}px,0) rotate(0deg) scale(0.8)`;
     ghost.style.opacity = '0';
     setTimeout(done, 180);
   }
 
-  private createDragGhost(cardEl: HTMLElement, startX: number, startY: number): { ghost: HTMLElement; grabOffsetX: number; grabOffsetY: number } {
+  private createDragGhost(
+    cardEl: HTMLElement,
+    startX: number,
+    startY: number,
+  ): { ghost: HTMLElement; grabOffsetX: number; grabOffsetY: number } {
     const artEl = cardEl.querySelector<HTMLElement>('.visual-art, .card-thumb');
     const ghost = document.createElement('div');
     ghost.style.position = 'fixed';
@@ -811,9 +934,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(201,168,76,0.4)';
     } else {
       // Text-only row — show a compact name badge
-      const label = cardEl.querySelector('.list-name')?.textContent?.trim()
-                 ?? cardEl.querySelector('.card-name span')?.textContent?.trim()
-                 ?? '';
+      const label =
+        cardEl.querySelector('.list-name')?.textContent?.trim() ??
+        cardEl.querySelector('.card-name span')?.textContent?.trim() ??
+        '';
       const rowR = cardEl.getBoundingClientRect();
       grabOffsetX = startX - rowR.left;
       grabOffsetY = startY - rowR.top;
@@ -839,7 +963,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return { ghost, grabOffsetX, grabOffsetY };
   }
 
-  onFreeCardPointerDown(card: CollectionCardDto, colId: string, renderedIdx: number, event: PointerEvent): void {
+  onFreeCardPointerDown(
+    card: CollectionCardDto,
+    colId: string,
+    renderedIdx: number,
+    event: PointerEvent,
+  ): void {
     if ((event.target as HTMLElement).closest('button')) return;
     event.preventDefault();
 
@@ -854,7 +983,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let grabOffsetX = 0;
     let grabOffsetY = 0;
 
-    const cardEl = (event.currentTarget as HTMLElement);
+    const cardEl = event.currentTarget as HTMLElement;
     const scrollEl = document.querySelector<HTMLElement>('.groups-area.is-free');
 
     const cleanup = (drop: boolean) => {
@@ -872,15 +1001,22 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           const dropColId = this.dragOverColId;
           const dropIdx = this.dragOverIndex;
           const cardId = card.id;
-          const cols = this.freeColumns.map(c => {
+          const cols = this.freeColumns.map((c) => {
             if (c.id !== colId) return c;
             const i = c.cardIds.indexOf(cardId);
             if (i < 0) return c;
             return { ...c, cardIds: [...c.cardIds.slice(0, i), ...c.cardIds.slice(i + 1)] };
           });
-          const ti = cols.findIndex(c => c.id === dropColId);
+          const ti = cols.findIndex((c) => c.id === dropColId);
           if (ti >= 0) {
-            cols[ti] = { ...cols[ti], cardIds: [...cols[ti].cardIds.slice(0, dropIdx), cardId, ...cols[ti].cardIds.slice(dropIdx)] };
+            cols[ti] = {
+              ...cols[ti],
+              cardIds: [
+                ...cols[ti].cardIds.slice(0, dropIdx),
+                cardId,
+                ...cols[ti].cardIds.slice(dropIdx),
+              ],
+            };
           }
           this.freeColumns = cols;
           this.freeLayoutDirty = true;
@@ -909,7 +1045,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           this.isDraggingMultiCards = true;
           this.multiDragCards = Array.from(this.selectedCardSlots.entries()).map(([slot, cid]) => {
             const slash = slot.lastIndexOf('/');
-            return { colId: slot.slice(0, slash), cardId: cid, renderedIdx: parseInt(slot.slice(slash + 1), 10) };
+            return {
+              colId: slot.slice(0, slash),
+              cardId: cid,
+              renderedIdx: parseInt(slot.slice(slash + 1), 10),
+            };
           });
         }
         document.body.style.setProperty('cursor', 'grabbing', 'important');
@@ -954,7 +1094,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       let newColId: string | null = null;
       for (const colEl of Array.from(document.querySelectorAll<HTMLElement>('.free-col'))) {
         const r = colEl.getBoundingClientRect();
-        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        if (
+          e.clientX >= r.left &&
+          e.clientX <= r.right &&
+          e.clientY >= r.top &&
+          e.clientY <= r.bottom
+        ) {
           newColId = colEl.getAttribute('data-col-id');
           break;
         }
@@ -962,11 +1107,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
       if (newColId !== null) {
         const colEl = document.querySelector<HTMLElement>(`.free-col[data-col-id="${newColId}"]`);
-        const cards = colEl ? Array.from(colEl.querySelectorAll<HTMLElement>('.free-card:not(.is-dragging)')) : [];
+        const cards = colEl
+          ? Array.from(colEl.querySelectorAll<HTMLElement>('.free-card:not(.is-dragging)'))
+          : [];
         let idx = cards.length;
         for (let i = 0; i < cards.length; i++) {
           const { top, height } = cards[i].getBoundingClientRect();
-          if (e.clientY < top + height / 2) { idx = i; break; }
+          if (e.clientY < top + height / 2) {
+            idx = i;
+            break;
+          }
         }
         if (this.dragOverColId !== newColId || this.dragOverIndex !== idx) {
           this.dragOverColId = newColId;
@@ -998,7 +1148,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       const raw = event.dataTransfer?.getData('application/x-search-card');
       if (!raw) return null;
       return JSON.parse(raw) as { oracleId: string; scryfallId: string };
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   onColDragOver(colId: string, event: DragEvent): void {
@@ -1007,7 +1159,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (!isSearch) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
-    if (!this.isSearchDragOver) { this.isSearchDragOver = true; this.cdr.markForCheck(); }
+    if (!this.isSearchDragOver) {
+      this.isSearchDragOver = true;
+      this.cdr.markForCheck();
+    }
   }
 
   onColDrop(colId: string, event: DragEvent): void {
@@ -1034,17 +1189,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     } else {
       const cardId = this.dragCardId;
       const srcId = this.dragSourceColId;
-      const cols = this.freeColumns.map(c => {
+      const cols = this.freeColumns.map((c) => {
         if (c.id !== srcId) return c;
         const idx = c.cardIds.indexOf(cardId);
         if (idx < 0) return c;
         return { ...c, cardIds: [...c.cardIds.slice(0, idx), ...c.cardIds.slice(idx + 1)] };
       });
-      const ti = cols.findIndex(c => c.id === colId);
+      const ti = cols.findIndex((c) => c.id === colId);
       if (ti >= 0) {
         cols[ti] = {
           ...cols[ti],
-          cardIds: [...cols[ti].cardIds.slice(0, dropIdx), cardId, ...cols[ti].cardIds.slice(dropIdx)],
+          cardIds: [
+            ...cols[ti].cardIds.slice(0, dropIdx),
+            cardId,
+            ...cols[ti].cardIds.slice(dropIdx),
+          ],
         };
       }
       this.freeColumns = cols;
@@ -1107,7 +1266,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (isSearch) {
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
-      if (!this.isSearchDragOver) { this.isSearchDragOver = true; this.cdr.markForCheck(); }
+      if (!this.isSearchDragOver) {
+        this.isSearchDragOver = true;
+        this.cdr.markForCheck();
+      }
     }
     if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
     if (!this.dragCardId && !this.dragColId && !isSearch) return;
@@ -1117,7 +1279,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   onGroupsAreaDragLeave(event: DragEvent): void {
     const rel = event.relatedTarget as HTMLElement | null;
     if (rel && (event.currentTarget as HTMLElement).contains(rel)) return;
-    if (this.isSearchDragOver) { this.isSearchDragOver = false; this.cdr.markForCheck(); }
+    if (this.isSearchDragOver) {
+      this.isSearchDragOver = false;
+      this.cdr.markForCheck();
+    }
   }
 
   onGroupsAreaDrop(event: DragEvent): void {
@@ -1162,7 +1327,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const toInsert: string[] = [];
 
     for (const { colId, cardId, renderedIdx } of this.multiDragCards) {
-      const srcCol = this.freeColumns.find(c => c.id === colId);
+      const srcCol = this.freeColumns.find((c) => c.id === colId);
       const isExplicit = srcCol != null && renderedIdx < srcCol.cardIds.length;
       if (isExplicit) {
         if (!removals.has(colId)) removals.set(colId, new Map());
@@ -1183,7 +1348,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let adjustedDropIdx = dropIdx;
     const removalsByCol = new Map<string, Set<number>>();
 
-    const cols = this.freeColumns.map(col => {
+    const cols = this.freeColumns.map((col) => {
       const removeMap = removals.get(col.id);
       if (!removeMap) return col;
 
@@ -1205,7 +1370,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       return { ...col, cardIds: remaining };
     });
 
-    const ti = cols.findIndex(c => c.id === targetColId);
+    const ti = cols.findIndex((c) => c.id === targetColId);
     const adj = ti >= 0 ? Math.max(0, Math.min(adjustedDropIdx, cols[ti].cardIds.length)) : 0;
     if (ti >= 0) {
       cols[ti] = {
@@ -1228,7 +1393,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         if (!key.startsWith(prefix)) continue;
         const origIdx = parseInt(key.slice(prefix.length), 10);
         if (isNaN(origIdx)) continue;
-        const shift = [...removedIndices].filter(ri => ri < origIdx).length;
+        const shift = [...removedIndices].filter((ri) => ri < origIdx).length;
         if (shift > 0) {
           toDelete.push(key);
           toAdd.push(`${colId}/${origIdx - shift}`);
@@ -1270,14 +1435,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (isMulti) {
       this.isDraggingMultiCols = true;
       this.multiDragColIds = this.freeColumns
-        .filter(c => this.dragSelectedColIds.has(c.id))
-        .map(c => c.id);
+        .filter((c) => this.dragSelectedColIds.has(c.id))
+        .map((c) => c.id);
     } else {
       this.isDraggingMultiCols = false;
       this.multiDragColIds = [];
     }
 
-    setTimeout(() => { this.dragColId = col.id; this.cdr.markForCheck(); });
+    setTimeout(() => {
+      this.dragColId = col.id;
+      this.cdr.markForCheck();
+    });
   }
 
   onColDragEnd(): void {
@@ -1300,7 +1468,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].classList.contains('is-dragging-col')) continue;
       const { left, width } = cols[i].getBoundingClientRect();
-      if (event.clientX < left + width / 2) { idx = i; break; }
+      if (event.clientX < left + width / 2) {
+        idx = i;
+        break;
+      }
     }
 
     if (this.dragOverColInsertIdx !== idx) {
@@ -1338,8 +1509,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private executeMultiColumnDrop(): void {
     if (!this.dragColId || this.dragOverColInsertIdx == null) return;
     const moveSet = new Set(this.multiDragColIds);
-    const toMove = this.freeColumns.filter(c => moveSet.has(c.id));
-    const keep   = this.freeColumns.filter(c => !moveSet.has(c.id));
+    const toMove = this.freeColumns.filter((c) => moveSet.has(c.id));
+    const keep = this.freeColumns.filter((c) => !moveSet.has(c.id));
 
     let insertAt = 0;
     for (let i = 0; i < this.dragOverColInsertIdx && i < this.freeColumns.length; i++) {
@@ -1353,7 +1524,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   private executeColumnDrop(): void {
     if (!this.dragColId || this.dragOverColInsertIdx == null) return;
-    const fromIdx = this.freeColumns.findIndex(c => c.id === this.dragColId);
+    const fromIdx = this.freeColumns.findIndex((c) => c.id === this.dragColId);
     if (fromIdx < 0) return;
     let toIdx = this.dragOverColInsertIdx;
     if (toIdx > fromIdx) toIdx--;
@@ -1379,7 +1550,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   totalCount(deck: DeckDetailDto): number {
     return deck.cards
-      .filter(c => (c.board ?? 'main') === 'main')
+      .filter((c) => (c.board ?? 'main') === 'main')
       .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
   }
 
@@ -1396,29 +1567,54 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     if (this.sortMode === 'name') {
       const sorted = [...filtered].sort((a, b) =>
-        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-      return [{ label: 'All Cards', key: 'all', cards: sorted, totalCount: sorted.reduce((s, c) => s + this.cardCount(c), 0) }];
+        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
+      );
+      return [
+        {
+          label: 'All Cards',
+          key: 'all',
+          cards: sorted,
+          totalCount: sorted.reduce((s, c) => s + this.cardCount(c), 0),
+        },
+      ];
     }
 
     if (this.sortMode === 'type') {
       const order: CardType[] = [
-        CardType.Creature, CardType.Planeswalker,
-        CardType.Instant, CardType.Sorcery,
-        CardType.Enchantment, CardType.Artifact, CardType.Land,
+        CardType.Creature,
+        CardType.Planeswalker,
+        CardType.Instant,
+        CardType.Sorcery,
+        CardType.Enchantment,
+        CardType.Artifact,
+        CardType.Land,
       ];
       const groups: CmcGroup[] = [];
       for (const type of order) {
         const cards = filtered
-          .filter(c => c.cardDetails?.cardTypes?.includes(type))
-          .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
-                        || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
+          .filter((c) => c.cardDetails?.cardTypes?.includes(type))
+          .sort(
+            (a, b) =>
+              (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
+              (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
+          );
         if (cards.length)
-          groups.push({ label: CardType[type] + 's', key: `type-${type}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) });
+          groups.push({
+            label: CardType[type] + 's',
+            key: `type-${type}`,
+            cards,
+            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+          });
       }
-      const typed = new Set(groups.flatMap(g => g.cards.map(c => c.id)));
-      const rest = filtered.filter(c => !typed.has(c.id));
+      const typed = new Set(groups.flatMap((g) => g.cards.map((c) => c.id)));
+      const rest = filtered.filter((c) => !typed.has(c.id));
       if (rest.length)
-        groups.push({ label: 'Other', key: 'type-other', cards: rest, totalCount: rest.reduce((s, c) => s + this.cardCount(c), 0) });
+        groups.push({
+          label: 'Other',
+          key: 'type-other',
+          cards: rest,
+          totalCount: rest.reduce((s, c) => s + this.cardCount(c), 0),
+        });
       return groups;
     }
 
@@ -1430,10 +1626,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         bySubtype.get(key)!.push(c);
       }
       const keys = [...bySubtype.keys()].sort((a, b) =>
-        a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b));
-      return keys.map(key => {
+        a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b),
+      );
+      return keys.map((key) => {
         const cards = bySubtype.get(key)!;
-        return { label: key, key: `subtype-${key}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        return {
+          label: key,
+          key: `subtype-${key}`,
+          cards,
+          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+        };
       });
     }
 
@@ -1443,20 +1645,33 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       for (const label of colorOrder) byColor.set(label, []);
       for (const c of filtered) {
         const mc = c.cardDetails?.manaCost ?? '';
-        const colors = new Set([...mc].filter(ch => 'WUBRG'.includes(ch)));
-        const label = colors.size === 0 ? 'Colorless'
-          : colors.size > 1 ? 'Multicolor'
-          : colors.has('W') ? 'White'
-          : colors.has('U') ? 'Blue'
-          : colors.has('B') ? 'Black'
-          : colors.has('R') ? 'Red' : 'Green';
+        const colors = new Set([...mc].filter((ch) => 'WUBRG'.includes(ch)));
+        const label =
+          colors.size === 0
+            ? 'Colorless'
+            : colors.size > 1
+              ? 'Multicolor'
+              : colors.has('W')
+                ? 'White'
+                : colors.has('U')
+                  ? 'Blue'
+                  : colors.has('B')
+                    ? 'Black'
+                    : colors.has('R')
+                      ? 'Red'
+                      : 'Green';
         byColor.get(label)!.push(c);
       }
       return colorOrder
-        .filter(label => (byColor.get(label)?.length ?? 0) > 0)
-        .map(label => {
+        .filter((label) => (byColor.get(label)?.length ?? 0) > 0)
+        .map((label) => {
           const cards = byColor.get(label)!;
-          return { label, key: `color-${label}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+          return {
+            label,
+            key: `color-${label}`,
+            cards,
+            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+          };
         });
     }
 
@@ -1466,8 +1681,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         if (ci.length === 0) return 'Colorless';
         if (ci.length > 1) return 'Multicolor';
         const map: Partial<Record<ManaColor, string>> = {
-          [ManaColor.White]: 'White', [ManaColor.Blue]: 'Blue', [ManaColor.Black]: 'Black',
-          [ManaColor.Red]: 'Red', [ManaColor.Green]: 'Green',
+          [ManaColor.White]: 'White',
+          [ManaColor.Blue]: 'Blue',
+          [ManaColor.Black]: 'Black',
+          [ManaColor.Red]: 'Red',
+          [ManaColor.Green]: 'Green',
         };
         return map[ci[0]] ?? 'Colorless';
       };
@@ -1478,18 +1696,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         byColor.get(label)!.push(c);
       }
       return colorOrder
-        .filter(label => (byColor.get(label)?.length ?? 0) > 0)
-        .map(label => {
+        .filter((label) => (byColor.get(label)?.length ?? 0) > 0)
+        .map((label) => {
           const cards = byColor.get(label)!;
-          return { label, key: `ci-${label}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+          return {
+            label,
+            key: `ci-${label}`,
+            cards,
+            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+          };
         });
     }
 
     if (this.sortMode === 'rarity') {
       const rarityOrder = ['mythic', 'rare', 'uncommon', 'common', 'special', 'bonus'];
       const rarityLabel: Record<string, string> = {
-        mythic: 'Mythic Rare', rare: 'Rare', uncommon: 'Uncommon', common: 'Common',
-        special: 'Special', bonus: 'Bonus',
+        mythic: 'Mythic Rare',
+        rare: 'Rare',
+        uncommon: 'Uncommon',
+        common: 'Common',
+        special: 'Special',
+        bonus: 'Bonus',
       };
       const byRarity = new Map<string, CollectionCardDto[]>();
       for (const c of filtered) {
@@ -1497,11 +1724,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         if (!byRarity.has(r)) byRarity.set(r, []);
         byRarity.get(r)!.push(c);
       }
-      const known = rarityOrder.filter(r => byRarity.has(r));
-      const other = [...byRarity.keys()].filter(r => !rarityOrder.includes(r)).sort();
-      return [...known, ...other].map(r => {
+      const known = rarityOrder.filter((r) => byRarity.has(r));
+      const other = [...byRarity.keys()].filter((r) => !rarityOrder.includes(r)).sort();
+      return [...known, ...other].map((r) => {
         const cards = byRarity.get(r)!;
-        return { label: rarityLabel[r] ?? r, key: `rarity-${r}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        return {
+          label: rarityLabel[r] ?? r,
+          key: `rarity-${r}`,
+          cards,
+          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+        };
       });
     }
 
@@ -1513,9 +1745,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         byArtist.get(artist)!.push(c);
       }
       const keys = [...byArtist.keys()].sort((a, b) => a.localeCompare(b));
-      return keys.map(artist => {
+      return keys.map((artist) => {
         const cards = byArtist.get(artist)!;
-        return { label: artist, key: `artist-${artist}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        return {
+          label: artist,
+          key: `artist-${artist}`,
+          cards,
+          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+        };
       });
     }
 
@@ -1527,78 +1764,135 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         bySet.get(set)!.push(c);
       }
       const keys = [...bySet.keys()].sort((a, b) => a.localeCompare(b));
-      return keys.map(set => {
+      return keys.map((set) => {
         const cards = bySet.get(set)!;
-        return { label: set, key: `set-${set}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) };
+        return {
+          label: set,
+          key: `set-${set}`,
+          cards,
+          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+        };
       });
     }
 
     if (this.sortMode === 'creature-split') {
       const cmcSort = (a: CollectionCardDto, b: CollectionCardDto) =>
-        (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
-        || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? '');
-      const creatures   = filtered.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c)).sort(cmcSort);
-      const nonCreatures = filtered.filter(c => !c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c)).sort(cmcSort);
-      const lands       = filtered.filter(c => this.isLand(c)).sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
+        (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
+        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? '');
+      const creatures = filtered
+        .filter((c) => c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c))
+        .sort(cmcSort);
+      const nonCreatures = filtered
+        .filter((c) => !c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c))
+        .sort(cmcSort);
+      const lands = filtered
+        .filter((c) => this.isLand(c))
+        .sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
       const groups: CmcGroup[] = [];
-      if (creatures.length)    groups.push({ label: 'Creatures',     key: 'split-creatures',    cards: creatures,    totalCount: creatures.reduce((s, c)    => s + this.cardCount(c), 0) });
-      if (nonCreatures.length) groups.push({ label: 'Non-Creatures', key: 'split-noncreatures', cards: nonCreatures, totalCount: nonCreatures.reduce((s, c) => s + this.cardCount(c), 0) });
-      if (lands.length)        groups.push({ label: 'Lands',         key: 'split-lands',        cards: lands,        totalCount: lands.reduce((s, c)        => s + this.cardCount(c), 0) });
+      if (creatures.length)
+        groups.push({
+          label: 'Creatures',
+          key: 'split-creatures',
+          cards: creatures,
+          totalCount: creatures.reduce((s, c) => s + this.cardCount(c), 0),
+        });
+      if (nonCreatures.length)
+        groups.push({
+          label: 'Non-Creatures',
+          key: 'split-noncreatures',
+          cards: nonCreatures,
+          totalCount: nonCreatures.reduce((s, c) => s + this.cardCount(c), 0),
+        });
+      if (lands.length)
+        groups.push({
+          label: 'Lands',
+          key: 'split-lands',
+          cards: lands,
+          totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
+        });
       return groups;
     }
 
     // CMC
-    const nonLands = filtered.filter(c => !this.isLand(c))
-      .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
-                    || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-    const lands = filtered.filter(c => this.isLand(c))
+    const nonLands = filtered
+      .filter((c) => !this.isLand(c))
+      .sort(
+        (a, b) =>
+          (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
+          (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
+      );
+    const lands = filtered
+      .filter((c) => this.isLand(c))
       .sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
 
     const groups: CmcGroup[] = [];
     const buckets = new Map<string, CollectionCardDto[]>();
     for (const c of nonLands) {
-      const key = (c.cardDetails?.manaValue ?? 0) >= 6 ? '6+' : String(c.cardDetails?.manaValue ?? 0);
+      const key =
+        (c.cardDetails?.manaValue ?? 0) >= 6 ? '6+' : String(c.cardDetails?.manaValue ?? 0);
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(c);
     }
     for (const key of ['0', '1', '2', '3', '4', '5', '6+']) {
       const cards = buckets.get(key);
       if (cards?.length)
-        groups.push({ label: key === '6+' ? 'CMC 6+' : `CMC ${key}`, key: `cmc-${key}`, cards, totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0) });
+        groups.push({
+          label: key === '6+' ? 'CMC 6+' : `CMC ${key}`,
+          key: `cmc-${key}`,
+          cards,
+          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
+        });
     }
     if (lands.length)
-      groups.push({ label: 'Lands', key: 'lands', cards: lands, totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0) });
+      groups.push({
+        label: 'Lands',
+        key: 'lands',
+        cards: lands,
+        totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
+      });
     return groups;
   }
 
   expandCards(cards: CollectionCardDto[]): CollectionCardDto[] {
-    return cards.flatMap(c => Array(this.cardCount(c)).fill(c));
+    return cards.flatMap((c) => Array(this.cardCount(c)).fill(c));
   }
 
   getStackCards(groupKey: string, cards: CollectionCardDto[]): CollectionCardDto[] {
     if (!this.stackOrders.has(groupKey)) {
-      this.stackOrders.set(groupKey, [...this.expandCards(cards)].reverse().map(c => c.id));
+      this.stackOrders.set(
+        groupKey,
+        [...this.expandCards(cards)].reverse().map((c) => c.id),
+      );
     } else {
       // Reconcile order with current quantities, preserving user-arranged positions
-      const quota = new Map<string, number>(cards.map(c => [c.id, this.cardCount(c)]));
+      const quota = new Map<string, number>(cards.map((c) => [c.id, this.cardCount(c)]));
       const used = new Map<string, number>();
       const kept: string[] = [];
       for (const id of this.stackOrders.get(groupKey)!) {
         const u = used.get(id) ?? 0;
-        if (u < (quota.get(id) ?? 0)) { kept.push(id); used.set(id, u + 1); }
+        if (u < (quota.get(id) ?? 0)) {
+          kept.push(id);
+          used.set(id, u + 1);
+        }
       }
       // Prepend slots for cards whose quantity increased (new copies go to visual top)
       for (const [id, q] of quota) {
-        for (let i = (used.get(id) ?? 0); i < q; i++) kept.unshift(id);
+        for (let i = used.get(id) ?? 0; i < q; i++) kept.unshift(id);
       }
       this.stackOrders.set(groupKey, kept);
     }
-    return this.stackOrders.get(groupKey)!
-      .map(id => cards.find(c => c.id === id))
+    return this.stackOrders
+      .get(groupKey)!
+      .map((id) => cards.find((c) => c.id === id))
       .filter((c): c is CollectionCardDto => c != null);
   }
 
-  onStackPointerDown(groupKey: string, idx: number, card: CollectionCardDto, event: PointerEvent): void {
+  onStackPointerDown(
+    groupKey: string,
+    idx: number,
+    card: CollectionCardDto,
+    event: PointerEvent,
+  ): void {
     if ((event.target as HTMLElement).closest('button')) return;
     event.preventDefault();
     const cardEl = event.currentTarget as HTMLElement;
@@ -1613,18 +1907,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let overCommander = false;
 
     const d = card.cardDetails;
-    const isCommanderEligible = !!d &&
+    const isCommanderEligible =
+      !!d &&
       (d.supertypes?.includes('Legendary') ?? false) &&
-      ((d.cardTypes?.includes(CardType.Creature) ?? false) || (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
+      ((d.cardTypes?.includes(CardType.Creature) ?? false) ||
+        (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
 
     const cleanup = (drop: boolean) => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
-      ghost?.remove(); ghost = null;
+      ghost?.remove();
+      ghost = null;
       if (dragging && drop) {
         if (overCommander && isCommanderEligible) {
-          this.deck$.pipe(take(1)).subscribe(deck => {
+          this.deck$.pipe(take(1)).subscribe((deck) => {
             if (deck) this.setCommander(card.oracleId, deck);
           });
         } else {
@@ -1642,7 +1939,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.stackDragGroupKey = null;
       this.stackDragFromIdx = null;
       this.stackDragOverIdx = null;
-      if (this.cpSlotDragOver) { this.cpSlotDragOver = false; }
+      if (this.cpSlotDragOver) {
+        this.cpSlotDragOver = false;
+      }
       if (dragging) this.cdr.markForCheck();
     };
 
@@ -1657,16 +1956,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
 
-      lastX = e.clientX; lastY = e.clientY;
-      if (ghost) ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (ghost)
+        ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
 
       // Check hover over commander slot (only relevant for eligible cards in commander decks)
       if (isCommanderEligible) {
         const cpEl = document.querySelector<HTMLElement>('.cp-portrait-wrap');
         if (cpEl) {
           const r = cpEl.getBoundingClientRect();
-          const nowOver = e.clientX >= r.left && e.clientX <= r.right &&
-                          e.clientY >= r.top  && e.clientY <= r.bottom;
+          const nowOver =
+            e.clientX >= r.left &&
+            e.clientX <= r.right &&
+            e.clientY >= r.top &&
+            e.clientY <= r.bottom;
           if (nowOver !== overCommander) {
             overCommander = nowOver;
             this.cpSlotDragOver = nowOver;
@@ -1676,21 +1980,34 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         }
       }
 
-      const listEl = document.querySelector<HTMLElement>(`.visual-stack[data-group-key="${groupKey}"]`);
+      const listEl = document.querySelector<HTMLElement>(
+        `.visual-stack[data-group-key="${groupKey}"]`,
+      );
       if (!listEl) return;
-      const cards = Array.from(listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'));
+      const cards = Array.from(
+        listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
+      );
       let dstIdx = cards.length;
       if (this.groupDir === 'v') {
         // Horizontal wrapping layout — find insert point by 2-D position
         for (let i = 0; i < cards.length; i++) {
           const r = cards[i].getBoundingClientRect();
-          if (e.clientY < r.top) { dstIdx = i; break; }
-          if (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2) { dstIdx = i; break; }
+          if (e.clientY < r.top) {
+            dstIdx = i;
+            break;
+          }
+          if (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2) {
+            dstIdx = i;
+            break;
+          }
         }
       } else {
         // Vertical stack layout — Y position check
         for (let i = 0; i < cards.length; i++) {
-          if (e.clientY < cards[i].getBoundingClientRect().top + 16) { dstIdx = i; break; }
+          if (e.clientY < cards[i].getBoundingClientRect().top + 16) {
+            dstIdx = i;
+            break;
+          }
         }
       }
       if (this.stackDragOverIdx !== dstIdx) {
@@ -1713,20 +2030,32 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     window.addEventListener('pointercancel', onCancel);
   }
 
-  trackByIdx(index: number): number { return index; }
-  trackByGroupKey(_index: number, group: CmcGroup): string { return group.key; }
+  trackByIdx(index: number): number {
+    return index;
+  }
+  trackByGroupKey(_index: number, group: CmcGroup): string {
+    return group.key;
+  }
 
   getOrderedListCards(groupKey: string, cards: CollectionCardDto[]): CollectionCardDto[] {
     const order = this.listOrders.get(groupKey);
     if (!order) return cards;
-    const byId = new Map(cards.map(c => [c.id, c]));
-    const ordered = order.map(id => byId.get(id)).filter((c): c is CollectionCardDto => c != null);
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    const ordered = order
+      .map((id) => byId.get(id))
+      .filter((c): c is CollectionCardDto => c != null);
     const inOrder = new Set(order);
-    const rest = cards.filter(c => !inOrder.has(c.id));
+    const rest = cards.filter((c) => !inOrder.has(c.id));
     return [...ordered, ...rest];
   }
 
-  onListCardPointerDown(groupKey: string, idx: number, card: CollectionCardDto, event: PointerEvent, allCards: CollectionCardDto[]): void {
+  onListCardPointerDown(
+    groupKey: string,
+    idx: number,
+    card: CollectionCardDto,
+    event: PointerEvent,
+    allCards: CollectionCardDto[],
+  ): void {
     if ((event.target as HTMLElement).closest('button')) return;
     event.preventDefault();
     const cardEl = event.currentTarget as HTMLElement;
@@ -1743,12 +2072,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
-      ghost?.remove(); ghost = null;
+      ghost?.remove();
+      ghost = null;
       if (dragging && drop) {
         const src = this.listDragFromIdx;
         const dst = this.listDragOverIdx;
         if (src != null && dst != null && src !== dst) {
-          if (!this.listOrders.has(groupKey)) this.listOrders.set(groupKey, allCards.map(c => c.id));
+          if (!this.listOrders.has(groupKey))
+            this.listOrders.set(
+              groupKey,
+              allCards.map((c) => c.id),
+            );
           const ids = [...this.listOrders.get(groupKey)!];
           const [moved] = ids.splice(src, 1);
           ids.splice(dst > src ? dst - 1 : dst, 0, moved);
@@ -1772,15 +2106,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
         this.cdr.markForCheck();
       }
-      lastX = e.clientX; lastY = e.clientY;
-      if (ghost) ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
-      const listEl = document.querySelector<HTMLElement>(`.list-drag-group[data-group-key="${groupKey}"]`);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (ghost)
+        ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+      const listEl = document.querySelector<HTMLElement>(
+        `.list-drag-group[data-group-key="${groupKey}"]`,
+      );
       if (!listEl) return;
-      const rows = Array.from(listEl.querySelectorAll<HTMLElement>('.list-drag-row:not(.is-list-dragging)'));
+      const rows = Array.from(
+        listEl.querySelectorAll<HTMLElement>('.list-drag-row:not(.is-list-dragging)'),
+      );
       let dstIdx = rows.length;
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i].getBoundingClientRect();
-        if (e.clientY < r.top + r.height / 2) { dstIdx = i; break; }
+        if (e.clientY < r.top + r.height / 2) {
+          dstIdx = i;
+          break;
+        }
       }
       if (this.listDragOverIdx !== dstIdx) {
         this.listDragOverIdx = dstIdx;
@@ -1803,14 +2146,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
     const board = this.activeBoard;
-    let cards = deck.cards.filter(c => (c.board ?? 'main') === board);
+    let cards = deck.cards.filter((c) => (c.board ?? 'main') === board);
     if (board === 'main' && deck.commanderOracleId) {
-      cards = cards.filter(c => c.oracleId !== deck.commanderOracleId);
+      cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
     }
 
     if (this.filterQuery.trim()) {
       const q = this.filterQuery.toLowerCase();
-      cards = cards.filter(c => c.cardDetails?.name.toLowerCase().includes(q));
+      cards = cards.filter((c) => c.cardDetails?.name.toLowerCase().includes(q));
     }
 
     return cards;
@@ -1818,28 +2161,36 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {
     return deck.cards
-      .filter(c => (c.board ?? 'main') === board)
+      .filter((c) => (c.board ?? 'main') === board)
       .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
   }
 
   getDeckStats(deck: DeckDetailDto): DeckStats {
-    const cards = deck.cards.filter(c => (c.board ?? 'main') === 'main');
+    const cards = deck.cards.filter((c) => (c.board ?? 'main') === 'main');
     const total = cards.reduce((s, c) => s + this.cardCount(c), 0);
     const countOf = (type: CardType) =>
-      cards.filter(c => c.cardDetails?.cardTypes?.includes(type)).reduce((s, c) => s + this.cardCount(c), 0);
+      cards
+        .filter((c) => c.cardDetails?.cardTypes?.includes(type))
+        .reduce((s, c) => s + this.cardCount(c), 0);
 
-    const lands        = countOf(CardType.Land);
-    const creatures    = countOf(CardType.Creature);
-    const instants     = countOf(CardType.Instant);
-    const sorceries    = countOf(CardType.Sorcery);
+    const lands = countOf(CardType.Land);
+    const creatures = countOf(CardType.Creature);
+    const instants = countOf(CardType.Instant);
+    const sorceries = countOf(CardType.Sorcery);
     const enchantments = countOf(CardType.Enchantment);
-    const artifacts    = countOf(CardType.Artifact);
+    const artifacts = countOf(CardType.Artifact);
     const planeswalkers = countOf(CardType.Planeswalker);
-    const other = Math.max(0, total - lands - creatures - instants - sorceries - enchantments - artifacts - planeswalkers);
+    const other = Math.max(
+      0,
+      total - lands - creatures - instants - sorceries - enchantments - artifacts - planeswalkers,
+    );
 
-    const nonLandCards = cards.filter(c => !this.isLand(c));
+    const nonLandCards = cards.filter((c) => !this.isLand(c));
     const totalNL = nonLandCards.reduce((s, c) => s + this.cardCount(c), 0);
-    const avgCmcSum = nonLandCards.reduce((s, c) => s + (c.cardDetails?.manaValue ?? 0) * this.cardCount(c), 0);
+    const avgCmcSum = nonLandCards.reduce(
+      (s, c) => s + (c.cardDetails?.manaValue ?? 0) * this.cardCount(c),
+      0,
+    );
     const avgCmc = totalNL > 0 ? Math.round((avgCmcSum / totalNL) * 10) / 10 : 0;
 
     const curveData = new Map<number, number>();
@@ -1847,8 +2198,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       const cmc = Math.min(c.cardDetails?.manaValue ?? 0, 7);
       curveData.set(cmc, (curveData.get(cmc) ?? 0) + this.cardCount(c));
     }
-    const curve = [1, 2, 3, 4, 5, 6, 7].map(cmc => ({ cmc, count: curveData.get(cmc) ?? 0, label: cmc === 7 ? '7+' : String(cmc) }));
-    const curveMax = Math.max(...curve.map(b => b.count), 1);
+    const curve = [1, 2, 3, 4, 5, 6, 7].map((cmc) => ({
+      cmc,
+      count: curveData.get(cmc) ?? 0,
+      label: cmc === 7 ? '7+' : String(cmc),
+    }));
+    const curveMax = Math.max(...curve.map((b) => b.count), 1);
 
     const ALL_COLORS = ['W', 'U', 'B', 'R', 'G'];
     const ALL_COLORS_C = [...ALL_COLORS, 'C'];
@@ -1863,16 +2218,20 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       while ((m = re.exec(cost)) !== null) {
         const sym = m[1].toUpperCase();
         if (sym.includes('/')) {
-          const parts = sym.split('/').filter(p => Object.prototype.hasOwnProperty.call(pipCounts, p));
-          if (parts.length > 0) for (const p of parts) pipCounts[p] += this.cardCount(c) / parts.length;
+          const parts = sym
+            .split('/')
+            .filter((p) => Object.prototype.hasOwnProperty.call(pipCounts, p));
+          if (parts.length > 0)
+            for (const p of parts) pipCounts[p] += this.cardCount(c) / parts.length;
         } else if (Object.prototype.hasOwnProperty.call(pipCounts, sym)) {
           pipCounts[sym] += this.cardCount(c);
         }
       }
     }
-    const manaPips = ALL_COLORS_C
-      .map(color => ({ color, count: Math.round(pipCounts[color] * 10) / 10 }))
-      .filter(p => p.count > 0);
+    const manaPips = ALL_COLORS_C.map((color) => ({
+      color,
+      count: Math.round(pipCounts[color] * 10) / 10,
+    })).filter((p) => p.count > 0);
 
     // Mana production — parse oracle text for "add {X}" patterns
     const prodCounts: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
@@ -1889,22 +2248,25 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       while ((am = addRe.exec(text)) !== null) {
         const sym = am[1].toUpperCase();
         if (sym.includes('/')) {
-          const parts = sym.split('/').filter(p => Object.prototype.hasOwnProperty.call(prodCounts, p));
+          const parts = sym
+            .split('/')
+            .filter((p) => Object.prototype.hasOwnProperty.call(prodCounts, p));
           for (const p of parts) prodCounts[p] += qty;
         } else if (Object.prototype.hasOwnProperty.call(prodCounts, sym)) {
           prodCounts[sym] += qty;
         }
       }
     }
-    const manaProduction = ALL_COLORS_C
-      .map(color => ({ color, count: prodCounts[color] }))
-      .filter(p => p.count > 0);
+    const manaProduction = ALL_COLORS_C.map((color) => ({
+      color,
+      count: prodCounts[color],
+    })).filter((p) => p.count > 0);
 
     // Creature subtypes (top 10 by count)
     const creatureSubMap = new Map<string, number>();
-    for (const c of cards.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Creature))) {
+    for (const c of cards.filter((c) => c.cardDetails?.cardTypes?.includes(CardType.Creature))) {
       const qty = this.cardCount(c);
-      for (const sub of (c.cardDetails?.subtypes ?? [])) {
+      for (const sub of c.cardDetails?.subtypes ?? []) {
         creatureSubMap.set(sub, (creatureSubMap.get(sub) ?? 0) + qty);
       }
     }
@@ -1915,9 +2277,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     // Land subtypes
     const landSubMap = new Map<string, number>();
-    for (const c of cards.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Land))) {
+    for (const c of cards.filter((c) => c.cardDetails?.cardTypes?.includes(CardType.Land))) {
       const qty = this.cardCount(c);
-      for (const sub of (c.cardDetails?.subtypes ?? [])) {
+      for (const sub of c.cardDetails?.subtypes ?? []) {
         landSubMap.set(sub, (landSubMap.get(sub) ?? 0) + qty);
       }
     }
@@ -1925,10 +2287,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       .map(([name, count]) => ({
         name,
         count,
-        deckCard: cards.find(c =>
-          c.cardDetails?.cardTypes?.includes(CardType.Land) &&
-          c.cardDetails?.subtypes?.includes(name)
-        ) ?? null,
+        deckCard:
+          cards.find(
+            (c) =>
+              c.cardDetails?.cardTypes?.includes(CardType.Land) &&
+              c.cardDetails?.subtypes?.includes(name),
+          ) ?? null,
       }))
       .sort((a, b) => b.count - a.count);
 
@@ -1936,23 +2300,33 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const tokenMap = new Map<string, { description: string; creatorCard: CollectionCardDto }>();
     for (const c of cards) {
       const text = c.cardDetails?.oracleText ?? '';
-      const tokenRe = /create (?:a|an|one|two|three|four|five|\d+|X|that many) ([^.•\n]+?) tokens?/gi;
+      const tokenRe =
+        /create (?:a|an|one|two|three|four|five|\d+|X|that many) ([^.•\n]+?) tokens?/gi;
       let tm: RegExpExecArray | null;
       while ((tm = tokenRe.exec(text)) !== null) {
         const description = tm[1].trim();
         const tokenName = description
           .replace(/^\d+\/[\d*]+\s*/i, '')
-          .replace(/\b(white|blue|black|red|green|colorless|legendary|aura|artifact|creature|enchantment|token)\b/gi, '')
-          .replace(/\s+/g, ' ').trim();
-        if (tokenName && !tokenMap.has(tokenName)) tokenMap.set(tokenName, { description, creatorCard: c });
+          .replace(
+            /\b(white|blue|black|red|green|colorless|legendary|aura|artifact|creature|enchantment|token)\b/gi,
+            '',
+          )
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (tokenName && !tokenMap.has(tokenName))
+          tokenMap.set(tokenName, { description, creatorCard: c });
       }
     }
-    const tokensNeeded = [...tokenMap.entries()].map(([tokenName, { description, creatorCard }]) => ({ tokenName, description, creatorCard }));
+    const tokensNeeded = [...tokenMap.entries()].map(
+      ([tokenName, { description, creatorCard }]) => ({ tokenName, description, creatorCard }),
+    );
 
     // Emblem sources
     const emblemSources: DeckStats['emblemSources'] = cards
-      .filter(c => (c.cardDetails?.oracleText ?? '').toLowerCase().includes('emblem') && c.cardDetails)
-      .map(c => ({
+      .filter(
+        (c) => (c.cardDetails?.oracleText ?? '').toLowerCase().includes('emblem') && c.cardDetails,
+      )
+      .map((c) => ({
         name: c.cardDetails!.name,
         imageUri: c.cardDetails!.imageUriSmall ?? null,
         manaCost: c.cardDetails!.manaCost ?? '',
@@ -1962,7 +2336,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     // Color breakdown by CMC (non-land cards, buckets 1–7+)
     const CMC_COLOR_ORDER = ['w', 'u', 'b', 'r', 'g', 'm', 'c'];
     const CMC_COLOR_MAP: Record<string, string> = {
-      w: '#f0ead6', u: '#60a5fa', b: '#9ca3af', r: '#f87171', g: '#4ade80', m: '#fbbf24', c: '#d1d5db',
+      w: '#f0ead6',
+      u: '#60a5fa',
+      b: '#9ca3af',
+      r: '#f87171',
+      g: '#4ade80',
+      m: '#fbbf24',
+      c: '#d1d5db',
     };
     const cmcColorBuckets = new Map<number, Map<string, number>>();
     for (let i = 1; i <= 7; i++) cmcColorBuckets.set(i, new Map());
@@ -1975,22 +2355,39 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       m.set(key, (m.get(key) ?? 0) + qty);
     }
     const colorByCmc: StackedBarEntry[] = [1, 2, 3, 4, 5, 6, 7]
-      .map(cmc => ({
+      .map((cmc) => ({
         label: cmc === 7 ? '7+' : String(cmc),
-        segments: CMC_COLOR_ORDER
-          .filter(col => (cmcColorBuckets.get(cmc)?.get(col) ?? 0) > 0)
-          .map(col => ({
-            manaColor: col,
-            value: cmcColorBuckets.get(cmc)!.get(col) ?? 0,
-            label: col === 'm' ? 'Multi' : col.toUpperCase(),
-            color: CMC_COLOR_MAP[col],
-          })),
+        segments: CMC_COLOR_ORDER.filter(
+          (col) => (cmcColorBuckets.get(cmc)?.get(col) ?? 0) > 0,
+        ).map((col) => ({
+          manaColor: col,
+          value: cmcColorBuckets.get(cmc)!.get(col) ?? 0,
+          label: col === 'm' ? 'Multi' : col.toUpperCase(),
+          color: CMC_COLOR_MAP[col],
+        })),
       }))
-      .filter(b => b.segments.length > 0);
+      .filter((b) => b.segments.length > 0);
 
     return {
-      total, lands, creatures, instants, sorceries, enchantments, artifacts, planeswalkers, other, avgCmc, curve, curveMax,
-      colorByCmc, manaPips, manaProduction, creatureSubtypes, landSubtypes, tokensNeeded, emblemSources,
+      total,
+      lands,
+      creatures,
+      instants,
+      sorceries,
+      enchantments,
+      artifacts,
+      planeswalkers,
+      other,
+      avgCmc,
+      curve,
+      curveMax,
+      colorByCmc,
+      manaPips,
+      manaProduction,
+      creatureSubtypes,
+      landSubtypes,
+      tokensNeeded,
+      emblemSources,
     };
   }
 
@@ -2002,15 +2399,25 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     for (const { tokenName } of stats.tokensNeeded) {
       if (this.tokenCardCache.has(tokenName)) continue;
       this.tokenCardCache.set(tokenName, null);
-      this.deckApi.getCardByName(tokenName).pipe(takeUntil(this.destroy$))
-        .subscribe(card => { this.tokenCardCache.set(tokenName, card); this.cdr.markForCheck(); });
+      this.deckApi
+        .getCardByName(tokenName)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((card) => {
+          this.tokenCardCache.set(tokenName, card);
+          this.cdr.markForCheck();
+        });
     }
 
     for (const { name } of stats.landSubtypes) {
       if (this.landCardCache.has(name)) continue;
       this.landCardCache.set(name, null);
-      this.deckApi.getCardByName(name).pipe(takeUntil(this.destroy$))
-        .subscribe(card => { this.landCardCache.set(name, card); this.cdr.markForCheck(); });
+      this.deckApi
+        .getCardByName(name)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((card) => {
+          this.landCardCache.set(name, card);
+          this.cdr.markForCheck();
+        });
     }
   }
 
@@ -2043,18 +2450,34 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    const hadAny = this.showSearchPanel || this.showManaSuggestPanel || this.showSuggestionsPanel || this.showSidePanel;
+    const hadAny =
+      this.showSearchPanel ||
+      this.showManaSuggestPanel ||
+      this.showSuggestionsPanel ||
+      this.showSidePanel;
     this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
     this.showSidePanel = false;
     this.cdr.markForCheck();
-    const open = () => { this.sideTab = tab; this.showSidePanel = true; this.cdr.markForCheck(); };
-    if (hadAny) { setTimeout(open, 300); } else { open(); }
+    const open = () => {
+      this.sideTab = tab;
+      this.showSidePanel = true;
+      this.cdr.markForCheck();
+    };
+    if (hadAny) {
+      setTimeout(open, 300);
+    } else {
+      open();
+    }
   }
 
   private switchRightPanel(openFn: () => void): void {
-    const hasOpen = this.showSearchPanel || this.showManaSuggestPanel || this.showSuggestionsPanel || this.showSidePanel;
+    const hasOpen =
+      this.showSearchPanel ||
+      this.showManaSuggestPanel ||
+      this.showSuggestionsPanel ||
+      this.showSidePanel;
     this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
@@ -2074,7 +2497,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    this.switchRightPanel(() => { this.showSearchPanel = true; this.cdr.markForCheck(); });
+    this.switchRightPanel(() => {
+      this.showSearchPanel = true;
+      this.cdr.markForCheck();
+    });
   }
 
   toggleManaSuggestPanel(): void {
@@ -2083,7 +2509,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    this.switchRightPanel(() => { this.showManaSuggestPanel = true; this.cdr.markForCheck(); });
+    this.switchRightPanel(() => {
+      this.showManaSuggestPanel = true;
+      this.cdr.markForCheck();
+    });
   }
 
   toggleSuggestionsPanel(): void {
@@ -2092,22 +2521,39 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    this.switchRightPanel(() => { this.showSuggestionsPanel = true; this.cdr.markForCheck(); });
+    this.switchRightPanel(() => {
+      this.showSuggestionsPanel = true;
+      this.cdr.markForCheck();
+    });
   }
 
   openCommanderSearch(): void {
     this.commanderSearchMode = true;
-    this.switchRightPanel(() => { this.showSearchPanel = true; this.cdr.markForCheck(); });
+    this.switchRightPanel(() => {
+      this.showSearchPanel = true;
+      this.cdr.markForCheck();
+    });
   }
 
-  onPanelCardAdd(event: { oracleId: string; scryfallId: string; isCommanderEligible?: boolean }): void {
-    this.store.dispatch(DeckActions.addCard({
-      deckId: this.deckId,
-      request: { oracleId: event.oracleId, quantity: 1, scryfallId: event.scryfallId, board: this.activeBoard },
-    }));
+  onPanelCardAdd(event: {
+    oracleId: string;
+    scryfallId: string;
+    isCommanderEligible?: boolean;
+  }): void {
+    this.store.dispatch(
+      DeckActions.addCard({
+        deckId: this.deckId,
+        request: {
+          oracleId: event.oracleId,
+          quantity: 1,
+          scryfallId: event.scryfallId,
+          board: this.activeBoard,
+        },
+      }),
+    );
     if (this.commanderSearchMode) {
       if (event.isCommanderEligible) {
-        this.deck$.pipe(take(1)).subscribe(deck => {
+        this.deck$.pipe(take(1)).subscribe((deck) => {
           if (deck) this.setCommander(event.oracleId, deck);
         });
       }
@@ -2119,8 +2565,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   onFitRequested(event: { card: CardDto; commanderCard: CardDto }): void {
     const { card, commanderCard } = event;
 
-    const cmdColors = new Set((commanderCard.colorIdentity ?? []).map(c => String(c)));
-    const isColorViolation = (card.colorIdentity ?? []).some(c => !cmdColors.has(String(c)));
+    const cmdColors = new Set((commanderCard.colorIdentity ?? []).map((c) => String(c)));
+    const isColorViolation = (card.colorIdentity ?? []).some((c) => !cmdColors.has(String(c)));
 
     if (isColorViolation) {
       this.searchPanel?.setSynergyScore(card.oracleId, {
@@ -2130,74 +2576,99 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.deck$.pipe(
-      take(1),
-      switchMap(deck => {
-        const deckCardNames = (deck?.cards ?? [])
-          .filter(c => c.cardDetails?.oracleId !== card.oracleId &&
-                       c.cardDetails?.oracleId !== commanderCard.oracleId)
-          .map(c => c.cardDetails?.name)
-          .filter((n): n is string => !!n);
+    this.deck$
+      .pipe(
+        take(1),
+        switchMap((deck) => {
+          const deckCardNames = (deck?.cards ?? [])
+            .filter(
+              (c) =>
+                c.cardDetails?.oracleId !== card.oracleId &&
+                c.cardDetails?.oracleId !== commanderCard.oracleId,
+            )
+            .map((c) => c.cardDetails?.name)
+            .filter((n): n is string => !!n);
 
-        return this.deckApi.analyzeSynergy({
-          commanderOracleId: commanderCard.oracleId,
-          commanderName:     commanderCard.name,
-          commanderText:     commanderCard.oracleText,
-          cardOracleId:      card.oracleId,
-          cardName:          card.name,
-          cardText:          card.oracleText,
-          deckCardNames,
-        });
-      }),
-      takeUntil(this.destroy$),
-      catchError(() => of({ score: 0, reason: 'Failed to get synergy score.' })),
-    ).subscribe(result => {
-      this.searchPanel?.setSynergyScore(card.oracleId, result);
-    });
+          return this.deckApi.analyzeSynergy({
+            commanderOracleId: commanderCard.oracleId,
+            commanderName: commanderCard.name,
+            commanderText: commanderCard.oracleText,
+            cardOracleId: card.oracleId,
+            cardName: card.name,
+            cardText: card.oracleText,
+            deckCardNames,
+          });
+        }),
+        takeUntil(this.destroy$),
+        catchError(() => of({ score: 0, reason: 'Failed to get synergy score.' })),
+      )
+      .subscribe((result) => {
+        this.searchPanel?.setSynergyScore(card.oracleId, result);
+      });
   }
 
   addSuggestedCard(event: { oracleId: string; scryfallId: string }): void {
-    this.store.dispatch(DeckActions.addCard({
-      deckId: this.deckId,
-      request: { oracleId: event.oracleId, scryfallId: event.scryfallId, quantity: 1, quantityFoil: 0 },
-    }));
+    this.store.dispatch(
+      DeckActions.addCard({
+        deckId: this.deckId,
+        request: {
+          oracleId: event.oracleId,
+          scryfallId: event.scryfallId,
+          quantity: 1,
+          quantityFoil: 0,
+        },
+      }),
+    );
   }
 
   removeSuggestedCard(oracleId: string): void {
-    this.deck$.pipe(take(1)).subscribe(deck => {
-      const card = deck?.cards.find(c => c.cardDetails?.oracleId === oracleId);
-      if (card) this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
+    this.deck$.pipe(take(1)).subscribe((deck) => {
+      const card = deck?.cards.find((c) => c.cardDetails?.oracleId === oracleId);
+      if (card)
+        this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
     });
   }
 
   // ---- Card quantity controls --------------------------------
 
   increment(card: CollectionCardDto): void {
-    this.store.dispatch(DeckActions.updateCard({
-      deckId: this.deckId, cardId: card.id,
-      request: { quantity: card.quantity + 1, quantityFoil: card.quantityFoil },
-    }));
+    this.store.dispatch(
+      DeckActions.updateCard({
+        deckId: this.deckId,
+        cardId: card.id,
+        request: { quantity: card.quantity + 1, quantityFoil: card.quantityFoil },
+      }),
+    );
   }
 
   decrement(card: CollectionCardDto): void {
     if (this.cardCount(card) <= 1) {
       this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
     } else if (card.quantity > 0) {
-      this.store.dispatch(DeckActions.updateCard({
-        deckId: this.deckId, cardId: card.id,
-        request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
-      }));
+      this.store.dispatch(
+        DeckActions.updateCard({
+          deckId: this.deckId,
+          cardId: card.id,
+          request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
+        }),
+      );
     } else {
-      this.store.dispatch(DeckActions.updateCard({
-        deckId: this.deckId, cardId: card.id,
-        request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
-      }));
+      this.store.dispatch(
+        DeckActions.updateCard({
+          deckId: this.deckId,
+          cardId: card.id,
+          request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
+        }),
+      );
     }
   }
 
   freeIncrement(card: CollectionCardDto, colId: string): void {
-    const col = this.freeColumns.find(c => c.id === colId);
-    if (col) { col.cardIds.push(card.id); this.freeLayoutDirty = true; }
+    const col = this.freeColumns.find((c) => c.id === colId);
+    if (col) {
+      col.cardIds.push(card.id);
+      this.freeLayoutDirty = true;
+    }
     this.increment(card);
     this.cdr.markForCheck();
   }
@@ -2209,7 +2680,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         if (idx !== -1) col.cardIds.splice(idx, 1);
       }
     } else {
-      const col = this.freeColumns.find(c => c.id === colId);
+      const col = this.freeColumns.find((c) => c.id === colId);
       if (col) {
         const idx = col.cardIds.lastIndexOf(card.id);
         if (idx !== -1) col.cardIds.splice(idx, 1);
@@ -2223,7 +2694,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ---- Card modal --------------------------------------------
 
   openStatCard(card: CollectionCardDto | null): void {
-    console.log('[openStatCard] called, card:', card?.cardDetails?.name ?? card?.oracleId ?? 'null');
+    console.log(
+      '[openStatCard] called, card:',
+      card?.cardDetails?.name ?? card?.oracleId ?? 'null',
+    );
     if (!card) return;
     this.openCard(card);
   }
@@ -2240,8 +2714,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     console.log('[openCard] selectedCard set:', !!this.selectedCard);
   }
 
-  closeCard(): void { this.selectedCard = null; this.modalSlotKey = null; this.cdr.markForCheck(); }
-
+  closeCard(): void {
+    this.selectedCard = null;
+    this.modalSlotKey = null;
+    this.cdr.markForCheck();
+  }
 
   toggleTileFlip(slotKey: string, _card: CollectionCardDto, event: MouseEvent): void {
     event.stopPropagation();
@@ -2255,18 +2732,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   tileImage(card: CollectionCardDto, slotKey: string): string | null {
     const front = card.cardDetails?.imageUriNormal ?? null;
-    const back  = card.cardDetails?.imageUriNormalBack ?? null;
+    const back = card.cardDetails?.imageUriNormalBack ?? null;
     return this.flippedCardIds.has(slotKey) && back ? back : front;
   }
 
-  tileHasBack(card: CollectionCardDto): boolean { return !!card.cardDetails?.imageUriNormalBack; }
+  tileHasBack(card: CollectionCardDto): boolean {
+    return !!card.cardDetails?.imageUriNormalBack;
+  }
 
   getAlsoOwnedIds(deck: DeckDetailDto): string[] {
     if (!this.selectedCard) return [];
     return deck.cards
-      .filter(c => c.oracleId === this.selectedCard!.oracleId
-                && c.scryfallId && c.scryfallId !== this.selectedCard!.scryfallId)
-      .map(c => c.scryfallId!);
+      .filter(
+        (c) =>
+          c.oracleId === this.selectedCard!.oracleId &&
+          c.scryfallId &&
+          c.scryfallId !== this.selectedCard!.scryfallId,
+      )
+      .map((c) => c.scryfallId!);
   }
 
   typeLine(card: CollectionCardDto): string {
@@ -2284,30 +2767,63 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   commitRename(deck: DeckDetailDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== deck.name) {
-      this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags: deck.tags ?? [] }));
+      this.store.dispatch(
+        DeckActions.updateDeckMeta({
+          id: this.deckId,
+          name,
+          coverUri: deck.coverUri ?? null,
+          format: deck.format ?? null,
+          commanderOracleId: deck.commanderOracleId ?? null,
+          tags: deck.tags ?? [],
+        }),
+      );
     }
     this.isRenaming = false;
     this.cdr.markForCheck();
   }
 
-  cancelRename(): void { this.isRenaming = false; this.cdr.markForCheck(); }
+  cancelRename(): void {
+    this.isRenaming = false;
+    this.cdr.markForCheck();
+  }
 
   addTag(deck: DeckDetailDto, tag: string): void {
     const t = tag.trim().toLowerCase();
     if (!t || (deck.tags ?? []).includes(t)) return;
     const tags = [...(deck.tags ?? []), t];
     this.saveTagToHistory(t);
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: deck.id, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: deck.id,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
+        tags,
+      }),
+    );
   }
 
   removeTag(deck: DeckDetailDto, tag: string): void {
-    const tags = (deck.tags ?? []).filter(t => t !== tag);
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: deck.id, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags }));
+    const tags = (deck.tags ?? []).filter((t) => t !== tag);
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: deck.id,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
+        tags,
+      }),
+    );
   }
 
   commitTagInput(deck: DeckDetailDto): void {
     const tag = this.tagDraft.trim();
-    if (tag) { this.addTag(deck, tag); this.tagDraft = ''; }
+    if (tag) {
+      this.addTag(deck, tag);
+      this.tagDraft = '';
+    }
   }
 
   // ---- Detail cover picker ----------------------------------
@@ -2323,25 +2839,39 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   onDetailCoverSelected(deck: DeckDetailDto, uri: string | null): void {
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: uri, format: deck.format ?? null, commanderOracleId: deck.commanderOracleId ?? null, tags: deck.tags ?? [] }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: this.deckId,
+        name: deck.name,
+        coverUri: uri,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
+        tags: deck.tags ?? [],
+      }),
+    );
     this.closeDetailCoverPicker();
   }
 
   // ---- Format / Commander -------------------------------------------------
 
-  showFormatMenu      = false;
+  showFormatMenu = false;
   showCommanderPicker = false;
-  cpSlotDragOver      = false;
+  cpSlotDragOver = false;
   commanderSearchMode = false;
-  aiBuilding          = false;
-  aiBuildResult: { cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number } | null = null;
+  aiBuilding = false;
+  aiBuildResult: {
+    cardsAdded: number;
+    sideboardAdded: number;
+    maybeboardAdded: number;
+    cardsSkipped: number;
+  } | null = null;
   aiBuildError: string | null = null;
-  aiBuildBracket      = 3;
-  aiBuildPrice        = 'any';
-  aiBuildSideboard    = false;
-  aiBuildMaybeboard   = false;
+  aiBuildBracket = 3;
+  aiBuildPrice = 'any';
+  aiBuildSideboard = false;
+  aiBuildMaybeboard = false;
 
-  notesDraft          = '';
+  notesDraft = '';
   private notesInitialized = false;
 
   toggleFormatMenu(): void {
@@ -2356,36 +2886,62 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }
     // Clearing format also clears the commander
     const commanderOracleId = format === 'commander' ? (deck.commanderOracleId ?? null) : null;
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format, commanderOracleId, tags: deck.tags ?? [] }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: this.deckId,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format,
+        commanderOracleId,
+        tags: deck.tags ?? [],
+      }),
+    );
     this.cdr.markForCheck();
   }
 
   setCommander(oracleId: string | null, deck: DeckDetailDto): void {
     this.showCommanderPicker = false;
-    this.store.dispatch(DeckActions.updateDeckMeta({ id: this.deckId, name: deck.name, coverUri: deck.coverUri ?? null, format: deck.format ?? null, commanderOracleId: oracleId, tags: deck.tags ?? [] }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: this.deckId,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: deck.format ?? null,
+        commanderOracleId: oracleId,
+        tags: deck.tags ?? [],
+      }),
+    );
     this.cdr.markForCheck();
   }
 
   saveNotes(deck: DeckDetailDto): void {
-    this.store.dispatch(DeckActions.updateDeckMeta({
-      id: this.deckId,
-      name: deck.name,
-      coverUri: deck.coverUri ?? null,
-      format: deck.format ?? null,
-      commanderOracleId: deck.commanderOracleId ?? null,
-      tags: deck.tags ?? [],
-      notes: this.notesDraft,
-    }));
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: this.deckId,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: deck.format ?? null,
+        commanderOracleId: deck.commanderOracleId ?? null,
+        tags: deck.tags ?? [],
+        notes: this.notesDraft,
+      }),
+    );
   }
 
   onCpSlotDragOver(event: DragEvent, deck: DeckDetailDto): void {
-    const hasCommanderCard = event.dataTransfer?.types.includes('application/x-commander-card') ?? false;
-    const draggedCard = this.dragCardId ? deck.cards.find(c => c.id === this.dragCardId) : null;
-    const isEligible  = draggedCard ? this.eligibleCommanders(deck).some(c => c.id === draggedCard.id) : false;
+    const hasCommanderCard =
+      event.dataTransfer?.types.includes('application/x-commander-card') ?? false;
+    const draggedCard = this.dragCardId ? deck.cards.find((c) => c.id === this.dragCardId) : null;
+    const isEligible = draggedCard
+      ? this.eligibleCommanders(deck).some((c) => c.id === draggedCard.id)
+      : false;
     if (!hasCommanderCard && !isEligible) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = hasCommanderCard ? 'copy' : 'move';
-    if (!this.cpSlotDragOver) { this.cpSlotDragOver = true; this.cdr.markForCheck(); }
+    if (!this.cpSlotDragOver) {
+      this.cpSlotDragOver = true;
+      this.cdr.markForCheck();
+    }
   }
 
   onCpSlotDrop(deck: DeckDetailDto, event: DragEvent): void {
@@ -2398,17 +2954,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         return;
       }
-      this.store.dispatch(DeckActions.addCard({
-        deckId: this.deckId,
-        request: { oracleId: searchCard.oracleId, quantity: 1, scryfallId: searchCard.scryfallId },
-      }));
+      this.store.dispatch(
+        DeckActions.addCard({
+          deckId: this.deckId,
+          request: {
+            oracleId: searchCard.oracleId,
+            quantity: 1,
+            scryfallId: searchCard.scryfallId,
+          },
+        }),
+      );
       this.setCommander(searchCard.oracleId, deck);
       return;
     }
 
     if (this.dragCardId) {
-      const card = deck.cards.find(c => c.id === this.dragCardId);
-      if (card && this.eligibleCommanders(deck).some(c => c.id === card.id)) {
+      const card = deck.cards.find((c) => c.id === this.dragCardId);
+      if (card && this.eligibleCommanders(deck).some((c) => c.id === card.id)) {
         this.setCommander(card.oracleId, deck);
       }
       this.onDragEnd();
@@ -2418,76 +2980,99 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   aiBuildDeck(deck: DeckDetailDto): void {
     if (!deck.commanderOracleId || this.aiBuilding) return;
-    this.aiBuilding   = true;
+    this.aiBuilding = true;
     this.aiBuildResult = null;
-    this.aiBuildError  = null;
+    this.aiBuildError = null;
     this.cdr.markForCheck();
-    this.deckApi.aiBuildDeck(deck.id, deck.commanderOracleId, this.aiBuildBracket, this.aiBuildPrice, this.aiBuildSideboard, this.aiBuildMaybeboard).pipe(
-      takeUntil(this.destroy$),
-    ).subscribe({
-      next: result => {
-        this.aiBuilding    = false;
-        this.aiBuildResult = result;
-        this.store.dispatch(DeckActions.loadDeck({ id: deck.id }));
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.aiBuilding   = false;
-        this.aiBuildError = 'Build failed. Please try again.';
-        this.cdr.markForCheck();
-      },
-    });
+    this.deckApi
+      .aiBuildDeck(
+        deck.id,
+        deck.commanderOracleId,
+        this.aiBuildBracket,
+        this.aiBuildPrice,
+        this.aiBuildSideboard,
+        this.aiBuildMaybeboard,
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          this.aiBuilding = false;
+          this.aiBuildResult = result;
+          this.store.dispatch(DeckActions.loadDeck({ id: deck.id }));
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.aiBuilding = false;
+          this.aiBuildError = 'Build failed. Please try again.';
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   /** Cards eligible to be commander: legendary creatures or planeswalkers. */
   eligibleCommanders(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => {
+    return deck.cards.filter((c) => {
       const d = c.cardDetails;
       if (!d) return false;
       const legendary = d.supertypes?.includes('Legendary') ?? false;
-      const creature   = d.cardTypes?.includes(CardType.Creature) ?? false;
-      const pw         = d.cardTypes?.includes(CardType.Planeswalker) ?? false;
+      const creature = d.cardTypes?.includes(CardType.Creature) ?? false;
+      const pw = d.cardTypes?.includes(CardType.Planeswalker) ?? false;
       return legendary && (creature || pw);
     });
   }
 
   commanderCard(deck: DeckDetailDto): CollectionCardDto | null {
     if (!deck.commanderOracleId) return null;
-    return deck.cards.find(c => c.oracleId === deck.commanderOracleId) ?? null;
+    return deck.cards.find((c) => c.oracleId === deck.commanderOracleId) ?? null;
   }
 
   /** Cards that are banned in Commander. */
   bannedInCommander(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && c.cardDetails?.legalities?.['commander'] === 'banned');
+    return deck.cards.filter(
+      (c) =>
+        (c.board ?? 'main') === 'main' && c.cardDetails?.legalities?.['commander'] === 'banned',
+    );
   }
 
   bannedViolationNames(deck: DeckDetailDto): string {
-    return this.bannedInCommander(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.bannedInCommander(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   /** Cards on the Commander game changers list (legal but flagged as highly impactful). */
   gameChangerCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && c.cardDetails?.gameChanger === true);
+    return deck.cards.filter(
+      (c) => (c.board ?? 'main') === 'main' && c.cardDetails?.gameChanger === true,
+    );
   }
 
   gameChangerNames(deck: DeckDetailDto): string {
-    return this.gameChangerCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.gameChangerCards(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   /** Cards that grant an extra turn. */
   extraTurnCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => (c.board ?? 'main') === 'main' && /takes? an extra turn/i.test(c.cardDetails?.oracleText ?? ''));
+    return deck.cards.filter(
+      (c) =>
+        (c.board ?? 'main') === 'main' &&
+        /takes? an extra turn/i.test(c.cardDetails?.oracleText ?? ''),
+    );
   }
 
   /** Cards that destroy or exile all (or all nonbasic) lands. */
   mldCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(c => {
+    return deck.cards.filter((c) => {
       if ((c.board ?? 'main') !== 'main') return false;
       const text = c.cardDetails?.oracleText ?? '';
-      return /destroy all (?:nonbasic )?lands/i.test(text)
-          || /exile all (?:\w+, )*lands/i.test(text)
-          || /destroy all permanents/i.test(text)
-          || /exile all permanents/i.test(text);
+      return (
+        /destroy all (?:nonbasic )?lands/i.test(text) ||
+        /exile all (?:\w+, )*lands/i.test(text) ||
+        /destroy all permanents/i.test(text) ||
+        /exile all permanents/i.test(text)
+      );
     });
   }
 
@@ -2496,19 +3081,29 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const etCards = this.extraTurnCards(deck);
     if (etCards.length === 0) return false;
     if (etCards.length >= 2) return true;
-    return deck.cards.filter(c => (c.board ?? 'main') === 'main').some(c => {
-      const text = c.cardDetails?.oracleText ?? '';
-      return /return target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
-          || /cast target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(text)
-          || /you may cast (?:a card|target (?:instant or sorcery|instant|sorcery)) from your graveyard/i.test(text);
-    });
+    return deck.cards
+      .filter((c) => (c.board ?? 'main') === 'main')
+      .some((c) => {
+        const text = c.cardDetails?.oracleText ?? '';
+        return (
+          /return target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(
+            text,
+          ) ||
+          /cast target (?:instant or sorcery |instant |sorcery )?card from your graveyard/i.test(
+            text,
+          ) ||
+          /you may cast (?:a card|target (?:instant or sorcery|instant|sorcery)) from your graveyard/i.test(
+            text,
+          )
+        );
+      });
   }
 
   /** Estimated Commander Bracket (1–4). Bracket 5 is intent-based and not computed. */
   commanderBracket(deck: DeckDetailDto): number {
     const gcCount = this.gameChangerCards(deck).length;
-    const mld     = this.mldCards(deck).length > 0;
-    const chain   = this.hasChainingExtraTurns(deck);
+    const mld = this.mldCards(deck).length > 0;
+    const chain = this.hasChainingExtraTurns(deck);
     if (gcCount > 3 || mld || chain) return 4;
     if (gcCount > 0) return 3;
     if (this.extraTurnCards(deck).length > 0) return 2;
@@ -2518,23 +3113,31 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   commanderBracketTooltip(deck: DeckDetailDto): string {
     const reasons: string[] = [];
     const gcCount = this.gameChangerCards(deck).length;
-    if (gcCount > 0) reasons.push(`${gcCount} Game Changer${gcCount > 1 ? 's' : ''}: ${this.gameChangerNames(deck)}`);
+    if (gcCount > 0)
+      reasons.push(
+        `${gcCount} Game Changer${gcCount > 1 ? 's' : ''}: ${this.gameChangerNames(deck)}`,
+      );
     const mld = this.mldCards(deck);
-    if (mld.length > 0) reasons.push(`MLD: ${mld.map(c => c.cardDetails?.name ?? '').join(', ')}`);
+    if (mld.length > 0)
+      reasons.push(`MLD: ${mld.map((c) => c.cardDetails?.name ?? '').join(', ')}`);
     const et = this.extraTurnCards(deck);
     if (et.length > 0) {
       const label = this.hasChainingExtraTurns(deck) ? 'Chaining extra turns' : 'Extra turn';
-      reasons.push(`${label}: ${et.map(c => c.cardDetails?.name ?? '').join(', ')}`);
+      reasons.push(`${label}: ${et.map((c) => c.cardDetails?.name ?? '').join(', ')}`);
     }
     return reasons.length ? reasons.join(' | ') : 'No power-level flags detected';
   }
 
   mldCardNames(deck: DeckDetailDto): string {
-    return this.mldCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.mldCards(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   extraTurnCardNames(deck: DeckDetailDto): string {
-    return this.extraTurnCards(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.extraTurnCards(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   bracketInfoOpen = false;
@@ -2545,7 +3148,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.bracketInfoOpen = !this.bracketInfoOpen;
   }
 
-  closeBracketInfo(): void { this.bracketInfoOpen = false; }
+  closeBracketInfo(): void {
+    this.bracketInfoOpen = false;
+  }
 
   // ---- Violation detail panel ------------------------------------
 
@@ -2557,23 +3162,33 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.violationPanelType = this.violationPanelType === type ? null : type;
   }
 
-  closeViolationPanel(): void { this.violationPanelType = null; }
+  closeViolationPanel(): void {
+    this.violationPanelType = null;
+  }
 
   violationPanelCards(deck: DeckDetailDto): CollectionCardDto[] {
     switch (this.violationPanelType) {
-      case 'banned':    return this.bannedInCommander(deck);
-      case 'singleton': return this.singletonViolations(deck);
-      case 'color-id':  return this.colorIdentityViolations(deck);
-      default: return [];
+      case 'banned':
+        return this.bannedInCommander(deck);
+      case 'singleton':
+        return this.singletonViolations(deck);
+      case 'color-id':
+        return this.colorIdentityViolations(deck);
+      default:
+        return [];
     }
   }
 
   violationPanelTitle(): string {
     switch (this.violationPanelType) {
-      case 'banned':    return 'Banned Cards';
-      case 'singleton': return 'Singleton Violations';
-      case 'color-id':  return 'Color Identity Violations';
-      default: return '';
+      case 'banned':
+        return 'Banned Cards';
+      case 'singleton':
+        return 'Singleton Violations';
+      case 'color-id':
+        return 'Color Identity Violations';
+      default:
+        return '';
     }
   }
 
@@ -2581,9 +3196,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cmdr = this.commanderCard(deck);
     if (!cmdr?.cardDetails) return '';
     const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
-    return (card.cardDetails?.colorIdentity ?? [])
-      .filter(col => !allowed.has(col))
-      .join('');
+    return (card.cardDetails?.colorIdentity ?? []).filter((col) => !allowed.has(col)).join('');
   }
 
   cardTypeLine(card: CollectionCardDto): string {
@@ -2598,21 +3211,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
    *  Counts across all records sharing the same oracleId (different printings
    *  of the same card each contribute their quantity). */
   singletonViolations(deck: DeckDetailDto): CollectionCardDto[] {
-    const mainCards = deck.cards.filter(c => (c.board ?? 'main') === 'main');
+    const mainCards = deck.cards.filter((c) => (c.board ?? 'main') === 'main');
     const totalByOracle = new Map<string, number>();
     for (const c of mainCards) {
       if (!this.isBasicLand(c))
         totalByOracle.set(c.oracleId, (totalByOracle.get(c.oracleId) ?? 0) + this.cardCount(c));
     }
-    return mainCards.filter(c =>
-      !this.isBasicLand(c) && (totalByOracle.get(c.oracleId) ?? 0) > 1
+    return mainCards.filter(
+      (c) => !this.isBasicLand(c) && (totalByOracle.get(c.oracleId) ?? 0) > 1,
     );
   }
 
   /** Total copies of a card across all records with the same oracleId on the same board. */
   totalOracleCount(card: CollectionCardDto, deck: DeckDetailDto): number {
     return deck.cards
-      .filter(c => c.oracleId === card.oracleId && (c.board ?? 'main') === (card.board ?? 'main'))
+      .filter((c) => c.oracleId === card.oracleId && (c.board ?? 'main') === (card.board ?? 'main'))
       .reduce((sum, c) => sum + this.cardCount(c), 0);
   }
 
@@ -2621,26 +3234,36 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cmdr = this.commanderCard(deck);
     if (!cmdr?.cardDetails) return [];
     const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
-    return deck.cards.filter(c => {
+    return deck.cards.filter((c) => {
       if ((c.board ?? 'main') !== 'main') return false;
       if (c.oracleId === cmdr.oracleId) return false;
-      return (c.cardDetails?.colorIdentity ?? []).some(col => !allowed.has(col));
+      return (c.cardDetails?.colorIdentity ?? []).some((col) => !allowed.has(col));
     });
   }
 
   singletonViolationNames(deck: DeckDetailDto): string {
-    return this.singletonViolations(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.singletonViolations(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   colorIdentityViolationNames(deck: DeckDetailDto): string {
-    return this.colorIdentityViolations(deck).map(c => c.cardDetails?.name ?? '').join(', ');
+    return this.colorIdentityViolations(deck)
+      .map((c) => c.cardDetails?.name ?? '')
+      .join(', ');
   }
 
   formatLabel(format: string | null): string {
     const labels: Record<string, string> = {
-      commander: 'CMDR', brawl: 'BRAWL', oathbreaker: 'OATH',
-      standard: 'STD', pioneer: 'PIO', modern: 'MOD',
-      legacy: 'LEG', vintage: 'VIN', pauper: 'PAU',
+      commander: 'CMDR',
+      brawl: 'BRAWL',
+      oathbreaker: 'OATH',
+      standard: 'STD',
+      pioneer: 'PIO',
+      modern: 'MOD',
+      legacy: 'LEG',
+      vintage: 'VIN',
+      pauper: 'PAU',
     };
     return format ? (labels[format] ?? format.toUpperCase()) : 'FORMAT';
   }
@@ -2652,7 +3275,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   formatViolations(deck: DeckDetailDto): CollectionCardDto[] {
     const fmt = deck.format;
     if (!fmt || fmt === 'commander') return [];
-    return deck.cards.filter(c => {
+    return deck.cards.filter((c) => {
       const leg = c.cardDetails?.legalities?.[fmt];
       return leg && leg !== 'legal';
     });
@@ -2660,22 +3283,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   hasCommanderViolations(deck: DeckDetailDto): boolean {
     if (deck.format !== 'commander') return false;
-    return this.totalCount(deck) !== 100
-      || !deck.commanderOracleId
-      || this.singletonViolations(deck).length > 0
-      || this.colorIdentityViolations(deck).length > 0
-      || this.bannedInCommander(deck).length > 0;
+    return (
+      this.totalCount(deck) !== 100 ||
+      !deck.commanderOracleId ||
+      this.singletonViolations(deck).length > 0 ||
+      this.colorIdentityViolations(deck).length > 0 ||
+      this.bannedInCommander(deck).length > 0
+    );
   }
 
   /** Returns 'banned', 'singleton', 'color-id', 'both', or null. Banned takes highest priority. */
   cardViolationType(card: CollectionCardDto, deck: DeckDetailDto): string | null {
     if (deck.format !== 'commander') return null;
     if (card.cardDetails?.legalities?.['commander'] === 'banned') return 'banned';
-    const isSingleton = this.singletonViolations(deck).some(c => c.id === card.id);
-    const isColorId   = this.colorIdentityViolations(deck).some(c => c.id === card.id);
+    const isSingleton = this.singletonViolations(deck).some((c) => c.id === card.id);
+    const isColorId = this.colorIdentityViolations(deck).some((c) => c.id === card.id);
     if (isSingleton && isColorId) return 'both';
     if (isSingleton) return 'singleton';
-    if (isColorId)   return 'color-id';
+    if (isColorId) return 'color-id';
     return null;
   }
 
@@ -2683,7 +3308,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const classes: string[] = [];
     const type = this.cardViolationType(card, deck);
     if (type) classes.push(`violation-${type}`);
-    if (deck.format === 'commander' && card.cardDetails?.gameChanger) classes.push('is-game-changer');
+    if (deck.format === 'commander' && card.cardDetails?.gameChanger)
+      classes.push('is-game-changer');
     return classes.join(' ');
   }
 
@@ -2705,14 +3331,22 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ── Stats chart ────────────────────────────────────────────────────────────
 
   private readonly MANA_COLORS: Record<string, string> = {
-    w: '#f0ead6', u: '#60a5fa', b: '#9ca3af', r: '#f87171', g: '#4ade80', c: '#d1d5db',
+    w: '#f0ead6',
+    u: '#60a5fa',
+    b: '#9ca3af',
+    r: '#f87171',
+    g: '#4ade80',
+    c: '#d1d5db',
   };
 
   tagHistory: string[] = [];
 
   private loadTagHistory(): void {
-    try { this.tagHistory = JSON.parse(localStorage.getItem('mtg-tag-history') || '[]'); }
-    catch { this.tagHistory = []; }
+    try {
+      this.tagHistory = JSON.parse(localStorage.getItem('mtg-tag-history') || '[]');
+    } catch {
+      this.tagHistory = [];
+    }
   }
 
   private saveTagToHistory(tag: string): void {
@@ -2721,9 +3355,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   deckCardNames(deck: DeckDetailDto): string[] {
-    return [...new Set(
-      deck.cards.map(c => c.cardDetails?.name).filter((n): n is string => !!n)
-    )].sort();
+    return [
+      ...new Set(deck.cards.map((c) => c.cardDetails?.name).filter((n): n is string => !!n)),
+    ].sort();
   }
 
   sectionChartType: Record<string, 'bar' | 'vbar' | 'pie' | 'stacked'> = {};
@@ -2739,19 +3373,19 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   cardTypeData(stats: DeckStats): ChartEntry[] {
     return [
-      { label: 'Creatures',     value: stats.creatures },
-      { label: 'Lands',         value: stats.lands },
-      { label: 'Instants',      value: stats.instants },
-      { label: 'Sorceries',     value: stats.sorceries },
-      { label: 'Enchantments',  value: stats.enchantments },
-      { label: 'Artifacts',     value: stats.artifacts },
+      { label: 'Creatures', value: stats.creatures },
+      { label: 'Lands', value: stats.lands },
+      { label: 'Instants', value: stats.instants },
+      { label: 'Sorceries', value: stats.sorceries },
+      { label: 'Enchantments', value: stats.enchantments },
+      { label: 'Artifacts', value: stats.artifacts },
       { label: 'Planeswalkers', value: stats.planeswalkers },
-      { label: 'Other',         value: stats.other },
-    ].filter(e => e.value > 0);
+      { label: 'Other', value: stats.other },
+    ].filter((e) => e.value > 0);
   }
 
   manaPipData(stats: DeckStats): ChartEntry[] {
-    return stats.manaPips.map(p => ({
+    return stats.manaPips.map((p) => ({
       label: p.color === 'm' ? 'Multi' : p.color.toUpperCase(),
       value: p.count,
       color: this.MANA_COLORS[p.color.toLowerCase()],
@@ -2760,7 +3394,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   manaProductionData(stats: DeckStats): ChartEntry[] {
-    return stats.manaProduction.map(p => ({
+    return stats.manaProduction.map((p) => ({
       label: p.color === 'm' ? 'Multi' : p.color.toUpperCase(),
       value: p.count,
       color: this.MANA_COLORS[p.color.toLowerCase()],
@@ -2769,7 +3403,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   subtypeData(stats: DeckStats): ChartEntry[] {
-    return stats.creatureSubtypes.map(s => ({ label: s.name, value: s.count }));
+    return stats.creatureSubtypes.map((s) => ({ label: s.name, value: s.count }));
   }
 
   colorByCmcData(stats: DeckStats): StackedBarEntry[] {

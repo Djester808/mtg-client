@@ -149,7 +149,7 @@ describe('CardComponent', () => {
     component.permanent = makePermanent({
       counters: { ...emptyCounters, [CounterType.PlusOnePlusOne]: 2 },
     });
-    const labels = component.counters.map(c => c.label);
+    const labels = component.counters.map((c) => c.label);
     expect(labels).toContain('+1');
   });
 
@@ -157,7 +157,7 @@ describe('CardComponent', () => {
     component.permanent = makePermanent({
       counters: { ...emptyCounters, [CounterType.MinusOneMinusOne]: 1 },
     });
-    const cls = component.counters.map(c => c.cls);
+    const cls = component.counters.map((c) => c.cls);
     expect(cls).toContain('minus');
   });
 
@@ -165,7 +165,7 @@ describe('CardComponent', () => {
     component.permanent = makePermanent({
       counters: { ...emptyCounters, [CounterType.Loyalty]: 4 },
     });
-    const found = component.counters.find(c => c.cls === 'loyalty');
+    const found = component.counters.find((c) => c.cls === 'loyalty');
     expect(found).toBeDefined();
     expect(found!.label).toBe('4');
   });

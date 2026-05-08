@@ -1,12 +1,5 @@
 import { createReducer, on } from '@ngrx/store';
-import {
-  GameStateDto,
-  CardDto,
-  PermanentDto,
-  GameResult,
-  Phase,
-  Step,
-} from '../../models/game.models';
+import { GameStateDto, CardDto } from '../../models/game.models';
 import { GameActions } from './game.actions';
 
 export interface GameState {
@@ -50,7 +43,7 @@ export const gameReducer = createReducer(
     localPlayerId,
   })),
 
-  on(GameActions.connectionLost, state => ({
+  on(GameActions.connectionLost, (state) => ({
     ...state,
     connected: false,
   })),
@@ -77,12 +70,12 @@ export const gameReducer = createReducer(
     // Remove permanents that left
     if (diff.removedPermanentIds.length) {
       const removed = new Set(diff.removedPermanentIds);
-      battlefield = battlefield.filter(p => !removed.has(p.permanentId));
+      battlefield = battlefield.filter((p) => !removed.has(p.permanentId));
     }
 
     // Update / add changed permanents
     for (const updated of diff.changedPermanents) {
-      const idx = battlefield.findIndex(p => p.permanentId === updated.permanentId);
+      const idx = battlefield.findIndex((p) => p.permanentId === updated.permanentId);
       if (idx >= 0) {
         battlefield = [...battlefield.slice(0, idx), updated, ...battlefield.slice(idx + 1)];
       } else {
@@ -94,13 +87,9 @@ export const gameReducer = createReducer(
     let players = state.gameState.players;
     for (const pu of diff.playerUpdates) {
       if (!pu.playerId) continue;
-      const idx = players.findIndex(p => p.playerId === pu.playerId);
+      const idx = players.findIndex((p) => p.playerId === pu.playerId);
       if (idx >= 0) {
-        players = [
-          ...players.slice(0, idx),
-          { ...players[idx], ...pu },
-          ...players.slice(idx + 1),
-        ];
+        players = [...players.slice(0, idx), { ...players[idx], ...pu }, ...players.slice(idx + 1)];
       }
     }
 

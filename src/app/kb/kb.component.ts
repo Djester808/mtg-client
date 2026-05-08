@@ -35,9 +35,9 @@ export interface KbDto {
 }
 
 export type KbEntry =
-  | { kind: 'keyword';  data: KbKeyword }
+  | { kind: 'keyword'; data: KbKeyword }
   | { kind: 'mechanic'; data: KbMechanic }
-  | { kind: 'sba';      data: KbSba };
+  | { kind: 'sba'; data: KbSba };
 
 function entryLabel(e: KbEntry): string {
   return e.kind === 'sba' ? e.data.rulesRef : e.data.name;
@@ -46,15 +46,26 @@ function entryLabel(e: KbEntry): string {
 function entryMatchesQuery(e: KbEntry, q: string): boolean {
   const lower = q.toLowerCase();
   if (e.kind === 'keyword') {
-    return e.data.name.toLowerCase().includes(lower)
-      || e.data.description.toLowerCase().includes(lower)
-      || e.data.rulesRef.toLowerCase().includes(lower);
+    return (
+      e.data.name.toLowerCase().includes(lower) ||
+      e.data.description.toLowerCase().includes(lower) ||
+      e.data.rulesRef.toLowerCase().includes(lower)
+    );
   }
   if (e.kind === 'mechanic') {
-    if (e.data.name.toLowerCase().includes(lower) || e.data.description.toLowerCase().includes(lower)) return true;
-    return !!e.data.steps?.some(s => s.name.toLowerCase().includes(lower) || s.description.toLowerCase().includes(lower));
+    if (
+      e.data.name.toLowerCase().includes(lower) ||
+      e.data.description.toLowerCase().includes(lower)
+    )
+      return true;
+    return !!e.data.steps?.some(
+      (s) => s.name.toLowerCase().includes(lower) || s.description.toLowerCase().includes(lower),
+    );
   }
-  return e.data.rulesRef.toLowerCase().includes(lower) || e.data.description.toLowerCase().includes(lower);
+  return (
+    e.data.rulesRef.toLowerCase().includes(lower) ||
+    e.data.description.toLowerCase().includes(lower)
+  );
 }
 
 @Component({
@@ -80,10 +91,10 @@ export class KbComponent implements OnInit {
   ngOnInit(): void {
     const kwParam = this.route.snapshot.queryParamMap.get('kw');
     this.http.get<KbDto>('/api/rules').subscribe({
-      next: data => {
+      next: (data) => {
         this.kb = data;
         if (kwParam) {
-          const match = data.keywords.find(k => k.name.toLowerCase() === kwParam.toLowerCase());
+          const match = data.keywords.find((k) => k.name.toLowerCase() === kwParam.toLowerCase());
           this.selected = match
             ? { kind: 'keyword', data: match }
             : { kind: 'keyword', data: data.keywords[0] };
@@ -92,22 +103,30 @@ export class KbComponent implements OnInit {
         }
         this.cdr.markForCheck();
       },
-      error: () => { this.cdr.markForCheck(); },
+      error: () => {
+        this.cdr.markForCheck();
+      },
     });
   }
 
   get allEntries(): KbEntry[] {
     if (!this.kb) return [];
     return [
-      ...this.kb.keywords.map(d => ({ kind: 'keyword' as const, data: d })),
-      ...this.kb.mechanics.map(d => ({ kind: 'mechanic' as const, data: d })),
-      ...this.kb.stateBasedActions.map(d => ({ kind: 'sba' as const, data: d })),
+      ...this.kb.keywords.map((d) => ({ kind: 'keyword' as const, data: d })),
+      ...this.kb.mechanics.map((d) => ({ kind: 'mechanic' as const, data: d })),
+      ...this.kb.stateBasedActions.map((d) => ({ kind: 'sba' as const, data: d })),
     ];
   }
 
-  get filteredKeywords(): KbEntry[] { return this.filtered('keyword'); }
-  get filteredMechanics(): KbEntry[] { return this.filtered('mechanic'); }
-  get filteredSba(): KbEntry[] { return this.filtered('sba'); }
+  get filteredKeywords(): KbEntry[] {
+    return this.filtered('keyword');
+  }
+  get filteredMechanics(): KbEntry[] {
+    return this.filtered('mechanic');
+  }
+  get filteredSba(): KbEntry[] {
+    return this.filtered('sba');
+  }
 
   get totalFiltered(): number {
     return this.filteredKeywords.length + this.filteredMechanics.length + this.filteredSba.length;
@@ -115,8 +134,8 @@ export class KbComponent implements OnInit {
 
   private filtered(kind: KbEntry['kind']): KbEntry[] {
     const q = this.searchQuery.trim();
-    const entries = this.allEntries.filter(e => e.kind === kind);
-    return q ? entries.filter(e => entryMatchesQuery(e, q)) : entries;
+    const entries = this.allEntries.filter((e) => e.kind === kind);
+    return q ? entries.filter((e) => entryMatchesQuery(e, q)) : entries;
   }
 
   select(entry: KbEntry): void {
@@ -128,7 +147,9 @@ export class KbComponent implements OnInit {
     return entryLabel(this.selected) === entryLabel(entry);
   }
 
-  labelOf(e: KbEntry): string { return entryLabel(e); }
+  labelOf(e: KbEntry): string {
+    return entryLabel(e);
+  }
 
   clearSearch(): void {
     this.searchQuery = '';

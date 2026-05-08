@@ -12,9 +12,14 @@ import { makeCard } from '../../testing/test-factories';
 
 function makeCollectionCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
-    id: 'cc-1', oracleId: 'oracle-1', scryfallId: null,
-    quantity: 1, quantityFoil: 0, notes: null,
-    addedAt: '2024-01-01', cardDetails: makeCard(),
+    id: 'cc-1',
+    oracleId: 'oracle-1',
+    scryfallId: null,
+    quantity: 1,
+    quantityFoil: 0,
+    notes: null,
+    addedAt: '2024-01-01',
+    cardDetails: makeCard(),
     board: 'main',
     ...overrides,
   };
@@ -22,18 +27,34 @@ function makeCollectionCard(overrides: Partial<CollectionCardDto> = {}): Collect
 
 function makePost(overrides: Partial<ForumPostDetail> = {}): ForumPostDetail {
   return {
-    id: 'post-1', deckId: 'deck-1', authorId: 'user-1', authorUsername: 'player1',
-    deckName: 'My Deck', deckCoverUri: null, deckFormat: 'commander',
-    commanderOracleId: null, description: null, colorIdentity: ['R', 'G'],
-    publishedAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
-    cards: [], comments: [],
+    id: 'post-1',
+    deckId: 'deck-1',
+    authorId: 'user-1',
+    authorUsername: 'player1',
+    deckName: 'My Deck',
+    deckCoverUri: null,
+    deckFormat: 'commander',
+    commanderOracleId: null,
+    description: null,
+    colorIdentity: ['R', 'G'],
+    publishedAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    cards: [],
+    comments: [],
     ...overrides,
   };
 }
 
 const INITIAL_STATE = {
-  forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
-  auth:  { isLoggedIn: false, user: null, token: null, loading: false, error: null },
+  forum: {
+    posts: [],
+    activePost: null,
+    loading: false,
+    postLoading: false,
+    publishLoading: false,
+    error: null,
+  },
+  auth: { isLoggedIn: false, user: null, token: null, loading: false, error: null },
 };
 
 async function setup() {
@@ -81,19 +102,23 @@ describe('ForumDetailComponent — totalCards', () => {
 
   it('sums all main board cards by default', async () => {
     const { component } = await setup();
-    const post = makePost({ cards: [
-      makeCollectionCard({ id: 'c1', quantity: 2, quantityFoil: 0, board: 'main' }),
-      makeCollectionCard({ id: 'c2', quantity: 1, quantityFoil: 1, board: 'main' }),
-    ]});
+    const post = makePost({
+      cards: [
+        makeCollectionCard({ id: 'c1', quantity: 2, quantityFoil: 0, board: 'main' }),
+        makeCollectionCard({ id: 'c2', quantity: 1, quantityFoil: 1, board: 'main' }),
+      ],
+    });
     expect(component.totalCards(post)).toBe(4);
   });
 
   it('counts only the specified board', async () => {
     const { component } = await setup();
-    const post = makePost({ cards: [
-      makeCollectionCard({ id: 'c1', quantity: 3, board: 'main' }),
-      makeCollectionCard({ id: 'c2', quantity: 2, board: 'side' }),
-    ]});
+    const post = makePost({
+      cards: [
+        makeCollectionCard({ id: 'c1', quantity: 3, board: 'main' }),
+        makeCollectionCard({ id: 'c2', quantity: 2, board: 'side' }),
+      ],
+    });
     expect(component.totalCards(post, 'side')).toBe(2);
     expect(component.totalCards(post, 'main')).toBe(3);
   });
@@ -125,7 +150,7 @@ describe('ForumDetailComponent — getGroups', () => {
     });
     const post = makePost({ cards: [creature] });
     const groups = component.getGroups(post);
-    expect(groups.some(g => g.label === 'Creatures')).toBeTrue();
+    expect(groups.some((g) => g.label === 'Creatures')).toBeTrue();
   });
 
   it('groups lands into Lands group', async () => {
@@ -135,7 +160,7 @@ describe('ForumDetailComponent — getGroups', () => {
     });
     const post = makePost({ cards: [land] });
     const groups = component.getGroups(post);
-    expect(groups.some(g => g.label === 'Lands')).toBeTrue();
+    expect(groups.some((g) => g.label === 'Lands')).toBeTrue();
   });
 
   it('puts cards with no matching type into Other group', async () => {
@@ -145,27 +170,39 @@ describe('ForumDetailComponent — getGroups', () => {
     });
     const post = makePost({ cards: [other] });
     const groups = component.getGroups(post);
-    expect(groups.some(g => g.label === 'Other')).toBeTrue();
+    expect(groups.some((g) => g.label === 'Other')).toBeTrue();
   });
 
   it('only includes cards matching activeTab board', async () => {
     const { component } = await setup();
-    const mainCard = makeCollectionCard({ id: 'main', board: 'main', cardDetails: makeCard({ cardTypes: [CardType.Creature] }) });
-    const sideCard = makeCollectionCard({ id: 'side', board: 'side', cardDetails: makeCard({ cardTypes: [CardType.Creature] }) });
+    const mainCard = makeCollectionCard({
+      id: 'main',
+      board: 'main',
+      cardDetails: makeCard({ cardTypes: [CardType.Creature] }),
+    });
+    const sideCard = makeCollectionCard({
+      id: 'side',
+      board: 'side',
+      cardDetails: makeCard({ cardTypes: [CardType.Creature] }),
+    });
     const post = makePost({ cards: [mainCard, sideCard] });
     component.activeTab = 'main';
     const groups = component.getGroups(post);
-    const creatures = groups.find(g => g.label === 'Creatures')!;
+    const creatures = groups.find((g) => g.label === 'Creatures')!;
     expect(creatures.cards).toHaveSize(1);
     expect(creatures.cards[0].id).toBe('main');
   });
 
   it('group total reflects card quantities', async () => {
     const { component } = await setup();
-    const card = makeCollectionCard({ quantity: 3, quantityFoil: 1, cardDetails: makeCard({ cardTypes: [CardType.Instant] }) });
+    const card = makeCollectionCard({
+      quantity: 3,
+      quantityFoil: 1,
+      cardDetails: makeCard({ cardTypes: [CardType.Instant] }),
+    });
     const post = makePost({ cards: [card] });
     const groups = component.getGroups(post);
-    const instants = groups.find(g => g.label === 'Instants')!;
+    const instants = groups.find((g) => g.label === 'Instants')!;
     expect(instants.total).toBe(4);
   });
 });

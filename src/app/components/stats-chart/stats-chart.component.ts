@@ -28,14 +28,23 @@ export class StatsChartComponent {
   @Input() type: 'bar' | 'vbar' | 'pie' | 'stacked' = 'bar';
 
   private readonly PALETTE = [
-    '#f87171', '#fb923c', '#fbbf24', '#86efac',
-    '#34d399', '#67e8f9', '#818cf8', '#e879f9',
-    '#f472b6', '#a78bfa',
+    '#f87171',
+    '#fb923c',
+    '#fbbf24',
+    '#86efac',
+    '#34d399',
+    '#67e8f9',
+    '#818cf8',
+    '#e879f9',
+    '#f472b6',
+    '#a78bfa',
   ];
 
   // ── Common ────────────────────────────────────────────
 
-  get max(): number { return Math.max(...this.data.map(d => d.value), 1); }
+  get max(): number {
+    return Math.max(...this.data.map((d) => d.value), 1);
+  }
 
   color(i: number, override?: string): string {
     return override ?? this.PALETTE[i % this.PALETTE.length];
@@ -63,7 +72,10 @@ export class StatsChartComponent {
   // ── Stacked bar ───────────────────────────────────────
 
   get stackedMax(): number {
-    return Math.max(...this.stackedData.map(col => col.segments.reduce((s, seg) => s + seg.value, 0)), 1);
+    return Math.max(
+      ...this.stackedData.map((col) => col.segments.reduce((s, seg) => s + seg.value, 0)),
+      1,
+    );
   }
 
   colHeightPct(col: StackedBarEntry): number {
@@ -76,15 +88,22 @@ export class StatsChartComponent {
     const totals = new Map<string, { label: string; color: string; total: number }>();
     for (const col of this.stackedData) {
       for (const seg of col.segments) {
-        const existing = totals.get(seg.manaColor) ?? { label: seg.label, color: seg.color, total: 0 };
+        const existing = totals.get(seg.manaColor) ?? {
+          label: seg.label,
+          color: seg.color,
+          total: 0,
+        };
         totals.set(seg.manaColor, { ...existing, total: existing.total + seg.value });
       }
     }
-    return COLOR_ORDER.filter(k => totals.has(k)).map(k => ({ manaColor: k, ...totals.get(k)! }));
+    return COLOR_ORDER.filter((k) => totals.has(k)).map((k) => ({
+      manaColor: k,
+      ...totals.get(k)!,
+    }));
   }
 
   get stackedPieSlices(): PieSlice[] {
-    return this.stackedLegend.map(e => ({
+    return this.stackedLegend.map((e) => ({
       label: e.label,
       value: e.total,
       color: e.color,

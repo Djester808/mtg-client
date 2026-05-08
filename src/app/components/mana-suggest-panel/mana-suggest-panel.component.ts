@@ -1,6 +1,14 @@
 import {
-  Component, Input, Output, EventEmitter, OnChanges, OnInit, OnDestroy,
-  SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef,
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  OnInit,
+  OnDestroy,
+  SimpleChanges,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, Subscription } from 'rxjs';
@@ -38,7 +46,7 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
     while ((m = re.exec(manaCost)) !== null) {
       const sym = m[1].toUpperCase();
       if (sym.includes('/')) {
-        const parts = sym.split('/').filter(p => colors.has(p));
+        const parts = sym.split('/').filter((p) => colors.has(p));
         if (parts.length > 0) {
           for (const p of parts)
             counts[p as ManaColor] = (counts[p as ManaColor] ?? 0) + 1 / parts.length;
@@ -49,8 +57,7 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
     }
   } else {
     for (const ch of manaCost.toUpperCase()) {
-      if (colors.has(ch))
-        counts[ch as ManaColor] = (counts[ch as ManaColor] ?? 0) + 1;
+      if (colors.has(ch)) counts[ch as ManaColor] = (counts[ch as ManaColor] ?? 0) + 1;
     }
   }
   return counts;
@@ -69,7 +76,11 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   @Output() panelClose = new EventEmitter<void>();
 
   readonly COLOR_LABEL: Record<ManaColor, string> = {
-    W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green',
+    W: 'White',
+    U: 'Blue',
+    B: 'Black',
+    R: 'Red',
+    G: 'Green',
   };
 
   private readonly ALL_COLORS: ManaColor[] = ['W', 'U', 'B', 'R', 'G'];
@@ -80,40 +91,45 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   private readonly deckChange$ = new Subject<DeckDetailDto>();
   private sub!: Subscription;
 
-  constructor(private deckApi: DeckApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private deckApi: DeckApiService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    this.sub = this.deckChange$.pipe(
-      debounceTime(1200),
-      distinctUntilChanged((a, b) => this.deckKey(a) === this.deckKey(b)),
-      switchMap(deck => {
-        const a = this.compute(deck);
-        if (a.isEmpty) return [];
+    this.sub = this.deckChange$
+      .pipe(
+        debounceTime(1200),
+        distinctUntilChanged((a, b) => this.deckKey(a) === this.deckKey(b)),
+        switchMap((deck) => {
+          const a = this.compute(deck);
+          if (a.isEmpty) return [];
 
-        this.fineTuneState = 'loading';
-        this.fineTuneResult = null;
-        this.cdr.markForCheck();
+          this.fineTuneState = 'loading';
+          this.fineTuneResult = null;
+          this.cdr.markForCheck();
 
-        return this.deckApi.getManaFineTune({
-          format:           deck.format ?? '',
-          deckCardNames:    deck.cards.map(c => c.cardDetails?.name ?? '').filter(Boolean),
-          currentLands:     a.currentLands,
-          recommendedLands: a.recommendedLands,
-          avgCmc:           a.avgCmc,
-          activeColors:     a.colorSources.map(cs => cs.color),
-        });
-      }),
-    ).subscribe({
-      next: result => {
-        this.fineTuneResult = result;
-        this.fineTuneState  = 'done';
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.fineTuneState = 'error';
-        this.cdr.markForCheck();
-      },
-    });
+          return this.deckApi.getManaFineTune({
+            format: deck.format ?? '',
+            deckCardNames: deck.cards.map((c) => c.cardDetails?.name ?? '').filter(Boolean),
+            currentLands: a.currentLands,
+            recommendedLands: a.recommendedLands,
+            avgCmc: a.avgCmc,
+            activeColors: a.colorSources.map((cs) => cs.color),
+          });
+        }),
+      )
+      .subscribe({
+        next: (result) => {
+          this.fineTuneResult = result;
+          this.fineTuneState = 'done';
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.fineTuneState = 'error';
+          this.cdr.markForCheck();
+        },
+      });
 
     // ngOnChanges fires before ngOnInit, so the initial deck push was emitted
     // before the subscription above existed. Re-push it now.
@@ -152,31 +168,50 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
     return Math.round(cs.pct * 100);
   }
 
-  close(): void { this.panelClose.emit(); }
+  close(): void {
+    this.panelClose.emit();
+  }
 
   private deckKey(deck: DeckDetailDto): string {
-    return deck.cards.map(c => `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil}`).sort().join('|')
-      + '|' + (deck.format ?? '');
+    return (
+      deck.cards
+        .map((c) => `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil}`)
+        .sort()
+        .join('|') +
+      '|' +
+      (deck.format ?? '')
+    );
   }
 
   private empty(): ManaAnalysis {
-    return { currentLands: 0, recommendedLands: 0, landDelta: 0, avgCmc: 0, colorSources: [], tips: [], isEmpty: true, landReason: '' };
+    return {
+      currentLands: 0,
+      recommendedLands: 0,
+      landDelta: 0,
+      avgCmc: 0,
+      colorSources: [],
+      tips: [],
+      isEmpty: true,
+      landReason: '',
+    };
   }
 
   private compute(deck: DeckDetailDto): ManaAnalysis {
-    const isLand = (c: CollectionCardDto) => c.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
-    const qty    = (c: CollectionCardDto) => c.quantity + c.quantityFoil;
+    const isLand = (c: CollectionCardDto) =>
+      c.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
+    const qty = (c: CollectionCardDto) => c.quantity + c.quantityFoil;
 
-    const nonLands   = deck.cards.filter(c => !isLand(c));
-    const lands      = deck.cards.filter(c => isLand(c));
+    const nonLands = deck.cards.filter((c) => !isLand(c));
+    const lands = deck.cards.filter((c) => isLand(c));
     const currentLands = lands.reduce((s, c) => s + qty(c), 0);
-    const totalNL      = nonLands.reduce((s, c) => s + qty(c), 0);
+    const totalNL = nonLands.reduce((s, c) => s + qty(c), 0);
 
     if (totalNL === 0 && currentLands === 0) return this.empty();
 
-    const avgCmc = totalNL > 0
-      ? nonLands.reduce((s, c) => s + (c.cardDetails?.manaValue ?? 0) * qty(c), 0) / totalNL
-      : 0;
+    const avgCmc =
+      totalNL > 0
+        ? nonLands.reduce((s, c) => s + (c.cardDetails?.manaValue ?? 0) * qty(c), 0) / totalNL
+        : 0;
 
     const totalPips: Record<ManaColor, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
     for (const card of nonLands) {
@@ -188,39 +223,55 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
     }
 
     const totalColoredPips = this.ALL_COLORS.reduce((s, c) => s + totalPips[c], 0);
-    const activeColors     = this.ALL_COLORS.filter(c => totalPips[c] > 0);
+    const activeColors = this.ALL_COLORS.filter((c) => totalPips[c] > 0);
 
     const isLargeFormat = ['commander', 'brawl', 'oathbreaker'].includes(deck.format ?? '');
     const formatLabel = isLargeFormat ? 'Commander base: 36' : 'Standard base: 24';
     let recommended = isLargeFormat ? 36 : 24;
     let cmcAdjust = 0;
-    if      (avgCmc < 2.0)  { recommended -= 2; cmcAdjust = -2; }
-    else if (avgCmc < 2.5)  { recommended -= 1; cmcAdjust = -1; }
-    else if (avgCmc >= 4.0) { recommended += 2; cmcAdjust = +2; }
-    else if (avgCmc >= 3.5) { recommended += 1; cmcAdjust = +1; }
+    if (avgCmc < 2.0) {
+      recommended -= 2;
+      cmcAdjust = -2;
+    } else if (avgCmc < 2.5) {
+      recommended -= 1;
+      cmcAdjust = -1;
+    } else if (avgCmc >= 4.0) {
+      recommended += 2;
+      cmcAdjust = +2;
+    } else if (avgCmc >= 3.5) {
+      recommended += 1;
+      cmcAdjust = +1;
+    }
 
-    const cmcPart = cmcAdjust !== 0
-      ? `${cmcAdjust > 0 ? '+' : ''}${cmcAdjust} for ${cmcAdjust > 0 ? 'high' : 'low'} curve (${avgCmc.toFixed(1)} avg CMC)`
-      : `no adjustment (${avgCmc.toFixed(1)} avg CMC)`;
+    const cmcPart =
+      cmcAdjust !== 0
+        ? `${cmcAdjust > 0 ? '+' : ''}${cmcAdjust} for ${cmcAdjust > 0 ? 'high' : 'low'} curve (${avgCmc.toFixed(1)} avg CMC)`
+        : `no adjustment (${avgCmc.toFixed(1)} avg CMC)`;
     const landReason = `${formatLabel} lands, ${cmcPart}`;
 
     const coloredSlots = activeColors.length > 0 ? Math.round(recommended * 0.88) : 0;
     const colorSources: ColorSource[] = activeColors
-      .map(color => ({
+      .map((color) => ({
         color,
         pips: Math.round(totalPips[color] * 10) / 10,
-        pct:  totalColoredPips > 0 ? totalPips[color] / totalColoredPips : 0,
-        recommended: Math.round(coloredSlots * (totalColoredPips > 0 ? totalPips[color] / totalColoredPips : 0)),
+        pct: totalColoredPips > 0 ? totalPips[color] / totalColoredPips : 0,
+        recommended: Math.round(
+          coloredSlots * (totalColoredPips > 0 ? totalPips[color] / totalColoredPips : 0),
+        ),
       }))
       .sort((a, b) => b.pips - a.pips);
 
     const tips: string[] = [];
     if (avgCmc >= 4.0)
-      tips.push(`High curve (avg ${avgCmc.toFixed(1)} CMC) — target ${recommended} lands and 10–12 ramp pieces.`);
+      tips.push(
+        `High curve (avg ${avgCmc.toFixed(1)} CMC) — target ${recommended} lands and 10–12 ramp pieces.`,
+      );
     else if (avgCmc >= 3.5)
       tips.push(`Moderate-heavy curve (avg ${avgCmc.toFixed(1)} CMC) — aim for 8–10 ramp pieces.`);
     else if (avgCmc <= 2.0 && totalNL > 0)
-      tips.push(`Aggressive curve (avg ${avgCmc.toFixed(1)} CMC) — fewer lands are viable; lean into 1-drops.`);
+      tips.push(
+        `Aggressive curve (avg ${avgCmc.toFixed(1)} CMC) — fewer lands are viable; lean into 1-drops.`,
+      );
 
     if (activeColors.length >= 4)
       tips.push('4+ color deck — fetch lands and triomes greatly improve consistency.');
@@ -228,11 +279,19 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
       tips.push('3 color deck — shock lands, pain lands, and tri-lands smooth your mana base.');
 
     if (totalNL > 0 && recommended - currentLands > 5)
-      tips.push(`Land count is quite low — adding ${recommended - currentLands} more lands is strongly advised.`);
+      tips.push(
+        `Land count is quite low — adding ${recommended - currentLands} more lands is strongly advised.`,
+      );
 
     return {
-      currentLands, recommendedLands: recommended, landDelta: recommended - currentLands,
-      avgCmc, colorSources, tips, isEmpty: false, landReason,
+      currentLands,
+      recommendedLands: recommended,
+      landDelta: recommended - currentLands,
+      avgCmc,
+      colorSources,
+      tips,
+      isEmpty: false,
+      landReason,
     };
   }
 }

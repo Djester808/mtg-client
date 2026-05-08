@@ -3,7 +3,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
-import { DeckDetailComponent, ViewMode, FreeColumn } from './deck-detail.component';
+import { DeckDetailComponent, FreeColumn } from './deck-detail.component';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { GameApiService } from '../../services/game-api.service';
@@ -13,33 +13,71 @@ import { makeCard } from '../../testing/test-factories';
 
 function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
-    id: 'card-1', oracleId: 'oracle-1', scryfallId: 'scry-1',
-    quantity: 1, quantityFoil: 0, notes: null, addedAt: '', cardDetails: null,
+    id: 'card-1',
+    oracleId: 'oracle-1',
+    scryfallId: 'scry-1',
+    quantity: 1,
+    quantityFoil: 0,
+    notes: null,
+    addedAt: '',
+    cardDetails: null,
     ...overrides,
   };
 }
 
 function makeDeck(cards: CollectionCardDto[] = [], format: string | null = null): DeckDetailDto {
-  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], notes: null, isPublished: false, cards };
+  return {
+    id: 'deck-1',
+    name: 'Test Deck',
+    coverUri: null,
+    format,
+    commanderOracleId: null,
+    createdAt: '',
+    updatedAt: '',
+    tags: [],
+    notes: null,
+    isPublished: false,
+    cards,
+  };
 }
 
 const INITIAL_STATE = {
-  deck:  { decks: [], activeDeck: makeDeck(), loading: false, error: null },
-  forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
+  deck: { decks: [], activeDeck: makeDeck(), loading: false, error: null },
+  forum: {
+    posts: [],
+    activePost: null,
+    loading: false,
+    postLoading: false,
+    publishLoading: false,
+    error: null,
+  },
 };
 
 async function setup() {
   const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
   collectionApi.getPrintings.and.returnValue(of([]));
 
-  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards', 'getSets']);
+  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
+    'searchCards',
+    'getSets',
+  ]);
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
 
   const deckApi = jasmine.createSpyObj('DeckApiService', [
-    'getDecks', 'getDeck', 'createDeck', 'updateDeck', 'deleteDeck',
-    'addCard', 'updateCard', 'removeCard', 'importDeck',
-    'analyzeSynergy', 'getSuggestions', 'getPrintings', 'getCardByScryfallId',
+    'getDecks',
+    'getDeck',
+    'createDeck',
+    'updateDeck',
+    'deleteDeck',
+    'addCard',
+    'updateCard',
+    'removeCard',
+    'importDeck',
+    'analyzeSynergy',
+    'getSuggestions',
+    'getPrintings',
+    'getCardByScryfallId',
   ]);
   deckApi.getPrintings.and.returnValue(of([]));
 
@@ -49,10 +87,10 @@ async function setup() {
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
       { provide: CollectionApiService, useValue: collectionApi },
-      { provide: GameApiService,       useValue: gameApi },
-      { provide: DeckApiService,        useValue: deckApi },
-      { provide: Router,               useValue: { navigate: jasmine.createSpy() } },
-      { provide: ActivatedRoute,       useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
+      { provide: GameApiService, useValue: gameApi },
+      { provide: DeckApiService, useValue: deckApi },
+      { provide: Router, useValue: { navigate: jasmine.createSpy() } },
+      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
     ],
   }).compileComponents();
 
@@ -87,8 +125,8 @@ describe('DeckDetailComponent — filteredCards', () => {
     component.filterQuery = 'lightning';
     const results = component.filteredCards(makeDeck(CARDS));
     expect(results).toHaveSize(2);
-    expect(results.map(c => c.id)).toContain('c1');
-    expect(results.map(c => c.id)).toContain('c3');
+    expect(results.map((c) => c.id)).toContain('c1');
+    expect(results.map((c) => c.id)).toContain('c3');
   });
 
   it('returns empty when no cards match', async () => {
@@ -106,8 +144,17 @@ describe('DeckDetailComponent — getDeckStats', () => {
   it('total counts quantity + quantityFoil across all cards', async () => {
     const { component } = await setup();
     const cards = [
-      makeDeckCard({ quantity: 2, quantityFoil: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature] }) }),
-      makeDeckCard({ id: 'c2', quantity: 3, quantityFoil: 0, cardDetails: makeCard({ cardTypes: [CardType.Instant] }) }),
+      makeDeckCard({
+        quantity: 2,
+        quantityFoil: 1,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature] }),
+      }),
+      makeDeckCard({
+        id: 'c2',
+        quantity: 3,
+        quantityFoil: 0,
+        cardDetails: makeCard({ cardTypes: [CardType.Instant] }),
+      }),
     ];
     const stats = component.getDeckStats(makeDeck(cards));
     expect(stats.total).toBe(6);
@@ -117,7 +164,11 @@ describe('DeckDetailComponent — getDeckStats', () => {
     const { component } = await setup();
     const cards = [
       makeDeckCard({ quantity: 4, cardDetails: makeCard({ cardTypes: [CardType.Creature] }) }),
-      makeDeckCard({ id: 'c2', quantity: 2, cardDetails: makeCard({ cardTypes: [CardType.Land] }) }),
+      makeDeckCard({
+        id: 'c2',
+        quantity: 2,
+        cardDetails: makeCard({ cardTypes: [CardType.Land] }),
+      }),
     ];
     const stats = component.getDeckStats(makeDeck(cards));
     expect(stats.creatures).toBe(4);
@@ -127,8 +178,15 @@ describe('DeckDetailComponent — getDeckStats', () => {
   it('avgCmc excludes lands', async () => {
     const { component } = await setup();
     const cards = [
-      makeDeckCard({ quantity: 4, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2 }) }),
-      makeDeckCard({ id: 'land', quantity: 20, cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0 }) }),
+      makeDeckCard({
+        quantity: 4,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2 }),
+      }),
+      makeDeckCard({
+        id: 'land',
+        quantity: 20,
+        cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0 }),
+      }),
     ];
     const stats = component.getDeckStats(makeDeck(cards));
     expect(stats.avgCmc).toBe(2);
@@ -137,7 +195,10 @@ describe('DeckDetailComponent — getDeckStats', () => {
   it('avgCmc is 0 for a deck with only lands', async () => {
     const { component } = await setup();
     const cards = [
-      makeDeckCard({ quantity: 20, cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0 }) }),
+      makeDeckCard({
+        quantity: 20,
+        cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0 }),
+      }),
     ];
     const stats = component.getDeckStats(makeDeck(cards));
     expect(stats.avgCmc).toBe(0);
@@ -153,8 +214,16 @@ describe('DeckDetailComponent — getGroups (CMC sort)', () => {
     const { component } = await setup();
     component.sortMode = 'cmc';
     const cards = [
-      makeDeckCard({ id: 'c1', quantity: 2, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'A' }) }),
-      makeDeckCard({ id: 'land', quantity: 4, cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0, name: 'Forest' }) }),
+      makeDeckCard({
+        id: 'c1',
+        quantity: 2,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'A' }),
+      }),
+      makeDeckCard({
+        id: 'land',
+        quantity: 4,
+        cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0, name: 'Forest' }),
+      }),
     ];
     const groups = component.getGroups(makeDeck(cards));
     const last = groups[groups.length - 1];
@@ -166,18 +235,28 @@ describe('DeckDetailComponent — getGroups (CMC sort)', () => {
     const { component } = await setup();
     component.sortMode = 'cmc';
     const cards = [
-      makeDeckCard({ id: 'big', quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 7, name: 'Titan' }) }),
+      makeDeckCard({
+        id: 'big',
+        quantity: 1,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 7, name: 'Titan' }),
+      }),
     ];
     const groups = component.getGroups(makeDeck(cards));
-    expect(groups.some(g => g.key === 'cmc-6+')).toBeTrue();
+    expect(groups.some((g) => g.key === 'cmc-6+')).toBeTrue();
   });
 
   it('name sort returns a single All Cards group', async () => {
     const { component } = await setup();
     component.sortMode = 'name';
     const cards = [
-      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Zebra', cardTypes: [CardType.Creature] }) }),
-      makeDeckCard({ id: 'c2', cardDetails: makeCard({ name: 'Ant', cardTypes: [CardType.Instant] }) }),
+      makeDeckCard({
+        id: 'c1',
+        cardDetails: makeCard({ name: 'Zebra', cardTypes: [CardType.Creature] }),
+      }),
+      makeDeckCard({
+        id: 'c2',
+        cardDetails: makeCard({ name: 'Ant', cardTypes: [CardType.Instant] }),
+      }),
     ];
     const groups = component.getGroups(makeDeck(cards));
     expect(groups).toHaveSize(1);
@@ -189,11 +268,17 @@ describe('DeckDetailComponent — getGroups (CMC sort)', () => {
     const { component } = await setup();
     component.sortMode = 'type';
     const cards = [
-      makeDeckCard({ id: 'inst', cardDetails: makeCard({ cardTypes: [CardType.Instant], name: 'Bolt' }) }),
-      makeDeckCard({ id: 'creat', cardDetails: makeCard({ cardTypes: [CardType.Creature], name: 'Bear' }) }),
+      makeDeckCard({
+        id: 'inst',
+        cardDetails: makeCard({ cardTypes: [CardType.Instant], name: 'Bolt' }),
+      }),
+      makeDeckCard({
+        id: 'creat',
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], name: 'Bear' }),
+      }),
     ];
     const groups = component.getGroups(makeDeck(cards));
-    const keys = groups.map(g => g.key);
+    const keys = groups.map((g) => g.key);
     expect(keys.indexOf('type-Creature')).toBeLessThan(keys.indexOf('type-Instant'));
   });
 });
@@ -241,7 +326,7 @@ describe('DeckDetailComponent — totalCount', () => {
   it('counts to 100 for a full commander deck', async () => {
     const { component } = await setup();
     const cards = Array.from({ length: 100 }, (_, i) =>
-      makeDeckCard({ id: `c${i}`, oracleId: `oracle-${i}`, quantity: 1, quantityFoil: 0 })
+      makeDeckCard({ id: `c${i}`, oracleId: `oracle-${i}`, quantity: 1, quantityFoil: 0 }),
     );
     expect(component.totalCount(makeDeck(cards))).toBe(100);
   });
@@ -306,8 +391,14 @@ describe('DeckDetailComponent — singletonViolations', () => {
     const { component } = await setup();
     const cards = [
       makeDeckCard({
-        id: 'f1', oracleId: 'forest', quantity: 10,
-        cardDetails: makeCard({ supertypes: ['Basic'], cardTypes: [CardType.Land], name: 'Forest' }),
+        id: 'f1',
+        oracleId: 'forest',
+        quantity: 10,
+        cardDetails: makeCard({
+          supertypes: ['Basic'],
+          cardTypes: [CardType.Land],
+          name: 'Forest',
+        }),
       }),
     ];
     expect(component.singletonViolations(makeDeck(cards))).toHaveSize(0);
@@ -328,11 +419,13 @@ describe('DeckDetailComponent — colorIdentityViolations', () => {
   it('returns empty when all cards match commander color identity', async () => {
     const { component } = await setup();
     const commander = makeDeckCard({
-      id: 'cmdr', oracleId: 'cmdr-oracle',
+      id: 'cmdr',
+      oracleId: 'cmdr-oracle',
       cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
     });
     const spell = makeDeckCard({
-      id: 'spell', oracleId: 'spell-oracle',
+      id: 'spell',
+      oracleId: 'spell-oracle',
       cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
     });
     const deck = { ...makeDeck([commander, spell]), commanderOracleId: 'cmdr-oracle' };
@@ -342,15 +435,17 @@ describe('DeckDetailComponent — colorIdentityViolations', () => {
   it('flags cards outside the commander color identity', async () => {
     const { component } = await setup();
     const commander = makeDeckCard({
-      id: 'cmdr', oracleId: 'cmdr-oracle',
+      id: 'cmdr',
+      oracleId: 'cmdr-oracle',
       cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
     });
     const offColor = makeDeckCard({
-      id: 'blue-spell', oracleId: 'blue-oracle',
+      id: 'blue-spell',
+      oracleId: 'blue-oracle',
       cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
     });
     const deck = { ...makeDeck([commander, offColor]), commanderOracleId: 'cmdr-oracle' };
-    expect(component.colorIdentityViolations(deck).map(c => c.id)).toContain('blue-spell');
+    expect(component.colorIdentityViolations(deck).map((c) => c.id)).toContain('blue-spell');
   });
 });
 
@@ -368,8 +463,11 @@ describe('DeckDetailComponent — bannedInCommander', () => {
   it('returns banned cards', async () => {
     const { component } = await setup();
     const cards = [
-      makeDeckCard({ id: 'ok',     cardDetails: makeCard({ legalities: { commander: 'legal' } }) }),
-      makeDeckCard({ id: 'banned', cardDetails: makeCard({ legalities: { commander: 'banned' } }) }),
+      makeDeckCard({ id: 'ok', cardDetails: makeCard({ legalities: { commander: 'legal' } }) }),
+      makeDeckCard({
+        id: 'banned',
+        cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+      }),
     ];
     const result = component.bannedInCommander(makeDeck(cards));
     expect(result).toHaveSize(1);
@@ -398,9 +496,11 @@ describe('DeckDetailComponent — hasFormatViolations', () => {
     const { component } = await setup();
     const cards = Array.from({ length: 100 }, (_, i) =>
       makeDeckCard({
-        id: `c${i}`, oracleId: `oracle-${i}`, quantity: 1,
+        id: `c${i}`,
+        oracleId: `oracle-${i}`,
+        quantity: 1,
         cardDetails: makeCard({ oracleId: `oracle-${i}`, colorIdentity: [ManaColor.Green] }),
-      })
+      }),
     );
     const deck = { ...makeDeck(cards), format: 'commander', commanderOracleId: 'oracle-0' };
     expect(component.hasFormatViolations(deck)).toBeFalse();
@@ -418,9 +518,10 @@ describe('DeckDetailComponent — quantity controls', () => {
     component.increment(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateCard({
-        deckId: 'deck-1', cardId: 'c1',
+        deckId: 'deck-1',
+        cardId: 'c1',
         request: { quantity: 3, quantityFoil: 0 },
-      })
+      }),
     );
   });
 
@@ -429,7 +530,7 @@ describe('DeckDetailComponent — quantity controls', () => {
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
     component.decrement(card);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' }),
     );
   });
 
@@ -439,9 +540,10 @@ describe('DeckDetailComponent — quantity controls', () => {
     component.decrement(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateCard({
-        deckId: 'deck-1', cardId: 'c1',
+        deckId: 'deck-1',
+        cardId: 'c1',
         request: { quantity: 1, quantityFoil: 0 },
-      })
+      }),
     );
   });
 
@@ -451,9 +553,10 @@ describe('DeckDetailComponent — quantity controls', () => {
     component.decrement(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateCard({
-        deckId: 'deck-1', cardId: 'c1',
+        deckId: 'deck-1',
+        cardId: 'c1',
         request: { quantity: 0, quantityFoil: 1 },
-      })
+      }),
     );
   });
 
@@ -467,7 +570,14 @@ describe('DeckDetailComponent — quantity controls', () => {
     const updatedCard = { ...originalCard, quantity: 3 };
     store.setState({
       deck: { decks: [], activeDeck: makeDeck([updatedCard]), loading: false, error: null },
-      forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
     });
 
     expect(component.selectedCard?.quantity).toBe(3);
@@ -476,9 +586,10 @@ describe('DeckDetailComponent — quantity controls', () => {
     component.increment(component.selectedCard!);
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateCard({
-        deckId: 'deck-1', cardId: 'c1',
+        deckId: 'deck-1',
+        cardId: 'c1',
         request: { quantity: 4, quantityFoil: 0 },
-      })
+      }),
     );
   });
 });
@@ -606,7 +717,10 @@ describe('DeckDetailComponent — tile flip', () => {
 // ── Free column target selection ─────────────────────────────────────────────
 
 describe('DeckDetailComponent — free column target', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('selectFreeCol sets selectedFreeColId', async () => {
     const { component } = await setup();
@@ -635,7 +749,7 @@ describe('DeckDetailComponent — free column target', () => {
     ];
     component.selectFreeCol('col-c');
     component.selectFreeCol('col-a');
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-a', 'col-b', 'col-c']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-a', 'col-b', 'col-c']);
     expect(component.selectedFreeColId).toBe('col-a');
   });
 
@@ -699,7 +813,14 @@ describe('DeckDetailComponent — rename', () => {
     component.renameDraft = 'New Deck Name';
     component.commitRename(deck);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Deck Name', coverUri: null, format: null, commanderOracleId: null, tags: [] })
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'New Deck Name',
+        coverUri: null,
+        format: null,
+        commanderOracleId: null,
+        tags: [],
+      }),
     );
     expect(component.isRenaming).toBeFalse();
   });
@@ -724,7 +845,10 @@ describe('DeckDetailComponent — rename', () => {
 // ── View mode ────────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — view mode', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('viewMode defaults to visual', async () => {
     const { component } = await setup();
@@ -747,12 +871,20 @@ describe('DeckDetailComponent — view mode', () => {
   it('setViewMode("free") initializes freeColumns from deck groups', async () => {
     const { component } = await setup();
     const deck = makeDeck([
-      makeDeckCard({ id: 'c1', quantity: 2, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) }),
-      makeDeckCard({ id: 'c2', quantity: 4, cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0, name: 'Forest' }) }),
+      makeDeckCard({
+        id: 'c1',
+        quantity: 2,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }),
+      }),
+      makeDeckCard({
+        id: 'c2',
+        quantity: 4,
+        cardDetails: makeCard({ cardTypes: [CardType.Land], manaValue: 0, name: 'Forest' }),
+      }),
     ]);
     component.setViewMode('free', deck);
     expect(component.freeColumns.length).toBeGreaterThan(0);
-    const allCardIds = component.freeColumns.flatMap(c => c.cardIds);
+    const allCardIds = component.freeColumns.flatMap((c) => c.cardIds);
     expect(allCardIds).toContain('c1');
     expect(allCardIds).toContain('c2');
   });
@@ -772,15 +904,18 @@ describe('DeckDetailComponent — view mode', () => {
     localStorage.setItem('deck-free-deck-1', JSON.stringify(saved));
     const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 3 })]);
     component.setViewMode('free', deck);
-    const allIds = component.freeColumns.flatMap(c => c.cardIds);
-    expect(allIds.filter(id => id === 'c1')).toHaveSize(3);
+    const allIds = component.freeColumns.flatMap((c) => c.cardIds);
+    expect(allIds.filter((id) => id === 'c1')).toHaveSize(3);
   });
 });
 
 // ── Side panel ────────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — side panel', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('toggleSidePanel opens panel', async () => {
     const { component } = await setup();
@@ -817,7 +952,17 @@ describe('DeckDetailComponent — side panel', () => {
 
   it('stats tool-btn has is-active class when showSidePanel is true', async () => {
     const { component, fixture, store } = await setup();
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.showSidePanel = true;
     fixture.detectChanges();
     const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
@@ -827,7 +972,17 @@ describe('DeckDetailComponent — side panel', () => {
 
   it('stats tool-btn does not have is-active class when showSidePanel is false', async () => {
     const { component, fixture, store } = await setup();
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.showSidePanel = false;
     fixture.detectChanges();
     const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
@@ -839,7 +994,10 @@ describe('DeckDetailComponent — side panel', () => {
 // ── Free mode columns ─────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — free mode columns', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   function initFree(component: DeckDetailComponent, cards: ReturnType<typeof makeDeckCard>[] = []) {
     const deck = makeDeck(cards);
@@ -917,18 +1075,19 @@ describe('DeckDetailComponent — free mode columns', () => {
 // ── getCardsForColumn ─────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — getCardsForColumn', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('returns cards in column order', async () => {
     const { component } = await setup();
     const c1 = makeDeckCard({ id: 'c1' });
     const c2 = makeDeckCard({ id: 'c2' });
     const deck = makeDeck([c1, c2]);
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c2', 'c1'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c2', 'c1'] }];
     const result = component.getCardsForColumn(component.freeColumns[0], deck);
-    expect(result.map(c => c.id)).toEqual(['c2', 'c1']);
+    expect(result.map((c) => c.id)).toEqual(['c2', 'c1']);
   });
 
   it('includes unassigned cards in the first column', async () => {
@@ -941,7 +1100,7 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
     const result = component.getCardsForColumn(component.freeColumns[0], deck);
-    expect(result.map(c => c.id)).toContain('c2');
+    expect(result.map((c) => c.id)).toContain('c2');
   });
 
   it('does not include unassigned cards in non-first columns', async () => {
@@ -953,16 +1112,14 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
     const result = component.getCardsForColumn(component.freeColumns[1], deck);
-    expect(result.map(c => c.id)).not.toContain('c2');
+    expect(result.map((c) => c.id)).not.toContain('c2');
   });
 
   it('filters out card ids not present in deck', async () => {
     const { component } = await setup();
     const c1 = makeDeckCard({ id: 'c1' });
     const deck = makeDeck([c1]);
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1', 'removed-card'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'removed-card'] }];
     const result = component.getCardsForColumn(component.freeColumns[0], deck);
     expect(result).toHaveSize(1);
     expect(result[0].id).toBe('c1');
@@ -972,9 +1129,7 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
     const { component } = await setup();
     const c1 = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
     const deck = makeDeck([c1]);
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] }];
     const result = component.getCardsForColumn(component.freeColumns[0], deck);
     expect(result).toHaveSize(3);
   });
@@ -984,8 +1139,8 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
     const c1 = makeDeckCard({ id: 'c1', quantity: 4, quantityFoil: 0 });
     const deck = makeDeck([c1]);
     component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1'] },   // 1 assigned
-      { id: 'col-2', label: 'B', cardIds: ['c1'] },   // 1 assigned
+      { id: 'col-1', label: 'A', cardIds: ['c1'] }, // 1 assigned
+      { id: 'col-2', label: 'B', cardIds: ['c1'] }, // 1 assigned
     ];
     // 4 total - 2 assigned = 2 unassigned shown in first col
     const result = component.getCardsForColumn(component.freeColumns[0], deck);
@@ -996,7 +1151,10 @@ describe('DeckDetailComponent — getCardsForColumn', () => {
 // ── Drag and drop ─────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — drag and drop', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('onDragEnd clears all drag state', async () => {
     const { component } = await setup();
@@ -1033,9 +1191,7 @@ describe('DeckDetailComponent — drag and drop', () => {
 
   it('onColDrop reorders a card within the same column', async () => {
     const { component } = await setup();
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] }];
     component.dragCardId = 'c3';
     component.dragSourceColId = 'col-1';
     component.dragOverColId = 'col-1';
@@ -1081,7 +1237,7 @@ describe('DeckDetailComponent — drag and drop', () => {
     component.onColDrop('col-2', event);
 
     expect(component.flippedCardIds.has('col-1/0')).toBeFalse(); // old key removed
-    expect(component.flippedCardIds.has('col-2/0')).toBeTrue();  // new key set
+    expect(component.flippedCardIds.has('col-2/0')).toBeTrue(); // new key set
   });
 
   it('onColDrop clears stale flip state at the drop target slot', async () => {
@@ -1148,9 +1304,7 @@ describe('DeckDetailComponent — drag and drop', () => {
 
   it('onColDrop same-column reorder keeps unaffected flip keys stable', async () => {
     const { component } = await setup();
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3'] }];
     // c3 at idx 2 is flipped; move c1 from idx 0 to the end (idx 3 → becomes idx 2 after removal)
     component.flippedCardIds = new Set(['col-1/2']);
     component.dragCardId = 'c1';
@@ -1188,7 +1342,10 @@ describe('DeckDetailComponent — drag and drop', () => {
 // ── Column drag and drop ──────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — column drag and drop', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('onColDragEnd clears dragColId and dragOverColInsertIdx', async () => {
     const { component } = await setup();
@@ -1210,7 +1367,7 @@ describe('DeckDetailComponent — column drag and drop', () => {
     component.dragOverColInsertIdx = 3; // insert at end
     const event = { preventDefault: () => {} } as DragEvent;
     component.onGroupsListDrop(event);
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-2', 'col-3', 'col-1']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-2', 'col-3', 'col-1']);
   });
 
   it('onGroupsListDrop moves column backward (later → earlier position)', async () => {
@@ -1224,7 +1381,7 @@ describe('DeckDetailComponent — column drag and drop', () => {
     component.dragOverColInsertIdx = 0; // insert at start
     const event = { preventDefault: () => {} } as DragEvent;
     component.onGroupsListDrop(event);
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-3', 'col-1', 'col-2']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-3', 'col-1', 'col-2']);
   });
 
   it('onGroupsListDrop clears drag state after drop', async () => {
@@ -1250,7 +1407,7 @@ describe('DeckDetailComponent — column drag and drop', () => {
     component.dragColId = null;
     const event = { preventDefault: () => {} } as DragEvent;
     component.onGroupsListDrop(event);
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-1', 'col-2']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-1', 'col-2']);
   });
 
   it('onColDrop is guarded when a column drag is in progress', async () => {
@@ -1259,7 +1416,7 @@ describe('DeckDetailComponent — column drag and drop', () => {
       { id: 'col-1', label: 'A', cardIds: ['c1'] },
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
-    component.dragColId = 'col-1';   // column drag active
+    component.dragColId = 'col-1'; // column drag active
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
     const event = { preventDefault: () => {} } as DragEvent;
@@ -1273,11 +1430,17 @@ describe('DeckDetailComponent — column drag and drop', () => {
 // ── Rubber-band selection persistence ────────────────────────────────────────
 
 describe('DeckDetailComponent — rubber-band selection persistence', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('clearFreeColSelection is absorbed when dragSelectJustEnded is true', async () => {
     const { component } = await setup();
-    component.selectedCardSlots = new Map([['col-a/0', 'c1'], ['col-a/1', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-a/0', 'c1'],
+      ['col-a/1', 'c2'],
+    ]);
     (component as any).dragSelectJustEnded = true;
     component.clearFreeColSelection();
     expect(component.selectedCardSlots.size).toBe(2);
@@ -1345,7 +1508,10 @@ describe('DeckDetailComponent — rubber-band selection persistence', () => {
 // ── Multi-card drag and drop ──────────────────────────────────────────────────
 
 describe('DeckDetailComponent — multi-card drag and drop', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   function makeDragEvent(): DragEvent {
     return {
@@ -1406,9 +1572,7 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
 
   it('onColDrop adjusts drop index when source cards preceded the drop point in target column', async () => {
     const { component } = await setup();
-    component.freeColumns = [
-      { id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3', 'c4', 'c5'] },
-    ];
+    component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c2', 'c3', 'c4', 'c5'] }];
     component.isDraggingMultiCards = true;
     // Select first two cards, drop after position 4 (after c4 in the original)
     (component as any).multiDragCards = [
@@ -1448,7 +1612,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
     // c1 and c2 selected; c2 is flipped
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/0', 'c1'],
+      ['col-1/1', 'c2'],
+    ]);
     component.flippedCardIds = new Set(['col-1/1']);
     component.isDraggingMultiCards = true;
     (component as any).multiDragCards = [
@@ -1474,7 +1641,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { id: 'col-2', label: 'B', cardIds: [] },
     ];
     // Drag c1 (idx 0) and c2 (idx 1); c3 (idx 2) stays and is flipped
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/0', 'c1'],
+      ['col-1/1', 'c2'],
+    ]);
     component.flippedCardIds = new Set(['col-1/2']);
     component.isDraggingMultiCards = true;
     (component as any).multiDragCards = [
@@ -1497,7 +1667,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { id: 'col-2', label: 'B', cardIds: ['c3', 'c4'] },
     ];
     // Drag c1 and c2 from col-1 to col-2/0; c3 at col-2/0 is flipped
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/0', 'c1'],
+      ['col-1/1', 'c2'],
+    ]);
     component.flippedCardIds = new Set(['col-2/0']);
     component.isDraggingMultiCards = true;
     (component as any).multiDragCards = [
@@ -1526,7 +1699,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { colId: 'col-1', cardId: 'c1', renderedIdx: 1 },
       { colId: 'col-1', cardId: 'c2', renderedIdx: 2 },
     ];
-    component.selectedCardSlots = new Map([['col-1/1', 'c1'], ['col-1/2', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/1', 'c1'],
+      ['col-1/2', 'c2'],
+    ]);
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
     component.onColDrop('col-2', makeDragEvent());
@@ -1549,7 +1725,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
       { colId: 'col-1', cardId: 'c1', renderedIdx: 0 }, // explicit
       { colId: 'col-1', cardId: 'c1', renderedIdx: 1 }, // unassigned
     ];
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c1']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/0', 'c1'],
+      ['col-1/1', 'c1'],
+    ]);
     component.dragCardId = 'c1';
     component.dragOverIndex = 0;
     component.onColDrop('col-2', makeDragEvent());
@@ -1564,7 +1743,10 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
 // ── Multi-column drag and drop ────────────────────────────────────────────────
 
 describe('DeckDetailComponent — multi-column drag and drop', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   function makeColDragEvent(): DragEvent {
     return {
@@ -1640,7 +1822,7 @@ describe('DeckDetailComponent — multi-column drag and drop', () => {
     component.multiDragColIds = ['col-1', 'col-2'];
     component.dragOverColInsertIdx = 4; // insert at end
     component.onGroupsListDrop(makeColDragEvent());
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-3', 'col-4', 'col-1', 'col-2']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-3', 'col-4', 'col-1', 'col-2']);
   });
 
   it('onGroupsListDrop moves a group of columns to an earlier position', async () => {
@@ -1656,7 +1838,7 @@ describe('DeckDetailComponent — multi-column drag and drop', () => {
     component.multiDragColIds = ['col-3', 'col-4'];
     component.dragOverColInsertIdx = 0; // insert at start
     component.onGroupsListDrop(makeColDragEvent());
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-3', 'col-4', 'col-1', 'col-2']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-3', 'col-4', 'col-1', 'col-2']);
   });
 
   it('onGroupsListDrop moves non-contiguous columns preserving their relative order', async () => {
@@ -1673,7 +1855,13 @@ describe('DeckDetailComponent — multi-column drag and drop', () => {
     component.multiDragColIds = ['col-1', 'col-3']; // non-contiguous
     component.dragOverColInsertIdx = 5; // insert at end
     component.onGroupsListDrop(makeColDragEvent());
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-2', 'col-4', 'col-5', 'col-1', 'col-3']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual([
+      'col-2',
+      'col-4',
+      'col-5',
+      'col-1',
+      'col-3',
+    ]);
   });
 
   it('onGroupsListDrop clears multi-col drag state after drop', async () => {
@@ -1705,7 +1893,7 @@ describe('DeckDetailComponent — multi-column drag and drop', () => {
     component.multiDragColIds = ['col-1']; // only one
     component.dragOverColInsertIdx = 3;
     component.onGroupsListDrop(makeColDragEvent());
-    expect(component.freeColumns.map(c => c.id)).toEqual(['col-2', 'col-3', 'col-1']);
+    expect(component.freeColumns.map((c) => c.id)).toEqual(['col-2', 'col-3', 'col-1']);
   });
 });
 
@@ -1733,7 +1921,14 @@ describe('DeckDetailComponent — detail cover picker', () => {
     component.showDetailCoverPicker = true;
     component.onDetailCoverSelected(deck, 'new-art.jpg');
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: 'new-art.jpg', format: null, commanderOracleId: null, tags: [] })
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: 'new-art.jpg',
+        format: null,
+        commanderOracleId: null,
+        tags: [],
+      }),
     );
     expect(component.showDetailCoverPicker).toBeFalse();
   });
@@ -1743,7 +1938,14 @@ describe('DeckDetailComponent — detail cover picker', () => {
     const deck = { ...makeDeck(), coverUri: 'old.jpg' };
     component.onDetailCoverSelected(deck, null);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'Test Deck', coverUri: null, format: null, commanderOracleId: null, tags: [] })
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: null,
+        format: null,
+        commanderOracleId: null,
+        tags: [],
+      }),
     );
   });
 });
@@ -1760,7 +1962,11 @@ describe('DeckDetailComponent — freeIncrement / freeDecrement', () => {
     component.freeIncrement(card, 'col-1');
     expect(component.freeColumns[0].cardIds).toEqual(['c1', 'c1']);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
   });
 
@@ -1780,7 +1986,11 @@ describe('DeckDetailComponent — freeIncrement / freeDecrement', () => {
     component.freeDecrement(card, 'col-1');
     expect(component.freeColumns[0].cardIds).toEqual(['c1']);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 0 } })
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'c1',
+        request: { quantity: 1, quantityFoil: 0 },
+      }),
     );
   });
 
@@ -1795,7 +2005,7 @@ describe('DeckDetailComponent — freeIncrement / freeDecrement', () => {
     expect(component.freeColumns[0].cardIds).toEqual([]);
     expect(component.freeColumns[1].cardIds).toEqual(['c2']);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' }),
     );
   });
 
@@ -1870,14 +2080,24 @@ describe('DeckDetailComponent — Delete key', () => {
   it('dispatches removeCard and clears selection when deleting last copy', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
     component.onDocumentKeyDown(press('Delete'));
     await Promise.resolve();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' }),
     );
     expect(component.selectedCardSlots.size).toBe(0);
     expect(component.freeColumns[0].cardIds).toEqual([]);
@@ -1886,14 +2106,28 @@ describe('DeckDetailComponent — Delete key', () => {
   it('dispatches updateCard when deleting one of multiple copies', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
     component.onDocumentKeyDown(press('Delete'));
     await Promise.resolve();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
     expect(component.freeColumns[0].cardIds).toEqual(['c1', 'c1']);
   });
@@ -1902,17 +2136,34 @@ describe('DeckDetailComponent — Delete key', () => {
     const { component, store } = await setup();
     const c1 = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
     const c2 = makeDeckCard({ id: 'c2', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([c1, c2]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([c1, c2]), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c2'] }];
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/2', 'c2']]);
+    component.selectedCardSlots = new Map([
+      ['col-1/0', 'c1'],
+      ['col-1/2', 'c2'],
+    ]);
     component.onDocumentKeyDown(press('Delete'));
     await Promise.resolve();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateCard({ deckId: 'deck-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 0 } })
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'c1',
+        request: { quantity: 1, quantityFoil: 0 },
+      }),
     );
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c2' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c2' }),
     );
     expect(component.freeColumns[0].cardIds).toEqual(['c1']);
   });
@@ -1920,14 +2171,24 @@ describe('DeckDetailComponent — Delete key', () => {
   it('Backspace key works the same as Delete', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
+    store.setState({
+      deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
+    });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
     component.onDocumentKeyDown(press('Backspace'));
     await Promise.resolve();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'c1' }),
     );
   });
 });
@@ -1943,9 +2204,13 @@ describe('DeckDetailComponent — Commander format', () => {
     component.setFormat('commander', makeDeck());
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateDeckMeta({
-        id: 'deck-1', name: 'Test Deck', coverUri: null,
-        format: 'commander', commanderOracleId: null, tags: [],
-      })
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: null,
+        format: 'commander',
+        commanderOracleId: null,
+        tags: [],
+      }),
     );
     expect(component.showFormatMenu).toBeFalse();
   });
@@ -1956,9 +2221,13 @@ describe('DeckDetailComponent — Commander format', () => {
     component.setFormat(null, commanderDeck);
     expect(store.dispatch).toHaveBeenCalledWith(
       DeckActions.updateDeckMeta({
-        id: 'deck-1', name: 'Test Deck', coverUri: null,
-        format: null, commanderOracleId: null, tags: [],
-      })
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: null,
+        format: null,
+        commanderOracleId: null,
+        tags: [],
+      }),
     );
   });
 
@@ -1981,12 +2250,19 @@ describe('DeckDetailComponent — Commander format', () => {
         loading: false,
         error: null,
       },
-      forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
+      forum: {
+        posts: [],
+        activePost: null,
+        loading: false,
+        postLoading: false,
+        publishLoading: false,
+        error: null,
+      },
     });
     fixture.detectChanges();
 
     // Wait 2 seconds — verifies format has not reverted
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     fixture.detectChanges();
 
     // Open the commander tab in the side panel
@@ -1996,20 +2272,25 @@ describe('DeckDetailComponent — Commander format', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.querySelector('.cp-panel'))
-      .withContext('commander panel should be visible').toBeTruthy();
+      .withContext('commander panel should be visible')
+      .toBeTruthy();
 
     expect(el.querySelector('.cp-portrait-wrap'))
-      .withContext('commander portrait slot should be visible').toBeTruthy();
+      .withContext('commander portrait slot should be visible')
+      .toBeTruthy();
 
     expect(el.querySelector('.cp-no-cmdr'))
-      .withContext('"Select Commander" prompt should appear').toBeTruthy();
+      .withContext('"Select Commander" prompt should appear')
+      .toBeTruthy();
 
     expect(el.querySelectorAll('.cp-check').length)
-      .withContext('5 validation pills: size, commander, singleton, color ID, banned').toBe(5);
+      .withContext('5 validation pills: size, commander, singleton, color ID, banned')
+      .toBe(5);
 
     const formatBtn = el.querySelector<HTMLElement>('.format-btn');
     expect(formatBtn?.textContent?.trim())
-      .withContext('format button should show CMDR label').toContain('CMDR');
+      .withContext('format button should show CMDR label')
+      .toContain('CMDR');
   }, 10000); // extend Jasmine timeout to allow the 2-second wait
 });
 
@@ -2020,27 +2301,41 @@ describe('DeckDetailComponent — eligibleCommanders', () => {
 
   it('includes legendary creatures', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: ['Legendary'] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: ['Legendary'] }),
+    });
     const eligible = component.eligibleCommanders(makeDeck([card]));
-    expect(eligible.map(c => c.id)).toContain('c1');
+    expect(eligible.map((c) => c.id)).toContain('c1');
   });
 
   it('includes legendary planeswalkers', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ cardTypes: [CardType.Planeswalker], supertypes: ['Legendary'] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ cardTypes: [CardType.Planeswalker], supertypes: ['Legendary'] }),
+    });
     const eligible = component.eligibleCommanders(makeDeck([card]));
-    expect(eligible.map(c => c.id)).toContain('c1');
+    expect(eligible.map((c) => c.id)).toContain('c1');
   });
 
   it('excludes non-legendary creatures', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: [] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: [] }),
+    });
     expect(component.eligibleCommanders(makeDeck([card]))).toHaveSize(0);
   });
 
   it('excludes legendary non-creature/non-planeswalker cards', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ cardTypes: [CardType.Enchantment], supertypes: ['Legendary'] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      cardDetails: makeCard({ cardTypes: [CardType.Enchantment], supertypes: ['Legendary'] }),
+    });
     expect(component.eligibleCommanders(makeDeck([card]))).toHaveSize(0);
   });
 
@@ -2084,30 +2379,60 @@ describe('DeckDetailComponent — singletonViolations', () => {
   it('returns empty when all non-basics appear exactly once', async () => {
     const { component } = await setup();
     const cards = [
-      makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) }),
-      makeDeckCard({ id: 'c2', oracleId: 'o2', quantity: 1, cardDetails: makeCard({ supertypes: [] }) }),
+      makeDeckCard({
+        id: 'c1',
+        oracleId: 'o1',
+        quantity: 1,
+        cardDetails: makeCard({ supertypes: [] }),
+      }),
+      makeDeckCard({
+        id: 'c2',
+        oracleId: 'o2',
+        quantity: 1,
+        cardDetails: makeCard({ supertypes: [] }),
+      }),
     ];
     expect(component.singletonViolations(makeDeck(cards))).toHaveSize(0);
   });
 
   it('flags a card that appears twice', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
     const violations = component.singletonViolations(makeDeck([card]));
-    expect(violations.map(c => c.id)).toContain('c1');
+    expect(violations.map((c) => c.id)).toContain('c1');
   });
 
   it('flags cards sharing an oracleId across different printings', async () => {
     const { component } = await setup();
-    const p1 = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
-    const p2 = makeDeckCard({ id: 'c2', oracleId: 'o1', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    const p1 = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 1,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
+    const p2 = makeDeckCard({
+      id: 'c2',
+      oracleId: 'o1',
+      quantity: 1,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
     const violations = component.singletonViolations(makeDeck([p1, p2]));
     expect(violations.length).toBe(2);
   });
 
   it('does not flag basic lands even when count > 1', async () => {
     const { component } = await setup();
-    const forest = makeDeckCard({ id: 'c1', oracleId: 'o-forest', quantity: 20, cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }) });
+    const forest = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o-forest',
+      quantity: 20,
+      cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }),
+    });
     expect(component.singletonViolations(makeDeck([forest]))).toHaveSize(0);
   });
 });
@@ -2119,40 +2444,71 @@ describe('DeckDetailComponent — colorIdentityViolations', () => {
 
   it('returns empty when no commander is set', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
     expect(component.colorIdentityViolations(makeDeck([card]))).toHaveSize(0);
   });
 
   it('returns empty when all cards are within commander color identity', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }) });
-    const card  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
-    const deck  = { ...makeDeck([cmdr, card]), commanderOracleId: 'o-cmdr' };
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }),
+    });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
+    const deck = { ...makeDeck([cmdr, card]), commanderOracleId: 'o-cmdr' };
     expect(component.colorIdentityViolations(deck)).toHaveSize(0);
   });
 
   it('flags cards with colors outside commander identity', async () => {
     const { component } = await setup();
-    const cmdr  = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const blue  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) });
-    const deck  = { ...makeDeck([cmdr, blue]), commanderOracleId: 'o-cmdr' };
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const blue = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
+    });
+    const deck = { ...makeDeck([cmdr, blue]), commanderOracleId: 'o-cmdr' };
     const violations = component.colorIdentityViolations(deck);
-    expect(violations.map(c => c.id)).toContain('c1');
+    expect(violations.map((c) => c.id)).toContain('c1');
   });
 
   it('does not flag the commander itself', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
+    });
     const deck = { ...makeDeck([cmdr]), commanderOracleId: 'o-cmdr' };
     const violations = component.colorIdentityViolations(deck);
-    expect(violations.map(c => c.id)).not.toContain('cmdr');
+    expect(violations.map((c) => c.id)).not.toContain('cmdr');
   });
 
   it('does not flag colorless cards', async () => {
     const { component } = await setup();
-    const cmdr      = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const colorless = makeDeckCard({ id: 'c1',   oracleId: 'o1',     cardDetails: makeCard({ colorIdentity: [] }) });
-    const deck      = { ...makeDeck([cmdr, colorless]), commanderOracleId: 'o-cmdr' };
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const colorless = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ colorIdentity: [] }),
+    });
+    const deck = { ...makeDeck([cmdr, colorless]), commanderOracleId: 'o-cmdr' };
     expect(component.colorIdentityViolations(deck)).toHaveSize(0);
   });
 });
@@ -2164,31 +2520,63 @@ describe('DeckDetailComponent — cardViolationType & cardViolationClass', () =>
 
   it('returns null for non-commander format', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
     const deck = makeDeck([card]); // format: null
     expect(component.cardViolationType(card, deck)).toBeNull();
   });
 
   it('returns "singleton" when only singleton is violated', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }) });
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }),
+    });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
     const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
     expect(component.cardViolationType(card, deck)).toBe('singleton');
   });
 
   it('returns "color-id" when only color identity is violated', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const card = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 1, cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 1,
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }),
+    });
     const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
     expect(component.cardViolationType(card, deck)).toBe('color-id');
   });
 
   it('returns "both" when both violations apply', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const card = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 2, cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue], supertypes: [] }),
+    });
     const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
     expect(component.cardViolationType(card, deck)).toBe('both');
   });
@@ -2202,8 +2590,17 @@ describe('DeckDetailComponent — cardViolationType & cardViolationClass', () =>
 
   it('cardViolationClass returns "violation-singleton" for singleton violators', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 2, cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }) });
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ supertypes: [], colorIdentity: [ManaColor.White] }),
+    });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
     const deck = { ...makeDeck([cmdr, card]), format: 'commander', commanderOracleId: 'o-cmdr' };
     expect(component.cardViolationClass(card, deck)).toBe('violation-singleton');
   });
@@ -2221,7 +2618,12 @@ describe('DeckDetailComponent — hasCommanderViolations', () => {
 
   it('returns true when deck total is not 100', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', quantity: 1, cardDetails: makeCard({ supertypes: ['Legendary'], cardTypes: [CardType.Creature] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      quantity: 1,
+      cardDetails: makeCard({ supertypes: ['Legendary'], cardTypes: [CardType.Creature] }),
+    });
     const deck = { ...makeDeck([cmdr]), format: 'commander', commanderOracleId: 'o-cmdr' };
     expect(component.hasCommanderViolations(deck)).toBeTrue();
   });
@@ -2234,13 +2636,36 @@ describe('DeckDetailComponent — hasCommanderViolations', () => {
 
   it('returns true when singleton violations exist', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'o-cmdr', quantity: 1, cardDetails: makeCard({ colorIdentity: [], supertypes: ['Legendary'], cardTypes: [CardType.Creature] }) });
-    const dup  = makeDeckCard({ id: 'c1',   oracleId: 'o1',     quantity: 2, cardDetails: makeCard({ colorIdentity: [], supertypes: [] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'o-cmdr',
+      quantity: 1,
+      cardDetails: makeCard({
+        colorIdentity: [],
+        supertypes: ['Legendary'],
+        cardTypes: [CardType.Creature],
+      }),
+    });
+    const dup = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 2,
+      cardDetails: makeCard({ colorIdentity: [], supertypes: [] }),
+    });
     // Pad to 100 total (1 + 2 + 97 basic lands)
     const lands = Array.from({ length: 97 }, (_, i) =>
-      makeDeckCard({ id: `land-${i}`, oracleId: `o-land-${i}`, quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }) })
+      makeDeckCard({
+        id: `land-${i}`,
+        oracleId: `o-land-${i}`,
+        quantity: 1,
+        cardDetails: makeCard({ cardTypes: [CardType.Land], supertypes: ['Basic'] }),
+      }),
     );
-    const deck = { ...makeDeck([cmdr, dup, ...lands]), format: 'commander', commanderOracleId: 'o-cmdr' };
+    const deck = {
+      ...makeDeck([cmdr, dup, ...lands]),
+      format: 'commander',
+      commanderOracleId: 'o-cmdr',
+    };
     expect(component.hasCommanderViolations(deck)).toBeTrue();
   });
 });
@@ -2258,8 +2683,20 @@ describe('DeckDetailComponent — totalOracleCount', () => {
 
   it('sums across different printings with the same oracleId', async () => {
     const { component } = await setup();
-    const p1 = makeDeckCard({ id: 'c1', oracleId: 'o1', quantity: 1, quantityFoil: 0, cardDetails: makeCard() });
-    const p2 = makeDeckCard({ id: 'c2', oracleId: 'o1', quantity: 2, quantityFoil: 1, cardDetails: makeCard() });
+    const p1 = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      quantity: 1,
+      quantityFoil: 0,
+      cardDetails: makeCard(),
+    });
+    const p2 = makeDeckCard({
+      id: 'c2',
+      oracleId: 'o1',
+      quantity: 2,
+      quantityFoil: 1,
+      cardDetails: makeCard(),
+    });
     expect(component.totalOracleCount(p1, makeDeck([p1, p2]))).toBe(4);
   });
 
@@ -2297,11 +2734,20 @@ describe('DeckDetailComponent — targetCount', () => {
 // ── setSortMode in free mode ──────────────────────────────────────────────────
 
 describe('DeckDetailComponent — setSortMode (free mode sort reset)', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('shows sort-reset modal when changing sort in free mode', async () => {
     const { component } = await setup();
-    const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) })]);
+    const deck = makeDeck([
+      makeDeckCard({
+        id: 'c1',
+        quantity: 1,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }),
+      }),
+    ]);
     component.setViewMode('free', deck);
     component.sortMode = 'cmc';
     component.setSortMode('type', deck);
@@ -2328,7 +2774,13 @@ describe('DeckDetailComponent — setSortMode (free mode sort reset)', () => {
 
   it('confirmSortReset applies the new sort mode and rebuilds columns', async () => {
     const { component } = await setup();
-    const deck = makeDeck([makeDeckCard({ id: 'c1', quantity: 1, cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }) })]);
+    const deck = makeDeck([
+      makeDeckCard({
+        id: 'c1',
+        quantity: 1,
+        cardDetails: makeCard({ cardTypes: [CardType.Creature], manaValue: 2, name: 'Bear' }),
+      }),
+    ]);
     component.setViewMode('free', deck);
     component.sortMode = 'cmc';
     component.setSortMode('type', deck);
@@ -2386,7 +2838,10 @@ describe('DeckDetailComponent — setTextStyle / setStackDensity', () => {
 // ── zoom ─────────────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — zoom', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('zoomIn increments zoomLevel by 0.25', async () => {
     const { component } = await setup();
@@ -2507,7 +2962,10 @@ describe('DeckDetailComponent — resetColWidth', () => {
 // ── unsaved layout modal ──────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — unsaved layout modal', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   function enterDirtyFreeMode(component: DeckDetailComponent) {
     const deck = makeDeck([makeDeckCard({ id: 'c1' })]);
@@ -2570,15 +3028,23 @@ describe('DeckDetailComponent — bannedInCommander', () => {
 
   it('returns cards with legalities commander=banned', async () => {
     const { component } = await setup();
-    const banned = makeDeckCard({ id: 'b1', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
-    const legal  = makeDeckCard({ id: 'b2', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    const banned = makeDeckCard({
+      id: 'b1',
+      cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+    });
+    const legal = makeDeckCard({
+      id: 'b2',
+      cardDetails: makeCard({ legalities: { commander: 'legal' } }),
+    });
     const deck = makeDeck([banned, legal]);
     expect(component.bannedInCommander(deck)).toEqual([banned]);
   });
 
   it('returns empty when no cards are banned', async () => {
     const { component } = await setup();
-    const deck = makeDeck([makeDeckCard({ cardDetails: makeCard({ legalities: { commander: 'legal' } }) })]);
+    const deck = makeDeck([
+      makeDeckCard({ cardDetails: makeCard({ legalities: { commander: 'legal' } }) }),
+    ]);
     expect(component.bannedInCommander(deck)).toHaveSize(0);
   });
 
@@ -2590,8 +3056,14 @@ describe('DeckDetailComponent — bannedInCommander', () => {
 
   it('bannedViolationNames joins banned card names', async () => {
     const { component } = await setup();
-    const b1 = makeDeckCard({ id: 'b1', cardDetails: makeCard({ name: 'Banned Card A', legalities: { commander: 'banned' } }) });
-    const b2 = makeDeckCard({ id: 'b2', cardDetails: makeCard({ name: 'Banned Card B', legalities: { commander: 'banned' } }) });
+    const b1 = makeDeckCard({
+      id: 'b1',
+      cardDetails: makeCard({ name: 'Banned Card A', legalities: { commander: 'banned' } }),
+    });
+    const b2 = makeDeckCard({
+      id: 'b2',
+      cardDetails: makeCard({ name: 'Banned Card B', legalities: { commander: 'banned' } }),
+    });
     const deck = makeDeck([b1, b2]);
     expect(component.bannedViolationNames(deck)).toBe('Banned Card A, Banned Card B');
   });
@@ -2604,7 +3076,7 @@ describe('DeckDetailComponent — gameChangerCards', () => {
 
   it('returns cards where gameChanger is true', async () => {
     const { component } = await setup();
-    const gc  = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true }) });
+    const gc = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true }) });
     const reg = makeDeckCard({ id: 'gc2', cardDetails: makeCard({ gameChanger: false }) });
     const deck = makeDeck([gc, reg]);
     expect(component.gameChangerCards(deck)).toEqual([gc]);
@@ -2618,8 +3090,14 @@ describe('DeckDetailComponent — gameChangerCards', () => {
 
   it('gameChangerNames joins game changer card names', async () => {
     const { component } = await setup();
-    const g1 = makeDeckCard({ id: 'g1', cardDetails: makeCard({ name: 'Sol Ring', gameChanger: true }) });
-    const g2 = makeDeckCard({ id: 'g2', cardDetails: makeCard({ name: 'Rhystic Study', gameChanger: true }) });
+    const g1 = makeDeckCard({
+      id: 'g1',
+      cardDetails: makeCard({ name: 'Sol Ring', gameChanger: true }),
+    });
+    const g2 = makeDeckCard({
+      id: 'g2',
+      cardDetails: makeCard({ name: 'Rhystic Study', gameChanger: true }),
+    });
     const deck = makeDeck([g1, g2]);
     expect(component.gameChangerNames(deck)).toBe('Sol Ring, Rhystic Study');
   });
@@ -2632,21 +3110,32 @@ describe('DeckDetailComponent — cardViolationType banned', () => {
 
   it('returns "banned" for a commander-banned card regardless of singleton status', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'b1', oracleId: 'o-ban', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const card = makeDeckCard({
+      id: 'b1',
+      oracleId: 'o-ban',
+      cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+    });
     const deck = { ...makeDeck([card]), format: 'commander' };
     expect(component.cardViolationType(card, deck)).toBe('banned');
   });
 
   it('returns null for a legal non-singleton non-colorid card', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'c1', oracleId: 'o1', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    const card = makeDeckCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: makeCard({ legalities: { commander: 'legal' } }),
+    });
     const deck = { ...makeDeck([card]), format: 'commander' };
     expect(component.cardViolationType(card, deck)).toBeNull();
   });
 
   it('returns null when deck format is not commander', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'b1', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const card = makeDeckCard({
+      id: 'b1',
+      cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+    });
     const deck = { ...makeDeck([card]), format: 'standard' };
     expect(component.cardViolationType(card, deck)).toBeNull();
   });
@@ -2659,11 +3148,24 @@ describe('DeckDetailComponent — hasCommanderViolations includes banned', () =>
 
   it('returns true when a banned card is present in a 100-card commander deck', async () => {
     const { component } = await setup();
-    const banned = makeDeckCard({ id: 'b1', oracleId: 'o-ban', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
+    const banned = makeDeckCard({
+      id: 'b1',
+      oracleId: 'o-ban',
+      cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+    });
     const filler = Array.from({ length: 99 }, (_, i) =>
-      makeDeckCard({ id: `f${i}`, oracleId: `of${i}`, quantity: 1, cardDetails: makeCard({ supertypes: ['Basic'] }) })
+      makeDeckCard({
+        id: `f${i}`,
+        oracleId: `of${i}`,
+        quantity: 1,
+        cardDetails: makeCard({ supertypes: ['Basic'] }),
+      }),
     );
-    const deck = { ...makeDeck([banned, ...filler]), format: 'commander', commanderOracleId: 'cmdr' };
+    const deck = {
+      ...makeDeck([banned, ...filler]),
+      format: 'commander',
+      commanderOracleId: 'cmdr',
+    };
     expect(component.hasCommanderViolations(deck)).toBeTrue();
   });
 });
@@ -2675,7 +3177,10 @@ describe('DeckDetailComponent — cardViolationClass game changer', () => {
 
   it('adds is-game-changer class for a commander game changer card', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'gc1', cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'legal' } }) });
+    const card = makeDeckCard({
+      id: 'gc1',
+      cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'legal' } }),
+    });
     const deck = { ...makeDeck([card]), format: 'commander' };
     expect(component.cardViolationClass(card, deck)).toContain('is-game-changer');
   });
@@ -2689,7 +3194,10 @@ describe('DeckDetailComponent — cardViolationClass game changer', () => {
 
   it('combines violation-banned and is-game-changer when both apply', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ id: 'bc1', cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'banned' } }) });
+    const card = makeDeckCard({
+      id: 'bc1',
+      cardDetails: makeCard({ gameChanger: true, legalities: { commander: 'banned' } }),
+    });
     const deck = { ...makeDeck([card]), format: 'commander' };
     const cls = component.cardViolationClass(card, deck);
     expect(cls).toContain('violation-banned');
@@ -2711,8 +3219,14 @@ describe('DeckDetailComponent — extraTurnCards', () => {
 
   it('returns cards whose oracle text contains "take an extra turn"', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const norm = makeDeckCard({ id: 'norm', cardDetails: makeCard({ oracleText: 'Draw two cards.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const norm = makeDeckCard({
+      id: 'norm',
+      cardDetails: makeCard({ oracleText: 'Draw two cards.' }),
+    });
     const result = component.extraTurnCards(makeDeck([et, norm]));
     expect(result).toHaveSize(1);
     expect(result[0].id).toBe('et');
@@ -2720,13 +3234,18 @@ describe('DeckDetailComponent — extraTurnCards', () => {
 
   it('is case-insensitive', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'You Take An Extra Turn after this one.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'You Take An Extra Turn after this one.' }),
+    });
     expect(component.extraTurnCards(makeDeck([et]))).toHaveSize(1);
   });
 
   it('returns empty when no extra-turn cards present', async () => {
     const { component } = await setup();
-    const card = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Deal 3 damage to any target.' }) });
+    const card = makeDeckCard({
+      cardDetails: makeCard({ oracleText: 'Deal 3 damage to any target.' }),
+    });
     expect(component.extraTurnCards(makeDeck([card]))).toHaveSize(0);
   });
 
@@ -2744,25 +3263,37 @@ describe('DeckDetailComponent — mldCards', () => {
 
   it('detects "Destroy all lands."', async () => {
     const { component } = await setup();
-    const mld = makeDeckCard({ id: 'arm', cardDetails: makeCard({ oracleText: 'Destroy all lands.' }) });
+    const mld = makeDeckCard({
+      id: 'arm',
+      cardDetails: makeCard({ oracleText: 'Destroy all lands.' }),
+    });
     expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
   });
 
   it('detects "Destroy all nonbasic lands."', async () => {
     const { component } = await setup();
-    const mld = makeDeckCard({ id: 'ruin', cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }) });
+    const mld = makeDeckCard({
+      id: 'ruin',
+      cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }),
+    });
     expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
   });
 
   it('detects "Destroy all permanents."', async () => {
     const { component } = await setup();
-    const mld = makeDeckCard({ id: 'oblit', cardDetails: makeCard({ oracleText: "Can't be countered. Destroy all permanents." }) });
+    const mld = makeDeckCard({
+      id: 'oblit',
+      cardDetails: makeCard({ oracleText: "Can't be countered. Destroy all permanents." }),
+    });
     expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
   });
 
   it('detects "Exile all permanents."', async () => {
     const { component } = await setup();
-    const mld = makeDeckCard({ id: 'decree', cardDetails: makeCard({ oracleText: 'Exile all permanents. Players discard their hands.' }) });
+    const mld = makeDeckCard({
+      id: 'decree',
+      cardDetails: makeCard({ oracleText: 'Exile all permanents. Players discard their hands.' }),
+    });
     expect(component.mldCards(makeDeck([mld]))).toHaveSize(1);
   });
 
@@ -2791,36 +3322,70 @@ describe('DeckDetailComponent — hasChainingExtraTurns', () => {
 
   it('returns false for a single extra-turn card with no recursion', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const norm = makeDeckCard({ id: 'n', cardDetails: makeCard({ oracleText: 'Tap: add one mana.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const norm = makeDeckCard({
+      id: 'n',
+      cardDetails: makeCard({ oracleText: 'Tap: add one mana.' }),
+    });
     expect(component.hasChainingExtraTurns(makeDeck([et, norm]))).toBeFalse();
   });
 
   it('returns true when there are 2 extra-turn cards', async () => {
     const { component } = await setup();
-    const et1 = makeDeckCard({ id: 'et1', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const et2 = makeDeckCard({ id: 'et2', cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }) });
+    const et1 = makeDeckCard({
+      id: 'et1',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const et2 = makeDeckCard({
+      id: 'et2',
+      cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }),
+    });
     expect(component.hasChainingExtraTurns(makeDeck([et1, et2]))).toBeTrue();
   });
 
   it('returns true when 1 extra-turn card is paired with generic graveyard recursion', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const witness = makeDeckCard({ id: 'ew', cardDetails: makeCard({ oracleText: 'Return target card from your graveyard to your hand.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const witness = makeDeckCard({
+      id: 'ew',
+      cardDetails: makeCard({ oracleText: 'Return target card from your graveyard to your hand.' }),
+    });
     expect(component.hasChainingExtraTurns(makeDeck([et, witness]))).toBeTrue();
   });
 
   it('returns true when 1 extra-turn card is paired with instant/sorcery recursion', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const arch = makeDeckCard({ id: 'arch', cardDetails: makeCard({ oracleText: 'Return target instant or sorcery card from your graveyard to your hand.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const arch = makeDeckCard({
+      id: 'arch',
+      cardDetails: makeCard({
+        oracleText: 'Return target instant or sorcery card from your graveyard to your hand.',
+      }),
+    });
     expect(component.hasChainingExtraTurns(makeDeck([et, arch]))).toBeTrue();
   });
 
   it('returns true when 1 extra-turn card is paired with cast-from-graveyard effect', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const snap = makeDeckCard({ id: 'snap', cardDetails: makeCard({ oracleText: 'You may cast target instant or sorcery card from your graveyard.' }) });
+    const et = makeDeckCard({
+      id: 'et',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const snap = makeDeckCard({
+      id: 'snap',
+      cardDetails: makeCard({
+        oracleText: 'You may cast target instant or sorcery card from your graveyard.',
+      }),
+    });
     expect(component.hasChainingExtraTurns(makeDeck([et, snap]))).toBeTrue();
   });
 });
@@ -2838,7 +3403,9 @@ describe('DeckDetailComponent — commanderBracket', () => {
 
   it('returns 2 for a deck with a single extra-turn card and no recursion', async () => {
     const { component } = await setup();
-    const et = makeDeckCard({ cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
+    const et = makeDeckCard({
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
     expect(component.commanderBracket(makeDeck([et]))).toBe(2);
   });
 
@@ -2851,7 +3418,7 @@ describe('DeckDetailComponent — commanderBracket', () => {
   it('returns 3 for a deck with exactly 3 game changers', async () => {
     const { component } = await setup();
     const cards = Array.from({ length: 3 }, (_, i) =>
-      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) })
+      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) }),
     );
     expect(component.commanderBracket(makeDeck(cards))).toBe(3);
   });
@@ -2859,7 +3426,7 @@ describe('DeckDetailComponent — commanderBracket', () => {
   it('returns 4 for a deck with 4 game changers', async () => {
     const { component } = await setup();
     const cards = Array.from({ length: 4 }, (_, i) =>
-      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) })
+      makeDeckCard({ id: `gc${i}`, cardDetails: makeCard({ gameChanger: true }) }),
     );
     expect(component.commanderBracket(makeDeck(cards))).toBe(4);
   });
@@ -2872,15 +3439,24 @@ describe('DeckDetailComponent — commanderBracket', () => {
 
   it('returns 4 when extra turns chain', async () => {
     const { component } = await setup();
-    const et1 = makeDeckCard({ id: 'et1', cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }) });
-    const et2 = makeDeckCard({ id: 'et2', cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }) });
+    const et1 = makeDeckCard({
+      id: 'et1',
+      cardDetails: makeCard({ oracleText: 'Target player takes an extra turn after this one.' }),
+    });
+    const et2 = makeDeckCard({
+      id: 'et2',
+      cardDetails: makeCard({ oracleText: 'You take an extra turn after this one.' }),
+    });
     expect(component.commanderBracket(makeDeck([et1, et2]))).toBe(4);
   });
 
   it('returns 4 when MLD is present alongside game changers', async () => {
     const { component } = await setup();
     const gc = makeDeckCard({ id: 'gc', cardDetails: makeCard({ gameChanger: true }) });
-    const mld = makeDeckCard({ id: 'mld', cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }) });
+    const mld = makeDeckCard({
+      id: 'mld',
+      cardDetails: makeCard({ oracleText: 'Destroy all nonbasic lands.' }),
+    });
     expect(component.commanderBracket(makeDeck([gc, mld]))).toBe(4);
   });
 });
@@ -2910,32 +3486,63 @@ describe('DeckDetailComponent — violation panel', () => {
 
   it('violationPanelCards returns banned cards', async () => {
     const { component } = await setup();
-    const banned = makeDeckCard({ id: 'b', cardDetails: makeCard({ legalities: { commander: 'banned' } }) });
-    const ok = makeDeckCard({ id: 'ok', cardDetails: makeCard({ legalities: { commander: 'legal' } }) });
+    const banned = makeDeckCard({
+      id: 'b',
+      cardDetails: makeCard({ legalities: { commander: 'banned' } }),
+    });
+    const ok = makeDeckCard({
+      id: 'ok',
+      cardDetails: makeCard({ legalities: { commander: 'legal' } }),
+    });
     component.violationPanelType = 'banned';
-    const result = component.violationPanelCards({ ...makeDeck([banned, ok]), format: 'commander' });
+    const result = component.violationPanelCards({
+      ...makeDeck([banned, ok]),
+      format: 'commander',
+    });
     expect(result).toHaveSize(1);
     expect(result[0].id).toBe('b');
   });
 
   it('violationPanelCards returns singleton violators', async () => {
     const { component } = await setup();
-    const d1 = makeDeckCard({ id: 'd1', oracleId: 'dup', quantity: 2, cardDetails: makeCard({ supertypes: [] }) });
-    const d2 = makeDeckCard({ id: 'd2', oracleId: 'dup', quantity: 1, cardDetails: makeCard({ supertypes: [] }) });
+    const d1 = makeDeckCard({
+      id: 'd1',
+      oracleId: 'dup',
+      quantity: 2,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
+    const d2 = makeDeckCard({
+      id: 'd2',
+      oracleId: 'dup',
+      quantity: 1,
+      cardDetails: makeCard({ supertypes: [] }),
+    });
     component.violationPanelType = 'singleton';
     const result = component.violationPanelCards({ ...makeDeck([d1, d2]), format: 'commander' });
-    expect(result.map(c => c.id)).toContain('d1');
-    expect(result.map(c => c.id)).toContain('d2');
+    expect(result.map((c) => c.id)).toContain('d1');
+    expect(result.map((c) => c.id)).toContain('d2');
   });
 
   it('violationPanelCards returns color-id violators', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'cmdr-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const bad = makeDeckCard({
+      id: 'bad',
+      oracleId: 'bad-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
     component.violationPanelType = 'color-id';
-    const result = component.violationPanelCards({ ...makeDeck([cmdr, bad]), format: 'commander', commanderOracleId: 'cmdr-o' });
-    expect(result.map(c => c.id)).toContain('bad');
-    expect(result.map(c => c.id)).not.toContain('cmdr');
+    const result = component.violationPanelCards({
+      ...makeDeck([cmdr, bad]),
+      format: 'commander',
+      commanderOracleId: 'cmdr-o',
+    });
+    expect(result.map((c) => c.id)).toContain('bad');
+    expect(result.map((c) => c.id)).not.toContain('cmdr');
   });
 
   it('violationPanelCards returns empty when type is null', async () => {
@@ -2978,14 +3585,22 @@ describe('DeckDetailComponent — violation panel', () => {
     const card = makeDeckCard({ id: 'bad-card' });
     component.removeViolatingCard(card);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'bad-card' })
+      DeckActions.removeCard({ deckId: 'deck-1', cardId: 'bad-card' }),
     );
   });
 
   it('colorIdViolationColors returns only illegal colors', async () => {
     const { component } = await setup();
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: makeCard({ colorIdentity: [ManaColor.White] }) });
-    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'cmdr-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.White] }),
+    });
+    const bad = makeDeckCard({
+      id: 'bad',
+      oracleId: 'bad-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red, ManaColor.White] }),
+    });
     const deck = { ...makeDeck([cmdr, bad]), commanderOracleId: 'cmdr-o' };
     const result = component.colorIdViolationColors(bad, deck);
     expect(result).toContain(ManaColor.Red);
@@ -2995,7 +3610,11 @@ describe('DeckDetailComponent — violation panel', () => {
   it('colorIdViolationColors returns empty string when commander has no cardDetails', async () => {
     const { component } = await setup();
     const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: null });
-    const bad  = makeDeckCard({ id: 'bad',  oracleId: 'bad-o',  cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const bad = makeDeckCard({
+      id: 'bad',
+      oracleId: 'bad-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
     const deck = { ...makeDeck([cmdr, bad]), commanderOracleId: 'cmdr-o' };
     expect(component.colorIdViolationColors(bad, deck)).toBe('');
   });
@@ -3045,7 +3664,10 @@ describe('DeckDetailComponent — deckCardNames', () => {
 // ── tagHistory ────────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — tagHistory', () => {
-  afterEach(() => { TestBed.resetTestingModule(); localStorage.clear(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
 
   it('tagHistory is empty on init when localStorage has no entry', async () => {
     const { component } = await setup();
@@ -3070,7 +3692,7 @@ describe('DeckDetailComponent — tagHistory', () => {
     const { component } = await setup();
     component.addTag(makeDeck(), 'aggro');
     expect(component.tagHistory[0]).toBe('aggro');
-    expect(component.tagHistory.filter(t => t === 'aggro')).toHaveSize(1);
+    expect(component.tagHistory.filter((t) => t === 'aggro')).toHaveSize(1);
   });
 
   it('tagHistory survives corrupt localStorage gracefully', async () => {

@@ -6,17 +6,16 @@ import { CollectionApiService } from '../../services/collection-api.service';
 
 @Injectable()
 export class CollectionEffects {
-
   loadCollections$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.loadCollections),
       switchMap(() =>
         this.api.getCollections().pipe(
-          map(collections => CollectionActions.loadCollectionsSuccess({ collections })),
-          catchError(err => of(CollectionActions.loadCollectionsFailure({ error: err.message }))),
-        )
+          map((collections) => CollectionActions.loadCollectionsSuccess({ collections })),
+          catchError((err) => of(CollectionActions.loadCollectionsFailure({ error: err.message }))),
+        ),
       ),
-    )
+    ),
   );
 
   loadCollection$ = createEffect(() =>
@@ -24,11 +23,11 @@ export class CollectionEffects {
       ofType(CollectionActions.loadCollection),
       switchMap(({ id }) =>
         this.api.getCollection(id).pipe(
-          map(collection => CollectionActions.loadCollectionSuccess({ collection })),
-          catchError(err => of(CollectionActions.loadCollectionFailure({ error: err.message }))),
-        )
+          map((collection) => CollectionActions.loadCollectionSuccess({ collection })),
+          catchError((err) => of(CollectionActions.loadCollectionFailure({ error: err.message }))),
+        ),
       ),
-    )
+    ),
   );
 
   createCollection$ = createEffect(() =>
@@ -36,11 +35,13 @@ export class CollectionEffects {
       ofType(CollectionActions.createCollection),
       switchMap(({ request }) =>
         this.api.createCollection(request).pipe(
-          map(collection => CollectionActions.createCollectionSuccess({ collection })),
-          catchError(err => of(CollectionActions.createCollectionFailure({ error: err.message }))),
-        )
+          map((collection) => CollectionActions.createCollectionSuccess({ collection })),
+          catchError((err) =>
+            of(CollectionActions.createCollectionFailure({ error: err.message })),
+          ),
+        ),
       ),
-    )
+    ),
   );
 
   updateCollectionMeta$ = createEffect(() =>
@@ -48,11 +49,13 @@ export class CollectionEffects {
       ofType(CollectionActions.updateCollectionMeta),
       mergeMap(({ id, name, description, coverUri }) =>
         this.api.updateCollection(id, { name, description, coverUri }).pipe(
-          map(collection => CollectionActions.updateCollectionMetaSuccess({ collection })),
-          catchError(err => of(CollectionActions.updateCollectionMetaFailure({ error: err.message }))),
-        )
+          map((collection) => CollectionActions.updateCollectionMetaSuccess({ collection })),
+          catchError((err) =>
+            of(CollectionActions.updateCollectionMetaFailure({ error: err.message })),
+          ),
+        ),
       ),
-    )
+    ),
   );
 
   deleteCollection$ = createEffect(() =>
@@ -62,9 +65,9 @@ export class CollectionEffects {
         this.api.deleteCollection(id).pipe(
           map(() => CollectionActions.deleteCollectionSuccess({ id })),
           catchError(() => of(CollectionActions.deleteCollectionSuccess({ id }))),
-        )
+        ),
       ),
-    )
+    ),
   );
 
   addCard$ = createEffect(() =>
@@ -72,11 +75,11 @@ export class CollectionEffects {
       ofType(CollectionActions.addCard),
       mergeMap(({ collectionId, request }) =>
         this.api.addCard(collectionId, request).pipe(
-          map(card => CollectionActions.addCardSuccess({ card })),
-          catchError(err => of(CollectionActions.addCardFailure({ error: err.message }))),
-        )
+          map((card) => CollectionActions.addCardSuccess({ card })),
+          catchError((err) => of(CollectionActions.addCardFailure({ error: err.message }))),
+        ),
       ),
-    )
+    ),
   );
 
   updateCard$ = createEffect(() =>
@@ -84,11 +87,11 @@ export class CollectionEffects {
       ofType(CollectionActions.updateCard),
       mergeMap(({ collectionId, cardId, request }) =>
         this.api.updateCard(collectionId, cardId, request).pipe(
-          map(card => CollectionActions.updateCardSuccess({ card })),
-          catchError(err => of(CollectionActions.updateCardFailure({ error: err.message }))),
-        )
+          map((card) => CollectionActions.updateCardSuccess({ card })),
+          catchError((err) => of(CollectionActions.updateCardFailure({ error: err.message }))),
+        ),
       ),
-    )
+    ),
   );
 
   removeCard$ = createEffect(() =>
@@ -97,10 +100,10 @@ export class CollectionEffects {
       mergeMap(({ collectionId, cardId }) =>
         this.api.removeCard(collectionId, cardId).pipe(
           map(() => CollectionActions.removeCardSuccess({ cardId })),
-          catchError(err => of(CollectionActions.removeCardFailure({ error: err.message }))),
-        )
+          catchError((err) => of(CollectionActions.removeCardFailure({ error: err.message }))),
+        ),
       ),
-    )
+    ),
   );
 
   constructor(

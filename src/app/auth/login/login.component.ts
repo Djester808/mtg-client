@@ -21,9 +21,12 @@ export class LoginComponent {
   });
 
   loading$ = this.store.select(selectAuthLoading);
-  error$   = this.store.select(selectAuthError);
+  error$ = this.store.select(selectAuthError);
 
-  constructor(private fb: FormBuilder, private store: Store) {}
+  constructor(
+    private fb: FormBuilder,
+    private store: Store,
+  ) {}
 
   submit(): void {
     if (this.form.invalid) return;

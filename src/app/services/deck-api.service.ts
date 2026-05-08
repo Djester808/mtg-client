@@ -89,37 +89,37 @@ export interface SuggestedCardDto {
 }
 
 export interface DeckSuggestionsDto {
-  latestSet:       SuggestedCardDto[];
-  topSynergy:      SuggestedCardDto[];
-  gameChangers:    SuggestedCardDto[];
+  latestSet: SuggestedCardDto[];
+  topSynergy: SuggestedCardDto[];
+  gameChangers: SuggestedCardDto[];
   notableMentions: SuggestedCardDto[];
 }
 
 export interface DeckSuggestionsRequest {
   commanderOracleId: string;
-  commanderName:     string;
-  commanderText:     string;
-  deckCardNames:     string[];
-  deckTags?:         string[];
-  suggestionTags?:   string[];
+  commanderName: string;
+  commanderText: string;
+  deckCardNames: string[];
+  deckTags?: string[];
+  suggestionTags?: string[];
 }
 
 export interface ManaFineTuneRequest {
-  format:           string;
-  deckCardNames:    string[];
-  currentLands:     number;
+  format: string;
+  deckCardNames: string[];
+  currentLands: number;
   recommendedLands: number;
-  avgCmc:           number;
-  activeColors:     string[];
+  avgCmc: number;
+  activeColors: string[];
 }
 
 export interface ManaLandSuggestion {
-  name:   string;
+  name: string;
   reason: string;
 }
 
 export interface ManaFineTuneDto {
-  advice:          string[];
+  advice: string[];
   landSuggestions: ManaLandSuggestion[];
 }
 
@@ -153,7 +153,11 @@ export class DeckApiService {
     return this.http.post<CollectionCardDto>(`${this.base}/${deckId}/cards`, req);
   }
 
-  updateCard(deckId: string, cardId: string, req: UpdateCollectionCardRequest): Observable<CollectionCardDto> {
+  updateCard(
+    deckId: string,
+    cardId: string,
+    req: UpdateCollectionCardRequest,
+  ): Observable<CollectionCardDto> {
     return this.http.put<CollectionCardDto>(`${this.base}/${deckId}/cards/${cardId}`, req);
   }
 
@@ -187,9 +191,7 @@ export class DeckApiService {
 
   getCardByName(name: string): Observable<CardDto | null> {
     const n = encodeURIComponent(name);
-    return this.http.get<CardDto>(`/api/cards/named?name=${n}`).pipe(
-      catchError(() => of(null)),
-    );
+    return this.http.get<CardDto>(`/api/cards/named?name=${n}`).pipe(catchError(() => of(null)));
   }
 
   aiBuildDeck(
@@ -199,10 +201,23 @@ export class DeckApiService {
     priceRange: string = 'any',
     includeSideboard: boolean = false,
     includeMaybeboard: boolean = false,
-  ): Observable<{ cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number }> {
-    return this.http.post<{ cardsAdded: number; sideboardAdded: number; maybeboardAdded: number; cardsSkipped: number }>(
-      `${this.base}/${deckId}/ai-build`,
-      { commanderOracleId, bracket, priceRange, includeSideboard, includeMaybeboard },
-    );
+  ): Observable<{
+    cardsAdded: number;
+    sideboardAdded: number;
+    maybeboardAdded: number;
+    cardsSkipped: number;
+  }> {
+    return this.http.post<{
+      cardsAdded: number;
+      sideboardAdded: number;
+      maybeboardAdded: number;
+      cardsSkipped: number;
+    }>(`${this.base}/${deckId}/ai-build`, {
+      commanderOracleId,
+      bracket,
+      priceRange,
+      includeSideboard,
+      includeMaybeboard,
+    });
   }
 }

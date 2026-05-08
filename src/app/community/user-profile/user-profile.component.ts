@@ -45,20 +45,31 @@ export class UserProfileComponent implements OnInit {
   ngOnInit(): void {
     const username = this.route.snapshot.paramMap.get('username') ?? '';
     this.http.get<UserProfileDto>(`/api/users/${username}`).subscribe({
-      next: (p) => { this.profile = p; this.loading = false; this.cdr.markForCheck(); },
-      error: () => { this.error = 'User not found.'; this.loading = false; this.cdr.markForCheck(); },
+      next: (p) => {
+        this.profile = p;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.error = 'User not found.';
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  setTab(t: 'decks' | 'comments'): void { this.activeTab = t; this.cdr.markForCheck(); }
+  setTab(t: 'decks' | 'comments'): void {
+    this.activeTab = t;
+    this.cdr.markForCheck();
+  }
 
   timeAgo(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1)  return 'just now';
+    if (mins < 1) return 'just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24)  return `${hrs}h ago`;
+    if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     if (days < 30) return `${days}d ago`;
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -68,5 +79,7 @@ export class UserProfileComponent implements OnInit {
     return new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
-  manaClass(c: string): string { return `ms-${c.toLowerCase()}`; }
+  manaClass(c: string): string {
+    return `ms-${c.toLowerCase()}`;
+  }
 }

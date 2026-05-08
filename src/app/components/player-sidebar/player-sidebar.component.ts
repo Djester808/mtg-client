@@ -21,7 +21,12 @@ export class PlayerSidebarComponent {
   readonly ManaColor = ManaColor;
 
   readonly manaClass: Record<string, string> = {
-    W: 'ms-w', U: 'ms-u', B: 'ms-b', R: 'ms-r', G: 'ms-g', C: 'ms-c',
+    W: 'ms-w',
+    U: 'ms-u',
+    B: 'ms-b',
+    R: 'ms-r',
+    G: 'ms-g',
+    C: 'ms-c',
   };
 
   constructor(private store: Store<AppState>) {}
@@ -38,17 +43,21 @@ export class PlayerSidebarComponent {
   }
 
   openGraveyard(): void {
-    this.store.dispatch(UIActions.openZoneViewer({
-      playerId: this.player.playerId,
-      zone: 'graveyard',
-    }));
+    this.store.dispatch(
+      UIActions.openZoneViewer({
+        playerId: this.player.playerId,
+        zone: 'graveyard',
+      }),
+    );
   }
 
   openExile(): void {
-    this.store.dispatch(UIActions.openZoneViewer({
-      playerId: this.player.playerId,
-      zone: 'exile',
-    }));
+    this.store.dispatch(
+      UIActions.openZoneViewer({
+        playerId: this.player.playerId,
+        zone: 'exile',
+      }),
+    );
   }
 
   manaTrack(_: number, entry: { color: ManaColor; count: number }): string {

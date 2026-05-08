@@ -10,11 +10,12 @@ import { ToastService, Toast } from '../../services/toast.service';
   template: `
     <div class="toast-stack">
       <div
-        *ngFor="let t of (toastService.toasts$ | async); trackBy: trackById"
+        *ngFor="let t of toastService.toasts$ | async; trackBy: trackById"
         class="toast"
         [ngClass]="t.kind"
         [@toastAnim]
-        (click)="toastService.dismiss(t.id)">
+        (click)="toastService.dismiss(t.id)"
+      >
         <span class="toast-icon">{{ t.icon }}</span>
         <span class="toast-msg">{{ t.message }}</span>
       </div>
@@ -26,17 +27,20 @@ import { ToastService, Toast } from '../../services/toast.service';
     trigger('toastAnim', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateX(32px)' }),
-        animate('180ms cubic-bezier(0.34,1.2,0.64,1)',
-          style({ opacity: 1, transform: 'translateX(0)' })),
+        animate(
+          '180ms cubic-bezier(0.34,1.2,0.64,1)',
+          style({ opacity: 1, transform: 'translateX(0)' }),
+        ),
       ]),
       transition(':leave', [
-        animate('150ms ease',
-          style({ opacity: 0, transform: 'translateX(32px)' })),
+        animate('150ms ease', style({ opacity: 0, transform: 'translateX(32px)' })),
       ]),
     ]),
   ],
 })
 export class ToastContainerComponent {
   constructor(public toastService: ToastService) {}
-  trackById(_: number, t: Toast): number { return t.id; }
+  trackById(_: number, t: Toast): number {
+    return t.id;
+  }
 }

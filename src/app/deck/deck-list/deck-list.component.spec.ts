@@ -10,9 +10,14 @@ import { DeckDto } from '../../services/deck-api.service';
 
 function makeDeck(overrides: Partial<DeckDto> = {}): DeckDto {
   return {
-    id: 'deck-1', name: 'My Deck',
-    coverUri: null, format: null, commanderOracleId: null, cardCount: 5,
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 'deck-1',
+    name: 'My Deck',
+    coverUri: null,
+    format: null,
+    commanderOracleId: null,
+    cardCount: 5,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
     ...overrides,
   };
 }
@@ -89,7 +94,13 @@ describe('DeckListComponent — inline rename', () => {
     component.renameDraft = 'New Name';
     component.commitRename(deck);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-1', name: 'New Name', coverUri: 'cover.jpg', format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'New Name',
+        coverUri: 'cover.jpg',
+        format: null,
+        commanderOracleId: null,
+      }),
     );
     expect(component.renamingDeckId).toBeNull();
   });
@@ -144,7 +155,13 @@ describe('DeckListComponent — cover picker', () => {
     const deck = makeDeck({ id: 'deck-2', name: 'Burn', coverUri: null });
     component.onCoverSelected(deck, 'art.jpg');
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-2', name: 'Burn', coverUri: 'art.jpg', format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({
+        id: 'deck-2',
+        name: 'Burn',
+        coverUri: 'art.jpg',
+        format: null,
+        commanderOracleId: null,
+      }),
     );
     expect(component.coverPickerDeck).toBeNull();
   });
@@ -154,7 +171,13 @@ describe('DeckListComponent — cover picker', () => {
     const deck = makeDeck({ id: 'deck-2', name: 'Burn', coverUri: 'old.jpg' });
     component.onCoverSelected(deck, null);
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.updateDeckMeta({ id: 'deck-2', name: 'Burn', coverUri: null, format: null, commanderOracleId: null })
+      DeckActions.updateDeckMeta({
+        id: 'deck-2',
+        name: 'Burn',
+        coverUri: null,
+        format: null,
+        commanderOracleId: null,
+      }),
     );
   });
 });
@@ -175,7 +198,7 @@ describe('DeckListComponent — delete and create', () => {
     component.createForm.setValue({ name: '  Aggro  ', format: null });
     component.submitCreate();
     expect(store.dispatch).toHaveBeenCalledWith(
-      DeckActions.createDeck({ name: 'Aggro', coverUri: null, format: null })
+      DeckActions.createDeck({ name: 'Aggro', coverUri: null, format: null }),
     );
     expect(component.showCreateForm).toBeFalse();
   });

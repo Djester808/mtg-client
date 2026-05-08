@@ -1,15 +1,27 @@
 import {
-  Component, OnInit, OnDestroy,
-  ChangeDetectionStrategy, ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
-import { selectCollections, selectCollectionLoading } from '../../store/collection/collection.selectors';
+import {
+  selectCollections,
+  selectCollectionLoading,
+} from '../../store/collection/collection.selectors';
 import { CollectionDto } from '../../models/game.models';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 
@@ -75,9 +87,11 @@ export class CollectionListComponent implements OnInit, OnDestroy {
   submitCreate(): void {
     if (this.createForm.invalid) return;
     const { name, description } = this.createForm.value;
-    this.store.dispatch(CollectionActions.createCollection({
-      request: { name: name.trim(), description: description?.trim() || null },
-    }));
+    this.store.dispatch(
+      CollectionActions.createCollection({
+        request: { name: name.trim(), description: description?.trim() || null },
+      }),
+    );
     this.showCreateForm = false;
   }
 
@@ -120,12 +134,14 @@ export class CollectionListComponent implements OnInit, OnDestroy {
   commitRename(col: CollectionDto): void {
     const name = this.renameDraft.trim();
     if (name && name !== col.name) {
-      this.store.dispatch(CollectionActions.updateCollectionMeta({
-        id: col.id,
-        name,
-        description: col.description ?? null,
-        coverUri: col.coverUri ?? null,
-      }));
+      this.store.dispatch(
+        CollectionActions.updateCollectionMeta({
+          id: col.id,
+          name,
+          description: col.description ?? null,
+          coverUri: col.coverUri ?? null,
+        }),
+      );
     }
     this.renamingColId = null;
     this.cdr.markForCheck();
@@ -151,12 +167,14 @@ export class CollectionListComponent implements OnInit, OnDestroy {
   }
 
   onCoverSelected(col: CollectionDto, uri: string | null): void {
-    this.store.dispatch(CollectionActions.updateCollectionMeta({
-      id: col.id,
-      name: col.name,
-      description: col.description ?? null,
-      coverUri: uri,
-    }));
+    this.store.dispatch(
+      CollectionActions.updateCollectionMeta({
+        id: col.id,
+        name: col.name,
+        description: col.description ?? null,
+        coverUri: uri,
+      }),
+    );
     this.closeCoverPicker();
   }
 }

@@ -1,13 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { CoverPickerModalComponent } from './cover-picker-modal.component';
 import { GameApiService } from '../../services/game-api.service';
 import { CardDto } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
 
 function makeCardDto(overrides: Partial<CardDto> = {}): CardDto {
-  return makeCard({ imageUriNormal: 'normal.jpg', imageUriSmall: 'small.jpg', imageUriArtCrop: 'art.jpg', ...overrides });
+  return makeCard({
+    imageUriNormal: 'normal.jpg',
+    imageUriSmall: 'small.jpg',
+    imageUriArtCrop: 'art.jpg',
+    ...overrides,
+  });
 }
 
 async function setup(currentCoverUri: string | null = null) {

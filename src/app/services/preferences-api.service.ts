@@ -10,9 +10,9 @@ export interface UserPreferences {
 }
 
 const LS_KEYS: Record<keyof UserPreferences, string> = {
-  deckLayout:  'pref.deckLayout',
+  deckLayout: 'pref.deckLayout',
   forumLayout: 'pref.forumLayout',
-  forumSort:   'pref.forumSort',
+  forumSort: 'pref.forumSort',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -23,16 +23,17 @@ export class PreferencesApiService {
 
   load(): Observable<UserPreferences> {
     return this.http.get<UserPreferences>(this.base).pipe(
-      tap(prefs => this.writeLocalStorage(prefs)),
+      tap((prefs) => this.writeLocalStorage(prefs)),
       catchError(() => of(this.readLocalStorage())),
     );
   }
 
   save(prefs: UserPreferences): void {
     this.writeLocalStorage(prefs);
-    this.http.put<UserPreferences>(this.base, prefs).pipe(
-      catchError(() => of(null)),
-    ).subscribe();
+    this.http
+      .put<UserPreferences>(this.base, prefs)
+      .pipe(catchError(() => of(null)))
+      .subscribe();
   }
 
   private readLocalStorage(): UserPreferences {
@@ -47,8 +48,8 @@ export class PreferencesApiService {
   }
 
   private writeLocalStorage(prefs: UserPreferences): void {
-    if (prefs.deckLayout)  localStorage.setItem(LS_KEYS.deckLayout,  prefs.deckLayout);
+    if (prefs.deckLayout) localStorage.setItem(LS_KEYS.deckLayout, prefs.deckLayout);
     if (prefs.forumLayout) localStorage.setItem(LS_KEYS.forumLayout, prefs.forumLayout);
-    if (prefs.forumSort)   localStorage.setItem(LS_KEYS.forumSort,   prefs.forumSort);
+    if (prefs.forumSort) localStorage.setItem(LS_KEYS.forumSort, prefs.forumSort);
   }
 }

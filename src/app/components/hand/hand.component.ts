@@ -1,4 +1,11 @@
-import { Component, Input, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { combineLatest, map, Subject, takeUntil } from 'rxjs';
@@ -52,7 +59,10 @@ export class HandComponent implements OnDestroy {
   private cardOrder: string[] = [];
   private latestCards: HandCardVm[] = [];
 
-  constructor(private store: Store<AppState>, private cdr: ChangeDetectorRef) {
+  constructor(
+    private store: Store<AppState>,
+    private cdr: ChangeDetectorRef,
+  ) {
     combineLatest([
       this.store.select(selectLocalPlayer),
       this.store.select(selectCurrentPhase),
@@ -61,47 +71,49 @@ export class HandComponent implements OnDestroy {
       this.store.select(selectHasPriority),
       this.store.select(selectUIMode),
       this.store.select(selectSelectedCardId),
-    ]).pipe(
-      map(([player, phase, step, isActive, hasPriority, mode, selectedCardId]) => {
-        const hand = player?.hand ?? [];
-        const manaPool = player?.manaPool;
-        const inMain = (phase === Phase.PreCombatMain || phase === Phase.PostCombatMain)
-          && step === Step.Main;
-        const stackEmpty = true;
+    ])
+      .pipe(
+        map(([player, phase, step, isActive, hasPriority, mode, selectedCardId]) => {
+          const hand = player?.hand ?? [];
+          const manaPool = player?.manaPool;
+          const inMain =
+            (phase === Phase.PreCombatMain || phase === Phase.PostCombatMain) && step === Step.Main;
+          const stackEmpty = true;
 
-        const cards: HandCardVm[] = hand.map(card => {
-          const isLandCard = card.cardTypes.includes(CardType.Land);
-          const canCastSorcery = isActive && hasPriority && inMain && stackEmpty;
-          const canCastInstant = hasPriority && mode === 'idle';
+          const cards: HandCardVm[] = hand.map((card) => {
+            const isLandCard = card.cardTypes.includes(CardType.Land);
+            const canCastSorcery = isActive && hasPriority && inMain && stackEmpty;
+            const canCastInstant = hasPriority && mode === 'idle';
 
-          let isCastable = false;
-          if (isLandCard) {
-            isCastable = canCastSorcery && !(player?.hasLandPlayedThisTurn ?? false);
-          } else {
-            const hasFlash = card.keywords.includes('Flash');
-            const speedOk = hasFlash ? canCastInstant : canCastSorcery;
-            isCastable = speedOk && this.canAfford(card.manaCost, manaPool);
+            let isCastable = false;
+            if (isLandCard) {
+              isCastable = canCastSorcery && !(player?.hasLandPlayedThisTurn ?? false);
+            } else {
+              const hasFlash = card.keywords.includes('Flash');
+              const speedOk = hasFlash ? canCastInstant : canCastSorcery;
+              isCastable = speedOk && this.canAfford(card.manaCost, manaPool);
+            }
+
+            return { card, isCastable, isSelected: card.cardId === selectedCardId };
+          });
+
+          return { cards, count: hand.length };
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((vm) => {
+        this.count = vm.count;
+        const idSet = new Set(vm.cards.map((c) => c.card.cardId));
+        this.cardOrder = this.cardOrder.filter((id) => idSet.has(id));
+        for (const c of vm.cards) {
+          if (!this.cardOrder.includes(c.card.cardId)) {
+            this.cardOrder.push(c.card.cardId);
           }
-
-          return { card, isCastable, isSelected: card.cardId === selectedCardId };
-        });
-
-        return { cards, count: hand.length };
-      }),
-      takeUntil(this.destroy$),
-    ).subscribe(vm => {
-      this.count = vm.count;
-      const idSet = new Set(vm.cards.map(c => c.card.cardId));
-      this.cardOrder = this.cardOrder.filter(id => idSet.has(id));
-      for (const c of vm.cards) {
-        if (!this.cardOrder.includes(c.card.cardId)) {
-          this.cardOrder.push(c.card.cardId);
         }
-      }
-      this.latestCards = vm.cards;
-      this.rebuildOrderedCards();
-      this.cdr.markForCheck();
-    });
+        this.latestCards = vm.cards;
+        this.rebuildOrderedCards();
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {
@@ -110,10 +122,10 @@ export class HandComponent implements OnDestroy {
   }
 
   private rebuildOrderedCards(): void {
-    const cardMap = new Map(this.latestCards.map(c => [c.card.cardId, c]));
+    const cardMap = new Map(this.latestCards.map((c) => [c.card.cardId, c]));
     this.orderedCards = this.cardOrder
-      .filter(id => cardMap.has(id))
-      .map(id => cardMap.get(id)!);
+      .filter((id) => cardMap.has(id))
+      .map((id) => cardMap.get(id)!);
   }
 
   private canAfford(manaCost: string, pool: ManaPoolDto | undefined): boolean {
@@ -125,7 +137,8 @@ export class HandComponent implements OnDestroy {
     while (i < manaCost.length) {
       if (manaCost[i] >= '0' && manaCost[i] <= '9') {
         let numStr = '';
-        while (i < manaCost.length && manaCost[i] >= '0' && manaCost[i] <= '9') numStr += manaCost[i++];
+        while (i < manaCost.length && manaCost[i] >= '0' && manaCost[i] <= '9')
+          numStr += manaCost[i++];
         generic += parseInt(numStr, 10);
       } else {
         const color = manaCost[i].toUpperCase();
@@ -185,9 +198,7 @@ export class HandComponent implements OnDestroy {
   }
 
   private updateDragPosition(clientX: number): void {
-    const wrappers = Array.from(
-      document.querySelectorAll('.hand-card-wrapper')
-    ) as HTMLElement[];
+    const wrappers = Array.from(document.querySelectorAll('.hand-card-wrapper')) as HTMLElement[];
     let targetId: string | null = null;
     let minDist = Infinity;
     wrappers.forEach((el, i) => {
@@ -202,7 +213,7 @@ export class HandComponent implements OnDestroy {
     if (!targetId || targetId === this.draggingId || targetId === this.dragOverId) return;
     this.dragOverId = targetId;
     const fromIdx = this.cardOrder.indexOf(this.draggingId!);
-    const toIdx   = this.cardOrder.indexOf(targetId);
+    const toIdx = this.cardOrder.indexOf(targetId);
     if (fromIdx === -1 || toIdx === -1) return;
     const order = [...this.cardOrder];
     order.splice(fromIdx, 1);
@@ -215,7 +226,10 @@ export class HandComponent implements OnDestroy {
   // ---- Click / double-click / hover ----------------------------------------
 
   onCardClick(card: CardDto): void {
-    if (this.suppressNextCardClick) { this.suppressNextCardClick = false; return; }
+    if (this.suppressNextCardClick) {
+      this.suppressNextCardClick = false;
+      return;
+    }
     this.store.dispatch(UIActions.selectCard({ cardId: card.cardId }));
   }
 

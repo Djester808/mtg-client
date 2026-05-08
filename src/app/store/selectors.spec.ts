@@ -1,6 +1,10 @@
 import { selectPreviewCard } from './selectors';
 import { PlayerStateDto, PermanentDto, CardDto } from '../models/game.models';
-import { makeCard, makePlayer, makePermanent as makePermanentBase } from '../testing/test-factories';
+import {
+  makeCard,
+  makePlayer,
+  makePermanent as makePermanentBase,
+} from '../testing/test-factories';
 
 // Tests use the selector's .projector() — a pure function that takes the input
 // selector results directly, bypassing NgRx glue entirely.

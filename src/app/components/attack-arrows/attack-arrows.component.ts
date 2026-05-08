@@ -1,6 +1,10 @@
 import {
-  Component, ElementRef, AfterViewInit,
-  ChangeDetectionStrategy, OnDestroy, NgZone,
+  Component,
+  ElementRef,
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  OnDestroy,
+  NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
@@ -9,8 +13,10 @@ import { AppState } from '../../store';
 import { selectCombatState, selectBattlefield } from '../../store/selectors';
 
 interface Arrow {
-  x1: number; y1: number;
-  x2: number; y2: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
   blocked: boolean;
 }
 
@@ -21,13 +27,25 @@ interface Arrow {
   template: `
     <svg class="arrows-svg" [attr.width]="width" [attr.height]="height">
       <defs>
-        <marker id="arrowhead-attack" markerWidth="8" markerHeight="6"
-          refX="7" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="#e74c3c" opacity="0.9"/>
+        <marker
+          id="arrowhead-attack"
+          markerWidth="8"
+          markerHeight="6"
+          refX="7"
+          refY="3"
+          orient="auto"
+        >
+          <polygon points="0 0, 8 3, 0 6" fill="#e74c3c" opacity="0.9" />
         </marker>
-        <marker id="arrowhead-blocked" markerWidth="8" markerHeight="6"
-          refX="7" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="#9b59b6" opacity="0.7"/>
+        <marker
+          id="arrowhead-blocked"
+          markerWidth="8"
+          markerHeight="6"
+          refX="7"
+          refY="3"
+          orient="auto"
+        >
+          <polygon points="0 0, 8 3, 0 6" fill="#9b59b6" opacity="0.7" />
         </marker>
       </defs>
       <path
@@ -38,28 +56,31 @@ interface Arrow {
         stroke-width="2"
         fill="none"
         [attr.stroke-dasharray]="a.blocked ? '4 3' : 'none'"
-        stroke-opacity="0.8">
-      </path>
+        stroke-opacity="0.8"
+      ></path>
     </svg>
   `,
-  styles: [`
-    :host {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 100;
-    }
-    .arrows-svg {
-      position: absolute;
-      top: 0; left: 0;
-      overflow: visible;
-    }
-  `],
+  styles: [
+    `
+      :host {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 100;
+      }
+      .arrows-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: visible;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
   arrows: Arrow[] = [];
-  width  = 0;
+  width = 0;
   height = 0;
 
   private destroy$ = new Subject<void>();
@@ -73,10 +94,8 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.updateDimensions();
 
-    combineLatest([
-      this.store.select(selectCombatState),
-      this.store.select(selectBattlefield),
-    ]).pipe(takeUntil(this.destroy$))
+    combineLatest([this.store.select(selectCombatState), this.store.select(selectBattlefield)])
+      .pipe(takeUntil(this.destroy$))
       .subscribe(([combat]) => {
         this.zone.run(() => {
           this.arrows = combat ? this.buildArrows(combat) : [];
@@ -87,7 +106,7 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
   private updateDimensions(): void {
     const host = this.el.nativeElement.parentElement;
     if (host) {
-      this.width  = host.offsetWidth;
+      this.width = host.offsetWidth;
       this.height = host.offsetHeight;
     }
   }
@@ -97,15 +116,17 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
     const boardEl = document.querySelector('.board');
     if (!boardEl) return arrows;
 
-    for (const [attackerId, blockerIds] of Object.entries(combat.attackersToBlockers as Record<string, string[]>)) {
+    for (const [attackerId, blockerIds] of Object.entries(
+      combat.attackersToBlockers as Record<string, string[]>,
+    )) {
       const attackerEl = document.querySelector(`[data-permanent-id="${attackerId}"]`);
       if (!attackerEl) continue;
 
       const attackerRect = attackerEl.getBoundingClientRect();
-      const boardRect    = boardEl.getBoundingClientRect();
+      const boardRect = boardEl.getBoundingClientRect();
 
       const x1 = attackerRect.left + attackerRect.width / 2 - boardRect.left;
-      const y1 = attackerRect.top  - boardRect.top;
+      const y1 = attackerRect.top - boardRect.top;
 
       if ((blockerIds as string[]).length === 0) {
         // Arrow to the top center of the board (opponent player area)

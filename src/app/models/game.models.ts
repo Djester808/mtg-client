@@ -2,7 +2,15 @@
 export * from './enums';
 export * from './collection.models';
 
-import { ManaColor, CounterType, StackObjectType, Phase, Step, GameResult, CardType } from './enums';
+import {
+  ManaColor,
+  CounterType,
+  StackObjectType,
+  Phase,
+  Step,
+  GameResult,
+  CardType,
+} from './enums';
 
 // ---- Card / Permanent DTOs --------------------------------
 
@@ -16,7 +24,7 @@ export interface CardDto {
   cardId: string;
   oracleId: string;
   name: string;
-  manaCost: string;         // e.g. "2WW"
+  manaCost: string; // e.g. "2WW"
   manaValue: number;
   cardTypes: CardType[];
   subtypes: string[];
@@ -86,14 +94,14 @@ export interface PlayerStateDto {
   libraryCount: number;
   graveyardCount: number;
   exileCount: number;
-  hand: CardDto[];           // only populated for the local player
-  graveyard: CardDto[];      // public
-  exile: CardDto[];          // public
+  hand: CardDto[]; // only populated for the local player
+  graveyard: CardDto[]; // public
+  exile: CardDto[]; // public
   hasLandPlayedThisTurn: boolean;
 }
 
 export interface CombatStateDto {
-  attackers: string[];                          // permanentIds
+  attackers: string[]; // permanentIds
   attackersToBlockers: Record<string, string[]>; // attackerId -> blockerIds
   attackersDeclared: boolean;
   blockersDeclared: boolean;

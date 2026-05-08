@@ -21,15 +21,17 @@ describe('GameBoardComponent', () => {
         { provide: SignalRService, useValue: signalr },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap(gameIdParam ? { gameId: gameIdParam } : {}) } },
+          useValue: {
+            snapshot: { paramMap: convertToParamMap(gameIdParam ? { gameId: gameIdParam } : {}) },
+          },
         },
       ],
     })
       .overrideComponent(GameBoardComponent, { set: { imports: [], template: '<div></div>' } })
       .compileComponents()
       .then(() => {
-        store   = TestBed.inject(MockStore);
-        router  = TestBed.inject(Router);
+        store = TestBed.inject(MockStore);
+        router = TestBed.inject(Router);
         fixture = TestBed.createComponent(GameBoardComponent);
         component = fixture.componentInstance;
       });
@@ -55,14 +57,17 @@ describe('GameBoardComponent', () => {
 
   describe('ngOnInit()', () => {
     it('dispatches joinGame when session matches route gameId', async () => {
-      localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }));
+      localStorage.setItem(
+        'mtg_session',
+        JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }),
+      );
       await setup('game-abc');
       spyOn(store, 'dispatch');
 
       fixture.detectChanges();
 
       expect(store.dispatch).toHaveBeenCalledWith(
-        GameActions.joinGame({ gameId: 'game-abc', playerToken: 'tok-1' })
+        GameActions.joinGame({ gameId: 'game-abc', playerToken: 'tok-1' }),
       );
     });
 
@@ -76,7 +81,10 @@ describe('GameBoardComponent', () => {
     });
 
     it('navigates to lobby when route has no gameId', async () => {
-      localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }));
+      localStorage.setItem(
+        'mtg_session',
+        JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }),
+      );
       await setup(null);
       spyOn(router, 'navigate');
 
@@ -86,7 +94,10 @@ describe('GameBoardComponent', () => {
     });
 
     it('navigates to lobby when session gameId does not match route', async () => {
-      localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'OTHER', playerToken: 'tok-1' }));
+      localStorage.setItem(
+        'mtg_session',
+        JSON.stringify({ gameId: 'OTHER', playerToken: 'tok-1' }),
+      );
       await setup('game-abc');
       spyOn(router, 'navigate');
 
@@ -110,7 +121,10 @@ describe('GameBoardComponent', () => {
 
   describe('concede modal', () => {
     beforeEach(async () => {
-      localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }));
+      localStorage.setItem(
+        'mtg_session',
+        JSON.stringify({ gameId: 'game-abc', playerToken: 'tok-1' }),
+      );
       await setup('game-abc');
       fixture.detectChanges();
     });

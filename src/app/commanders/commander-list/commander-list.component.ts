@@ -1,6 +1,4 @@
-import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -27,11 +25,11 @@ export class CommanderListComponent implements OnInit {
 
   readonly colorOptions = ['W', 'U', 'B', 'R', 'G', 'C'];
   readonly datePresets: { label: string; months: number }[] = [
-    { label: 'All',  months: 0  },
-    { label: '3M',   months: 3  },
-    { label: '6M',   months: 6  },
-    { label: '1Y',   months: 12 },
-    { label: '2Y',   months: 24 },
+    { label: 'All', months: 0 },
+    { label: '3M', months: 3 },
+    { label: '6M', months: 6 },
+    { label: '1Y', months: 12 },
+    { label: '2Y', months: 24 },
   ];
 
   constructor(
@@ -68,10 +66,10 @@ export class CommanderListComponent implements OnInit {
 
   get filteredCommanders(): CommanderSummary[] {
     const q = this.searchQuery.trim().toLowerCase();
-    return this.commanders.filter(cmd => {
+    return this.commanders.filter((cmd) => {
       if (q && !cmd.name.toLowerCase().includes(q)) return false;
       if (this.selectedColors.size > 0) {
-        const hasAll = [...this.selectedColors].every(c => cmd.colorIdentity.includes(c));
+        const hasAll = [...this.selectedColors].every((c) => cmd.colorIdentity.includes(c));
         if (!hasAll) return false;
       }
       return true;

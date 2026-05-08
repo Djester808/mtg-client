@@ -1,6 +1,13 @@
 import {
-  Component, Input, Output, EventEmitter, HostListener,
-  ChangeDetectionStrategy, OnInit, OnChanges, SimpleChanges,
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  HostListener,
+  ChangeDetectionStrategy,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardDto, CardType, PrintingDto, RulingDto } from '../../models/game.models';
@@ -18,7 +25,6 @@ import { GameApiService } from '../../services/game-api.service';
   changeDetection: ChangeDetectionStrategy.Default,
 })
 export class CardModalComponent implements OnInit, OnChanges {
-
   @Input() card: CardDto | null = null;
   @Input() printings: PrintingDto[] = [];
 
@@ -44,12 +50,18 @@ export class CardModalComponent implements OnInit, OnChanges {
   @Input() isBanned = false;
 
   // Position / size — managed internally, centred on first render
-  modalX = 0; modalY = 0;
-  modalWidth = 860; modalHeight = 600;
-  isDragging = false; isResizing = false;
-  private dragOffsetX = 0; private dragOffsetY = 0;
-  private resizeStartX = 0; private resizeStartY = 0;
-  private resizeStartW = 0; private resizeStartH = 0;
+  modalX = 0;
+  modalY = 0;
+  modalWidth = 860;
+  modalHeight = 600;
+  isDragging = false;
+  isResizing = false;
+  private dragOffsetX = 0;
+  private dragOffsetY = 0;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
+  private resizeStartW = 0;
+  private resizeStartH = 0;
 
   rulings: RulingDto[] = [];
   rulingsLoading = false;
@@ -57,9 +69,12 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   // Magnifier lens
   lensVisible = false;
-  lensX = 0; lensY = 0;
-  lensBgX = 0; lensBgY = 0;
-  lensBgW = 0; lensBgH = 0;
+  lensX = 0;
+  lensY = 0;
+  lensBgX = 0;
+  lensBgY = 0;
+  lensBgW = 0;
+  lensBgH = 0;
   private readonly LENS_SIZE = 220;
   private readonly ZOOM = 3;
 
@@ -71,7 +86,10 @@ export class CardModalComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['card']) {
       const oracleId = this.card?.oracleId;
-      if (!oracleId) { this.rulings = []; return; }
+      if (!oracleId) {
+        this.rulings = [];
+        return;
+      }
       if (this.rulingsCache.has(oracleId)) {
         this.rulings = this.rulingsCache.get(oracleId)!;
         return;
@@ -79,20 +97,22 @@ export class CardModalComponent implements OnInit, OnChanges {
       this.rulingsLoading = true;
       this.rulings = [];
       this.gameApi.getCardRulings(oracleId).subscribe({
-        next: r => {
+        next: (r) => {
           this.rulingsCache.set(oracleId, r);
           this.rulings = r;
           this.rulingsLoading = false;
         },
-        error: () => { this.rulingsLoading = false; },
+        error: () => {
+          this.rulingsLoading = false;
+        },
       });
     }
   }
 
   ngOnInit(): void {
-    this.modalWidth  = Math.min(900, Math.floor(window.innerWidth  * 0.92));
+    this.modalWidth = Math.min(900, Math.floor(window.innerWidth * 0.92));
     this.modalHeight = Math.max(560, Math.min(680, Math.floor(window.innerHeight * 0.85)));
-    this.modalX = Math.max(0, (window.innerWidth  - this.modalWidth)  / 2);
+    this.modalX = Math.max(0, (window.innerWidth - this.modalWidth) / 2);
     this.modalY = Math.max(0, (window.innerHeight - this.modalHeight) / 2);
   }
 
@@ -101,11 +121,15 @@ export class CardModalComponent implements OnInit, OnChanges {
   get carouselSlice(): PrintingDto[] {
     return this.printings.slice(this.carouselStart, this.carouselStart + this.CAROUSEL_PAGE);
   }
-  get carouselCanPrev(): boolean { return this.carouselStart > 0; }
+  get carouselCanPrev(): boolean {
+    return this.carouselStart > 0;
+  }
   get carouselCanNext(): boolean {
     return this.carouselStart + this.CAROUSEL_PAGE < this.printings.length;
   }
-  carouselPrev(): void { this.carouselStart = Math.max(0, this.carouselStart - this.CAROUSEL_PAGE); }
+  carouselPrev(): void {
+    this.carouselStart = Math.max(0, this.carouselStart - this.CAROUSEL_PAGE);
+  }
   carouselNext(): void {
     this.carouselStart = Math.min(
       Math.max(0, this.printings.length - this.CAROUSEL_PAGE),
@@ -116,7 +140,7 @@ export class CardModalComponent implements OnInit, OnChanges {
   // ---- Derived card data ----------------------------------------------
 
   get currentPrinting(): PrintingDto | undefined {
-    return this.printings.find(p => p.scryfallId === this.viewedScryfallId);
+    return this.printings.find((p) => p.scryfallId === this.viewedScryfallId);
   }
 
   /** Base card merged with printing-specific overrides. */
@@ -128,9 +152,9 @@ export class CardModalComponent implements OnInit, OnChanges {
       ...this.card,
       oracleText: p.oracleText ?? this.card.oracleText,
       flavorText: p.flavorText ?? null,
-      artist:     p.artist     ?? this.card.artist,
-      manaCost:   p.manaCost   ?? this.card.manaCost,
-      setCode:    p.setCode    ?? this.card.setCode,
+      artist: p.artist ?? this.card.artist,
+      manaCost: p.manaCost ?? this.card.manaCost,
+      setCode: p.setCode ?? this.card.setCode,
     };
   }
 
@@ -142,7 +166,7 @@ export class CardModalComponent implements OnInit, OnChanges {
   get modalImage(): string | null {
     const p = this.currentPrinting;
     const front = p?.imageUriNormal ?? this.card?.imageUriNormal ?? null;
-    const back  = p?.imageUriNormalBack ?? this.card?.imageUriNormalBack ?? null;
+    const back = p?.imageUriNormalBack ?? this.card?.imageUriNormalBack ?? null;
     return this.flipped && back ? back : front;
   }
 
@@ -172,18 +196,18 @@ export class CardModalComponent implements OnInit, OnChanges {
   }
 
   readonly FORMAT_ORDER = [
-    { key: 'standard',      label: 'Standard'   },
-    { key: 'pioneer',       label: 'Pioneer'     },
-    { key: 'modern',        label: 'Modern'      },
-    { key: 'legacy',        label: 'Legacy'      },
-    { key: 'vintage',       label: 'Vintage'     },
-    { key: 'commander',     label: 'Commander'   },
-    { key: 'oathbreaker',   label: 'Oathbreaker' },
-    { key: 'pauper',        label: 'Pauper'      },
-    { key: 'explorer',      label: 'Explorer'    },
-    { key: 'historic',      label: 'Historic'    },
-    { key: 'alchemy',       label: 'Alchemy'     },
-    { key: 'brawl',         label: 'Brawl'       },
+    { key: 'standard', label: 'Standard' },
+    { key: 'pioneer', label: 'Pioneer' },
+    { key: 'modern', label: 'Modern' },
+    { key: 'legacy', label: 'Legacy' },
+    { key: 'vintage', label: 'Vintage' },
+    { key: 'commander', label: 'Commander' },
+    { key: 'oathbreaker', label: 'Oathbreaker' },
+    { key: 'pauper', label: 'Pauper' },
+    { key: 'explorer', label: 'Explorer' },
+    { key: 'historic', label: 'Historic' },
+    { key: 'alchemy', label: 'Alchemy' },
+    { key: 'brawl', label: 'Brawl' },
   ];
 
   get hasLegalities(): boolean {
@@ -193,21 +217,25 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   get legalFormats(): { label: string; status: string }[] {
     const leg = this.card?.legalities ?? {};
-    return this.FORMAT_ORDER
-      .map(f => ({ label: f.label, status: leg[f.key] ?? 'not_legal' }))
-      .filter(f => f.status !== 'not_legal');
+    return this.FORMAT_ORDER.map((f) => ({
+      label: f.label,
+      status: leg[f.key] ?? 'not_legal',
+    })).filter((f) => f.status !== 'not_legal');
   }
 
   get illegalFormats(): { label: string; status: string }[] {
     const leg = this.card?.legalities ?? {};
-    return this.FORMAT_ORDER
-      .map(f => ({ label: f.label, status: leg[f.key] ?? 'not_legal' }))
-      .filter(f => f.status === 'not_legal');
+    return this.FORMAT_ORDER.map((f) => ({
+      label: f.label,
+      status: leg[f.key] ?? 'not_legal',
+    })).filter((f) => f.status === 'not_legal');
   }
 
   // ---- User actions ---------------------------------------------------
 
-  close(): void { this.closed.emit(); }
+  close(): void {
+    this.closed.emit();
+  }
 
   selectPrinting(p: PrintingDto): void {
     this.viewedScryfallId = p.scryfallId;
@@ -234,8 +262,12 @@ export class CardModalComponent implements OnInit, OnChanges {
     this.flippedChange.emit(this.flipped);
   }
 
-  onImageMouseEnter(): void { this.lensVisible = true; }
-  onImageMouseLeave(): void { this.lensVisible = false; }
+  onImageMouseEnter(): void {
+    this.lensVisible = true;
+  }
+  onImageMouseLeave(): void {
+    this.lensVisible = false;
+  }
 
   onImageMouseMove(e: MouseEvent): void {
     const img = e.target as HTMLImageElement;
@@ -263,9 +295,12 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   onResizeStart(e: MouseEvent): void {
     this.isResizing = true;
-    this.resizeStartX = e.clientX; this.resizeStartY = e.clientY;
-    this.resizeStartW = this.modalWidth; this.resizeStartH = this.modalHeight;
-    e.preventDefault(); e.stopPropagation();
+    this.resizeStartX = e.clientX;
+    this.resizeStartY = e.clientY;
+    this.resizeStartW = this.modalWidth;
+    this.resizeStartH = this.modalHeight;
+    e.preventDefault();
+    e.stopPropagation();
   }
 
   @HostListener('document:mousemove', ['$event'])
@@ -275,15 +310,26 @@ export class CardModalComponent implements OnInit, OnChanges {
       this.modalY = Math.max(0, e.clientY - this.dragOffsetY);
     }
     if (this.isResizing) {
-      const d = ((e.clientX - this.resizeStartX) + (e.clientY - this.resizeStartY)) / 2;
-      this.modalWidth  = Math.max(680, Math.min(Math.floor(window.innerWidth  * 0.96), this.resizeStartW + d));
-      this.modalHeight = Math.max(520, Math.min(Math.floor(window.innerHeight * 0.94), this.resizeStartH + d));
+      const d = (e.clientX - this.resizeStartX + (e.clientY - this.resizeStartY)) / 2;
+      this.modalWidth = Math.max(
+        680,
+        Math.min(Math.floor(window.innerWidth * 0.96), this.resizeStartW + d),
+      );
+      this.modalHeight = Math.max(
+        520,
+        Math.min(Math.floor(window.innerHeight * 0.94), this.resizeStartH + d),
+      );
     }
   }
 
   @HostListener('document:mouseup')
-  onMouseUp(): void { this.isDragging = false; this.isResizing = false; }
+  onMouseUp(): void {
+    this.isDragging = false;
+    this.isResizing = false;
+  }
 
   @HostListener('document:keydown.escape')
-  onEscape(): void { this.close(); }
+  onEscape(): void {
+    this.close();
+  }
 }

@@ -13,7 +13,7 @@ export class AuthEffects {
       switchMap(({ username, password }) =>
         this.authService.login(username, password).pipe(
           map(({ token }) => AuthActions.loginSuccess({ token, username })),
-          catchError(err => of(AuthActions.loginFailure({ error: this.extractError(err) }))),
+          catchError((err) => of(AuthActions.loginFailure({ error: this.extractError(err) }))),
         ),
       ),
     ),
@@ -25,33 +25,35 @@ export class AuthEffects {
       switchMap(({ username, email, password }) =>
         this.authService.register(username, email, password).pipe(
           map(({ token }) => AuthActions.registerSuccess({ token, username })),
-          catchError(err => of(AuthActions.registerFailure({ error: this.extractError(err) }))),
+          catchError((err) => of(AuthActions.registerFailure({ error: this.extractError(err) }))),
         ),
       ),
     ),
   );
 
-  persistOnSuccess$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(AuthActions.loginSuccess, AuthActions.registerSuccess),
-      tap(({ token, username }) => {
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_username', username);
-        this.router.navigate(['/']);
-      }),
-    ),
+  persistOnSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.loginSuccess, AuthActions.registerSuccess),
+        tap(({ token, username }) => {
+          localStorage.setItem('auth_token', token);
+          localStorage.setItem('auth_username', username);
+          this.router.navigate(['/']);
+        }),
+      ),
     { dispatch: false },
   );
 
-  clearOnLogout$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(AuthActions.logout),
-      tap(() => {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_username');
-        this.router.navigate(['/login']);
-      }),
-    ),
+  clearOnLogout$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.logout),
+        tap(() => {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_username');
+          this.router.navigate(['/login']);
+        }),
+      ),
     { dispatch: false },
   );
 

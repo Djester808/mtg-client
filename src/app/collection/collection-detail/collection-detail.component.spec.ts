@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,14 +13,28 @@ import { CollectionDetailDto, CollectionCardDto } from '../../models/game.models
 
 function makeCollectionCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
-    id: 'card-1', oracleId: 'oracle-1', scryfallId: 'scry-1',
-    quantity: 1, quantityFoil: 0, notes: null, addedAt: '', cardDetails: null,
+    id: 'card-1',
+    oracleId: 'oracle-1',
+    scryfallId: 'scry-1',
+    quantity: 1,
+    quantityFoil: 0,
+    notes: null,
+    addedAt: '',
+    cardDetails: null,
     ...overrides,
   };
 }
 
 function makeCollection(cards: CollectionCardDto[] = []): CollectionDetailDto {
-  return { id: 'col-1', name: 'Test', description: null, coverUri: null, createdAt: '', updatedAt: '', cards };
+  return {
+    id: 'col-1',
+    name: 'Test',
+    description: null,
+    coverUri: null,
+    createdAt: '',
+    updatedAt: '',
+    cards,
+  };
 }
 
 const INITIAL_STATE = {
@@ -28,7 +42,10 @@ const INITIAL_STATE = {
 };
 
 async function setupTestBed() {
-  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards', 'getSets']);
+  const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
+    'searchCards',
+    'getSets',
+  ]);
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
 
@@ -40,10 +57,10 @@ async function setupTestBed() {
     schemas: [NO_ERRORS_SCHEMA],
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
-      { provide: GameApiService,       useValue: gameApi },
+      { provide: GameApiService, useValue: gameApi },
       { provide: CollectionApiService, useValue: collectionApi },
-      { provide: Router,               useValue: { navigate: jasmine.createSpy() } },
-      { provide: ActivatedRoute,       useValue: { snapshot: { paramMap: { get: () => 'col-1' } } } },
+      { provide: Router, useValue: { navigate: jasmine.createSpy() } },
+      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'col-1' } } } },
     ],
   }).compileComponents();
 
@@ -105,7 +122,7 @@ describe('CollectionDetailComponent — onPanelCardAdd', () => {
       CollectionActions.addCard({
         collectionId: 'col-1',
         request: { oracleId: 'oracle-x', scryfallId: 'scry-x', quantity: 1, quantityFoil: 0 },
-      })
+      }),
     );
   });
 
@@ -116,7 +133,7 @@ describe('CollectionDetailComponent — onPanelCardAdd', () => {
       CollectionActions.addCard({
         collectionId: 'col-1',
         request: { oracleId: 'oracle-x', scryfallId: 'scry-x', quantity: 0, quantityFoil: 1 },
-      })
+      }),
     );
   });
 });
@@ -127,9 +144,17 @@ describe('CollectionDetailComponent — filteredCards', () => {
   let component: CollectionDetailComponent;
 
   const CARDS = [
-    makeCollectionCard({ id: 'c1', oracleId: 'o1', cardDetails: { name: 'Lightning Bolt' } as any }),
+    makeCollectionCard({
+      id: 'c1',
+      oracleId: 'o1',
+      cardDetails: { name: 'Lightning Bolt' } as any,
+    }),
     makeCollectionCard({ id: 'c2', oracleId: 'o2', cardDetails: { name: 'Counterspell' } as any }),
-    makeCollectionCard({ id: 'c3', oracleId: 'o3', cardDetails: { name: 'Lightning Helix' } as any }),
+    makeCollectionCard({
+      id: 'c3',
+      oracleId: 'o3',
+      cardDetails: { name: 'Lightning Helix' } as any,
+    }),
   ];
 
   beforeEach(async () => {
@@ -150,8 +175,8 @@ describe('CollectionDetailComponent — filteredCards', () => {
     component.filterQuery = 'lightning';
     const results = component.filteredCards(makeCollection(CARDS));
     expect(results).toHaveSize(2);
-    expect(results.map(c => c.id)).toContain('c1');
-    expect(results.map(c => c.id)).toContain('c3');
+    expect(results.map((c) => c.id)).toContain('c1');
+    expect(results.map((c) => c.id)).toContain('c3');
   });
 
   it('returns empty array when no cards match', () => {
@@ -183,9 +208,10 @@ describe('CollectionDetailComponent — quantity mutations', () => {
     component.incrementNormal(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCard({
-        collectionId: 'col-1', cardId: 'c1',
+        collectionId: 'col-1',
+        cardId: 'c1',
         request: { quantity: 3, quantityFoil: 0 },
-      })
+      }),
     );
   });
 
@@ -194,9 +220,10 @@ describe('CollectionDetailComponent — quantity mutations', () => {
     component.decrementNormal(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCard({
-        collectionId: 'col-1', cardId: 'c1',
+        collectionId: 'col-1',
+        cardId: 'c1',
         request: { quantity: 2, quantityFoil: 0 },
-      })
+      }),
     );
   });
 
@@ -204,7 +231,7 @@ describe('CollectionDetailComponent — quantity mutations', () => {
     const card = makeCollectionCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
     component.decrementNormal(card);
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
@@ -219,9 +246,10 @@ describe('CollectionDetailComponent — quantity mutations', () => {
     component.incrementFoil(card);
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCard({
-        collectionId: 'col-1', cardId: 'c1',
+        collectionId: 'col-1',
+        cardId: 'c1',
         request: { quantity: 1, quantityFoil: 1 },
-      })
+      }),
     );
   });
 
@@ -229,7 +257,7 @@ describe('CollectionDetailComponent — quantity mutations', () => {
     const card = makeCollectionCard({ id: 'c1', quantity: 0, quantityFoil: 1 });
     component.decrementFoil(card);
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 });
@@ -269,26 +297,48 @@ describe('CollectionDetailComponent — detail cover picker', () => {
     (col as any).description = 'some desc';
     component.showDetailCoverPicker = true;
     component.onDetailCoverSelected(
-      { id: 'col-1', name: 'My Col', description: 'some desc', coverUri: null, createdAt: '', updatedAt: '', cards: [] },
+      {
+        id: 'col-1',
+        name: 'My Col',
+        description: 'some desc',
+        coverUri: null,
+        createdAt: '',
+        updatedAt: '',
+        cards: [],
+      },
       'new-art.jpg',
     );
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCollectionMeta({
-        id: 'col-1', name: 'My Col', description: 'some desc', coverUri: 'new-art.jpg',
-      })
+        id: 'col-1',
+        name: 'My Col',
+        description: 'some desc',
+        coverUri: 'new-art.jpg',
+      }),
     );
     expect(component.showDetailCoverPicker).toBeFalse();
   });
 
   it('onDetailCoverSelected with null removes cover', () => {
     component.onDetailCoverSelected(
-      { id: 'col-1', name: 'My Col', description: null, coverUri: 'old.jpg', createdAt: '', updatedAt: '', cards: [] },
+      {
+        id: 'col-1',
+        name: 'My Col',
+        description: null,
+        coverUri: 'old.jpg',
+        createdAt: '',
+        updatedAt: '',
+        cards: [],
+      },
       null,
     );
     expect(store.dispatch).toHaveBeenCalledWith(
       CollectionActions.updateCollectionMeta({
-        id: 'col-1', name: 'My Col', description: null, coverUri: null,
-      })
+        id: 'col-1',
+        name: 'My Col',
+        description: null,
+        coverUri: null,
+      }),
     );
   });
 });
@@ -342,7 +392,12 @@ describe('CollectionDetailComponent — tile flip', () => {
 
 function withCards(store: MockStore, cards: CollectionCardDto[]): void {
   store.setState({
-    collection: { collections: [], activeCollection: makeCollection(cards), loading: false, error: null },
+    collection: {
+      collections: [],
+      activeCollection: makeCollection(cards),
+      loading: false,
+      error: null,
+    },
   });
 }
 
@@ -363,37 +418,55 @@ describe('CollectionDetailComponent — onPanelDecrementNormal', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('dispatches updateCard with quantity-1 when quantity > 1', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 3, quantityFoil: 1 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 3, quantityFoil: 1 }),
+    ]);
     component.onPanelDecrementNormal('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 1 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 1 },
+      }),
     );
   });
 
   it('dispatches removeCard when normal is 1 and there is no foil', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 0 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 0 }),
+    ]);
     component.onPanelDecrementNormal('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
   it('dispatches updateCard (not removeCard) when normal is 1 but foil exists', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 2 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 1, quantityFoil: 2 }),
+    ]);
     component.onPanelDecrementNormal('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 0, quantityFoil: 2 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 0, quantityFoil: 2 },
+      }),
     );
   });
 
   it('is a no-op when quantity is already 0', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 2 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 2 }),
+    ]);
     component.onPanelDecrementNormal('oracle-1');
     expect(store.dispatch).not.toHaveBeenCalled();
   });
 
   it('is a no-op when oracleId is not in the collection', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 }),
+    ]);
     component.onPanelDecrementNormal('oracle-unknown');
     expect(store.dispatch).not.toHaveBeenCalled();
   });
@@ -416,31 +489,47 @@ describe('CollectionDetailComponent — onPanelDecrementFoil', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('dispatches updateCard with quantityFoil-1 when foil > 1', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 3 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 3 }),
+    ]);
     component.onPanelDecrementFoil('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 2 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 2 },
+      }),
     );
   });
 
   it('dispatches removeCard when foil is 1 and there is no normal', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 1 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 0, quantityFoil: 1 }),
+    ]);
     component.onPanelDecrementFoil('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
   it('dispatches updateCard (not removeCard) when foil is 1 but normal exists', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 }),
+    ]);
     component.onPanelDecrementFoil('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
   });
 
   it('is a no-op when quantityFoil is already 0', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 0 }),
+    ]);
     component.onPanelDecrementFoil('oracle-1');
     expect(store.dispatch).not.toHaveBeenCalled();
   });
@@ -463,10 +552,12 @@ describe('CollectionDetailComponent — onPanelCardRemove', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('dispatches removeCard for the matching oracleId', () => {
-    withCards(store, [makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 })]);
+    withCards(store, [
+      makeCollectionCard({ id: 'c1', oracleId: 'oracle-1', quantity: 2, quantityFoil: 1 }),
+    ]);
     component.onPanelCardRemove('oracle-1');
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
@@ -496,44 +587,72 @@ describe('CollectionDetailComponent — modalDecrementNormal', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('dispatches updateCard with quantity-1 (not removeCard) when copies remain', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 3, quantityFoil: 0 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 3,
+      quantityFoil: 0,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementNormal(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
   });
 
   it('dispatches removeCard only when the last copy of any kind is removed', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 0 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 1,
+      quantityFoil: 0,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementNormal(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
   it('dispatches updateCard to zero when foil copies still exist', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 2 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 1,
+      quantityFoil: 2,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementNormal(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 0, quantityFoil: 2 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 0, quantityFoil: 2 },
+      }),
     );
   });
 
   it('is a no-op when quantity is already 0', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 0, quantityFoil: 1 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 0,
+      quantityFoil: 1,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementNormal(col, card);
@@ -559,44 +678,72 @@ describe('CollectionDetailComponent — modalDecrementFoil', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('dispatches updateCard with quantityFoil-1 (not removeCard) when foil copies remain', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 1, quantityFoil: 3 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 1,
+      quantityFoil: 3,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementFoil(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 1, quantityFoil: 2 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 1, quantityFoil: 2 },
+      }),
     );
   });
 
   it('dispatches removeCard only when the last foil and no normal remain', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 0, quantityFoil: 1 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 0,
+      quantityFoil: 1,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementFoil(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' })
+      CollectionActions.removeCard({ collectionId: 'col-1', cardId: 'c1' }),
     );
   });
 
   it('dispatches updateCard to zero when normal copies still exist', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 2, quantityFoil: 1 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 2,
+      quantityFoil: 1,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementFoil(col, card);
 
     expect(store.dispatch).toHaveBeenCalledWith(
-      CollectionActions.updateCard({ collectionId: 'col-1', cardId: 'c1', request: { quantity: 2, quantityFoil: 0 } })
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'c1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
   });
 
   it('is a no-op when quantityFoil is already 0', () => {
-    const card = makeCollectionCard({ id: 'c1', scryfallId: 'scry-1', quantity: 2, quantityFoil: 0 });
-    const col  = makeCollection([card]);
+    const card = makeCollectionCard({
+      id: 'c1',
+      scryfallId: 'scry-1',
+      quantity: 2,
+      quantityFoil: 0,
+    });
+    const col = makeCollection([card]);
     component.modalViewScryfallId = 'scry-1';
 
     component.modalDecrementFoil(col, card);

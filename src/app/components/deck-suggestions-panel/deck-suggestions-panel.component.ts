@@ -1,6 +1,11 @@
 import {
-  Component, Input, Output, EventEmitter,
-  ChangeDetectionStrategy, ChangeDetectorRef,
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +15,9 @@ import { of } from 'rxjs';
 import { CardDto, PrintingDto } from '../../models/game.models';
 import { DeckDetailDto } from '../../services/deck-api.service';
 import {
-  DeckApiService, DeckSuggestionsDto, SuggestedCardDto,
+  DeckApiService,
+  DeckSuggestionsDto,
+  SuggestedCardDto,
 } from '../../services/deck-api.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
@@ -30,12 +37,12 @@ export interface SuggestionCategory {
   styleUrls: ['./deck-suggestions-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DeckSuggestionsPanelComponent {
+export class DeckSuggestionsPanelComponent implements OnDestroy {
   @Input() deck: DeckDetailDto | null = null;
   @Input() commanderCard: CardDto | null = null;
   @Input() tagSuggestions: string[] = [];
 
-  @Output() cardAdd    = new EventEmitter<{ oracleId: string; scryfallId: string }>();
+  @Output() cardAdd = new EventEmitter<{ oracleId: string; scryfallId: string }>();
   @Output() cardRemove = new EventEmitter<string>(); // emits oracleId
   @Output() panelClose = new EventEmitter<void>();
 
@@ -54,10 +61,15 @@ export class DeckSuggestionsPanelComponent {
   modalFlipped = false;
 
   readonly categories: SuggestionCategory[] = [
-    { key: 'latestSet',       label: 'New from Latest Sets', icon: 'bi-stars',        accent: '#818cf8' },
-    { key: 'topSynergy',      label: 'Top Synergy',          icon: 'bi-lightning',     accent: '#4ade80' },
-    { key: 'gameChangers',    label: 'Game Changers',         icon: 'bi-trophy',        accent: '#fb923c' },
-    { key: 'notableMentions', label: 'Notable Mentions',      icon: 'bi-bookmark-star', accent: 'var(--gold)' },
+    { key: 'latestSet', label: 'New from Latest Sets', icon: 'bi-stars', accent: '#818cf8' },
+    { key: 'topSynergy', label: 'Top Synergy', icon: 'bi-lightning', accent: '#4ade80' },
+    { key: 'gameChangers', label: 'Game Changers', icon: 'bi-trophy', accent: '#fb923c' },
+    {
+      key: 'notableMentions',
+      label: 'Notable Mentions',
+      icon: 'bi-bookmark-star',
+      accent: 'var(--gold)',
+    },
   ];
 
   private destroy$ = new Subject<void>();
@@ -78,7 +90,7 @@ export class DeckSuggestionsPanelComponent {
   }
 
   removeSuggestionTag(tag: string): void {
-    this.suggestionTags = this.suggestionTags.filter(t => t !== tag);
+    this.suggestionTags = this.suggestionTags.filter((t) => t !== tag);
     this.cdr.markForCheck();
   }
 
@@ -89,8 +101,8 @@ export class DeckSuggestionsPanelComponent {
   private cacheKey(): string {
     if (!this.commanderCard || !this.deck) return '';
     const deckNames = (this.deck.cards ?? [])
-      .filter(c => c.cardDetails?.oracleId !== this.commanderCard?.oracleId)
-      .map(c => c.cardDetails?.name)
+      .filter((c) => c.cardDetails?.oracleId !== this.commanderCard?.oracleId)
+      .map((c) => c.cardDetails?.name)
       .filter((n): n is string => !!n)
       .sort()
       .join(',');
@@ -116,38 +128,41 @@ export class DeckSuggestionsPanelComponent {
     // Remove stale cache so the fresh result replaces it
     this.suggestionsCache.delete(key);
     this.loading = true;
-    this.error   = null;
+    this.error = null;
     this.suggestions = null;
     this.cdr.markForCheck();
 
     const deckCardNames = (this.deck.cards ?? [])
-      .filter(c => c.cardDetails?.oracleId !== this.commanderCard?.oracleId)
-      .map(c => c.cardDetails?.name)
+      .filter((c) => c.cardDetails?.oracleId !== this.commanderCard?.oracleId)
+      .map((c) => c.cardDetails?.name)
       .filter((n): n is string => !!n);
 
-    this.deckApi.getSuggestions({
-      commanderOracleId: this.commanderCard.oracleId,
-      commanderName:     this.commanderCard.name,
-      commanderText:     this.commanderCard.oracleText,
-      deckCardNames,
-      deckTags:        this.deck.tags ?? [],
-      suggestionTags:  this.suggestionTags,
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError(() => {
-        this.error = 'Failed to generate suggestions. Try again.';
-        this.loading = false;
-        this.cdr.markForCheck();
-        return of(null);
-      }),
-    ).subscribe(result => {
-      if (result) {
-        this.suggestionsCache.set(key, result);
-        this.suggestions = result;
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.deckApi
+      .getSuggestions({
+        commanderOracleId: this.commanderCard.oracleId,
+        commanderName: this.commanderCard.name,
+        commanderText: this.commanderCard.oracleText,
+        deckCardNames,
+        deckTags: this.deck.tags ?? [],
+        suggestionTags: this.suggestionTags,
+      })
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(() => {
+          this.error = 'Failed to generate suggestions. Try again.';
+          this.loading = false;
+          this.cdr.markForCheck();
+          return of(null);
+        }),
+      )
+      .subscribe((result) => {
+        if (result) {
+          this.suggestionsCache.set(key, result);
+          this.suggestions = result;
+          this.loading = false;
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   openDetail(s: SuggestedCardDto, e: MouseEvent): void {
@@ -175,17 +190,18 @@ export class DeckSuggestionsPanelComponent {
     this.modalViewScryfallId = s.scryfallId ?? null;
     this.cdr.markForCheck();
 
-    this.deckApi.getPrintings(oracleId).pipe(
-      takeUntil(this.destroy$),
-    ).subscribe(printings => {
-      this.printingsCache.set(oracleId, printings);
-      if (this.selectedSuggestion?.card?.oracleId === oracleId) {
-        this.modalPrintings = printings;
-        if (!this.modalViewScryfallId && printings.length)
-          this.modalViewScryfallId = printings[0].scryfallId;
-        this.cdr.markForCheck();
-      }
-    });
+    this.deckApi
+      .getPrintings(oracleId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((printings) => {
+        this.printingsCache.set(oracleId, printings);
+        if (this.selectedSuggestion?.card?.oracleId === oracleId) {
+          this.modalPrintings = printings;
+          if (!this.modalViewScryfallId && printings.length)
+            this.modalViewScryfallId = printings[0].scryfallId;
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   closeDetail(): void {
@@ -195,7 +211,7 @@ export class DeckSuggestionsPanelComponent {
 
   isInDeck(s: SuggestedCardDto): boolean {
     if (!s.card?.oracleId) return false;
-    return (this.deck?.cards ?? []).some(c => c.cardDetails?.oracleId === s.card!.oracleId);
+    return (this.deck?.cards ?? []).some((c) => c.cardDetails?.oracleId === s.card!.oracleId);
   }
 
   addCard(s: SuggestedCardDto): void {
@@ -218,11 +234,16 @@ export class DeckSuggestionsPanelComponent {
     this.closeDetail();
   }
 
-  close(): void { this.panelClose.emit(); }
+  close(): void {
+    this.panelClose.emit();
+  }
 
   cardsFor(key: keyof DeckSuggestionsDto): SuggestedCardDto[] {
     return this.suggestions?.[key] ?? [];
   }
 
-  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 }

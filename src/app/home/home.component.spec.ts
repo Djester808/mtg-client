@@ -3,7 +3,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ElementRef, ChangeDetectorRef } from '@angular/core';
 import { provideMockStore } from '@ngrx/store/testing';
-import { of, Subject } from 'rxjs';
+import { of } from 'rxjs';
 import { HomeComponent } from './home.component';
 import { GameApiService } from '../services/game-api.service';
 import { CollectionApiService } from '../services/collection-api.service';
@@ -36,14 +36,16 @@ describe('HomeComponent — search flags', () => {
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
-        { provide: GameApiService,      useValue: gameApi },
+        { provide: GameApiService, useValue: gameApi },
         { provide: CollectionApiService, useValue: collectionApi },
         { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],
     })
-    .overrideComponent(HomeComponent, { remove: { imports: [ManaCostComponent, CardModalComponent] } })
-    .compileComponents();
+      .overrideComponent(HomeComponent, {
+        remove: { imports: [ManaCostComponent, CardModalComponent] },
+      })
+      .compileComponents();
   });
 
   // Create the component inside fakeAsync so ngOnInit's debounce timers are
@@ -95,7 +97,7 @@ describe('HomeComponent — search flags', () => {
   it('clearFilters resets all flags to false', () => {
     component.matchCase = true;
     component.matchWord = true;
-    component.useRegex  = true;
+    component.useRegex = true;
 
     component.clearFilters();
 
@@ -112,7 +114,7 @@ describe('HomeComponent — search flags', () => {
     tick(400);
 
     const args = searchSpy.calls.mostRecent().args;
-    expect(args[5]).toBeTrue();  // matchCase
+    expect(args[5]).toBeTrue(); // matchCase
     expect(args[6]).toBeFalse(); // matchWord
     expect(args[7]).toBeFalse(); // useRegex
   }));
@@ -124,7 +126,7 @@ describe('HomeComponent — search flags', () => {
 
     const args = searchSpy.calls.mostRecent().args;
     expect(args[5]).toBeFalse(); // matchCase
-    expect(args[6]).toBeTrue();  // matchWord
+    expect(args[6]).toBeTrue(); // matchWord
     expect(args[7]).toBeFalse(); // useRegex
   }));
 
@@ -136,13 +138,13 @@ describe('HomeComponent — search flags', () => {
     const args = searchSpy.calls.mostRecent().args;
     expect(args[5]).toBeFalse(); // matchCase
     expect(args[6]).toBeFalse(); // matchWord
-    expect(args[7]).toBeTrue();  // useRegex
+    expect(args[7]).toBeTrue(); // useRegex
   }));
 
   it('passes all three flags when all active', fakeAsync(() => {
     component.matchCase = true;
     component.matchWord = true;
-    component.useRegex  = true;
+    component.useRegex = true;
     component.searchText.setValue('Rat');
     tick(400);
 
@@ -212,14 +214,16 @@ describe('HomeComponent — query builder', () => {
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
-        { provide: GameApiService,       useValue: gameApi },
+        { provide: GameApiService, useValue: gameApi },
         { provide: CollectionApiService, useValue: collectionApi },
-        { provide: ElementRef,           useValue: { nativeElement: document.createElement('div') } },
+        { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],
     })
-    .overrideComponent(HomeComponent, { remove: { imports: [ManaCostComponent, CardModalComponent] } })
-    .compileComponents();
+      .overrideComponent(HomeComponent, {
+        remove: { imports: [ManaCostComponent, CardModalComponent] },
+      })
+      .compileComponents();
   });
 
   beforeEach(fakeAsync(() => {
@@ -286,8 +290,16 @@ describe('HomeComponent — flip', () => {
   let fixture: ComponentFixture<HomeComponent>;
   let gameApi: jasmine.SpyObj<GameApiService>;
 
-  const DFC  = makeCard({ cardId: 'dfc-1',    imageUriNormal: 'front.jpg', imageUriNormalBack: 'back.jpg' });
-  const MONO = makeCard({ cardId: 'mono-1',   imageUriNormal: 'front.jpg', imageUriNormalBack: null });
+  const DFC = makeCard({
+    cardId: 'dfc-1',
+    imageUriNormal: 'front.jpg',
+    imageUriNormalBack: 'back.jpg',
+  });
+  const MONO = makeCard({
+    cardId: 'mono-1',
+    imageUriNormal: 'front.jpg',
+    imageUriNormalBack: null,
+  });
 
   beforeEach(async () => {
     gameApi = jasmine.createSpyObj('GameApiService', ['searchCards', 'getSets']);
@@ -300,14 +312,16 @@ describe('HomeComponent — flip', () => {
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
-        { provide: GameApiService,       useValue: gameApi },
+        { provide: GameApiService, useValue: gameApi },
         { provide: CollectionApiService, useValue: collectionApi },
-        { provide: ElementRef,           useValue: { nativeElement: document.createElement('div') } },
+        { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],
     })
-    .overrideComponent(HomeComponent, { remove: { imports: [ManaCostComponent, CardModalComponent] } })
-    .compileComponents();
+      .overrideComponent(HomeComponent, {
+        remove: { imports: [ManaCostComponent, CardModalComponent] },
+      })
+      .compileComponents();
   });
 
   beforeEach(fakeAsync(() => {

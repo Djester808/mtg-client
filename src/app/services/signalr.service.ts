@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Store } from '@ngrx/store';
 import * as signalR from '@microsoft/signalr';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
 import { GameStateDto, GameStateDiffDto } from '../models/game.models';
 import { GameActions } from '../store/game/game.actions';
 import { AppState } from '../store';
