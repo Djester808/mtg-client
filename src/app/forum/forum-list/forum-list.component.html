@@ -17,48 +17,111 @@
       </ng-container>
     </header>
 
-    <div class="posts-loading" *ngIf="loading$ | async">
-      <div class="spinner"></div>
-      <span>Loading decks...</span>
-    </div>
+    <!-- Filter bar -->
+    <div class="forum-filters">
+      <!-- Search -->
+      <div class="ff-search-wrap">
+        <i class="bi bi-search ff-search-icon"></i>
+        <input class="ff-search" type="text" [(ngModel)]="searchQuery"
+               (ngModelChange)="cdr.markForCheck()"
+               placeholder="Search decks or players…" autocomplete="off"
+               title="Filter by deck name or player">
+      </div>
 
-    <div class="posts-empty" *ngIf="!(loading$ | async) && (posts$ | async)?.length === 0">
-      <i class="bi bi-collection"></i>
-      <p>No decks published yet. Be the first!</p>
-    </div>
+      <div class="ff-sep"></div>
 
-    <div class="posts-grid" *ngIf="!(loading$ | async) && (posts$ | async)?.length">
-      <a class="post-card" *ngFor="let post of posts$ | async"
-         [routerLink]="['/forum', post.id]">
+      <!-- Color identity -->
+      <div class="ff-group">
+        <span class="ff-label">Color</span>
+        <button class="ff-color-btn" *ngFor="let c of colorOptions"
+                [class.is-active]="selectedColors.has(c)"
+                (click)="toggleColor(c)"
+                [title]="'Filter by ' + c + ' color'">
+          <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c)"></i>
+        </button>
+      </div>
 
-        <div class="post-cover"
-             [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
-          <div class="post-cover-overlay"></div>
-          <div class="post-format-badge" *ngIf="post.deckFormat">
-            {{ formatLabel(post.deckFormat) }}
-          </div>
-          <div class="post-pips" *ngIf="post.colorIdentity?.length">
-            <span class="color-pip" *ngFor="let c of post.colorIdentity"
-                  [ngClass]="colorClass(c)"></span>
-          </div>
+      <div class="ff-sep"></div>
+
+      <!-- Format -->
+      <div class="ff-group ff-formats">
+        <span class="ff-label">Format</span>
+        <button class="ff-chip" *ngFor="let f of formatOptions"
+                [class.is-active]="selectedFormats.has(f)"
+                [title]="'Filter by ' + f + ' format'"
+                (click)="toggleFormat(f)">{{ f }}</button>
+      </div>
+
+      <div class="ff-spacer"></div>
+
+      <!-- Sort -->
+      <div class="ff-group">
+        <span class="ff-label">Sort</span>
+        <div class="ff-sort-group">
+          <button class="ff-sort-btn" *ngFor="let s of sortOptions"
+                  [class.is-active]="sortBy === s.value"
+                  [title]="'Sort by ' + s.label"
+                  (click)="setSortBy(s.value)">{{ s.label }}</button>
         </div>
+      </div>
 
-        <div class="post-body">
-          <h2 class="post-deck-name">{{ post.deckName }}</h2>
-          <p class="post-author">by {{ post.authorUsername }}</p>
-          <p class="post-desc" *ngIf="post.description">{{ post.description }}</p>
-          <div class="post-meta">
-            <span class="post-meta-item">
-              <i class="bi bi-collection"></i> {{ post.cardCount }} cards
-            </span>
-            <span class="post-meta-item">
-              <i class="bi bi-chat"></i> {{ post.commentCount }}
-            </span>
-            <span class="post-meta-item post-time">{{ timeAgo(post.publishedAt) }}</span>
-          </div>
-        </div>
-
-      </a>
+      <!-- Clear -->
+      <button class="ff-clear" *ngIf="hasActiveFilters" (click)="clearFilters()"
+              title="Clear all active filters">
+        <i class="bi bi-x-circle"></i> Clear
+      </button>
     </div>
+
+    <ng-container *ngIf="posts$ | async as allPosts">
+      <div class="posts-loading" *ngIf="loading$ | async">
+        <div class="spinner"></div>
+        <span>Loading decks...</span>
+      </div>
+
+      <div class="posts-empty" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length === 0">
+        <i class="bi bi-collection"></i>
+        <p>No decks match your filters.</p>
+      </div>
+
+      <div class="posts-grid" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length">
+        <div class="post-card" *ngFor="let post of filteredPosts(allPosts)"
+             [routerLink]="['/forum', post.id]"
+             title="View deck: {{ post.deckName }}">
+
+          <div class="post-cover"
+               [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
+            <div class="post-cover-overlay"></div>
+            <div class="post-format-badge" *ngIf="post.deckFormat"
+                 [title]="'Format: ' + formatLabel(post.deckFormat)">
+              {{ formatLabel(post.deckFormat) }}
+            </div>
+            <div class="post-pips" *ngIf="post.colorIdentity?.length">
+              <i class="ms ms-cost ms-shadow" *ngFor="let c of post.colorIdentity"
+                 [ngClass]="manaClass(c)" [title]="c"></i>
+            </div>
+          </div>
+
+          <div class="post-body">
+            <h2 class="post-deck-name">{{ post.deckName }}</h2>
+            <p class="post-author">by
+              <a class="author-link" [routerLink]="['/u', post.authorUsername]"
+                 (click)="$event.stopPropagation()"
+                 title="View {{ post.authorUsername }}'s profile">{{ post.authorUsername }}</a>
+            </p>
+            <p class="post-desc" *ngIf="post.description" [innerHTML]="post.description | oracleSymbols"></p>
+            <div class="post-meta">
+              <span class="post-meta-item" title="Card count">
+                <i class="bi bi-collection"></i> {{ post.cardCount }} cards
+              </span>
+              <span class="post-meta-item" title="Comments">
+                <i class="bi bi-chat"></i> {{ post.commentCount }}
+              </span>
+              <span class="post-meta-item post-time" [title]="post.publishedAt">{{ timeAgo(post.publishedAt) }}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
   </div>
 </div>

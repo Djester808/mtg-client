@@ -21,6 +21,7 @@ import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selec
 import { CollectionCardDto, PrintingDto, CardType, ManaColor, CardDto } from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
+import { PreferencesApiService } from '../../services/preferences-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
@@ -31,7 +32,7 @@ import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/m
 import { ForumActions } from '../../store/forum/forum.actions';
 import { selectForumPublishLoading } from '../../store/forum/forum.selectors';
 
-export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set';
+export type SortMode = 'cmc' | 'name' | 'type' | 'subtype' | 'color' | 'color-identity' | 'rarity' | 'artist' | 'set' | 'creature-split';
 export type ViewMode = 'list' | 'visual' | 'free';
 
 export interface FreeColumn {
@@ -86,6 +87,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   filterQuery     = '';
   filterCardNames: string[] = [];
   sortMode: SortMode = 'cmc';
+
   viewMode: ViewMode = 'list';
   textStyle       = false;
   zoomLevel = 1.0;
@@ -139,6 +141,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
   flippedCardIds = new Set<string>();
   stackDensity: 'full' | 'half' | 'name' = 'half';
+  groupDir: 'h' | 'v' = 'h';
   layoutSaved = false;
   freeLayoutDirty = false;
   showUnsavedLayoutModal = false;
@@ -172,6 +175,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   stackDragFromIdx: number | null = null;
   stackDragOverIdx: number | null = null;
 
+  listOrders = new Map<string, string[]>();
+  listDragGroupKey: string | null = null;
+  listDragFromIdx: number | null = null;
+  listDragOverIdx: number | null = null;
+
+  isSearchDragOver = false;
+
   get modalPrintings(): PrintingDto[] {
     return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
   }
@@ -179,6 +189,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   @ViewChild(CardSearchPanelComponent) searchPanel?: CardSearchPanelComponent;
 
   private deckId = '';
+  private _rafPending = false;
   private printingsLoad$ = new Subject<string>();
   printingsCache = new Map<string, PrintingDto[]>();
   private destroy$ = new Subject<void>();
@@ -190,6 +201,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private collectionApi: CollectionApiService,
     private deckApi: DeckApiService,
     private cdr: ChangeDetectorRef,
+    private prefs: PreferencesApiService,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
@@ -222,8 +234,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     } else {
-      this.viewMode = 'visual';
       this.stackDensity = 'half';
+      this.prefs.load().pipe(take(1), takeUntil(this.destroy$)).subscribe(p => {
+        this.viewMode = p.deckLayout ?? 'visual';
+        this.cdr.markForCheck();
+      });
     }
 
     this.deck$.pipe(takeUntil(this.destroy$)).subscribe(deck => {
@@ -302,6 +317,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.sortMode = mode;
+    this.listOrders.clear();
+    this.stackOrders.clear();
     this.cdr.markForCheck();
   }
 
@@ -330,6 +347,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.viewMode = mode;
       this.textStyle = false;
       if (mode === 'free' && deck) this.enterFreeMode(deck);
+      if (mode !== 'free') this.prefs.save({ deckLayout: mode });
       this.cdr.markForCheck();
     };
     if (this.viewMode === 'free' && mode !== 'free') {
@@ -457,10 +475,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   resetFreeLayout(deck: DeckDetailDto): void {
     localStorage.removeItem(`deck-free-${this.deckId}`);
+    this.sortMode = 'cmc';
     this.freeColumns = [];
-    this.enterFreeMode(deck);
+    this.rebuildFreeColumns(deck);
     this.freeLayoutDirty = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   getCardsForColumn(col: FreeColumn, deck: DeckDetailDto): CollectionCardDto[] {
@@ -752,37 +771,226 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Drag and drop ---------------------------------------
 
-  onCardDragStart(card: CollectionCardDto, colId: string, renderedIdx: number, event: DragEvent): void {
+  private rafCheck(): void {
+    if (this._rafPending) return;
+    this._rafPending = true;
+    requestAnimationFrame(() => { this._rafPending = false; this.cdr.markForCheck(); });
+  }
+
+  private animateGhostDrop(ghost: HTMLElement, x: number, y: number, grabOffsetX: number, grabOffsetY: number, done: () => void): void {
+    ghost.style.transition = 'transform 0.18s cubic-bezier(0.2,0,0.2,1), opacity 0.15s ease';
+    ghost.style.transform = `translate3d(${x - grabOffsetX}px,${y - grabOffsetY}px,0) rotate(0deg) scale(0.8)`;
+    ghost.style.opacity = '0';
+    setTimeout(done, 180);
+  }
+
+  private createDragGhost(cardEl: HTMLElement, startX: number, startY: number): { ghost: HTMLElement; grabOffsetX: number; grabOffsetY: number } {
+    const artEl = cardEl.querySelector<HTMLElement>('.visual-art, .card-thumb');
+    const ghost = document.createElement('div');
+    ghost.style.position = 'fixed';
+    ghost.style.left = '0';
+    ghost.style.top = '0';
+    ghost.style.zIndex = '9999';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.opacity = '0.92';
+
+    let grabOffsetX: number;
+    let grabOffsetY: number;
+
+    if (artEl) {
+      const r = artEl.getBoundingClientRect();
+      grabOffsetX = startX - r.left;
+      grabOffsetY = startY - r.top;
+      ghost.style.width = `${r.width || 120}px`;
+      ghost.style.height = `${r.height || 168}px`;
+      ghost.style.backgroundImage = artEl.style.backgroundImage || '';
+      ghost.style.backgroundSize = 'cover';
+      ghost.style.backgroundPosition = 'center';
+      ghost.style.backgroundColor = '#1a1728';
+      ghost.style.borderRadius = '6px';
+      ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(201,168,76,0.4)';
+    } else {
+      // Text-only row — show a compact name badge
+      const label = cardEl.querySelector('.list-name')?.textContent?.trim()
+                 ?? cardEl.querySelector('.card-name span')?.textContent?.trim()
+                 ?? '';
+      const rowR = cardEl.getBoundingClientRect();
+      grabOffsetX = startX - rowR.left;
+      grabOffsetY = startY - rowR.top;
+      ghost.style.height = '34px';
+      ghost.style.maxWidth = '260px';
+      ghost.style.width = 'max-content';
+      ghost.style.padding = '0 14px';
+      ghost.style.display = 'flex';
+      ghost.style.alignItems = 'center';
+      ghost.style.backgroundColor = '#1a1728';
+      ghost.style.border = '1px solid rgba(201,168,76,0.5)';
+      ghost.style.borderRadius = '17px';
+      ghost.style.color = 'rgba(201,168,76,0.95)';
+      ghost.style.fontSize = '13px';
+      ghost.style.fontWeight = '500';
+      ghost.style.whiteSpace = 'nowrap';
+      ghost.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2)';
+      ghost.textContent = label;
+    }
+
+    ghost.style.transform = `translate3d(${startX - grabOffsetX}px,${startY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+    document.body.appendChild(ghost);
+    return { ghost, grabOffsetX, grabOffsetY };
+  }
+
+  onFreeCardPointerDown(card: CollectionCardDto, colId: string, renderedIdx: number, event: PointerEvent): void {
+    if ((event.target as HTMLElement).closest('button')) return;
+    event.preventDefault();
+
     const slotKey = `${colId}/${renderedIdx}`;
     const isMulti = this.selectedCardSlots.size > 1 && this.selectedCardSlots.has(slotKey);
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let lastX = startX;
+    let lastY = startY;
+    let dragging = false;
+    let ghost: HTMLElement | null = null;
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
 
-    this.dragSourceColId = colId;
-    this.dragSrcRenderedIdx = renderedIdx;
-    if (event.dataTransfer) {
-      // Use the full card element as the ghost — prevents the flip button from showing as ghost
-      const cardEl = event.target
-        ? (event.target as Element).closest<HTMLElement>('.free-card')
-        : null;
-      if (cardEl) {
-        const r = cardEl.getBoundingClientRect();
-        event.dataTransfer.setDragImage(cardEl, event.clientX - r.left, event.clientY - r.top);
+    const cardEl = (event.currentTarget as HTMLElement);
+    const scrollEl = document.querySelector<HTMLElement>('.groups-area.is-free');
+
+    const cleanup = (drop: boolean) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      ghost?.remove();
+      ghost = null;
+      this.stopEdgeScroll();
+
+      if (dragging && drop && this.dragOverColId !== null && this.dragOverIndex !== null) {
+        if (isMulti && this.multiDragCards.length > 1) {
+          this.executeMultiCardDrop(this.dragOverColId, this.dragOverIndex);
+        } else {
+          const dropColId = this.dragOverColId;
+          const dropIdx = this.dragOverIndex;
+          const cardId = card.id;
+          const cols = this.freeColumns.map(c => {
+            if (c.id !== colId) return c;
+            const i = c.cardIds.indexOf(cardId);
+            if (i < 0) return c;
+            return { ...c, cardIds: [...c.cardIds.slice(0, i), ...c.cardIds.slice(i + 1)] };
+          });
+          const ti = cols.findIndex(c => c.id === dropColId);
+          if (ti >= 0) {
+            cols[ti] = { ...cols[ti], cardIds: [...cols[ti].cardIds.slice(0, dropIdx), cardId, ...cols[ti].cardIds.slice(dropIdx)] };
+          }
+          this.freeColumns = cols;
+          this.freeLayoutDirty = true;
+        }
       }
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', card.id);
-    }
 
-    if (isMulti) {
-      this.isDraggingMultiCards = true;
-      this.multiDragCards = Array.from(this.selectedCardSlots.entries()).map(([slot, cid]) => {
-        const slashIdx = slot.lastIndexOf('/');
-        return { colId: slot.slice(0, slashIdx), cardId: cid, renderedIdx: parseInt(slot.slice(slashIdx + 1), 10) };
-      });
-    } else {
+      document.body.style.removeProperty('cursor');
+      this.dragCardId = null;
+      this.dragSourceColId = null;
+      this.dragSrcRenderedIdx = null;
+      this.dragOverColId = null;
+      this.dragOverIndex = null;
       this.isDraggingMultiCards = false;
       this.multiDragCards = [];
-    }
+      if (dragging) this.cdr.markForCheck();
+    };
 
-    setTimeout(() => { this.dragCardId = card.id; this.cdr.markForCheck(); });
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
+        dragging = true;
+        this.dragCardId = card.id;
+        this.dragSourceColId = colId;
+        this.dragSrcRenderedIdx = renderedIdx;
+        if (isMulti) {
+          this.isDraggingMultiCards = true;
+          this.multiDragCards = Array.from(this.selectedCardSlots.entries()).map(([slot, cid]) => {
+            const slash = slot.lastIndexOf('/');
+            return { colId: slot.slice(0, slash), cardId: cid, renderedIdx: parseInt(slot.slice(slash + 1), 10) };
+          });
+        }
+        document.body.style.setProperty('cursor', 'grabbing', 'important');
+
+        // Build ghost element
+        const r = cardEl.getBoundingClientRect();
+        grabOffsetX = startX - r.left;
+        grabOffsetY = startY - r.top;
+        const visualArt = cardEl.querySelector<HTMLElement>('.visual-art');
+        const bgImg = visualArt?.style.backgroundImage || '';
+        ghost = document.createElement('div');
+        ghost.style.position = 'fixed';
+        ghost.style.left = '0';
+        ghost.style.top = '0';
+        ghost.style.width = `${r.width || 120}px`;
+        ghost.style.height = `${r.height || 168}px`;
+        ghost.style.backgroundImage = bgImg;
+        ghost.style.backgroundSize = 'cover';
+        ghost.style.backgroundPosition = 'center';
+        ghost.style.backgroundColor = '#1a1728';
+        ghost.style.borderRadius = '6px';
+        ghost.style.opacity = '0.9';
+        ghost.style.zIndex = '9999';
+        ghost.style.pointerEvents = 'none';
+        ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(201,168,76,0.4)';
+        ghost.style.transform = `translate3d(${startX - grabOffsetX}px,${startY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+        document.body.appendChild(ghost);
+
+        this.cdr.markForCheck();
+      }
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      if (ghost) {
+        ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+      }
+
+      // Edge scroll the free area
+      if (scrollEl) this.updateEdgeScroll(e.clientX, scrollEl);
+
+      let newColId: string | null = null;
+      for (const colEl of Array.from(document.querySelectorAll<HTMLElement>('.free-col'))) {
+        const r = colEl.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          newColId = colEl.getAttribute('data-col-id');
+          break;
+        }
+      }
+
+      if (newColId !== null) {
+        const colEl = document.querySelector<HTMLElement>(`.free-col[data-col-id="${newColId}"]`);
+        const cards = colEl ? Array.from(colEl.querySelectorAll<HTMLElement>('.free-card:not(.is-dragging)')) : [];
+        let idx = cards.length;
+        for (let i = 0; i < cards.length; i++) {
+          const { top, height } = cards[i].getBoundingClientRect();
+          if (e.clientY < top + height / 2) { idx = i; break; }
+        }
+        if (this.dragOverColId !== newColId || this.dragOverIndex !== idx) {
+          this.dragOverColId = newColId;
+          this.dragOverIndex = idx;
+          this.rafCheck();
+        }
+      } else if (this.dragOverColId !== null) {
+        this.dragOverColId = null;
+        this.dragOverIndex = null;
+        this.rafCheck();
+      }
+    };
+
+    const onUp = () => {
+      if (dragging && ghost) {
+        this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
+      } else {
+        cleanup(true);
+      }
+    };
+    const onCancel = () => cleanup(false);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
   }
 
   private parseSearchDrag(event: DragEvent): { oracleId: string; scryfallId: string } | null {
@@ -795,25 +1003,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   onColDragOver(colId: string, event: DragEvent): void {
     if (this.dragColId) return;
-    event.preventDefault();
     const isSearch = event.dataTransfer?.types.includes('application/x-search-card');
-    if (event.dataTransfer) event.dataTransfer.dropEffect = isSearch ? 'copy' : 'move';
-
-    const col = event.currentTarget as HTMLElement;
-    const cards = Array.from(
-      col.querySelectorAll<HTMLElement>('.free-card:not(.is-dragging)')
-    );
-    let idx = cards.length;
-    for (let i = 0; i < cards.length; i++) {
-      const { top, height } = cards[i].getBoundingClientRect();
-      if (event.clientY < top + height / 2) { idx = i; break; }
-    }
-
-    if (this.dragOverColId !== colId || this.dragOverIndex !== idx) {
-      this.dragOverColId = colId;
-      this.dragOverIndex = idx;
-      this.cdr.markForCheck();
-    }
+    if (!isSearch) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    if (!this.isSearchDragOver) { this.isSearchDragOver = true; this.cdr.markForCheck(); }
   }
 
   onColDrop(colId: string, event: DragEvent): void {
@@ -913,13 +1107,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (isSearch) {
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      if (!this.isSearchDragOver) { this.isSearchDragOver = true; this.cdr.markForCheck(); }
     }
     if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
     if (!this.dragCardId && !this.dragColId && !isSearch) return;
     this.updateEdgeScroll(event.clientX, event.currentTarget as HTMLElement);
   }
 
+  onGroupsAreaDragLeave(event: DragEvent): void {
+    const rel = event.relatedTarget as HTMLElement | null;
+    if (rel && (event.currentTarget as HTMLElement).contains(rel)) return;
+    if (this.isSearchDragOver) { this.isSearchDragOver = false; this.cdr.markForCheck(); }
+  }
+
   onGroupsAreaDrop(event: DragEvent): void {
+    this.isSearchDragOver = false;
     const searchCard = this.parseSearchDrag(event);
     if (!searchCard) return;
     event.preventDefault();
@@ -1331,6 +1533,20 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       });
     }
 
+    if (this.sortMode === 'creature-split') {
+      const cmcSort = (a: CollectionCardDto, b: CollectionCardDto) =>
+        (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
+        || (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? '');
+      const creatures   = filtered.filter(c => c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c)).sort(cmcSort);
+      const nonCreatures = filtered.filter(c => !c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c)).sort(cmcSort);
+      const lands       = filtered.filter(c => this.isLand(c)).sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
+      const groups: CmcGroup[] = [];
+      if (creatures.length)    groups.push({ label: 'Creatures',     key: 'split-creatures',    cards: creatures,    totalCount: creatures.reduce((s, c)    => s + this.cardCount(c), 0) });
+      if (nonCreatures.length) groups.push({ label: 'Non-Creatures', key: 'split-noncreatures', cards: nonCreatures, totalCount: nonCreatures.reduce((s, c) => s + this.cardCount(c), 0) });
+      if (lands.length)        groups.push({ label: 'Lands',         key: 'split-lands',        cards: lands,        totalCount: lands.reduce((s, c)        => s + this.cardCount(c), 0) });
+      return groups;
+    }
+
     // CMC
     const nonLands = filtered.filter(c => !this.isLand(c))
       .sort((a, b) => (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0)
@@ -1384,9 +1600,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   onStackPointerDown(groupKey: string, idx: number, card: CollectionCardDto, event: PointerEvent): void {
     if ((event.target as HTMLElement).closest('button')) return;
+    event.preventDefault();
+    const cardEl = event.currentTarget as HTMLElement;
     const startX = event.clientX;
     const startY = event.clientY;
+    let lastX = startX;
+    let lastY = startY;
     let dragging = false;
+    let ghost: HTMLElement | null = null;
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
     let overCommander = false;
 
     const d = card.cardDetails;
@@ -1398,6 +1621,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
+      ghost?.remove(); ghost = null;
       if (dragging && drop) {
         if (overCommander && isCommanderEligible) {
           this.deck$.pipe(take(1)).subscribe(deck => {
@@ -1429,8 +1653,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.stackDragGroupKey = groupKey;
         this.stackDragFromIdx = idx;
         document.body.style.setProperty('cursor', 'grabbing', 'important');
+        ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
         this.cdr.markForCheck();
       }
+
+      lastX = e.clientX; lastY = e.clientY;
+      if (ghost) ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
 
       // Check hover over commander slot (only relevant for eligible cards in commander decks)
       if (isCommanderEligible) {
@@ -1452,16 +1680,32 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (!listEl) return;
       const cards = Array.from(listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'));
       let dstIdx = cards.length;
-      for (let i = 0; i < cards.length; i++) {
-        if (e.clientY < cards[i].getBoundingClientRect().top + 16) { dstIdx = i; break; }
+      if (this.groupDir === 'v') {
+        // Horizontal wrapping layout — find insert point by 2-D position
+        for (let i = 0; i < cards.length; i++) {
+          const r = cards[i].getBoundingClientRect();
+          if (e.clientY < r.top) { dstIdx = i; break; }
+          if (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2) { dstIdx = i; break; }
+        }
+      } else {
+        // Vertical stack layout — Y position check
+        for (let i = 0; i < cards.length; i++) {
+          if (e.clientY < cards[i].getBoundingClientRect().top + 16) { dstIdx = i; break; }
+        }
       }
       if (this.stackDragOverIdx !== dstIdx) {
         this.stackDragOverIdx = dstIdx;
-        this.cdr.markForCheck();
+        this.rafCheck();
       }
     };
 
-    const onUp = () => cleanup(true);
+    const onUp = () => {
+      if (dragging && ghost) {
+        this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
+      } else {
+        cleanup(true);
+      }
+    };
     const onCancel = () => cleanup(false);
 
     window.addEventListener('pointermove', onMove);
@@ -1472,15 +1716,104 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   trackByIdx(index: number): number { return index; }
   trackByGroupKey(_index: number, group: CmcGroup): string { return group.key; }
 
+  getOrderedListCards(groupKey: string, cards: CollectionCardDto[]): CollectionCardDto[] {
+    const order = this.listOrders.get(groupKey);
+    if (!order) return cards;
+    const byId = new Map(cards.map(c => [c.id, c]));
+    const ordered = order.map(id => byId.get(id)).filter((c): c is CollectionCardDto => c != null);
+    const inOrder = new Set(order);
+    const rest = cards.filter(c => !inOrder.has(c.id));
+    return [...ordered, ...rest];
+  }
+
+  onListCardPointerDown(groupKey: string, idx: number, card: CollectionCardDto, event: PointerEvent, allCards: CollectionCardDto[]): void {
+    if ((event.target as HTMLElement).closest('button')) return;
+    event.preventDefault();
+    const cardEl = event.currentTarget as HTMLElement;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let lastX = startX;
+    let lastY = startY;
+    let dragging = false;
+    let ghost: HTMLElement | null = null;
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
+
+    const cleanup = (drop: boolean) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      ghost?.remove(); ghost = null;
+      if (dragging && drop) {
+        const src = this.listDragFromIdx;
+        const dst = this.listDragOverIdx;
+        if (src != null && dst != null && src !== dst) {
+          if (!this.listOrders.has(groupKey)) this.listOrders.set(groupKey, allCards.map(c => c.id));
+          const ids = [...this.listOrders.get(groupKey)!];
+          const [moved] = ids.splice(src, 1);
+          ids.splice(dst > src ? dst - 1 : dst, 0, moved);
+          this.listOrders.set(groupKey, ids);
+        }
+      }
+      document.body.style.removeProperty('cursor');
+      this.listDragGroupKey = null;
+      this.listDragFromIdx = null;
+      this.listDragOverIdx = null;
+      if (dragging) this.cdr.markForCheck();
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
+        dragging = true;
+        this.listDragGroupKey = groupKey;
+        this.listDragFromIdx = idx;
+        document.body.style.setProperty('cursor', 'grabbing', 'important');
+        ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
+        this.cdr.markForCheck();
+      }
+      lastX = e.clientX; lastY = e.clientY;
+      if (ghost) ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
+      const listEl = document.querySelector<HTMLElement>(`.list-drag-group[data-group-key="${groupKey}"]`);
+      if (!listEl) return;
+      const rows = Array.from(listEl.querySelectorAll<HTMLElement>('.list-drag-row:not(.is-list-dragging)'));
+      let dstIdx = rows.length;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i].getBoundingClientRect();
+        if (e.clientY < r.top + r.height / 2) { dstIdx = i; break; }
+      }
+      if (this.listDragOverIdx !== dstIdx) {
+        this.listDragOverIdx = dstIdx;
+        this.rafCheck();
+      }
+    };
+
+    const onUp = () => {
+      if (dragging && ghost) {
+        this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
+      } else {
+        cleanup(true);
+      }
+    };
+    const onCancel = () => cleanup(false);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+  }
+
   filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
     const board = this.activeBoard;
     let cards = deck.cards.filter(c => (c.board ?? 'main') === board);
     if (board === 'main' && deck.commanderOracleId) {
       cards = cards.filter(c => c.oracleId !== deck.commanderOracleId);
     }
-    if (!this.filterQuery.trim()) return cards;
-    const q = this.filterQuery.toLowerCase();
-    return cards.filter(c => c.cardDetails?.name.toLowerCase().includes(q));
+
+    if (this.filterQuery.trim()) {
+      const q = this.filterQuery.toLowerCase();
+      cards = cards.filter(c => c.cardDetails?.name.toLowerCase().includes(q));
+    }
+
+    return cards;
   }
 
   boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {
@@ -1705,29 +2038,66 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   openSidePanel(tab: 'stats' | 'commander'): void {
-    this.showSidePanel = this.sideTab === tab ? !this.showSidePanel : true;
-    this.sideTab = tab;
+    if (this.sideTab === tab && this.showSidePanel) {
+      this.showSidePanel = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const hadAny = this.showSearchPanel || this.showManaSuggestPanel || this.showSuggestionsPanel || this.showSidePanel;
     this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
+    this.showSidePanel = false;
     this.cdr.markForCheck();
+    const open = () => { this.sideTab = tab; this.showSidePanel = true; this.cdr.markForCheck(); };
+    if (hadAny) { setTimeout(open, 300); } else { open(); }
+  }
+
+  private switchRightPanel(openFn: () => void): void {
+    const hasOpen = this.showSearchPanel || this.showManaSuggestPanel || this.showSuggestionsPanel || this.showSidePanel;
+    this.showSearchPanel = false;
+    this.showManaSuggestPanel = false;
+    this.showSuggestionsPanel = false;
+    this.showSidePanel = false;
+    this.cdr.markForCheck();
+    if (hasOpen) {
+      setTimeout(openFn, 300);
+    } else {
+      openFn();
+    }
   }
 
   toggleSearchPanel(): void {
-    this.showSearchPanel = !this.showSearchPanel;
     if (this.showSearchPanel) {
-      this.showManaSuggestPanel = false;
-      this.showSuggestionsPanel = false;
-      this.showSidePanel = false;
-    } else {
+      this.showSearchPanel = false;
       this.commanderSearchMode = false;
+      this.cdr.markForCheck();
+      return;
     }
+    this.switchRightPanel(() => { this.showSearchPanel = true; this.cdr.markForCheck(); });
+  }
+
+  toggleManaSuggestPanel(): void {
+    if (this.showManaSuggestPanel) {
+      this.showManaSuggestPanel = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.switchRightPanel(() => { this.showManaSuggestPanel = true; this.cdr.markForCheck(); });
+  }
+
+  toggleSuggestionsPanel(): void {
+    if (this.showSuggestionsPanel) {
+      this.showSuggestionsPanel = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.switchRightPanel(() => { this.showSuggestionsPanel = true; this.cdr.markForCheck(); });
   }
 
   openCommanderSearch(): void {
     this.commanderSearchMode = true;
-    this.showSearchPanel = true;
-    this.cdr.markForCheck();
+    this.switchRightPanel(() => { this.showSearchPanel = true; this.cdr.markForCheck(); });
   }
 
   onPanelCardAdd(event: { oracleId: string; scryfallId: string; isCommanderEligible?: boolean }): void {

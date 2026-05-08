@@ -30,6 +30,8 @@ function makeDeck(overrides: Partial<DeckDetailDto> = {}): DeckDetailDto {
     format: 'commander',
     commanderOracleId: null,
     tags: [],
+    notes: null,
+    isPublished: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     cards: [],

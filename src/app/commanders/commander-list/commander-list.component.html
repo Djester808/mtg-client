@@ -1,0 +1,95 @@
+<div class="commander-list-page">
+
+  <header class="cl-header">
+    <h1 class="cl-title">Commander Hub</h1>
+    <p class="cl-subtitle">Community commanders ranked by number of published decks</p>
+  </header>
+
+  <!-- Filter bar -->
+  <div class="cl-filters" *ngIf="!loading && commanders.length > 0">
+    <div class="clf-search-wrap">
+      <i class="bi bi-search clf-search-icon"></i>
+      <input class="clf-search" type="text" [(ngModel)]="searchQuery"
+             (ngModelChange)="cdr.markForCheck()"
+             placeholder="Search commanders…" autocomplete="off"
+             title="Filter by commander name">
+    </div>
+
+    <div class="clf-sep"></div>
+
+    <span class="clf-label" title="Filter by color identity">Colors</span>
+    <button class="clf-color-btn" *ngFor="let c of colorOptions"
+            [class.is-active]="selectedColors.has(c)"
+            (click)="toggleColor(c)"
+            [title]="'Filter: includes ' + c">
+      <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c)"></i>
+    </button>
+
+    <div class="clf-sep"></div>
+
+    <span class="clf-label" title="Filter by deck publish date">Period</span>
+    <div class="clf-date-group">
+      <button class="clf-date-btn"
+              *ngFor="let p of datePresets"
+              [class.is-active]="dateMonths === p.months"
+              [title]="p.months === 0 ? 'Show all time' : 'Show last ' + p.label"
+              (click)="setDatePreset(p.months)">{{ p.label }}</button>
+    </div>
+
+    <button class="clf-clear" *ngIf="hasActiveFilters" (click)="clearFilters()"
+            title="Clear all filters">
+      <i class="bi bi-x-circle"></i> Clear
+    </button>
+
+    <span class="clf-result-count">{{ filteredCommanders.length }} commander{{ filteredCommanders.length === 1 ? '' : 's' }}</span>
+  </div>
+
+  <div class="cl-loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Loading commanders…</span>
+  </div>
+
+  <div class="cl-error" *ngIf="error">{{ error }}</div>
+
+  <div class="cl-empty" *ngIf="!loading && !error && commanders.length === 0">
+    <p>No commanders found yet. Publish a Commander deck in the <a routerLink="/community/forum">Community</a> to get started!</p>
+  </div>
+
+  <div class="cl-empty" *ngIf="!loading && commanders.length > 0 && filteredCommanders.length === 0">
+    <p>No commanders match your filters.</p>
+  </div>
+
+  <div class="commander-grid" *ngIf="!loading && filteredCommanders.length > 0">
+    <a
+      *ngFor="let cmd of filteredCommanders"
+      class="commander-card"
+      [routerLink]="['/commanders', cmd.oracleId]"
+    >
+      <div class="commander-card-img-wrap">
+        <img
+          *ngIf="cmd.imageUri"
+          [src]="cmd.imageUri"
+          [alt]="cmd.name"
+          class="commander-card-img"
+          loading="lazy"
+        />
+        <div class="commander-card-placeholder" *ngIf="!cmd.imageUri">
+          <span>{{ cmd.name[0] }}</span>
+        </div>
+        <span class="commander-rank">#{{ cmd.rank }}</span>
+      </div>
+
+      <div class="commander-card-body">
+        <div class="commander-name">{{ cmd.name }}</div>
+        <div class="commander-meta">
+          <span class="deck-count">
+            <i class="bi bi-stack"></i>
+            {{ cmd.deckCount }} deck{{ cmd.deckCount === 1 ? '' : 's' }}
+          </span>
+          <div class="commander-mana" *ngIf="cmd.manaCost" [innerHTML]="cmd.manaCost | manaCost"></div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>

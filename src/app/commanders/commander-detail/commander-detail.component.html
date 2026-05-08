@@ -1,0 +1,295 @@
+<div class="commander-detail-page">
+
+  <!-- Loading / Error -->
+  <div class="cd-loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Loading commander…</span>
+  </div>
+  <div class="cd-error" *ngIf="error">{{ error }}</div>
+
+  <!-- ── Commander Header ─────────────────────────────────────────────────── -->
+  <div class="cd-hero" *ngIf="!loading && profile">
+    <div
+      class="cd-hero-bg"
+      [style.background-image]="profile.imageUriArtCrop ? 'url(' + profile.imageUriArtCrop + ')' : 'none'"
+    ></div>
+
+    <div class="cd-hero-content">
+      <div class="cd-card-wrap" (click)="openCommanderCard($event)"
+           title="Click to view {{ profile.name }}" style="cursor:pointer">
+        <img *ngIf="profile.imageUri" [src]="profile.imageUri" [alt]="profile.name" class="cd-card-img" />
+        <div class="cd-card-placeholder" *ngIf="!profile.imageUri"><span>{{ profile.name[0] }}</span></div>
+        <div class="cd-card-hover-hint">
+          <i class="bi bi-search"></i>
+        </div>
+      </div>
+
+      <div class="cd-hero-info">
+        <div class="cd-back">
+          <a routerLink="/community/commanders" class="back-link">
+            <i class="bi bi-arrow-left"></i> Commander Hub
+          </a>
+        </div>
+
+        <h1 class="cd-name">{{ profile.name }}</h1>
+
+        <div class="cd-color-pips">
+          <span class="cd-mana-icons" *ngIf="profile.manaCost" [innerHTML]="profile.manaCost | manaCost"></span>
+        </div>
+
+        <div class="cd-stats-row">
+          <div class="cd-stat">
+            <span class="cd-stat-value">{{ totalDecks || profile.deckCount }}</span>
+            <span class="cd-stat-label">Community Decks</span>
+          </div>
+          <div class="cd-stat">
+            <span class="cd-stat-value">#{{ profile.rank }}</span>
+            <span class="cd-stat-label">Overall Rank</span>
+          </div>
+          <div class="cd-stat" *ngIf="cards.length > 0">
+            <span class="cd-stat-value">{{ cards.length }}</span>
+            <span class="cd-stat-label">Unique Cards</span>
+          </div>
+        </div>
+
+        <div class="cd-tags" *ngIf="profile.topTags.length > 0">
+          <span class="cd-tag" *ngFor="let tag of profile.topTags">
+            {{ tag.tag }}<span class="cd-tag-count">{{ tag.count }}</span>
+          </span>
+        </div>
+
+        <p class="cd-oracle" *ngIf="profile.oracleText" [innerHTML]="profile.oracleText | oracleSymbols"></p>
+
+        <button class="ai-suggest-btn" (click)="loadSuggestions()" *ngIf="!showSuggestions">
+          <i class="bi bi-stars"></i> Get AI Recommendations
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI Suggestions ──────────────────────────────────────────────────── -->
+  <div class="cd-suggestions" *ngIf="showSuggestions">
+    <div class="cd-section-header">
+      <h2 class="cd-section-title"><i class="bi bi-stars"></i> AI Recommendations</h2>
+      <span class="cd-section-sub">Powered by Claude · Based on commander's abilities</span>
+    </div>
+
+    <div class="suggest-loading" *ngIf="suggestionsLoading">
+      <div class="spinner"></div><span>Analysing commander…</span>
+    </div>
+
+    <div class="suggest-error" *ngIf="!suggestionsLoading && !suggestions">
+      <i class="bi bi-exclamation-circle"></i> Could not load recommendations. Check API key configuration.
+    </div>
+
+    <div class="suggest-sections" *ngIf="suggestions && !suggestionsLoading">
+      <div class="suggest-section" *ngFor="let sec of suggestionSections">
+        <h3 class="suggest-section-title">{{ sec.label }}</h3>
+        <div class="suggest-scroll">
+          <a class="suggest-card" *ngFor="let s of suggestionCards(sec.key)"
+             [href]="scryfallUrl(s.name)" target="_blank" rel="noopener">
+            <div class="suggest-card-img-wrap">
+              <img *ngIf="s.card?.imageUriNormal" [src]="s.card!.imageUriNormal" [alt]="s.name" class="suggest-card-img" />
+              <div class="suggest-card-placeholder" *ngIf="!s.card?.imageUriNormal">{{ s.name[0] }}</div>
+            </div>
+            <div class="suggest-card-info">
+              <div class="suggest-card-name">{{ s.name }}</div>
+              <div class="suggest-card-mana" *ngIf="s.card?.manaCost" [innerHTML]="s.card!.manaCost | manaCost"></div>
+              <div class="suggest-card-reason">{{ s.reason }}</div>
+              <div class="suggest-score">
+                <div class="score-bar" [style.width]="s.score + '%'"></div>
+                <span>{{ s.score }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Charts ────────────────────────────────────────────────────────── -->
+  <app-commander-charts
+    *ngIf="!loading && profile"
+    [oracleId]="oracleId"
+    [cards]="cards"
+    [totalDecks]="totalDecks"
+  ></app-commander-charts>
+
+  <!-- ── Community Cards + Decks (side by side) ───────────────────────────── -->
+  <div class="cd-community-row" *ngIf="!loading && profile">
+
+    <!-- Cards column -->
+    <div class="cd-cards-section">
+      <div class="cd-section-header">
+        <h2 class="cd-section-title"><i class="bi bi-people-fill"></i> Community Cards</h2>
+        <span class="cd-section-sub">{{ totalDecks }} deck{{ totalDecks === 1 ? '' : 's' }}</span>
+      </div>
+
+      <div class="cd-type-tabs">
+        <button *ngFor="let tab of typeTabs" class="cd-type-tab"
+                [class.active]="activeTab === tab.id" (click)="setTab(tab.id)">
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <div class="cd-sort-bar">
+        <span class="cd-sort-label">Sort:</span>
+        <button class="cd-sort-btn" [class.active]="sortMode === 'inclusion'" title="Sort by inclusion %" (click)="setSortMode('inclusion')">%</button>
+        <button class="cd-sort-btn" [class.active]="sortMode === 'mv'" title="Sort by mana value" (click)="setSortMode('mv')">MV</button>
+        <button class="cd-sort-btn" [class.active]="sortMode === 'name'" title="Sort alphabetically" (click)="setSortMode('name')">A–Z</button>
+
+        <div class="cd-sort-sep"></div>
+
+        <div class="cd-zoom-group" title="Zoom card rows">
+          <button class="cd-zoom-btn" (click)="cardZoomOut()" [disabled]="cardZoom <= 0.5" title="Zoom out">−</button>
+          <span class="cd-zoom-label">{{ cardZoomLabel }}</span>
+          <button class="cd-zoom-btn" (click)="cardZoomIn()"  [disabled]="cardZoom >= 2.0" title="Zoom in">+</button>
+        </div>
+      </div>
+
+      <div class="cd-cards-loading" *ngIf="cardsLoading">
+        <div class="spinner"></div><span>Loading…</span>
+      </div>
+
+      <div class="cd-cards-empty" *ngIf="!cardsLoading && totalDecks === 0">
+        No community data yet. <a routerLink="/community/forum">Publish a deck</a>!
+      </div>
+
+      <div class="cd-cards-empty" *ngIf="!cardsLoading && totalDecks > 0 && filteredCards.length === 0">
+        No cards in this category.
+      </div>
+
+      <div class="cd-card-list" *ngIf="!cardsLoading && filteredCards.length > 0" [style.--zoom]="cardZoom">
+        <a class="cd-card-row" *ngFor="let entry of filteredCards"
+           href="#" (click)="openCardModal(entry.card, $event)">
+          <div class="cd-card-art-wrap">
+            <img *ngIf="entry.card.imageUriArtCrop" [src]="entry.card.imageUriArtCrop"
+                 [alt]="entry.card.name" class="cd-card-art" loading="lazy" />
+            <div class="cd-card-art-placeholder" *ngIf="!entry.card.imageUriArtCrop"></div>
+          </div>
+
+          <div class="cd-card-info">
+            <span class="cd-card-name">{{ entry.card.name }}</span>
+            <span class="cd-card-types">{{ entry.card.cardTypes.join(', ') }}</span>
+            <span class="cd-card-mana" *ngIf="entry.card.manaCost" [innerHTML]="entry.card.manaCost | manaCost"></span>
+          </div>
+
+          <div class="cd-card-stats">
+            <div class="cd-inclusion-bar-wrap">
+              <div class="cd-inclusion-bar">
+                <div class="cd-inclusion-fill" [style.width]="inclusionBarWidth(entry.inclusionPercent)"></div>
+              </div>
+              <span class="cd-inclusion-pct">{{ entry.inclusionPercent }}%</span>
+            </div>
+            <span class="cd-deck-count">{{ entry.deckCount }}/{{ entry.totalDecks }}</span>
+          </div>
+
+          <div class="cd-badges">
+            <span class="badge-gc" *ngIf="entry.isGameChanger" title="Game Changer">
+              <i class="bi bi-lightning-fill"></i>
+            </span>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Decks column -->
+    <div class="cd-decks-section">
+      <div class="cd-section-header">
+        <h2 class="cd-section-title"><i class="bi bi-collection-fill"></i> Community Decks</h2>
+        <span class="cd-section-sub">{{ filteredDecks.length }}/{{ decks.length }}</span>
+      </div>
+
+      <!-- Filters -->
+      <div class="deck-filters" *ngIf="!decksLoading && decks.length > 0">
+        <!-- Search -->
+        <div class="deck-search-wrap">
+          <i class="bi bi-search deck-search-icon"></i>
+          <input class="deck-search" type="text" placeholder="Search decks…"
+                 [value]="deckSearch" (input)="setDeckSearch($any($event.target).value)" />
+          <button class="deck-search-clear" *ngIf="deckSearch" (click)="setDeckSearch('')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+
+        <!-- Bracket filter -->
+        <div class="deck-filter-row">
+          <span class="deck-filter-label">Bracket</span>
+          <div class="deck-filter-chips">
+            <button class="deck-chip" [class.active]="deckBracket === 0" (click)="setDeckBracket(0)">All</button>
+            <button class="deck-chip bracket-1" [class.active]="deckBracket === 1" (click)="setDeckBracket(1)">B1</button>
+            <button class="deck-chip bracket-2" [class.active]="deckBracket === 2" (click)="setDeckBracket(2)">B2</button>
+            <button class="deck-chip bracket-3" [class.active]="deckBracket === 3" (click)="setDeckBracket(3)">B3</button>
+            <button class="deck-chip bracket-4" [class.active]="deckBracket === 4" (click)="setDeckBracket(4)">B4</button>
+          </div>
+        </div>
+
+        <!-- Sort -->
+        <div class="deck-filter-row">
+          <span class="deck-filter-label">Sort</span>
+          <div class="deck-filter-chips">
+            <button class="deck-chip" [class.active]="deckSort === 'newest'"  (click)="setDeckSort('newest')">Newest</button>
+            <button class="deck-chip" [class.active]="deckSort === 'oldest'"  (click)="setDeckSort('oldest')">Oldest</button>
+            <button class="deck-chip" [class.active]="deckSort === 'bracket'" (click)="setDeckSort('bracket')">Bracket</button>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="deck-filter-row" *ngIf="availableTags.length > 0">
+          <span class="deck-filter-label">Tags</span>
+          <div class="deck-filter-chips deck-tag-chips">
+            <button class="deck-chip" *ngFor="let tag of availableTags"
+                    [class.active]="deckTag === tag" (click)="setDeckTag(tag)">{{ tag }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cd-cards-loading" *ngIf="decksLoading">
+        <div class="spinner"></div><span>Loading…</span>
+      </div>
+
+      <div class="cd-decks-list" *ngIf="!decksLoading && filteredDecks.length > 0">
+        <a class="cd-deck-card" *ngFor="let deck of filteredDecks"
+           [routerLink]="['/forum', deck.forumPostId]">
+          <div class="cd-deck-img-wrap">
+            <img *ngIf="profile?.imageUriArtCrop" [src]="profile!.imageUriArtCrop"
+                 [alt]="deck.name" class="cd-deck-img" loading="lazy" />
+            <div class="cd-deck-img-placeholder" *ngIf="!profile?.imageUriArtCrop">{{ deck.name[0] }}</div>
+          </div>
+          <div class="cd-deck-info">
+            <div class="cd-deck-name">{{ deck.name }}</div>
+            <div class="cd-deck-meta">
+              <span class="cd-bracket-badge" [ngClass]="bracketClass(deck.bracket)">
+                B{{ deck.bracket }}
+              </span>
+              <span class="cd-deck-author">{{ deck.authorUsername }}</span>
+              <span class="cd-deck-date">{{ formatDate(deck.publishedAt) }}</span>
+            </div>
+            <div class="cd-deck-tags" *ngIf="deck.tags.length > 0">
+              <span class="cd-deck-tag" *ngFor="let tag of deck.tags | slice:0:3">{{ tag }}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="cd-cards-empty" *ngIf="!decksLoading && filteredDecks.length === 0 && decks.length > 0">
+        No decks match your filters.
+      </div>
+      <div class="cd-cards-empty" *ngIf="!decksLoading && decks.length === 0">
+        No published decks yet.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Card detail modal -->
+<app-card-modal
+  *ngIf="modalCard"
+  [card]="modalCard"
+  [printings]="modalPrintings"
+  [(viewedScryfallId)]="modalScryfallId"
+  [(flipped)]="modalFlipped"
+  (closed)="closeCardModal()">
+</app-card-modal>

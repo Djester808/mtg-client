@@ -29,6 +29,7 @@ export interface DeckDetailDto {
   commanderOracleId: string | null;
   tags: string[];
   notes: string | null;
+  isPublished: boolean;
   createdAt: string;
   updatedAt: string;
   cards: CollectionCardDto[];

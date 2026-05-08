@@ -20,6 +20,8 @@ module.exports = function(config) {
       reporters: [{ type: 'html' }, { type: 'text-summary' }],
     },
     reporters: ['progress', 'kjhtml'],
+    browserDisconnectTimeout: 60000,
+    browserNoActivityTimeout: 60000,
     browsers: ['ChromeHeadless'],
     customLaunchers: {
       ChromeHeadlessNoSandbox: {

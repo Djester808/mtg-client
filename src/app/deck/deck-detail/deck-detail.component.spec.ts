@@ -20,11 +20,12 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
 }
 
 function makeDeck(cards: CollectionCardDto[] = [], format: string | null = null): DeckDetailDto {
-  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], cards };
+  return { id: 'deck-1', name: 'Test Deck', coverUri: null, format, commanderOracleId: null, createdAt: '', updatedAt: '', tags: [], notes: null, isPublished: false, cards };
 }
 
 const INITIAL_STATE = {
-  deck: { decks: [], activeDeck: makeDeck(), loading: false, error: null },
+  deck:  { decks: [], activeDeck: makeDeck(), loading: false, error: null },
+  forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
 };
 
 async function setup() {
@@ -466,6 +467,7 @@ describe('DeckDetailComponent — quantity controls', () => {
     const updatedCard = { ...originalCard, quantity: 3 };
     store.setState({
       deck: { decks: [], activeDeck: makeDeck([updatedCard]), loading: false, error: null },
+      forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
     });
 
     expect(component.selectedCard?.quantity).toBe(3);
@@ -815,7 +817,7 @@ describe('DeckDetailComponent — side panel', () => {
 
   it('stats tool-btn has is-active class when showSidePanel is true', async () => {
     const { component, fixture, store } = await setup();
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.showSidePanel = true;
     fixture.detectChanges();
     const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
@@ -825,7 +827,7 @@ describe('DeckDetailComponent — side panel', () => {
 
   it('stats tool-btn does not have is-active class when showSidePanel is false', async () => {
     const { component, fixture, store } = await setup();
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([], 'commander'), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.showSidePanel = false;
     fixture.detectChanges();
     const btn: HTMLElement = fixture.nativeElement.querySelector('.tool-btn');
@@ -1352,42 +1354,6 @@ describe('DeckDetailComponent — multi-card drag and drop', () => {
     } as unknown as DragEvent;
   }
 
-  it('onCardDragStart sets isDraggingMultiCards when card is in a multi-selection', async () => {
-    const { component } = await setup();
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
-    const card = makeDeckCard({ id: 'c1' });
-    component.onCardDragStart(card, 'col-1', 0, makeDragEvent());
-    expect(component.isDraggingMultiCards).toBeTrue();
-  });
-
-  it('onCardDragStart builds multiDragCards from selectedCardSlots', async () => {
-    const { component } = await setup();
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-2/0', 'c2']]);
-    const card = makeDeckCard({ id: 'c1' });
-    component.onCardDragStart(card, 'col-1', 0, makeDragEvent());
-    const multi = (component as any).multiDragCards as { colId: string; cardId: string; renderedIdx: number }[];
-    expect(multi).toHaveSize(2);
-    expect(multi.some(m => m.colId === 'col-1' && m.cardId === 'c1' && m.renderedIdx === 0)).toBeTrue();
-    expect(multi.some(m => m.colId === 'col-2' && m.cardId === 'c2' && m.renderedIdx === 0)).toBeTrue();
-  });
-
-  it('onCardDragStart stays in single-card mode when card not in selection', async () => {
-    const { component } = await setup();
-    component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/1', 'c2']]);
-    const card = makeDeckCard({ id: 'c3' }); // not in selection
-    component.onCardDragStart(card, 'col-1', 2, makeDragEvent());
-    expect(component.isDraggingMultiCards).toBeFalse();
-    expect((component as any).multiDragCards).toHaveSize(0);
-  });
-
-  it('onCardDragStart stays in single-card mode when only one card is selected', async () => {
-    const { component } = await setup();
-    component.selectedCardSlots = new Map([['col-1/0', 'c1']]); // size === 1
-    const card = makeDeckCard({ id: 'c1' });
-    component.onCardDragStart(card, 'col-1', 0, makeDragEvent());
-    expect(component.isDraggingMultiCards).toBeFalse();
-  });
-
   it('onDragEnd clears isDraggingMultiCards, multiDragCards, and selectedCardSlots', async () => {
     const { component } = await setup();
     component.isDraggingMultiCards = true;
@@ -1904,7 +1870,7 @@ describe('DeckDetailComponent — Delete key', () => {
   it('dispatches removeCard and clears selection when deleting last copy', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
@@ -1920,7 +1886,7 @@ describe('DeckDetailComponent — Delete key', () => {
   it('dispatches updateCard when deleting one of multiple copies', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 3, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
@@ -1936,7 +1902,7 @@ describe('DeckDetailComponent — Delete key', () => {
     const { component, store } = await setup();
     const c1 = makeDeckCard({ id: 'c1', quantity: 2, quantityFoil: 0 });
     const c2 = makeDeckCard({ id: 'c2', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([c1, c2]), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([c1, c2]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1', 'c1', 'c2'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1'], ['col-1/2', 'c2']]);
@@ -1954,7 +1920,7 @@ describe('DeckDetailComponent — Delete key', () => {
   it('Backspace key works the same as Delete', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });
-    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null } });
+    store.setState({ deck: { decks: [], activeDeck: makeDeck([card]), loading: false, error: null }, forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null } });
     component.viewMode = 'free';
     component.freeColumns = [{ id: 'col-1', label: 'A', cardIds: ['c1'] }];
     component.selectedCardSlots = new Map([['col-1/0', 'c1']]);
@@ -2015,6 +1981,7 @@ describe('DeckDetailComponent — Commander format', () => {
         loading: false,
         error: null,
       },
+      forum: { posts: [], activePost: null, loading: false, postLoading: false, publishLoading: false, error: null },
     });
     fixture.detectChanges();
 

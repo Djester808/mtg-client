@@ -90,41 +90,46 @@
 
       <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
         <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
-        {{ showSearchPanel ? 'Close' : 'Add Cards' }}
+        {{ showSearchPanel ? 'Close' : commanderSearchMode ? 'Add Commander' : 'Add Cards' }}
       </button>
 
-      <button class="publish-btn" (click)="openPublishModal()" title="Share this deck on the community forum">
+      <button class="publish-btn" *ngIf="!deck.isPublished"
+              (click)="openPublishModal()" title="Share this deck on the community forum">
         <i class="bi bi-share"></i> Publish
       </button>
+      <a class="publish-btn is-published" *ngIf="deck.isPublished"
+         routerLink="/community/forum" title="This deck is already published to the community forum">
+        <i class="bi bi-check2-circle"></i> Published
+      </a>
 
     </ng-container>
 
-    <!-- Publish modal -->
-    <div class="publish-modal-backdrop" *ngIf="showPublishModal" (click)="closePublishModal()">
-      <div class="publish-modal" (click)="$event.stopPropagation()">
-        <h3 class="publish-modal-title">Publish to Forum</h3>
-        <p class="publish-modal-hint">Share this deck with the community. Others can view and comment on it.</p>
-        <textarea class="publish-modal-textarea"
-                  [(ngModel)]="publishDescription"
-                  placeholder="Optional description or notes for the community..."
-                  rows="4">
-        </textarea>
-        <div class="publish-modal-actions">
-          <button class="publish-modal-submit"
-                  [disabled]="publishLoading"
-                  (click)="submitPublish()">
-            <ng-container *ngIf="!publishLoading">Publish</ng-container>
-            <ng-container *ngIf="publishLoading">Publishing...</ng-container>
-          </button>
-          <button class="publish-modal-cancel" (click)="closePublishModal()">Cancel</button>
-        </div>
-      </div>
-    </div>
     <ng-template #loadingHeader>
       <div class="header-center"><h1 class="header-name is-loading">Loading…</h1></div>
     </ng-template>
   </header>
 
+  <!-- Publish modal (outside header to avoid backdrop-filter containing block) -->
+  <div class="publish-modal-backdrop" *ngIf="showPublishModal" (click)="closePublishModal()">
+    <div class="publish-modal" (click)="$event.stopPropagation()">
+      <h3 class="publish-modal-title">Publish to Forum</h3>
+      <p class="publish-modal-hint">Share this deck with the community. Others can view and comment on it.</p>
+      <textarea class="publish-modal-textarea"
+                [(ngModel)]="publishDescription"
+                placeholder="Optional description or notes for the community..."
+                rows="4">
+      </textarea>
+      <div class="publish-modal-actions">
+        <button class="publish-modal-submit"
+                [disabled]="publishLoading"
+                (click)="submitPublish()">
+          <ng-container *ngIf="!publishLoading">Publish</ng-container>
+          <ng-container *ngIf="publishLoading">Publishing...</ng-container>
+        </button>
+        <button class="publish-modal-cancel" (click)="closePublishModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Validation bar (commander only) — pills on left, cover image on right -->
   <ng-container *ngIf="deck$ | async as deck">
@@ -196,13 +201,13 @@
               <i class="bi bi-person-badge"></i><span>Commander</span>
             </button>
             <button class="tool-btn tool-btn--mana" [class.is-active]="showManaSuggestPanel"
-                    (click)="showManaSuggestPanel = !showManaSuggestPanel; showSuggestionsPanel = false; showSearchPanel = false"
+                    (click)="toggleManaSuggestPanel()"
                     title="Mana analysis">
               <i class="bi bi-droplet-half"></i><span>Mana</span>
             </button>
             <button class="tool-btn tool-btn--suggest"
                     [class.is-active]="showSuggestionsPanel"
-                    (click)="showSuggestionsPanel = !showSuggestionsPanel; showManaSuggestPanel = false; showSearchPanel = false"
+                    (click)="toggleSuggestionsPanel()"
                     title="Card suggestions">
               <i class="bi bi-stars"></i><span>Suggest</span>
             </button>
@@ -260,11 +265,12 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" *ngIf="deck$ | async as deck"
+    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" [class.is-search-drop]="isSearchDragOver && viewMode !== 'free'" *ngIf="deck$ | async as deck"
           [style.--card-zoom]="zoomLevel"
           (mousemove)="onGroupsAreaMouseMove($event)"
           (mouseleave)="onGroupsAreaMouseLeave()"
           (dragover)="onGroupsAreaDragOver($event)"
+          (dragleave)="onGroupsAreaDragLeave($event)"
           (drop)="onGroupsAreaDrop($event)">
 
       <!-- Board tabs (list/visual only — free mode manages its own layout) -->
@@ -293,6 +299,7 @@
               <select class="sort-select" [ngModel]="sortMode" (ngModelChange)="setSortMode($event, deck)">
                 <option value="cmc">CMC</option>
                 <option value="type">Type</option>
+                <option value="creature-split">Creature / Non-Creature</option>
                 <option value="name">Name</option>
                 <option value="subtype">Subtype</option>
                 <option value="color">Color</option>
@@ -350,15 +357,20 @@
                 <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'half'" (click)="setStackDensity('half')" title="Half card"><i class="bi bi-layers-half"></i></button>
                 <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
                 <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
-              </div>
-              <div class="sort-group zoom-group">
-                <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
-                <span class="zoom-label">{{ zoomLabel }}</span>
-                <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
+                <span class="density-sep"></span>
+                <button class="density-btn" [class.is-active]="groupDir === 'h'" (click)="groupDir = 'h'" title="Horizontal groups (columns)"><i class="bi bi-layout-three-columns"></i></button>
+                <button class="density-btn" [class.is-active]="groupDir === 'v'" (click)="groupDir = 'v'" title="Vertical groups (rows)"><i class="bi bi-distribute-vertical"></i></button>
               </div>
             </div>
           </div>
         </ng-container>
+
+        <!-- Zoom: always at the right regardless of view mode -->
+        <div class="sort-group zoom-group fbar-zoom-fixed">
+          <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
+          <span class="zoom-label">{{ zoomLabel }}</span>
+          <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
+        </div>
 
       </div>
 
@@ -377,7 +389,7 @@
 
       <!-- CMC / Type / Name groups (list + visual + stack) -->
       <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length > 0">
-        <div class="groups-list" [class.is-visual]="viewMode === 'visual'">
+        <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-vert]="viewMode === 'visual' && groupDir === 'v'">
           <div class="cmc-group" *ngFor="let group of getGroups(deck); trackBy: trackByGroupKey">
 
             <div class="group-header">
@@ -386,11 +398,15 @@
             </div>
 
             <!-- ── List thumbnail view ── -->
-            <div class="card-list" *ngIf="viewMode === 'list' && !textStyle">
+            <div class="card-list list-drag-group" *ngIf="viewMode === 'list' && !textStyle"
+                 [attr.data-group-key]="group.key">
+              <ng-container *ngFor="let card of getOrderedListCards(group.key, group.cards); let i = index">
+              <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === i"></div>
               <div
-                class="card-row"
-                *ngFor="let card of group.cards"
+                class="card-row list-drag-row"
+                [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
+                (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
                 (click)="openCard(card)"
               >
                 <div
@@ -418,14 +434,20 @@
                   </div>
                 </div>
               </div>
+              </ng-container>
+              <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === getOrderedListCards(group.key, group.cards).length"></div>
             </div>
 
             <!-- ── Text view (any mode) ── -->
-            <div class="card-list" *ngIf="textStyle">
+            <div class="card-list list-drag-group" *ngIf="textStyle"
+                 [attr.data-group-key]="group.key">
+              <ng-container *ngFor="let card of getOrderedListCards(group.key, group.cards); let i = index">
+              <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === i"></div>
               <div
-                class="card-row list-row"
-                *ngFor="let card of group.cards"
+                class="card-row list-row list-drag-row"
+                [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
+                (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
                 (click)="openCard(card)"
               >
                 <span class="list-qty">{{ cardCount(card) }}</span>
@@ -436,6 +458,8 @@
                   <button class="list-btn list-inc" (click)="increment(card)">+</button>
                 </div>
               </div>
+              </ng-container>
+              <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === getOrderedListCards(group.key, group.cards).length"></div>
             </div>
 
             <!-- ── Visual view ── -->
@@ -494,11 +518,6 @@
             <button class="density-btn" [class.is-active]="!textStyle && stackDensity === 'name'" (click)="setStackDensity('name')" title="Name only"><i class="bi bi-text-left"></i></button>
             <button class="density-btn" [class.is-active]="textStyle"                             (click)="setTextStyle(true)"       title="Text list"><i class="bi bi-list"></i></button>
           </div>
-          <div class="sort-group zoom-group">
-            <button class="sort-btn zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
-            <span class="zoom-label">{{ zoomLabel }}</span>
-            <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
-          </div>
         </div>
 
         <div class="groups-list is-free"
@@ -522,14 +541,14 @@
           <div class="free-col"
                [attr.data-col-id]="col.id"
                [class.is-dragging-col]="isDraggingMultiCols ? multiDragColIds.includes(col.id) : dragColId === col.id"
+               [class.is-drag-over]="dragOverColId === col.id && !dragColId"
                [class.is-selected-col]="selectedFreeColId === col.id || dragSelectedColIds.has(col.id)"
                [class.has-fixed-width]="!!col.width"
                [class.is-text-style]="textStyle && !col.width"
                [style.width.px]="col.width || null"
                (click)="$event.stopPropagation(); selectFreeCol(col.id)"
                (dragover)="onColDragOver(col.id, $event)"
-               (drop)="onColDrop(col.id, $event)"
-               (dragleave)="onColDragLeave($event)">
+               (drop)="onColDrop(col.id, $event)">
 
             <!-- Column header -->
             <div class="group-header free-col-header">
@@ -567,7 +586,6 @@
             <ng-container *ngFor="let card of getCardsForColumn(col, deck); let i = index">
               <!-- Card tile view -->
               <div class="free-card" *ngIf="!textStyle"
-                   draggable="true"
                    [attr.data-slot-key]="col.id + '/' + i"
                    [attr.data-card-id]="card.id"
                    [class.density-half]="stackDensity === 'half'"
@@ -576,8 +594,7 @@
                    [style.z-index]="i + 1"
                    [class.is-selected-card]="selectedCardSlots.has(col.id + '/' + i)"
                    [class.is-dragging]="isDraggingMultiCards ? selectedCardSlots.has(col.id + '/' + i) : (dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i)"
-                   (dragstart)="onCardDragStart(card, col.id, i, $event)"
-                   (dragend)="onDragEnd()"
+                   (pointerdown)="onFreeCardPointerDown(card, col.id, i, $event)"
                    (click)="$event.stopPropagation(); openCard(card, col.id + '/' + i)">
                 <div class="visual-art"
                      [style.backgroundImage]="tileImage(card, col.id + '/' + i) ? 'url(' + tileImage(card, col.id + '/' + i) + ')' : 'none'"
@@ -585,10 +602,7 @@
                   <span class="visual-placeholder" *ngIf="!tileImage(card, col.id + '/' + i)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
-                          draggable="true"
                           [class.is-flipped]="flippedCardIds.has(col.id + '/' + i)"
-                          (dragstart)="$event.stopPropagation(); onCardDragStart(card, col.id, i, $event)"
-                          (dragend)="$event.stopPropagation(); onDragEnd()"
                           (click)="toggleTileFlip(col.id + '/' + i, card, $event)"
                           title="Flip">↻</button>
                 </div>
@@ -644,6 +658,7 @@
         <button class="side-panel-close" (click)="toggleSidePanel()"><i class="bi bi-x-lg"></i></button>
       </div>
       <ng-container *ngIf="deck$ | async as deck">
+        <div class="side-panel-body">
 
         <!-- Commander tab -->
         <ng-container *ngIf="sideTab === 'commander' && deck.format === 'commander'">
@@ -682,73 +697,11 @@
                      title="Search for commander">
                   <div class="cp-no-cmdr"><i class="bi bi-person-plus"></i><br>Click or drop<br>to assign</div>
                 </div>
+                <button class="cp-add-cmdr-btn" (click)="openCommanderSearch()">
+                  <i class="bi bi-search"></i> Add Commander
+                </button>
               </ng-template>
             </div>
-
-          <!-- AI Build Deck -->
-          <ng-container *ngIf="commanderCard(deck)">
-            <div class="cp-ai-build">
-              <div class="cp-ai-options">
-                <div class="cp-ai-option-row">
-                  <label class="cp-ai-label">Bracket</label>
-                  <select class="cp-ai-select"
-                          [disabled]="aiBuilding"
-                          (change)="aiBuildBracket = +$any($event.target).value">
-                    <option value="1" [selected]="aiBuildBracket === 1">1 – Casual</option>
-                    <option value="2" [selected]="aiBuildBracket === 2">2 – Core</option>
-                    <option value="3" [selected]="aiBuildBracket === 3">3 – Upgraded</option>
-                    <option value="4" [selected]="aiBuildBracket === 4">4 – Optimized</option>
-                    <option value="5" [selected]="aiBuildBracket === 5">5 – cEDH</option>
-                  </select>
-                </div>
-                <div class="cp-ai-option-row">
-                  <label class="cp-ai-label">Budget</label>
-                  <select class="cp-ai-select"
-                          [disabled]="aiBuilding"
-                          (change)="aiBuildPrice = $any($event.target).value">
-                    <option value="budget" [selected]="aiBuildPrice === 'budget'">Budget (&lt;$100)</option>
-                    <option value="mid" [selected]="aiBuildPrice === 'mid'">Mid (&lt;$500)</option>
-                    <option value="any" [selected]="aiBuildPrice === 'any'">No limit</option>
-                  </select>
-                </div>
-                <div class="cp-ai-option-row cp-ai-checks">
-                  <button type="button" class="cp-ai-toggle"
-                          [class.is-active]="aiBuildSideboard"
-                          [disabled]="aiBuilding"
-                          (click)="aiBuildSideboard = !aiBuildSideboard">
-                    <i class="bi" [class.bi-toggle2-on]="aiBuildSideboard" [class.bi-toggle2-off]="!aiBuildSideboard"></i>
-                    Sideboard
-                  </button>
-                  <button type="button" class="cp-ai-toggle"
-                          [class.is-active]="aiBuildMaybeboard"
-                          [disabled]="aiBuilding"
-                          (click)="aiBuildMaybeboard = !aiBuildMaybeboard">
-                    <i class="bi" [class.bi-toggle2-on]="aiBuildMaybeboard" [class.bi-toggle2-off]="!aiBuildMaybeboard"></i>
-                    Maybeboard
-                  </button>
-                </div>
-              </div>
-              <button class="cp-ai-build-btn"
-                      [disabled]="aiBuilding"
-                      (click)="aiBuildDeck(deck)"
-                      title="Let Claude build a full 99-card deck around your commander">
-                <span *ngIf="!aiBuilding"><i class="bi bi-stars"></i> AI Build Deck</span>
-                <span *ngIf="aiBuilding" class="cp-ai-build-loading">
-                  <i class="bi bi-arrow-repeat cp-ai-spin"></i> Building…
-                </span>
-              </button>
-              <div class="cp-ai-result" *ngIf="aiBuildResult">
-                <i class="bi bi-check-circle-fill"></i>
-                Added {{ aiBuildResult.cardsAdded }} card{{ aiBuildResult.cardsAdded !== 1 ? 's' : '' }}
-                <ng-container *ngIf="aiBuildResult.sideboardAdded"> · {{ aiBuildResult.sideboardAdded }} side</ng-container>
-                <ng-container *ngIf="aiBuildResult.maybeboardAdded"> · {{ aiBuildResult.maybeboardAdded }} maybe</ng-container>
-                <span *ngIf="aiBuildResult.cardsSkipped"> · {{ aiBuildResult.cardsSkipped }} skipped</span>
-              </div>
-              <div class="cp-ai-error" *ngIf="aiBuildError">
-                <i class="bi bi-exclamation-triangle"></i> {{ aiBuildError }}
-              </div>
-            </div>
-          </ng-container>
 
           <!-- Deck Notes -->
           <div class="cp-notes">
@@ -918,6 +871,7 @@
 
           </ng-container>
         </div>
+        </div><!-- /side-panel-body -->
       </ng-container>
 
     </aside>

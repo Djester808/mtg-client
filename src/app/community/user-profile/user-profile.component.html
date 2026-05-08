@@ -1,0 +1,73 @@
+<div class="up-page">
+
+  <div class="up-loading" *ngIf="loading">
+    <div class="spinner"></div><span>Loading profile…</span>
+  </div>
+  <div class="up-error" *ngIf="error">{{ error }}</div>
+
+  <ng-container *ngIf="!loading && profile">
+
+    <!-- Hero -->
+    <div class="up-hero">
+      <div class="up-avatar">{{ profile.username[0].toUpperCase() }}</div>
+      <div class="up-hero-info">
+        <h1 class="up-username">{{ profile.username }}</h1>
+        <div class="up-meta">
+          <span>Joined {{ formatDate(profile.joinedAt) }}</span>
+          <span class="up-sep">·</span>
+          <span>{{ profile.deckCount }} deck{{ profile.deckCount === 1 ? '' : 's' }}</span>
+          <span class="up-sep">·</span>
+          <span>{{ profile.commentCount }} comment{{ profile.commentCount === 1 ? '' : 's' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="up-tabs">
+      <button class="up-tab" [class.active]="activeTab === 'decks'" (click)="setTab('decks')">
+        <i class="bi bi-collection-fill"></i> Published Decks
+        <span class="up-tab-count">{{ profile.deckCount }}</span>
+      </button>
+      <button class="up-tab" [class.active]="activeTab === 'comments'" (click)="setTab('comments')">
+        <i class="bi bi-chat-fill"></i> Recent Comments
+        <span class="up-tab-count">{{ profile.commentCount }}</span>
+      </button>
+    </div>
+
+    <!-- Decks grid -->
+    <div class="up-decks" *ngIf="activeTab === 'decks'">
+      <div class="up-empty" *ngIf="profile.publishedDecks.length === 0">No published decks yet.</div>
+      <a class="up-deck-card" *ngFor="let deck of profile.publishedDecks"
+         [routerLink]="['/forum', deck.id]">
+        <div class="up-deck-cover"
+             [style.background-image]="deck.deckCoverUri ? 'url(' + deck.deckCoverUri + ')' : 'none'">
+          <div class="up-deck-cover-overlay"></div>
+          <div class="up-deck-pips">
+            <i class="ms ms-cost ms-shadow" *ngFor="let c of deck.colorIdentity" [ngClass]="manaClass(c)"></i>
+          </div>
+        </div>
+        <div class="up-deck-body">
+          <div class="up-deck-name">{{ deck.deckName }}</div>
+          <p class="up-deck-desc" *ngIf="deck.description" [innerHTML]="deck.description | oracleSymbols"></p>
+          <div class="up-deck-meta">
+            <span><i class="bi bi-collection"></i> {{ deck.cardCount }}</span>
+            <span><i class="bi bi-chat"></i> {{ deck.commentCount }}</span>
+            <span class="up-deck-time">{{ timeAgo(deck.publishedAt) }}</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Comments list -->
+    <div class="up-comments" *ngIf="activeTab === 'comments'">
+      <div class="up-empty" *ngIf="profile.recentComments.length === 0">No comments yet.</div>
+      <a class="up-comment-row" *ngFor="let c of profile.recentComments"
+         [routerLink]="['/forum', c.forumPostId]">
+        <div class="up-comment-deck">{{ c.deckName }}</div>
+        <p class="up-comment-content" [innerHTML]="c.content | oracleSymbols"></p>
+        <span class="up-comment-time">{{ timeAgo(c.createdAt) }}</span>
+      </a>
+    </div>
+
+  </ng-container>
+</div>

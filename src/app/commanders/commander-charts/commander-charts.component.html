@@ -1,0 +1,175 @@
+<div class="charts-section">
+
+  <div class="charts-section-header">
+    <h2 class="charts-section-title">
+      <i class="bi bi-bar-chart-line-fill"></i> Insights
+    </h2>
+  </div>
+
+  <!-- ── Row 1: Mana Curve + Type Distribution ── -->
+  <div class="charts-row" *ngIf="cards.length > 0">
+
+    <!-- Mana Curve -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title"><i class="bi bi-bar-chart-fill"></i> Mana Curve</h3>
+        <span class="chart-sub">Avg MV: <strong>{{ avgManaValue() }}</strong></span>
+        <div class="chart-toggles">
+          <button class="chart-toggle" [class.active]="curveMode === 'bar-v'" (click)="setCurveMode('bar-v')" title="Vertical bars">
+            <i class="bi bi-bar-chart-fill"></i>
+          </button>
+          <button class="chart-toggle" [class.active]="curveMode === 'bar-h'" (click)="setCurveMode('bar-h')" title="Horizontal bars">
+            <i class="bi bi-bar-chart-steps"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Vertical bars -->
+      <div class="bar-chart" *ngIf="curveMode === 'bar-v'">
+        <div class="bar-chart-bars">
+          <div class="bar-col" *ngFor="let d of manaCurveData">
+            <div class="bar-fill" [style.height]="barHeight(d.value, manaCurveMax) + '%'">
+              <span class="bar-value">{{ d.value }}</span>
+            </div>
+            <div class="bar-label">{{ d.name }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horizontal bars -->
+      <div class="type-dist" *ngIf="curveMode === 'bar-h'">
+        <div class="type-row" *ngFor="let d of manaCurveData">
+          <div class="type-label">
+            <span class="type-name">MV {{ d.name }}</span>
+            <span class="type-count">{{ d.value }}</span>
+          </div>
+          <div class="type-bar-wrap">
+            <div class="type-bar-fill" [style.width]="barHeight(d.value, manaCurveMax) + '%'"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Type Distribution -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title"><i class="bi bi-pie-chart-fill"></i> Card Types</h3>
+        <span class="chart-sub">{{ cards.length }} cards</span>
+        <div class="chart-toggles">
+          <button class="chart-toggle" [class.active]="typeMode === 'bar-h'" (click)="setTypeMode('bar-h')" title="Horizontal bars">
+            <i class="bi bi-bar-chart-steps"></i>
+          </button>
+          <button class="chart-toggle" [class.active]="typeMode === 'ring'" (click)="setTypeMode('ring')" title="Ring chart">
+            <i class="bi bi-pie-chart-fill"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Horizontal bars -->
+      <div class="type-dist" *ngIf="typeMode === 'bar-h'">
+        <div class="type-row" *ngFor="let d of typeDistData; let i = index">
+          <div class="type-label">
+            <span class="type-name">{{ d.name }}</span>
+            <span class="type-count">{{ d.value }} <span class="type-pct">({{ pct(d.value) }}%)</span></span>
+          </div>
+          <div class="type-bar-wrap">
+            <div class="type-bar-fill" [style.width]="barHeight(d.value, typeDistMax) + '%'" [style.background]="'linear-gradient(90deg, ' + typeColors[i % typeColors.length] + '55, ' + typeColors[i % typeColors.length] + ')'"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ring chart -->
+      <div class="ring-wrap" *ngIf="typeMode === 'ring'">
+        <div class="ring" [style.background]="ringGradient"></div>
+        <div class="ring-legend">
+          <div class="ring-legend-item" *ngFor="let d of typeDistData; let i = index">
+            <span class="ring-dot" [style.background]="typeColors[i % typeColors.length]"></span>
+            <span class="ring-label-text">{{ d.name }}</span>
+            <span class="ring-label-pct">{{ pct(d.value) }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Popularity History ── -->
+  <div class="chart-card chart-wide" *ngIf="!historyLoading && historyHasData">
+    <div class="chart-header">
+      <h3 class="chart-title"><i class="bi bi-graph-up"></i> Popularity History</h3>
+      <span class="chart-sub">Decks published per month · last 12 months</span>
+      <div class="chart-toggles">
+        <button class="chart-toggle" [class.active]="historyMode === 'bar-v'" (click)="setHistoryMode('bar-v')" title="Bar chart">
+          <i class="bi bi-bar-chart-fill"></i>
+        </button>
+        <button class="chart-toggle" [class.active]="historyMode === 'area'" (click)="setHistoryMode('area')" title="Area chart">
+          <i class="bi bi-graph-up-arrow"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Column bars -->
+    <div class="history-chart" *ngIf="historyMode === 'bar-v'">
+      <div class="history-bar-wrap" *ngFor="let p of history">
+        <div class="history-bar-col">
+          <div class="history-bar-fill" [style.height]="barHeight(p.deckCount, historyMax) + '%'" [title]="p.month + ': ' + p.deckCount"></div>
+        </div>
+        <div class="history-label">{{ shortMonth(p.month) }}</div>
+      </div>
+    </div>
+
+    <!-- SVG Area chart -->
+    <div class="area-wrap" *ngIf="historyMode === 'area'">
+      <svg viewBox="0 0 100 84" preserveAspectRatio="none" class="area-svg">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#c9a84c" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path [attr.d]="historyAreaPath" fill="url(#areaGrad)" />
+        <path [attr.d]="historyLinePath" fill="none" stroke="#c9a84c" stroke-width="0.8" stroke-linejoin="round" />
+      </svg>
+      <div class="area-labels">
+        <span *ngFor="let p of history" class="area-label">{{ shortMonth(p.month) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-loading" *ngIf="historyLoading">
+    <div class="spinner"></div>
+    <span>Loading history…</span>
+  </div>
+
+  <!-- ── Similar Commanders ── -->
+  <div class="chart-card chart-wide" *ngIf="!similarLoading && similar.length > 0">
+    <div class="chart-header">
+      <h3 class="chart-title"><i class="bi bi-diagram-3-fill"></i> Similar Commanders</h3>
+      <span class="chart-sub">Most shared cards with community decks</span>
+    </div>
+    <div class="similar-grid">
+      <a class="similar-card" *ngFor="let cmd of similar" [routerLink]="['/commanders', cmd.oracleId]">
+        <div class="similar-img-wrap">
+          <img *ngIf="cmd.imageUri" [src]="cmd.imageUri" [alt]="cmd.name" class="similar-img" loading="lazy" />
+          <div class="similar-img-placeholder" *ngIf="!cmd.imageUri">{{ cmd.name[0] }}</div>
+        </div>
+        <div class="similar-info">
+          <div class="similar-name">{{ cmd.name }}</div>
+          <div class="similar-meta">
+            <span class="similar-shared">{{ cmd.sharedCards }} shared</span>
+            <div class="similar-pips">
+              <i class="ms ms-cost ms-shadow" *ngFor="let c of cmd.colorIdentity"
+                 [ngClass]="'ms-' + c.toLowerCase()"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="chart-loading" *ngIf="similarLoading">
+    <div class="spinner"></div>
+    <span>Finding similar commanders…</span>
+  </div>
+
+</div>

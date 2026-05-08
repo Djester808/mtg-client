@@ -18,6 +18,7 @@ const { buildDriver } = require('../helpers/driver');
 const { loginAs } = require('../helpers/auth');
 const ForumPage = require('../pages/ForumPage');
 const DeckListPage = require('../pages/DeckListPage');
+const DeckDetailPage = require('../pages/DeckDetailPage');
 
 jest.setTimeout(180000);
 
@@ -38,8 +39,10 @@ describe('Forum', () => {
   let driver;
   let page;
   let deckListPage;
+  let deckDetailPage;
   let testDeckId = null;
   let forumPostId = null;
+  let copiedDeckId = null;
   let setupOk = false;
 
   // ── Setup ──────────────────────────────────────────────────────────────────
@@ -48,6 +51,7 @@ describe('Forum', () => {
     driver = await buildDriver();
     page = new ForumPage(driver);
     deckListPage = new DeckListPage(driver);
+    deckDetailPage = new DeckDetailPage(driver);
 
     // ── 1. Verify forum list is public (before login) ──
     await page.navigateToList();
@@ -153,6 +157,22 @@ describe('Forum', () => {
       } catch {}
     }
 
+    // Delete copied deck if it was created
+    if (copiedDeckId) {
+      try {
+        await driver.get('http://localhost:4200/deck');
+        await deckListPage.waitForVisible(deckListPage.listContent);
+        await driver.executeScript(`
+          const el   = document.querySelector('app-deck-list');
+          const comp = ng.getComponent(el);
+          if (!comp) return;
+          const deck = comp.decks && comp.decks.find(d => d.id === arguments[0]);
+          if (deck && comp.confirmDeleteDeck) { comp.confirmDeleteDeck(deck); ng.applyChanges(el); }
+        `, copiedDeckId).catch(() => {});
+        await driver.sleep(1000);
+      } catch {}
+    }
+
     // Delete test deck
     if (testDeckId) {
       try {
@@ -229,6 +249,71 @@ describe('Forum', () => {
       if (!setupOk) return;
       const hasCurve = await page.isPresent(By.css('.panel-block app-stats-chart'), 3000);
       expect(hasCurve).toBe(true);
+    });
+
+    test('view toggle is present', async () => {
+      if (!setupOk) return;
+      const hasToggle = await page.isPresent(page.viewToggle, 3000);
+      expect(hasToggle).toBe(true);
+    });
+
+    test('switching to visual view shows the card image grid', async () => {
+      if (!setupOk) return;
+      await page.setViewMode('Visual view');
+      const hasGrid = await page.isVisualGridVisible();
+      expect(hasGrid).toBe(true);
+    });
+
+    test('switching to text view shows the text list', async () => {
+      if (!setupOk) return;
+      await page.setViewMode('Text only');
+      const hasText = await page.isTextGroupsVisible();
+      expect(hasText).toBe(true);
+    });
+
+    test('switching back to list view shows card rows', async () => {
+      if (!setupOk) return;
+      await page.setViewMode('List view');
+      const rows = await page.getCardRowCount();
+      expect(rows).toBeGreaterThan(0);
+    });
+
+    test('copy deck button is present when logged in', async () => {
+      if (!setupOk) return;
+      const hasCopy = await page.isPresent(page.copyDeckBtn, 3000);
+      expect(hasCopy).toBe(true);
+    });
+
+    test('copy deck navigates to new deck detail page', async () => {
+      if (!setupOk) return;
+      const copyBtn = await page.waitForVisible(page.copyDeckBtn, 5000);
+      await driver.executeScript('arguments[0].click()', copyBtn);
+
+      // Wait for navigation to /deck/:id
+      await driver.wait(async () => {
+        const url = await driver.getCurrentUrl();
+        return /\/deck\/[0-9a-f-]{36}/.test(url);
+      }, 15000, 'Did not navigate to copied deck after copy');
+
+      const url = await driver.getCurrentUrl();
+      const match = url.match(/\/deck\/([0-9a-f-]{36})/);
+      if (match) copiedDeckId = match[1];
+
+      expect(url).toMatch(/\/deck\/[0-9a-f-]{36}/);
+    });
+
+    test('copied deck has the correct name suffix', async () => {
+      if (!setupOk || !copiedDeckId) return;
+      await driver.get(`http://localhost:4200/deck/${copiedDeckId}`);
+      await page.waitForVisible(By.css('.filter-bar'), 10000);
+      const nameEl = await page.isPresent(By.css('.header-name'), 5000);
+      if (nameEl) {
+        const deckName = await page.getText(By.css('.header-name'));
+        expect(deckName).toContain('(Copy)');
+      }
+      // Navigate back to forum for subsequent tests
+      await driver.get(`http://localhost:4200/forum/${forumPostId}`);
+      await page.waitForVisible(page.headerTitle, 8000);
     });
 
     test('comment textarea is present when logged in', async () => {

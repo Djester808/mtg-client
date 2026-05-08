@@ -7,7 +7,11 @@
     "test": "jest --runInBand",
     "test:auth": "jest --runInBand tests/auth.test.js",
     "test:decks": "jest --runInBand tests/deck-list.test.js tests/deck-detail.test.js",
-    "test:collection": "jest --runInBand tests/collection.test.js"
+    "test:collection": "jest --runInBand tests/collection.test.js",
+    "test:forum": "jest --runInBand tests/forum.test.js",
+    "test:commanders": "jest --runInBand tests/commander-hub.test.js",
+    "test:prefs": "jest --runInBand tests/layout-prefs.test.js",
+    "test:community": "jest --runInBand tests/forum.test.js tests/commander-hub.test.js tests/layout-prefs.test.js"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

@@ -246,7 +246,7 @@
           <span class="deck-qty-badge" *ngIf="isDeckContext && deckCount(card.oracleId) as n">
             {{ n }} in deck
           </span>
-          <button class="add-result-btn" (click)="addCard(card)">Add</button>
+          <button class="add-result-btn" (click)="addCard(card)">{{ commanderFilter ? 'Add Commander' : 'Add' }}</button>
           <button class="remove-deck-btn"
                   *ngIf="isDeckContext && isInDeck(card)"
                   (click)="removeFromDeck(card)"
@@ -320,7 +320,7 @@
     <ng-container *ngIf="isDeckContext">
       <span class="modal-deck-badge" *ngIf="deckCount(previewCard!.oracleId) as n">{{ n }} in deck</span>
       <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
-        <i class="bi bi-plus-lg"></i> {{ deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
+        <i class="bi bi-plus-lg"></i> {{ commanderFilter ? 'Add Commander' : deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
       </button>
       <button class="modal-action-btn modal-action-btn--remove"
               *ngIf="isInDeck(previewCard!)"

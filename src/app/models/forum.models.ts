@@ -23,6 +23,8 @@ export interface ForumPostDetail {
   deckCoverUri: string | null;
   deckFormat: string | null;
   commanderOracleId: string | null;
+  commanderImageUri: string | null;
+  commanderName: string | null;
   description: string | null;
   colorIdentity: string[];
   publishedAt: string;

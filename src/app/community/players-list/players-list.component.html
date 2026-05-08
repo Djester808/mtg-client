@@ -1,0 +1,75 @@
+<div class="pl-shell">
+  <div class="pl-bg">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <div class="pl-content">
+    <header class="pl-header">
+      <div>
+        <h1 class="pl-title">Players</h1>
+        <p class="pl-subtitle">Community members who have published decks</p>
+      </div>
+    </header>
+
+    <!-- Filter bar -->
+    <div class="pl-filters">
+      <div class="pf-search-wrap">
+        <i class="bi bi-search pf-search-icon"></i>
+        <input class="pf-search" type="text" [(ngModel)]="searchQuery"
+               (ngModelChange)="cdr.markForCheck()"
+               placeholder="Search players…" autocomplete="off"
+               title="Filter players by username">
+      </div>
+
+      <div class="pf-sep"></div>
+
+      <span class="pf-label">Sort</span>
+      <div class="pf-sort-group">
+        <button class="pf-sort-btn" [class.is-active]="sortBy === 'decks'"
+                title="Sort by most decks published" (click)="setSortBy('decks')">Decks</button>
+        <button class="pf-sort-btn" [class.is-active]="sortBy === 'comments'"
+                title="Sort by most comments posted" (click)="setSortBy('comments')">Comments</button>
+        <button class="pf-sort-btn" [class.is-active]="sortBy === 'name'"
+                title="Sort alphabetically by username" (click)="setSortBy('name')">A–Z</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="pl-loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Loading players…</span>
+    </div>
+
+    <!-- Empty -->
+    <div class="pl-empty" *ngIf="!loading && filteredPlayers.length === 0">
+      <i class="bi bi-person-x"></i>
+      <p>No players found.</p>
+    </div>
+
+    <!-- Grid -->
+    <div class="pl-grid" *ngIf="!loading && filteredPlayers.length > 0">
+      <a class="pl-card" *ngFor="let p of filteredPlayers"
+         [routerLink]="['/u', p.username]"
+         [title]="'View ' + p.username + '\'s profile'">
+        <div class="pl-avatar" [style.background]="avatarColor(p.username)">
+          {{ p.username[0].toUpperCase() }}
+        </div>
+        <div class="pl-info">
+          <div class="pl-username">{{ p.username }}</div>
+          <div class="pl-joined">Since {{ formatDate(p.joinedAt) }}</div>
+        </div>
+        <div class="pl-stats">
+          <div class="pl-stat" title="Published decks">
+            <i class="bi bi-collection-fill"></i>
+            <span>{{ p.deckCount }}</span>
+          </div>
+          <div class="pl-stat" title="Comments posted">
+            <i class="bi bi-chat-fill"></i>
+            <span>{{ p.commentCount }}</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

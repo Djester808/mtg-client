@@ -11,25 +11,62 @@
             [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
       <div class="header-overlay"></div>
       <div class="header-inner">
-        <a class="back-btn" routerLink="/forum">← Community Decks</a>
-        <div class="header-meta">
-          <div class="header-format" *ngIf="post.deckFormat">{{ formatLabel(post.deckFormat) }}</div>
-          <div class="header-pips" *ngIf="post.colorIdentity?.length">
-            <span class="color-pip" *ngFor="let c of post.colorIdentity" [ngClass]="colorClass(c)"></span>
+        <a class="back-btn" routerLink="/community/forum">← Community Decks</a>
+
+        <div class="header-flex">
+          <!-- Commander card image (shown when deck has a commander) -->
+          <div class="fd-commander-wrap" *ngIf="post.commanderImageUri"
+               [title]="'View ' + (post.commanderName ?? 'Commander')"
+               (click)="openCommanderCard(post)">
+            <img class="fd-commander-img" [src]="post.commanderImageUri" [alt]="post.commanderName ?? 'Commander'" />
+            <div class="fd-commander-hint"><i class="bi bi-search"></i></div>
+          </div>
+
+          <!-- Main header info -->
+          <div class="header-text">
+            <div class="header-meta">
+              <div class="header-format" *ngIf="post.deckFormat">{{ formatLabel(post.deckFormat) }}</div>
+              <div class="header-pips" *ngIf="post.colorIdentity?.length">
+                <i class="ms ms-cost ms-shadow" *ngFor="let c of post.colorIdentity" [ngClass]="'ms-' + c.toLowerCase()"></i>
+              </div>
+            </div>
+            <div class="fd-commander-name" *ngIf="post.commanderName">{{ post.commanderName }}</div>
+            <h1 class="header-title">{{ post.deckName }}</h1>
+            <div class="header-byline">
+              by <a class="author-link" [routerLink]="['/u', post.authorUsername]"><strong>{{ post.authorUsername }}</strong></a>
+              &nbsp;·&nbsp; {{ timeAgo(post.publishedAt) }}
+              &nbsp;·&nbsp; {{ totalCards(post) }} cards
+            </div>
+            <p class="header-desc" *ngIf="post.description" [innerHTML]="post.description | oracleSymbols"></p>
+            <div class="header-actions">
+              <button class="copy-deck-btn"
+                      *ngIf="isLoggedIn$ | async"
+                      [disabled]="copyState === 'copying' || copyState === 'done'"
+                      (click)="copyDeck(post)">
+                <ng-container *ngIf="copyState === 'idle'">
+                  <i class="bi bi-copy"></i> Copy to My Decks
+                </ng-container>
+                <ng-container *ngIf="copyState === 'copying'">
+                  <span class="copy-spinner"></span> Copying…
+                </ng-container>
+                <ng-container *ngIf="copyState === 'done'">
+                  <i class="bi bi-check2"></i> Copied! Redirecting…
+                </ng-container>
+                <ng-container *ngIf="copyState === 'error'">
+                  <i class="bi bi-exclamation-circle"></i> Retry
+                </ng-container>
+              </button>
+
+              <button class="delete-post-btn"
+                      *ngIf="(username$ | async) === post.authorUsername"
+                      (click)="deletePost(post.id)">
+                <i class="bi bi-trash3"></i> Delete Post
+              </button>
+            </div>
+
+            <p class="copy-error" *ngIf="copyState === 'error' && copyError">{{ copyError }}</p>
           </div>
         </div>
-        <h1 class="header-title">{{ post.deckName }}</h1>
-        <div class="header-byline">
-          by <strong>{{ post.authorUsername }}</strong>
-          &nbsp;·&nbsp; {{ timeAgo(post.publishedAt) }}
-          &nbsp;·&nbsp; {{ totalCards(post) }} cards
-        </div>
-        <p class="header-desc" *ngIf="post.description">{{ post.description }}</p>
-        <button class="delete-post-btn"
-                *ngIf="(username$ | async) === post.authorUsername"
-                (click)="deletePost(post.id)">
-          <i class="bi bi-trash3"></i> Delete Post
-        </button>
       </div>
     </header>
 
@@ -37,27 +74,64 @@
 
       <!-- Left: card list -->
       <section class="card-list-section">
-        <div class="board-tabs" *ngIf="totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0">
-          <button class="board-tab" [class.active]="activeTab === 'main'" (click)="activeTab = 'main'">
-            Mainboard ({{ totalCards(post) }})
-          </button>
-          <button class="board-tab" [class.active]="activeTab === 'side'"
-                  *ngIf="totalCards(post, 'side') > 0" (click)="activeTab = 'side'">
-            Sideboard ({{ totalCards(post, 'side') }})
-          </button>
-          <button class="board-tab" [class.active]="activeTab === 'maybe'"
-                  *ngIf="totalCards(post, 'maybe') > 0" (click)="activeTab = 'maybe'">
-            Maybeboard ({{ totalCards(post, 'maybe') }})
-          </button>
+
+        <!-- Toolbar: board tabs + view toggle -->
+        <div class="list-toolbar">
+          <div class="board-tabs" *ngIf="totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0; else boardTabsSpacer">
+            <button class="board-tab" [class.active]="activeTab === 'main'"
+                    title="View main deck cards" (click)="activeTab = 'main'">
+              Mainboard ({{ totalCards(post) }})
+            </button>
+            <button class="board-tab" [class.active]="activeTab === 'side'"
+                    *ngIf="totalCards(post, 'side') > 0"
+                    title="View sideboard cards" (click)="activeTab = 'side'">
+              Sideboard ({{ totalCards(post, 'side') }})
+            </button>
+            <button class="board-tab" [class.active]="activeTab === 'maybe'"
+                    *ngIf="totalCards(post, 'maybe') > 0"
+                    title="View maybeboard cards" (click)="activeTab = 'maybe'">
+              Maybeboard ({{ totalCards(post, 'maybe') }})
+            </button>
+          </div>
+          <ng-template #boardTabsSpacer><div class="board-tabs-spacer"></div></ng-template>
+
+          <div class="toolbar-right">
+            <!-- Sort -->
+            <div class="sort-group" title="Sort cards within the list">
+              <button class="sort-btn" *ngFor="let s of sortOptions"
+                      [class.is-active]="sortMode === s.value"
+                      [title]="'Sort by ' + s.label"
+                      (click)="setSortMode(s.value)">{{ s.label }}</button>
+            </div>
+
+            <!-- Zoom -->
+            <div class="zoom-group">
+              <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out (−)">−</button>
+              <span class="zoom-label" title="Current zoom level">{{ zoomLabel }}</span>
+              <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in (+)">+</button>
+            </div>
+
+            <!-- View toggle -->
+            <div class="view-toggle">
+              <button class="view-btn"
+                      *ngFor="let v of viewOptions"
+                      [class.is-active]="viewMode === v.value"
+                      [title]="v.title"
+                      (click)="setViewMode(v.value)">
+                <i class="bi" [ngClass]="v.icon"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="card-groups">
+        <!-- ── List view ── -->
+        <div class="card-groups" *ngIf="viewMode === 'list'" [style.--zoom]="zoomLevel">
           <div class="card-group" *ngFor="let group of getGroups(post)">
             <div class="group-header">
               <span class="group-label">{{ group.label }}</span>
               <span class="group-count">{{ group.total }}</span>
             </div>
-            <div class="card-row" *ngFor="let card of group.cards">
+            <div class="card-row" *ngFor="let card of group.cards" (click)="openCard(card)">
               <span class="card-qty">{{ cardCount(card) }}</span>
               <span class="card-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
               <app-mana-cost
@@ -68,6 +142,41 @@
             </div>
           </div>
         </div>
+
+        <!-- ── Visual view ── -->
+        <div *ngIf="viewMode === 'visual'">
+          <div class="visual-group" *ngFor="let group of getGroups(post)">
+            <div class="group-header">
+              <span class="group-label">{{ group.label }}</span>
+              <span class="group-count">{{ group.total }}</span>
+            </div>
+            <div class="visual-grid" [style.--zoom]="zoomLevel">
+              <div class="visual-card-wrap"
+                   *ngFor="let card of group.cards"
+                   [title]="card.cardDetails?.name ?? ''">
+                <div class="visual-card-img"
+                     [style.backgroundImage]="cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'"
+                     [class.no-image]="!cardImage(card)"
+                     (click)="openCard(card)">
+                  <span class="visual-placeholder" *ngIf="!cardImage(card)">◈</span>
+                </div>
+                <div class="visual-qty-badge" *ngIf="cardCount(card) > 1">×{{ cardCount(card) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Text view ── -->
+        <div class="text-groups" *ngIf="viewMode === 'text'" [style.--zoom]="zoomLevel">
+          <div class="text-group" *ngFor="let group of getGroups(post)">
+            <div class="text-group-label">{{ group.label }} ({{ group.total }})</div>
+            <div class="text-row" *ngFor="let card of group.cards" (click)="openCard(card)">
+              <span class="text-qty">{{ cardCount(card) }}×</span>
+              <span class="text-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <!-- Right: stats + comments -->
@@ -104,7 +213,7 @@
 
             <div class="comment" *ngFor="let c of post.comments">
               <div class="comment-header">
-                <span class="comment-author">{{ c.authorUsername }}</span>
+                <a class="comment-author author-link" [routerLink]="['/u', c.authorUsername]">{{ c.authorUsername }}</a>
                 <span class="comment-time">{{ timeAgo(c.createdAt) }}</span>
                 <div class="comment-actions" *ngIf="(username$ | async) === c.authorUsername">
                   <button class="comment-action-btn" (click)="startEdit(c)">Edit</button>
@@ -154,4 +263,15 @@
       <span>Loading deck...</span>
     </div>
   </ng-template>
+
+  <!-- Card detail modal -->
+  <ng-container *ngIf="selectedCard as card">
+    <app-card-modal
+      [card]="card.cardDetails ?? null"
+      [printings]="modalPrintings"
+      [(viewedScryfallId)]="modalViewScryfallId"
+      [showOverlay]="true"
+      (closed)="closeCard()">
+    </app-card-modal>
+  </ng-container>
 </div>

@@ -1,0 +1,191 @@
+.up-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  min-height: 100vh;
+}
+
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid rgba(201,168,76,0.2);
+  border-top-color: #c9a84c;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.up-loading {
+  display: flex; align-items: center; gap: 12px;
+  padding: 120px 0; justify-content: center;
+  color: rgba(230,220,195,0.4); font-size: 0.875rem;
+}
+.up-error {
+  text-align: center; padding: 80px 0;
+  color: #e06060; font-size: 0.9rem;
+}
+
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
+.up-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 36px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.up-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.08));
+  border: 1px solid rgba(201,168,76,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 700; color: #c9a84c;
+  flex-shrink: 0;
+}
+
+.up-username {
+  font-size: 1.8rem; font-weight: 700; color: #e6dcc3; margin: 0 0 6px;
+}
+
+.up-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.8rem; color: rgba(230,220,195,0.4);
+}
+
+.up-sep { opacity: 0.4; }
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+.up-tabs {
+  display: flex; gap: 8px; margin-bottom: 28px;
+}
+
+.up-tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: rgba(230,220,195,0.5);
+  font-size: 0.82rem; cursor: pointer;
+  transition: background 0.13s, color 0.13s, border-color 0.13s;
+
+  &:hover { color: rgba(230,220,195,0.85); border-color: rgba(255,255,255,0.15); }
+
+  &.active {
+    background: rgba(201,168,76,0.12);
+    border-color: rgba(201,168,76,0.4);
+    color: #c9a84c;
+  }
+}
+
+.up-tab-count {
+  font-size: 0.72rem; font-weight: 700;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 1px 7px;
+}
+
+// ── Deck grid ────────────────────────────────────────────────────────────────
+
+.up-decks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.up-deck-card {
+  background: rgba(20,18,32,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s;
+
+  &:hover { border-color: rgba(201,168,76,0.3); transform: translateY(-2px); }
+}
+
+.up-deck-cover {
+  position: relative;
+  height: 100px;
+  background-size: cover; background-position: center 30%;
+  background-color: rgba(10,8,20,0.6);
+}
+
+.up-deck-cover-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(14,12,28,0.8));
+}
+
+.up-deck-pips {
+  position: absolute; bottom: 8px; right: 10px;
+  display: flex; gap: 2px;
+  .ms { font-size: 0.9rem; }
+}
+
+.up-deck-body {
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.up-deck-name {
+  font-size: 0.9rem; font-weight: 700; color: rgba(230,220,195,0.9);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.up-deck-desc {
+  font-size: 0.75rem; color: rgba(230,220,195,0.45); margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+  .ms { font-size: 0.75em; vertical-align: middle; }
+}
+
+.up-deck-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.7rem; color: rgba(230,220,195,0.35);
+  i { margin-right: 3px; }
+}
+
+.up-deck-time { margin-left: auto; }
+
+// ── Comments ─────────────────────────────────────────────────────────────────
+
+.up-comments {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.up-comment-row {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px;
+  background: rgba(20,18,32,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: rgba(201,168,76,0.25); }
+}
+
+.up-comment-deck {
+  font-size: 0.72rem; color: #c9a84c; font-weight: 600;
+}
+
+.up-comment-content {
+  font-size: 0.83rem; color: rgba(230,220,195,0.7);
+  margin: 0; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden;
+  .ms { font-size: 0.85em; vertical-align: middle; }
+}
+
+.up-comment-time {
+  font-size: 0.68rem; color: rgba(230,220,195,0.3);
+}
+
+// ── Empty ────────────────────────────────────────────────────────────────────
+
+.up-empty {
+  padding: 40px 0; text-align: center;
+  color: rgba(230,220,195,0.3); font-size: 0.85rem;
+}

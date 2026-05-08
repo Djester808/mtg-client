@@ -17,6 +17,11 @@ class ForumPage extends BasePage {
     this.cardGroups     = By.css('.card-group');
     this.cardRows       = By.css('.forum-detail .card-row');
     this.boardTabs      = By.css('.board-tab');
+    this.viewToggle     = By.css('.view-toggle');
+    this.viewBtns       = By.css('.view-btn');
+    this.visualGrid     = By.css('.visual-grid');
+    this.textGroups     = By.css('.text-groups');
+    this.copyDeckBtn    = By.css('.copy-deck-btn');
     this.commentsBlock  = By.css('.comments-block');
     this.commentsList   = By.css('.comments-list .comment');
     this.commentTextarea = By.css('.comment-form .comment-textarea');
@@ -54,6 +59,30 @@ class ForumPage extends BasePage {
   async getPostCardNames() {
     const cards = await this.getPostCards();
     return Promise.all(cards.map(c => c.findElement(By.css('.post-deck-name')).getText()));
+  }
+
+  // ---- View mode helpers ----
+
+  /** Click the view button whose title attribute matches the given value ('List view', 'Visual view', 'Text view'). */
+  async setViewMode(title) {
+    const btns = await this.driver.findElements(this.viewBtns);
+    for (const btn of btns) {
+      const t = await btn.getAttribute('title');
+      if (t && t.toLowerCase().includes(title.toLowerCase())) {
+        await this.driver.executeScript('arguments[0].click()', btn);
+        await this.driver.sleep(300);
+        return;
+      }
+    }
+    throw new Error(`View button with title "${title}" not found`);
+  }
+
+  async isVisualGridVisible() {
+    return this.isPresent(this.visualGrid, 3000);
+  }
+
+  async isTextGroupsVisible() {
+    return this.isPresent(this.textGroups, 3000);
   }
 
   // ---- Detail helpers ----
