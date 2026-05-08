@@ -66,6 +66,7 @@ export interface PrintingDto {
   collectorNumber: string | null;
   imageUriSmall: string | null;
   imageUriNormal: string | null;
+  imageUriLarge: string | null;
   imageUriNormalBack: string | null;
   oracleText: string | null;
   flavorText: string | null;

@@ -27,6 +27,7 @@ export function makeCard(overrides: Partial<CardDto> = {}): CardDto {
     startingLoyalty: null,
     keywords: [],
     imageUriNormal: null,
+    imageUriLarge: null,
     imageUriNormalBack: null,
     imageUriSmall: null,
     imageUriArtCrop: null,

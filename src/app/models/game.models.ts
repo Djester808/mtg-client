@@ -35,6 +35,7 @@ export interface CardDto {
   startingLoyalty: number | null;
   keywords: string[];
   imageUriNormal: string | null;
+  imageUriLarge: string | null;
   imageUriNormalBack: string | null;
   imageUriSmall: string | null;
   imageUriArtCrop: string | null;

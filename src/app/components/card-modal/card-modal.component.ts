@@ -165,7 +165,12 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   get modalImage(): string | null {
     const p = this.currentPrinting;
-    const front = p?.imageUriNormal ?? this.card?.imageUriNormal ?? null;
+    const front =
+      p?.imageUriLarge ??
+      p?.imageUriNormal ??
+      this.card?.imageUriLarge ??
+      this.card?.imageUriNormal ??
+      null;
     const back = p?.imageUriNormalBack ?? this.card?.imageUriNormalBack ?? null;
     return this.flipped && back ? back : front;
   }

@@ -14,6 +14,7 @@ function makePrinting(overrides: Partial<PrintingDto> = {}): PrintingDto {
     collectorNumber: '123',
     imageUriSmall: null,
     imageUriNormal: null,
+    imageUriLarge: null,
     imageUriNormalBack: null,
     oracleText: null,
     flavorText: null,

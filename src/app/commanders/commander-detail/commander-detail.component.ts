@@ -352,6 +352,7 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
       startingLoyalty: null,
       keywords: [],
       imageUriNormal: this.profile.imageUri,
+      imageUriLarge: null,
       imageUriNormalBack: null,
       imageUriSmall: this.profile.imageUri,
       imageUriArtCrop: this.profile.imageUriArtCrop,
