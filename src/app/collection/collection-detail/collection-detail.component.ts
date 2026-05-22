@@ -26,7 +26,12 @@ import {
   selectActiveCollection,
   selectCollectionLoading,
 } from '../../store/collection/collection.selectors';
-import { CollectionDetailDto, CollectionCardDto, PrintingDto } from '../../models/game.models';
+import {
+  CollectionDetailDto,
+  CollectionCardDto,
+  PrintingDto,
+  CardDto,
+} from '../../models/game.models';
 import { buildTypeLine } from '../../utils/card.utils';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
@@ -34,6 +39,7 @@ import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
+import { CardScannerComponent } from '../../components/card-scanner/card-scanner.component';
 
 @Component({
   selector: 'app-collection-detail',
@@ -46,6 +52,7 @@ import { CoverPickerModalComponent } from '../../components/cover-picker-modal/c
     CardModalComponent,
     CardSearchPanelComponent,
     CoverPickerModalComponent,
+    CardScannerComponent,
   ],
   templateUrl: './collection-detail.component.html',
   styleUrls: ['./collection-detail.component.scss'],
@@ -58,6 +65,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   filterQuery = '';
   showSearchPanel = false;
   showDetailCoverPicker = false;
+  showScanner = false;
   zoomLevel = 1.0;
 
   zoomIn(): void {
@@ -578,6 +586,19 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  // ---- Card scanner ----------------------------------------
+
+  onCardScanned(card: CardDto): void {
+    this.showScanner = false;
+    this.store.dispatch(
+      CollectionActions.addCard({
+        collectionId: this.collectionId,
+        request: { oracleId: card.oracleId, quantity: 1, quantityFoil: 0 },
+      }),
+    );
+    this.cdr.markForCheck();
   }
 
   // ---- Detail cover picker ----------------------------------

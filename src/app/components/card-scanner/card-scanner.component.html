@@ -1,0 +1,99 @@
+<div class="scanner-overlay">
+  <div class="scanner-backdrop" (click)="close()"></div>
+
+  <div class="scanner-modal">
+    <div class="scanner-header">
+      <h2 class="scanner-title"><i class="bi bi-camera"></i> Scan Card</h2>
+      <button class="scanner-close" (click)="close()" title="Close">×</button>
+    </div>
+
+    <!-- ── Idle ── -->
+    <div class="scanner-body" *ngIf="state === 'idle'">
+      <p class="scanner-hint">
+        Hold a Magic card up to your camera — we'll read the name and find it for you.
+      </p>
+      <button class="scan-btn primary" (click)="startCamera()">
+        <i class="bi bi-camera-fill"></i> Open Camera
+      </button>
+    </div>
+
+    <!-- ── Live preview ── -->
+    <div class="scanner-body camera-body"
+         *ngIf="state === 'previewing' || state === 'processing'">
+
+      <div class="video-wrap">
+        <video #videoEl autoplay playsinline muted class="scanner-video"></video>
+
+        <!-- Card-shaped guide box -->
+        <div class="card-guide" #guideEl>
+          <div class="guide-name-zone">
+            <span class="guide-name-label">card name</span>
+          </div>
+          <div class="guide-corner tl"></div>
+          <div class="guide-corner tr"></div>
+          <div class="guide-corner bl"></div>
+          <div class="guide-corner br"></div>
+        </div>
+
+        <!-- Processing overlay -->
+        <div class="processing-overlay" *ngIf="state === 'processing'">
+          <div class="proc-spinner"></div>
+          <span>Reading name…</span>
+        </div>
+      </div>
+
+      <canvas #canvasEl class="hidden-canvas"></canvas>
+
+      <p class="scanner-hint">Align the card inside the guide, name at the top</p>
+
+      <button class="scan-btn primary"
+              [disabled]="state === 'processing'"
+              (click)="capture()">
+        <i class="bi bi-camera-fill"></i> Capture
+      </button>
+    </div>
+
+    <!-- ── Result ── -->
+    <div class="scanner-body" *ngIf="state === 'result' && matchedCard">
+      <div class="result-row">
+        <img class="result-img"
+             *ngIf="matchedCard.imageUriNormal"
+             [src]="matchedCard.imageUriNormal"
+             [alt]="matchedCard.name">
+        <div class="result-info">
+          <p class="result-detected">Detected: <em>"{{ detectedName }}"</em></p>
+          <p class="result-name">{{ matchedCard.name }}</p>
+          <p class="result-type">{{ matchedCard.cardTypes.join(' · ') }}</p>
+          <p class="result-set" *ngIf="matchedCard.setCode">{{ matchedCard.setCode | uppercase }}</p>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="scan-btn secondary" (click)="retry()">
+          <i class="bi bi-arrow-repeat"></i> Try Again
+        </button>
+        <button class="scan-btn primary" (click)="confirm()">
+          <i class="bi bi-plus-circle"></i> Add to Collection
+        </button>
+      </div>
+    </div>
+
+    <!-- ── No match ── -->
+    <div class="scanner-body center-body" *ngIf="state === 'no-match'">
+      <i class="bi bi-search state-icon warn"></i>
+      <p class="scanner-hint">
+        Couldn't identify the card<span *ngIf="detectedName"> (read: "<em>{{ detectedName }}</em>")</span>.
+        Try better lighting or hold the card flatter.
+      </p>
+      <button class="scan-btn primary" (click)="retry()">
+        <i class="bi bi-arrow-repeat"></i> Try Again
+      </button>
+    </div>
+
+    <!-- ── Error ── -->
+    <div class="scanner-body center-body" *ngIf="state === 'error'">
+      <i class="bi bi-exclamation-triangle state-icon error"></i>
+      <p class="scanner-hint">{{ errorMessage }}</p>
+      <button class="scan-btn secondary" (click)="close()">Close</button>
+    </div>
+  </div>
+</div>
