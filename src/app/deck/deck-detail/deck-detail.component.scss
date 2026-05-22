@@ -2602,7 +2602,7 @@
 
 .cp-portrait-wrap {
   position: relative;
-  border-radius: 0;
+  border-radius: 4.75% / 3.4%;
   overflow: hidden;
   transition: box-shadow 0.2s;
 
@@ -2616,7 +2616,7 @@
   width: 100%;
   aspect-ratio: 5 / 7;
   border-radius: 0;
-  background-size: cover;
+  background-size: 108%;
   background-position: center top;
   background-color: var(--bg-raised);
   cursor: pointer;

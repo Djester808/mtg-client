@@ -2866,11 +2866,11 @@ describe('DeckDetailComponent — zoom', () => {
     expect(component.zoomLevel).toBe(0.75);
   });
 
-  it('zoomIn does not exceed 2.0', async () => {
+  it('zoomIn does not exceed 3.0', async () => {
     const { component } = await setup();
-    component.zoomLevel = 2.0;
+    component.zoomLevel = 3.0;
     component.zoomIn();
-    expect(component.zoomLevel).toBe(2.0);
+    expect(component.zoomLevel).toBe(3.0);
   });
 
   it('zoomOut does not go below 0.5', async () => {

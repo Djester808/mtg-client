@@ -271,7 +271,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     const savedZoom = localStorage.getItem('deck-zoom');
-    if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
+    if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(3.0, parseFloat(savedZoom) || 1.0));
 
     if (localStorage.getItem(`deck-free-${this.deckId}`)) {
       this.viewMode = 'free';
@@ -477,7 +477,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   zoomIn(): void {
-    this.zoomLevel = Math.min(2.0, +(this.zoomLevel + 0.25).toFixed(2));
+    this.zoomLevel = Math.min(3.0, +(this.zoomLevel + 0.25).toFixed(2));
     localStorage.setItem('deck-zoom', String(this.zoomLevel));
   }
   zoomOut(): void {
