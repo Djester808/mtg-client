@@ -143,15 +143,14 @@ export class CardScannerComponent implements OnDestroy {
       const gw = gr.width * sx;
       const gh = gr.height * sy;
 
-      const nameW = gw * 0.7;
-      const nameH = gh * 0.13;
-      const scale = 3;
-      canvas.width = nameW * scale;
-      canvas.height = nameH * scale;
+      // Scan the full card area at 2× for OCR
+      const scale = 2;
+      canvas.width = gw * scale;
+      canvas.height = gh * scale;
       const ctx = canvas.getContext('2d')!;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(video, gx, gy, nameW, nameH, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, gx, gy, gw, gh, 0, 0, canvas.width, canvas.height);
 
       // Grayscale + contrast boost so Tesseract works better on blurry/dark frames
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -169,13 +168,14 @@ export class CardScannerComponent implements OnDestroy {
       }
       const { data } = await this.ocrWorker.recognize(canvas.toDataURL('image/png'));
 
-      if (data.confidence < 55) return '';
+      if (data.confidence < 40) return '';
 
+      // From all OCR lines, pick the first one that looks like a card name
       return (
         data.text
           .split('\n')
           .map((l: string) => l.trim())
-          .find((l: string) => l.length > 0) ?? ''
+          .find((l: string) => this.isLikelyCardName(l)) ?? ''
       );
     } catch {
       return '';
@@ -211,7 +211,7 @@ export class CardScannerComponent implements OnDestroy {
       const tmp = document.createElement('canvas');
       tmp.width = 40;
       tmp.height = 6;
-      tmp.getContext('2d')!.drawImage(video, gx, gy, gw * 0.7, gh * 0.13, 0, 0, 40, 6);
+      tmp.getContext('2d')!.drawImage(video, gx, gy, gw, gh * 0.5, 0, 0, 40, 6);
       return tmp.getContext('2d')!.getImageData(0, 0, 40, 6).data;
     } catch {
       return null;

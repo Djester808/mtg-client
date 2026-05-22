@@ -124,13 +124,13 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -52%);
-  width: 44%;
+  // 32% wide × 5:7 ratio = 44.8% tall. Video is 56.25% tall at 16:9 — fits with margin.
+  transform: translate(-50%, -50%);
+  width: 32%;
   aspect-ratio: 5 / 7;
   border: 2px solid rgba(201, 168, 76, 0.7);
   border-radius: 4px;
   pointer-events: none;
-  // Vignette: darken everything outside this box
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
 
   &.is-scanning {
@@ -139,7 +139,7 @@
 }
 
 @keyframes guide-pulse {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.6); }
+  0%, 100% { border-color: rgba(201, 168, 76, 0.55); }
   50%       { border-color: rgba(201, 168, 76, 1); }
 }
 
@@ -149,35 +149,14 @@
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent 0%, rgba(201, 168, 76, 0.9) 50%, transparent 100%);
-  animation: scan-sweep 2s ease-in-out infinite;
-  top: 0;
+  animation: scan-sweep 2.4s ease-in-out infinite;
 }
 
 @keyframes scan-sweep {
-  0%   { top: 13%; opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { top: 98%; opacity: 0; }
-}
-
-.guide-name-zone {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 13%;
-  border-bottom: 1px dashed rgba(201, 168, 76, 0.5);
-  display: flex;
-  align-items: center;
-  padding: 0 6px;
-}
-
-.guide-name-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(201, 168, 76, 0.8);
+  0%   { top: 2%;  opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { top: 97%; opacity: 0; }
 }
 
 // Corner brackets
