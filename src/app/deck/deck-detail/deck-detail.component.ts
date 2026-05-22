@@ -2731,7 +2731,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   tileImage(card: CollectionCardDto, slotKey: string): string | null {
-    const front = card.cardDetails?.imageUriNormal ?? null;
+    const front = card.cardDetails?.imageUriLarge ?? card.cardDetails?.imageUriNormal ?? null;
     const back = card.cardDetails?.imageUriNormalBack ?? null;
     return this.flippedCardIds.has(slotKey) && back ? back : front;
   }

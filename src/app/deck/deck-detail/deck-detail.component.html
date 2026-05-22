@@ -233,9 +233,9 @@
         <div class="vp-cards">
           <div class="vp-card-item" *ngFor="let c of violationPanelCards(deck)">
             <div class="vp-thumb"
-                 [style.backgroundImage]="c.cardDetails?.imageUriSmall ? 'url(' + c.cardDetails!.imageUriSmall + ')' : 'none'"
+                 [style.backgroundImage]="(c.cardDetails?.imageUriNormal || c.cardDetails?.imageUriSmall) ? 'url(' + (c.cardDetails!.imageUriNormal ?? c.cardDetails!.imageUriSmall) + ')' : 'none'"
                  (click)="openCard(c)">
-              <div class="vp-thumb-placeholder" *ngIf="!c.cardDetails?.imageUriSmall">◈</div>
+              <div class="vp-thumb-placeholder" *ngIf="!c.cardDetails?.imageUriNormal && !c.cardDetails?.imageUriSmall">◈</div>
             </div>
             <div class="vp-card-info">
               <span class="vp-card-name" (click)="openCard(c)">{{ c.cardDetails?.name ?? c.oracleId }}</span>
@@ -674,8 +674,8 @@
                  [class.is-cmdr-drop-target]="cpSlotDragOver">
               <ng-container *ngIf="commanderCard(deck) as cmdr; else noCommander">
                 <div class="cp-portrait"
-                     [style.backgroundImage]="cmdr.cardDetails?.imageUriSmall ? 'url(' + cmdr.cardDetails!.imageUriSmall + ')' : 'none'"
-                     [class.no-art]="!cmdr.cardDetails?.imageUriSmall"
+                     [style.backgroundImage]="(cmdr.cardDetails?.imageUriLarge || cmdr.cardDetails?.imageUriNormal) ? 'url(' + (cmdr.cardDetails!.imageUriLarge ?? cmdr.cardDetails!.imageUriNormal) + ')' : 'none'"
+                     [class.no-art]="!cmdr.cardDetails?.imageUriLarge && !cmdr.cardDetails?.imageUriNormal"
                      (click)="openCard(cmdr)"
                      title="View card details">
                 </div>
