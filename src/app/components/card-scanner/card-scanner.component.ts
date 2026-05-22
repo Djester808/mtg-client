@@ -13,7 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { GameApiService } from '../../services/game-api.service';
 import { CardDto } from '../../models/game.models';
 
-type ScanState = 'idle' | 'previewing' | 'processing' | 'result' | 'error';
+type ScanState = 'idle' | 'previewing' | 'result' | 'error';
 
 @Component({
   selector: 'app-card-scanner',
@@ -39,7 +39,6 @@ export class CardScannerComponent implements OnDestroy {
 
   private stream: MediaStream | null = null;
   private autoScanActive = false;
-  // Reuse the same worker across attempts — init cost is ~1-2s
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private ocrWorker: any = null;
 
@@ -57,7 +56,10 @@ export class CardScannerComponent implements OnDestroy {
       });
       setTimeout(() => {
         this.videoEl.nativeElement.srcObject = this.stream;
-        this.videoEl.nativeElement.play().then(() => this.startScanLoop());
+        this.videoEl.nativeElement.play().then(() => {
+          this.tryEnableContinuousFocus();
+          this.startScanLoop();
+        });
       });
     } catch {
       this.state = 'error';
@@ -66,42 +68,127 @@ export class CardScannerComponent implements OnDestroy {
     }
   }
 
+  private tryEnableContinuousFocus(): void {
+    try {
+      const track = this.stream?.getVideoTracks()[0];
+      if (!track) return;
+      const caps = track.getCapabilities() as Record<string, unknown>;
+      if ('focusMode' in caps) {
+        track
+          .applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] })
+          .catch(() => {});
+      }
+    } catch {
+      /* focus constraints not supported on this device */
+    }
+  }
+
   private async startScanLoop(): Promise<void> {
     this.autoScanActive = true;
-    await delay(1500); // camera warm-up
+    await delay(1500);
 
     while (this.autoScanActive && this.state === 'previewing') {
-      // Only run OCR once the frame is stable (card held still)
       const stable = await this.waitForStableFrame();
       if (!stable || !this.autoScanActive || this.state !== 'previewing') continue;
 
-      await this.capture();
+      // Run OCR silently — never change state to 'processing' so the overlay never flashes
+      const name = await this.runOcr();
 
-      if (this.state === 'previewing') {
-        if (this.detectedName) {
-          this.scanHint = `"${this.detectedName}" — not a Magic card`;
-          this.cdr.markForCheck();
-        }
+      if (!name) {
+        await delay(600);
+        continue;
+      }
+
+      if (!this.isLikelyCardName(name)) {
+        await delay(600);
+        continue;
+      }
+
+      this.detectedName = name;
+      const results = await firstValueFrom(this.gameApi.searchCards(name, 5)).catch(() => null);
+
+      if (!this.autoScanActive) break;
+
+      if (results?.length) {
+        this.matchedCard = results[0];
+        this.state = 'result';
+        this.cdr.markForCheck();
+      } else {
+        this.scanHint = `"${name}" — not found`;
+        this.cdr.markForCheck();
         await delay(1200);
         if (this.autoScanActive) {
           this.scanHint = '';
           this.detectedName = '';
           this.cdr.markForCheck();
-          await delay(200);
         }
       }
     }
   }
 
-  // Sample the name strip at 40×6 px twice, 350 ms apart.
-  // Returns true only if the scene is still enough to read.
+  // Returns the detected name string, or empty string on failure.
+  // Never touches component state — completely silent.
+  private async runOcr(): Promise<string> {
+    try {
+      const video = this.videoEl.nativeElement;
+      const canvas = this.canvasEl.nativeElement;
+      const guide = this.guideEl.nativeElement;
+
+      const vr = video.getBoundingClientRect();
+      const gr = guide.getBoundingClientRect();
+      const sx = video.videoWidth / vr.width;
+      const sy = video.videoHeight / vr.height;
+      const gx = (gr.left - vr.left) * sx;
+      const gy = (gr.top - vr.top) * sy;
+      const gw = gr.width * sx;
+      const gh = gr.height * sy;
+
+      const nameW = gw * 0.7;
+      const nameH = gh * 0.13;
+      const scale = 3;
+      canvas.width = nameW * scale;
+      canvas.height = nameH * scale;
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(video, gx, gy, nameW, nameH, 0, 0, canvas.width, canvas.height);
+
+      // Grayscale + contrast boost so Tesseract works better on blurry/dark frames
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = imgData.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const gray = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+        const boosted = Math.max(0, Math.min(255, (gray / 255 - 0.5) * 2.0 * 255 + 128));
+        px[i] = px[i + 1] = px[i + 2] = boosted;
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      if (!this.ocrWorker) {
+        const { createWorker } = await import('tesseract.js');
+        this.ocrWorker = await createWorker('eng');
+      }
+      const { data } = await this.ocrWorker.recognize(canvas.toDataURL('image/png'));
+
+      if (data.confidence < 55) return '';
+
+      return (
+        data.text
+          .split('\n')
+          .map((l: string) => l.trim())
+          .find((l: string) => l.length > 0) ?? ''
+      );
+    } catch {
+      return '';
+    }
+  }
+
   private async waitForStableFrame(): Promise<boolean> {
     try {
       const s1 = this.sampleNameStrip();
       await delay(350);
       if (!this.autoScanActive || this.state !== 'previewing') return false;
       const s2 = this.sampleNameStrip();
-      if (!s1 || !s2) return true; // can't compare — proceed anyway
+      if (!s1 || !s2) return true;
       return this.pixelSimilarity(s1, s2) >= 0.9;
     } catch {
       return true;
@@ -140,78 +227,6 @@ export class CardScannerComponent implements OnDestroy {
     return 1 - diff / ((a.length / 4) * 3 * 255);
   }
 
-  private async capture(): Promise<void> {
-    this.state = 'processing';
-    this.cdr.markForCheck();
-
-    try {
-      const video = this.videoEl.nativeElement;
-      const canvas = this.canvasEl.nativeElement;
-      const guide = this.guideEl.nativeElement;
-
-      const vr = video.getBoundingClientRect();
-      const gr = guide.getBoundingClientRect();
-      const sx = video.videoWidth / vr.width;
-      const sy = video.videoHeight / vr.height;
-      const gx = (gr.left - vr.left) * sx;
-      const gy = (gr.top - vr.top) * sy;
-      const gw = gr.width * sx;
-      const gh = gr.height * sy;
-
-      const nameW = gw * 0.7;
-      const nameH = gh * 0.13;
-      const scale = 3;
-      canvas.width = nameW * scale;
-      canvas.height = nameH * scale;
-      const ctx = canvas.getContext('2d')!;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(video, gx, gy, nameW, nameH, 0, 0, canvas.width, canvas.height);
-
-      const imageData = canvas.toDataURL('image/png');
-
-      // Reuse worker — only init once
-      if (!this.ocrWorker) {
-        const { createWorker } = await import('tesseract.js');
-        this.ocrWorker = await createWorker('eng');
-      }
-      const { data } = await this.ocrWorker.recognize(imageData);
-
-      // Require reasonable Tesseract confidence
-      if (data.confidence < 55) {
-        this.state = 'previewing';
-        this.cdr.markForCheck();
-        return;
-      }
-
-      this.detectedName =
-        data.text
-          .split('\n')
-          .map((l: string) => l.trim())
-          .find((l: string) => l.length > 0) ?? '';
-
-      // Validate text looks like an MTG card name (mostly letters, 2-40 chars)
-      if (!this.isLikelyCardName(this.detectedName)) {
-        this.detectedName = '';
-        this.state = 'previewing';
-        this.cdr.markForCheck();
-        return;
-      }
-
-      const results = await firstValueFrom(this.gameApi.searchCards(this.detectedName, 5));
-      if (results?.length) {
-        this.matchedCard = results[0];
-        this.state = 'result';
-      } else {
-        this.state = 'previewing';
-      }
-    } catch {
-      this.state = 'previewing';
-    }
-
-    this.cdr.markForCheck();
-  }
-
-  // Card names: 2-40 chars, ≥65% letters, at least 2 letter chars, no pure-symbol strings
   private isLikelyCardName(text: string): boolean {
     if (!text || text.length < 2 || text.length > 40) return false;
     const letters = (text.match(/[a-zA-Z]/g) ?? []).length;

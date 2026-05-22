@@ -16,30 +16,20 @@
       </button>
     </div>
 
-    <!-- ── Live preview / processing ── -->
-    <div class="scanner-body camera-body"
-         *ngIf="state === 'previewing' || state === 'processing'">
-
+    <!-- ── Live preview ── -->
+    <div class="scanner-body camera-body" *ngIf="state === 'previewing'">
       <div class="video-wrap">
         <video #videoEl autoplay playsinline muted class="scanner-video"></video>
 
-        <!-- Card-shaped guide box -->
-        <div class="card-guide" [class.is-scanning]="state === 'previewing'" #guideEl>
+        <div class="card-guide is-scanning" #guideEl>
           <div class="guide-name-zone">
             <span class="guide-name-label">card name</span>
           </div>
-          <!-- Moving scan line -->
-          <div class="scan-line" *ngIf="state === 'previewing'"></div>
+          <div class="scan-line"></div>
           <div class="guide-corner tl"></div>
           <div class="guide-corner tr"></div>
           <div class="guide-corner bl"></div>
           <div class="guide-corner br"></div>
-        </div>
-
-        <!-- Processing overlay -->
-        <div class="processing-overlay" *ngIf="state === 'processing'">
-          <div class="proc-spinner"></div>
-          <span>Reading name…</span>
         </div>
       </div>
 
