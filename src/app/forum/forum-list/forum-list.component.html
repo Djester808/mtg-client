@@ -65,6 +65,20 @@
         </div>
       </div>
 
+      <div class="ff-sep"></div>
+
+      <!-- View toggle -->
+      <div class="ff-view-toggle">
+        <button class="ff-view-btn" [class.is-active]="viewMode === 'grid'"
+                (click)="setViewMode('grid')" title="Grid view">
+          <i class="bi bi-grid"></i>
+        </button>
+        <button class="ff-view-btn" [class.is-active]="viewMode === 'list'"
+                (click)="setViewMode('list')" title="List view">
+          <i class="bi bi-list-ul"></i>
+        </button>
+      </div>
+
       <!-- Clear -->
       <button class="ff-clear" *ngIf="hasActiveFilters" (click)="clearFilters()"
               title="Clear all active filters">
@@ -83,7 +97,8 @@
         <p>No decks match your filters.</p>
       </div>
 
-      <div class="posts-grid" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length">
+      <!-- Grid view -->
+      <div class="posts-grid" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length && viewMode === 'grid'">
         <div class="post-card" *ngFor="let post of filteredPosts(allPosts)"
              [routerLink]="['/forum', post.id]"
              title="View deck: {{ post.deckName }}">
@@ -121,6 +136,50 @@
           </div>
 
         </div>
+      </div>
+
+      <!-- List view -->
+      <div class="posts-list" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length && viewMode === 'list'">
+        <a class="post-row" *ngFor="let post of filteredPosts(allPosts)"
+           [routerLink]="['/forum', post.id]"
+           title="View deck: {{ post.deckName }}">
+
+          <div class="pr-cover"
+               [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
+          </div>
+
+          <div class="pr-main">
+            <div class="pr-title-row">
+              <span class="pr-deck-name">{{ post.deckName }}</span>
+              <span class="post-format-badge pr-badge" *ngIf="post.deckFormat">
+                {{ formatLabel(post.deckFormat) }}
+              </span>
+            </div>
+            <div class="pr-author">by
+              <a class="author-link" [routerLink]="['/u', post.authorUsername]"
+                 (click)="$event.stopPropagation()"
+                 title="View {{ post.authorUsername }}'s profile">{{ post.authorUsername }}</a>
+            </div>
+            <p class="pr-desc" *ngIf="post.description" [innerHTML]="post.description | oracleSymbols"></p>
+          </div>
+
+          <div class="pr-meta">
+            <div class="pr-pips" *ngIf="post.colorIdentity?.length">
+              <i class="ms ms-cost ms-shadow" *ngFor="let c of post.colorIdentity"
+                 [ngClass]="manaClass(c)" [title]="c"></i>
+            </div>
+            <span class="post-meta-item" title="Card count">
+              <i class="bi bi-collection"></i> {{ post.cardCount }}
+            </span>
+            <span class="post-meta-item" title="Comments">
+              <i class="bi bi-chat"></i> {{ post.commentCount }}
+            </span>
+            <span class="post-meta-item post-time" [title]="post.publishedAt">
+              {{ timeAgo(post.publishedAt) }}
+            </span>
+          </div>
+
+        </a>
       </div>
     </ng-container>
   </div>

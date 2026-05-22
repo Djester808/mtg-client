@@ -1,6 +1,5 @@
 .forum-shell {
   min-height: 100vh;
-  padding-top: 52px;
   position: relative;
   background: #0a0a0c;
   color: #e8e0ce;
@@ -401,4 +400,131 @@
 
 .post-time {
   margin-left: auto;
+}
+
+// ── View toggle ───────────────────────────────────────────────────────────────
+
+.ff-view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.ff-view-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  background: transparent;
+  color: #6b6050;
+  cursor: pointer;
+  font-size: 13px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  &.is-active {
+    color: #c9a84c;
+    border-color: rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.08);
+  }
+
+  &:not(.is-active):hover {
+    color: #a09070;
+    border-color: rgba(255,255,255,0.18);
+  }
+}
+
+// ── List view ─────────────────────────────────────────────────────────────────
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.post-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #141210;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.03);
+  }
+}
+
+.pr-cover {
+  flex-shrink: 0;
+  width: 110px;
+  height: 64px;
+  background: #1a1612 center/cover no-repeat;
+}
+
+.pr-main {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+}
+
+.pr-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pr-deck-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8e0ce;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-badge {
+  position: static;
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 2px 6px;
+}
+
+.pr-author {
+  font-size: 11px;
+  color: #a09070;
+  margin-top: 2px;
+}
+
+.pr-desc {
+  font-size: 11px;
+  color: #7a6e5e;
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 0 16px;
+}
+
+.pr-pips {
+  display: flex;
+  gap: 3px;
+
+  .ms { font-size: 14px; }
 }

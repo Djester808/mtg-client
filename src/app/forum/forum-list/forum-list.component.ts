@@ -30,6 +30,7 @@ export class ForumListComponent implements OnInit {
   selectedColors = new Set<string>();
   selectedFormats = new Set<string>();
   sortBy: SortOption = 'newest';
+  viewMode: 'grid' | 'list' = 'grid';
 
   readonly colorOptions = ['W', 'U', 'B', 'R', 'G', 'C'];
   readonly formatOptions = [
@@ -58,6 +59,8 @@ export class ForumListComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(ForumActions.loadPosts());
+    const saved = localStorage.getItem('forum-list-view');
+    if (saved === 'list' || saved === 'grid') this.viewMode = saved;
   }
 
   get hasActiveFilters(): boolean {
@@ -85,6 +88,12 @@ export class ForumListComponent implements OnInit {
 
   setSortBy(s: SortOption): void {
     this.sortBy = s;
+    this.cdr.markForCheck();
+  }
+
+  setViewMode(mode: 'grid' | 'list'): void {
+    this.viewMode = mode;
+    localStorage.setItem('forum-list-view', mode);
     this.cdr.markForCheck();
   }
 
