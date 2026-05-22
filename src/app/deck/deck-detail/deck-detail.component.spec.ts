@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
@@ -10,6 +11,7 @@ import { GameApiService } from '../../services/game-api.service';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
+import { PreferencesApiService } from '../../services/preferences-api.service';
 
 function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
@@ -81,6 +83,13 @@ async function setup() {
   ]);
   deckApi.getPrintings.and.returnValue(of([]));
 
+  const preferencesApi = jasmine.createSpyObj<PreferencesApiService>('PreferencesApiService', [
+    'load',
+    'save',
+  ]);
+  preferencesApi.load.and.returnValue(of({ deckLayout: 'visual' }));
+  preferencesApi.save.and.stub();
+
   await TestBed.configureTestingModule({
     imports: [DeckDetailComponent],
     schemas: [NO_ERRORS_SCHEMA],
@@ -89,6 +98,7 @@ async function setup() {
       { provide: CollectionApiService, useValue: collectionApi },
       { provide: GameApiService, useValue: gameApi },
       { provide: DeckApiService, useValue: deckApi },
+      { provide: PreferencesApiService, useValue: preferencesApi },
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
     ],
