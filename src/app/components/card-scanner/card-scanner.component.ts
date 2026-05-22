@@ -72,19 +72,20 @@ export class CardScannerComponent implements OnDestroy {
       await this.capture();
 
       if (this.state === 'previewing') {
-        // capture() left us in previewing — means no match, show hint and retry
-        this.scanHint = this.detectedName
-          ? `"${this.detectedName}" — no card found`
-          : 'Align the card name in the guide strip';
+        // No match or transient error — show brief hint and retry
+        if (this.detectedName) {
+          this.scanHint = `"${this.detectedName}" — not a Magic card`;
+        }
         this.cdr.markForCheck();
         await delay(1400);
         if (this.autoScanActive) {
           this.scanHint = '';
+          this.detectedName = '';
           this.cdr.markForCheck();
           await delay(200);
         }
       }
-      // state === 'result' or 'error' → loop exits
+      // state === 'result' → loop exits naturally
     }
   }
 
@@ -144,8 +145,8 @@ export class CardScannerComponent implements OnDestroy {
         this.state = 'previewing';
       }
     } catch {
-      this.state = 'error';
-      this.errorMessage = 'OCR failed. Please try again in better lighting.';
+      // Transient OCR failure — stay in previewing so the loop retries
+      this.state = 'previewing';
     }
 
     this.cdr.markForCheck();
