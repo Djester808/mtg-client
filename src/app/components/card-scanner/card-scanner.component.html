@@ -20,15 +20,7 @@
     <div class="scanner-body camera-body" *ngIf="state === 'previewing'">
       <div class="video-wrap">
         <video #videoEl autoplay playsinline muted class="scanner-video"></video>
-
-        <div class="card-guide is-scanning" #guideEl>
-          <div class="name-strip-marker"></div>
-          <div class="scan-line"></div>
-          <div class="guide-corner tl"></div>
-          <div class="guide-corner tr"></div>
-          <div class="guide-corner bl"></div>
-          <div class="guide-corner br"></div>
-        </div>
+        <canvas #overlayEl class="card-outline-canvas"></canvas>
       </div>
 
       <canvas #canvasEl class="hidden-canvas"></canvas>

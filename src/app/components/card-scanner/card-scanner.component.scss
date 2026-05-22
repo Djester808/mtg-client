@@ -118,69 +118,14 @@
   display: none;
 }
 
-// ── Card guide overlay ────────────────────────────────────────────────────────
+// ── Card outline canvas ───────────────────────────────────────────────────────
 
-.card-guide {
+.card-outline-canvas {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  // 32% wide × 5:7 ratio = 44.8% tall. Video is 56.25% tall at 16:9 — fits with margin.
-  transform: translate(-50%, -50%);
-  width: 32%;
-  aspect-ratio: 5 / 7;
-  border: 2px solid rgba(201, 168, 76, 0.7);
-  border-radius: 4px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
-
-  &.is-scanning {
-    animation: guide-pulse 2s ease-in-out infinite;
-  }
-}
-
-@keyframes guide-pulse {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.55); }
-  50%       { border-color: rgba(201, 168, 76, 1); }
-}
-
-// Subtle line showing the name-strip boundary (top 14%)
-.name-strip-marker {
-  position: absolute;
-  top: 14%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(201, 168, 76, 0.3);
-}
-
-.scan-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, rgba(201, 168, 76, 0.9) 50%, transparent 100%);
-  animation: scan-sweep 2.4s ease-in-out infinite;
-}
-
-@keyframes scan-sweep {
-  0%   { top: 2%;  opacity: 0; }
-  8%   { opacity: 1; }
-  92%  { opacity: 1; }
-  100% { top: 97%; opacity: 0; }
-}
-
-// Corner brackets
-.guide-corner {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-color: #c9a84c;
-  border-style: solid;
-
-  &.tl { top: -2px;  left: -2px;  border-width: 2px 0 0 2px; }
-  &.tr { top: -2px;  right: -2px; border-width: 2px 2px 0 0; }
-  &.bl { bottom: -2px; left: -2px;  border-width: 0 0 2px 2px; }
-  &.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
 }
 
 
