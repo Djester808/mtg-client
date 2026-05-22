@@ -1,7 +1,6 @@
-<div class="scanner-overlay">
-  <div class="scanner-backdrop" (click)="close()"></div>
+<div class="scanner-overlay" (click)="close()">
 
-  <div class="scanner-modal">
+  <div class="scanner-modal" (click)="$event.stopPropagation()">
     <div class="scanner-header">
       <h2 class="scanner-title"><i class="bi bi-camera"></i> Scan Card</h2>
       <button class="scanner-close" (click)="close()" title="Close">×</button>

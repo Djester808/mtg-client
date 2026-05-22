@@ -5,12 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.scanner-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -135,7 +130,8 @@
   border: 2px solid rgba(201, 168, 76, 0.7);
   border-radius: 4px;
   pointer-events: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  // Vignette: darken everything outside this box
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
 
   &.is-scanning {
     animation: guide-pulse 2s ease-in-out infinite;
@@ -143,8 +139,8 @@
 }
 
 @keyframes guide-pulse {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.6); box-shadow: none; }
-  50%       { border-color: rgba(201, 168, 76, 1);   box-shadow: 0 0 14px rgba(201, 168, 76, 0.35); }
+  0%, 100% { border-color: rgba(201, 168, 76, 0.6); }
+  50%       { border-color: rgba(201, 168, 76, 1); }
 }
 
 .scan-line {
