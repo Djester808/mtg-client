@@ -85,49 +85,39 @@ export class CardScannerComponent implements OnDestroy {
 
   private async startScanLoop(): Promise<void> {
     this.autoScanActive = true;
-    await delay(1500);
+    await delay(1200);
 
     while (this.autoScanActive && this.state === 'previewing') {
-      const stable = await this.waitForStableFrame();
-      if (!stable || !this.autoScanActive || this.state !== 'previewing') continue;
-
-      // Run OCR silently — never change state to 'processing' so the overlay never flashes
       const name = await this.runOcr();
 
-      if (!name) {
-        await delay(600);
-        continue;
-      }
+      if (!this.autoScanActive || this.state !== 'previewing') break;
 
-      if (!this.isLikelyCardName(name)) {
-        await delay(600);
-        continue;
-      }
+      if (name) {
+        this.detectedName = name;
+        const results = await firstValueFrom(this.gameApi.searchCards(name, 5)).catch(() => null);
 
-      this.detectedName = name;
-      const results = await firstValueFrom(this.gameApi.searchCards(name, 5)).catch(() => null);
+        if (!this.autoScanActive || this.state !== 'previewing') break;
 
-      if (!this.autoScanActive) break;
-
-      if (results?.length) {
-        this.matchedCard = results[0];
-        this.state = 'result';
-        this.cdr.markForCheck();
-      } else {
-        this.scanHint = `"${name}" — not found`;
-        this.cdr.markForCheck();
-        await delay(1200);
-        if (this.autoScanActive) {
+        if (results?.length) {
+          this.matchedCard = results[0];
+          this.state = 'result';
+          this.cdr.markForCheck();
+          break;
+        } else {
+          this.scanHint = `"${name}" — not found, retrying…`;
+          this.cdr.markForCheck();
+          await delay(1000);
           this.scanHint = '';
           this.detectedName = '';
           this.cdr.markForCheck();
         }
+      } else {
+        // Nothing readable yet — short pause then try again
+        await delay(500);
       }
     }
   }
 
-  // Returns the detected name string, or empty string on failure.
-  // Never touches component state — completely silent.
   private async runOcr(): Promise<string> {
     try {
       const video = this.videoEl.nativeElement;
@@ -168,7 +158,7 @@ export class CardScannerComponent implements OnDestroy {
       }
       const { data } = await this.ocrWorker.recognize(canvas.toDataURL('image/png'));
 
-      if (data.confidence < 40) return '';
+      if (data.confidence < 25) return '';
 
       // From all OCR lines, pick the first one that looks like a card name
       return (
@@ -180,51 +170,6 @@ export class CardScannerComponent implements OnDestroy {
     } catch {
       return '';
     }
-  }
-
-  private async waitForStableFrame(): Promise<boolean> {
-    try {
-      const s1 = this.sampleNameStrip();
-      await delay(350);
-      if (!this.autoScanActive || this.state !== 'previewing') return false;
-      const s2 = this.sampleNameStrip();
-      if (!s1 || !s2) return true;
-      return this.pixelSimilarity(s1, s2) >= 0.9;
-    } catch {
-      return true;
-    }
-  }
-
-  private sampleNameStrip(): Uint8ClampedArray | null {
-    try {
-      const video = this.videoEl?.nativeElement;
-      const guide = this.guideEl?.nativeElement;
-      if (!video || !guide || !video.videoWidth) return null;
-      const vr = video.getBoundingClientRect();
-      const gr = guide.getBoundingClientRect();
-      const sx = video.videoWidth / vr.width;
-      const sy = video.videoHeight / vr.height;
-      const gx = (gr.left - vr.left) * sx;
-      const gy = (gr.top - vr.top) * sy;
-      const gw = gr.width * sx;
-      const gh = gr.height * sy;
-      const tmp = document.createElement('canvas');
-      tmp.width = 40;
-      tmp.height = 6;
-      tmp.getContext('2d')!.drawImage(video, gx, gy, gw, gh * 0.5, 0, 0, 40, 6);
-      return tmp.getContext('2d')!.getImageData(0, 0, 40, 6).data;
-    } catch {
-      return null;
-    }
-  }
-
-  private pixelSimilarity(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
-    if (a.length !== b.length) return 0;
-    let diff = 0;
-    for (let i = 0; i < a.length; i += 4) {
-      diff += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
-    }
-    return 1 - diff / ((a.length / 4) * 3 * 255);
   }
 
   private isLikelyCardName(text: string): boolean {
