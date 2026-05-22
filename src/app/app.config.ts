@@ -7,7 +7,6 @@ import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { routes } from './app.routes';
 import { appReducers } from './store';
-import { GameEffects } from './store/game/game.effects';
 import { CollectionEffects } from './store/collection/collection.effects';
 import { AuthEffects } from './store/auth/auth.effects';
 import { DeckEffects } from './store/deck/deck.effects';
@@ -25,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimations(),
     provideStore(appReducers),
-    provideEffects([GameEffects, CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
+    provideEffects([CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
     provideStoreDevtools({
       maxAge: 50,
       logOnly: false,

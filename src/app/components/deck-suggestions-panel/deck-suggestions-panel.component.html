@@ -83,7 +83,7 @@
             <span class="sugg-score" *ngIf="s.score" [class.sugg-score--high]="s.score >= 80" [class.sugg-score--mid]="s.score >= 60 && s.score < 80">{{ s.score }}%</span>
           </div>
           <span class="sugg-card-type" *ngIf="s.card">
-            {{ s.card.supertypes?.join(' ') }} {{ s.card.cardTypes?.join(' ') }}
+            {{ s.card.supertypes.join(' ') }} {{ s.card.cardTypes.join(' ') }}
             <ng-container *ngIf="s.card.subtypes?.length"> — {{ s.card.subtypes.join(' ') }}</ng-container>
           </span>
           <span class="sugg-card-reason">{{ s.reason }}</span>

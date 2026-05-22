@@ -1,12 +1,6 @@
 <div
   class="card"
-  [class.tapped]="isTapped"
   [class.selected]="isSelected"
-  [class.attacking]="isAttacking"
-  [class.blocking]="isBlocking"
-  [class.targeted]="isTargeted"
-  [class.pending-attacker]="isPendingAttacker"
-  [class.castable]="isCastable"
   [class.card-back]="showBack"
   [class.hand-card]="showInfo"
   (click)="onClick()"
@@ -46,26 +40,8 @@
 
       <!-- P/T -->
       <div class="card-pt" *ngIf="isCreature">
-        {{ effectivePower }}/{{ effectiveToughness }}
+        {{ cardData.power }}/{{ cardData.toughness }}
       </div>
-
-      <!-- Damage indicator -->
-      <div class="card-damage" *ngIf="damageMarked > 0">
-        {{ damageMarked }}
-      </div>
-
-      <!-- Counters -->
-      <div class="card-counters" *ngIf="counters.length">
-        <div
-          *ngFor="let c of counters"
-          class="counter-badge"
-          [ngClass]="c.cls">
-          {{ c.label }}
-        </div>
-      </div>
-
-      <!-- Summoning sickness overlay -->
-      <div class="sick-overlay" *ngIf="isCreature && hasSummoningSickness"></div>
 
       <!-- Bottom info panel (hand cards) -->
       <div class="card-info" *ngIf="showInfo">
@@ -76,7 +52,7 @@
 
     </div>
 
-    <!-- Hover tooltip (battlefield only) -->
+    <!-- Hover tooltip -->
     <div class="card-tooltip" *ngIf="!showInfo">
       <div class="tooltip-header">
         <span class="tooltip-name">{{ cardData.name }}</span>
@@ -85,7 +61,7 @@
       <div class="tooltip-type">{{ typeLineText }}</div>
       <div class="tooltip-text" *ngIf="cardData.oracleText" [innerHTML]="cardData.oracleText | oracleSymbols"></div>
       <div class="tooltip-pt" *ngIf="isCreature">
-        {{ effectivePower }}/{{ effectiveToughness }}
+        {{ cardData.power }}/{{ cardData.toughness }}
       </div>
     </div>
 

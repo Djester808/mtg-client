@@ -1,10 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { CardComponent } from './card.component';
-import { CardType, CounterType } from '../../models/game.models';
-import { makeCard, makePermanent, emptyCounters } from '../../testing/test-factories';
-
-const makeCardDto = makeCard;
+import { CardType } from '../../models/game.models';
+import { makeCard } from '../../testing/test-factories';
 
 describe('CardComponent', () => {
   let component: CardComponent;
@@ -25,81 +23,48 @@ describe('CardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  // ---- cardData ----------------------------------------
+  // ---- cardData -------------------------------------------
 
-  it('cardData returns null when no inputs provided', () => {
+  it('cardData returns null when no card input', () => {
     expect(component.cardData).toBeNull();
   });
 
-  it('cardData returns card when only card input is set', () => {
-    component.card = makeCardDto({ name: 'My Card' });
+  it('cardData returns the card input when set', () => {
+    component.card = makeCard({ name: 'My Card' });
     expect(component.cardData!.name).toBe('My Card');
   });
 
-  it('cardData returns sourceCard from permanent, not the card input', () => {
-    const permCard = makeCardDto({ name: 'Perm Card' });
-    component.permanent = makePermanent({ sourceCard: permCard });
-    component.card = makeCardDto({ name: 'Hand Card' });
-    expect(component.cardData!.name).toBe('Perm Card');
-  });
-
-  // ---- isTapped ----------------------------------------
-
-  it('isTapped is false when no permanent is provided', () => {
-    expect(component.isTapped).toBeFalse();
-  });
-
-  it('isTapped is false when permanent is not tapped', () => {
-    component.permanent = makePermanent({ isTapped: false });
-    expect(component.isTapped).toBeFalse();
-  });
-
-  it('isTapped is true when permanent.isTapped is true', () => {
-    component.permanent = makePermanent({ isTapped: true });
-    expect(component.isTapped).toBeTrue();
-  });
-
-  it('applies tapped CSS class when isTapped is true', () => {
-    fixture.componentRef.setInput('permanent', makePermanent({ isTapped: true }));
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement.querySelector('.card');
-    expect(el.classList).toContain('tapped');
-  });
-
-  // ---- isCreature / isLand ----------------------------------------
+  // ---- isCreature / isLand --------------------------------
 
   it('isCreature returns true for a creature card', () => {
-    component.card = makeCardDto({ cardTypes: [CardType.Creature] });
+    component.card = makeCard({ cardTypes: [CardType.Creature] });
     expect(component.isCreature).toBeTrue();
   });
 
   it('isCreature returns false for a land card', () => {
-    component.card = makeCardDto({ cardTypes: [CardType.Land] });
+    component.card = makeCard({ cardTypes: [CardType.Land] });
     expect(component.isCreature).toBeFalse();
   });
 
   it('isLand returns true for a land card', () => {
-    component.card = makeCardDto({ cardTypes: [CardType.Land] });
+    component.card = makeCard({ cardTypes: [CardType.Land] });
     expect(component.isLand).toBeTrue();
   });
 
   it('isLand returns false for a creature card', () => {
-    component.card = makeCardDto({ cardTypes: [CardType.Creature] });
+    component.card = makeCard({ cardTypes: [CardType.Creature] });
     expect(component.isLand).toBeFalse();
   });
 
   // ---- typeLineText ----------------------------------------
 
-  it('typeLineText returns card types joined when no subtypes', () => {
-    component.card = makeCardDto({ cardTypes: [CardType.Instant], subtypes: [] });
+  it('typeLineText returns card type when no subtypes', () => {
+    component.card = makeCard({ cardTypes: [CardType.Instant], subtypes: [] });
     expect(component.typeLineText).toBe('Instant');
   });
 
   it('typeLineText includes em dash and subtypes when present', () => {
-    component.card = makeCardDto({
-      cardTypes: [CardType.Creature],
-      subtypes: ['Beast', 'Cat'],
-    });
+    component.card = makeCard({ cardTypes: [CardType.Creature], subtypes: ['Beast', 'Cat'] });
     expect(component.typeLineText).toBe('Creature — Beast Cat');
   });
 
@@ -107,100 +72,22 @@ describe('CardComponent', () => {
     expect(component.typeLineText).toBe('');
   });
 
-  // ---- effectivePower / Toughness ----------------------------------------
+  // ---- events ---------------------------------------------
 
-  it('effectivePower returns null when no permanent', () => {
-    expect(component.effectivePower).toBeNull();
-  });
-
-  it('effectivePower returns value from permanent', () => {
-    component.permanent = makePermanent({ effectivePower: 5 });
-    expect(component.effectivePower).toBe(5);
-  });
-
-  it('effectiveToughness returns value from permanent', () => {
-    component.permanent = makePermanent({ effectiveToughness: 7 });
-    expect(component.effectiveToughness).toBe(7);
-  });
-
-  // ---- damageMarked ----------------------------------------
-
-  it('damageMarked is 0 when no permanent', () => {
-    expect(component.damageMarked).toBe(0);
-  });
-
-  it('damageMarked reflects permanent value', () => {
-    component.permanent = makePermanent({ damageMarked: 3 });
-    expect(component.damageMarked).toBe(3);
-  });
-
-  // ---- counters ----------------------------------------
-
-  it('counters returns empty array when no permanent', () => {
-    expect(component.counters).toEqual([]);
-  });
-
-  it('counters returns empty array when permanent has no counters', () => {
-    component.permanent = makePermanent({ counters: { ...emptyCounters } });
-    expect(component.counters).toEqual([]);
-  });
-
-  it('counters includes +1 badge when PlusOnePlusOne is set', () => {
-    component.permanent = makePermanent({
-      counters: { ...emptyCounters, [CounterType.PlusOnePlusOne]: 2 },
-    });
-    const labels = component.counters.map((c) => c.label);
-    expect(labels).toContain('+1');
-  });
-
-  it('counters includes -1 badge when MinusOneMinusOne is set', () => {
-    component.permanent = makePermanent({
-      counters: { ...emptyCounters, [CounterType.MinusOneMinusOne]: 1 },
-    });
-    const cls = component.counters.map((c) => c.cls);
-    expect(cls).toContain('minus');
-  });
-
-  it('counters includes loyalty badge when Loyalty counter is set', () => {
-    component.permanent = makePermanent({
-      counters: { ...emptyCounters, [CounterType.Loyalty]: 4 },
-    });
-    const found = component.counters.find((c) => c.cls === 'loyalty');
-    expect(found).toBeDefined();
-    expect(found!.label).toBe('4');
-  });
-
-  // ---- isCastable CSS class ----------------------------------------
-
-  it('castable class is absent by default', () => {
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement.querySelector('.card');
-    expect(el.classList).not.toContain('castable');
-  });
-
-  it('castable class is applied when isCastable input is true', () => {
-    fixture.componentRef.setInput('isCastable', true);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement.querySelector('.card');
-    expect(el.classList).toContain('castable');
-  });
-
-  // ---- events ----------------------------------------
-
-  it('emits clicked event on click', () => {
+  it('emits clicked on click', () => {
     spyOn(component.clicked, 'emit');
     component.onClick();
     expect(component.clicked.emit).toHaveBeenCalled();
   });
 
-  it('emits dblClicked event on double-click', () => {
+  it('emits dblClicked on double-click', () => {
     spyOn(component.dblClicked, 'emit');
     component.onDblClick();
     expect(component.dblClicked.emit).toHaveBeenCalled();
   });
 
-  it('emits hoverEnter with cardData when mouseenter fires and cardData is set', () => {
-    const card = makeCardDto({ name: 'Hover Card' });
+  it('emits hoverEnter with card when mouseenter fires', () => {
+    const card = makeCard({ name: 'Hover Card' });
     component.card = card;
     spyOn(component.hoverEnter, 'emit');
     component.onMouseEnter();

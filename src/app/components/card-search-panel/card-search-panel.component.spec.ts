@@ -25,6 +25,7 @@ function makePrinting(scryfallId: string, setCode = 'lea'): PrintingDto {
     collectorNumber: '1',
     imageUriSmall: null,
     imageUriNormal: null,
+    imageUriLarge: null,
     imageUriNormalBack: null,
     oracleText: null,
     flavorText: null,

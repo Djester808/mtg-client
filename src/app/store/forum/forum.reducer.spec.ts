@@ -40,6 +40,8 @@ function makePostDetail(overrides: Partial<ForumPostDetail> = {}): ForumPostDeta
     deckCoverUri: null,
     deckFormat: 'commander',
     commanderOracleId: null,
+    commanderImageUri: null,
+    commanderName: null,
     description: null,
     colorIdentity: ['R', 'G'],
     publishedAt: '2024-01-01T00:00:00Z',

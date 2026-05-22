@@ -41,12 +41,12 @@
   --text-secondary: #c4b8a8;
   --text-dim:       #8a8070;
 
-  // Card dimensions
-  --card-w:         100px;
-  --card-h:         140px;
-  --card-w-hand:    88px;
-  --card-h-hand:    123px;
-  --card-radius:    20px;
+  // Card dimensions — scale with viewport so the board always fits
+  --card-w:         clamp(60px, 8.5vmin, 100px);
+  --card-h:         clamp(84px, 12vmin, 140px);
+  --card-w-hand:    clamp(53px, 7.5vmin, 88px);
+  --card-h-hand:    clamp(74px, 10.5vmin, 123px);
+  --card-radius:    clamp(12px, 1.8vmin, 20px);
 
   // Glow effects
   --glow-priority:  0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);

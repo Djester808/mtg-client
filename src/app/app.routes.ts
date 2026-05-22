@@ -1,7 +1,5 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
-import { GameBoardComponent } from './board/game-board.component';
-import { LobbyComponent } from './lobby/lobby.component';
 import { KbComponent } from './kb/kb.component';
 import { CollectionListComponent } from './collection/collection-list/collection-list.component';
 import { CollectionDetailComponent } from './collection/collection-detail/collection-detail.component';
@@ -31,16 +29,6 @@ export const routes: Routes = [
   {
     path: 'register',
     component: RegisterComponent,
-  },
-  {
-    path: 'lobby',
-    component: LobbyComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'game/:gameId',
-    component: GameBoardComponent,
-    canActivate: [authGuard],
   },
   {
     path: 'kb',
