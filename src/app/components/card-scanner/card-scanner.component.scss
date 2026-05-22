@@ -143,6 +143,16 @@
   50%       { border-color: rgba(201, 168, 76, 1); }
 }
 
+// Subtle line showing the name-strip boundary (top 14%)
+.name-strip-marker {
+  position: absolute;
+  top: 14%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(201, 168, 76, 0.3);
+}
+
 .scan-line {
   position: absolute;
   left: 0;

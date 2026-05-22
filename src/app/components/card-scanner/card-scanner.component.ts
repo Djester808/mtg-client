@@ -133,22 +133,29 @@ export class CardScannerComponent implements OnDestroy {
       const gw = gr.width * sx;
       const gh = gr.height * sy;
 
-      // Scan the full card area at 2× for OCR
-      const scale = 2;
+      // Scan only the top 14% of the card (name strip) — artwork below
+      // that is pure noise to Tesseract. Scale up 4× so characters are large.
+      const nameH = gh * 0.14;
+      const scale = 4;
       canvas.width = gw * scale;
-      canvas.height = gh * scale;
+      canvas.height = nameH * scale;
       const ctx = canvas.getContext('2d')!;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(video, gx, gy, gw, gh, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, gx, gy, gw, nameH, 0, 0, canvas.width, canvas.height);
 
-      // Grayscale + contrast boost so Tesseract works better on blurry/dark frames
+      // Grayscale + adaptive threshold at the image mean so text becomes
+      // pure black/white regardless of card frame colour or lighting.
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const px = imgData.data;
+      const grays: number[] = [];
       for (let i = 0; i < px.length; i += 4) {
-        const gray = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-        const boosted = Math.max(0, Math.min(255, (gray / 255 - 0.5) * 2.0 * 255 + 128));
-        px[i] = px[i + 1] = px[i + 2] = boosted;
+        grays.push(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
+      }
+      const mean = grays.reduce((a, b) => a + b, 0) / grays.length;
+      for (let i = 0; i < px.length; i += 4) {
+        const v = grays[i / 4] > mean ? 255 : 0;
+        px[i] = px[i + 1] = px[i + 2] = v;
       }
       ctx.putImageData(imgData, 0, 0);
 
@@ -175,7 +182,8 @@ export class CardScannerComponent implements OnDestroy {
   private isLikelyCardName(text: string): boolean {
     if (!text || text.length < 2 || text.length > 40) return false;
     const letters = (text.match(/[a-zA-Z]/g) ?? []).length;
-    return letters >= 2 && letters / text.length >= 0.65;
+    // Must be mostly letters; reject pure-symbol / pure-digit noise
+    return letters >= 2 && letters / text.length >= 0.7;
   }
 
   confirm(): void {

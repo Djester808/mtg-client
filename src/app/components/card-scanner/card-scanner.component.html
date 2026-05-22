@@ -22,6 +22,7 @@
         <video #videoEl autoplay playsinline muted class="scanner-video"></video>
 
         <div class="card-guide is-scanning" #guideEl>
+          <div class="name-strip-marker"></div>
           <div class="scan-line"></div>
           <div class="guide-corner tl"></div>
           <div class="guide-corner tr"></div>
@@ -33,7 +34,7 @@
       <canvas #canvasEl class="hidden-canvas"></canvas>
 
       <p class="scanner-hint scan-status" *ngIf="scanHint">{{ scanHint }}</p>
-      <p class="scanner-hint" *ngIf="!scanHint">Align the card name at the top of the guide</p>
+      <p class="scanner-hint" *ngIf="!scanHint">Fill the box with the card — name reads above the line</p>
     </div>
 
     <!-- ── Result ── -->
