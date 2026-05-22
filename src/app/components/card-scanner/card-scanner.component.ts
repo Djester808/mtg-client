@@ -13,7 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { GameApiService } from '../../services/game-api.service';
 import { CardDto } from '../../models/game.models';
 
-type ScanState = 'idle' | 'previewing' | 'processing' | 'result' | 'no-match' | 'error';
+type ScanState = 'idle' | 'previewing' | 'processing' | 'result' | 'error';
 
 @Component({
   selector: 'app-card-scanner',
@@ -35,8 +35,10 @@ export class CardScannerComponent implements OnDestroy {
   detectedName = '';
   matchedCard: CardDto | null = null;
   errorMessage = '';
+  scanHint = '';
 
   private stream: MediaStream | null = null;
+  private autoScanActive = false;
 
   constructor(
     private gameApi: GameApiService,
@@ -50,10 +52,9 @@ export class CardScannerComponent implements OnDestroy {
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
-      // Wait for next tick so *ngIf renders the video element
       setTimeout(() => {
         this.videoEl.nativeElement.srcObject = this.stream;
-        this.videoEl.nativeElement.play();
+        this.videoEl.nativeElement.play().then(() => this.startScanLoop());
       });
     } catch {
       this.state = 'error';
@@ -62,7 +63,32 @@ export class CardScannerComponent implements OnDestroy {
     }
   }
 
-  async capture(): Promise<void> {
+  private async startScanLoop(): Promise<void> {
+    this.autoScanActive = true;
+    // Brief warm-up so camera exposure can settle
+    await delay(1200);
+
+    while (this.autoScanActive && this.state === 'previewing') {
+      await this.capture();
+
+      if (this.state === 'previewing') {
+        // capture() left us in previewing — means no match, show hint and retry
+        this.scanHint = this.detectedName
+          ? `"${this.detectedName}" — no card found`
+          : 'Align the card name in the guide strip';
+        this.cdr.markForCheck();
+        await delay(1400);
+        if (this.autoScanActive) {
+          this.scanHint = '';
+          this.cdr.markForCheck();
+          await delay(200);
+        }
+      }
+      // state === 'result' or 'error' → loop exits
+    }
+  }
+
+  private async capture(): Promise<void> {
     this.state = 'processing';
     this.cdr.markForCheck();
 
@@ -71,7 +97,6 @@ export class CardScannerComponent implements OnDestroy {
       const canvas = this.canvasEl.nativeElement;
       const guide = this.guideEl.nativeElement;
 
-      // Map guide box from CSS pixels → video frame pixels
       const videoRect = video.getBoundingClientRect();
       const guideRect = guide.getBoundingClientRect();
       const sx = video.videoWidth / videoRect.width;
@@ -82,11 +107,9 @@ export class CardScannerComponent implements OnDestroy {
       const gw = guideRect.width * sx;
       const gh = guideRect.height * sy;
 
-      // Crop to the card name strip: left 70%, top 13% of the guide
       const nameW = gw * 0.7;
       const nameH = gh * 0.13;
 
-      // Draw cropped region upscaled 3× for better OCR accuracy
       const scale = 3;
       canvas.width = nameW * scale;
       canvas.height = nameH * scale;
@@ -96,13 +119,11 @@ export class CardScannerComponent implements OnDestroy {
 
       const imageData = canvas.toDataURL('image/png');
 
-      // Run OCR
       const { createWorker } = await import('tesseract.js');
       const worker = await createWorker('eng');
       const { data } = await worker.recognize(imageData);
       await worker.terminate();
 
-      // Card name is the first non-empty line
       this.detectedName =
         data.text
           .split('\n')
@@ -110,18 +131,17 @@ export class CardScannerComponent implements OnDestroy {
           .find((l: string) => l.length > 0) ?? '';
 
       if (!this.detectedName) {
-        this.state = 'no-match';
+        this.state = 'previewing';
         this.cdr.markForCheck();
         return;
       }
 
-      // Look up on Scryfall
       const results = await firstValueFrom(this.gameApi.searchCards(this.detectedName, 5));
       if (results?.length) {
         this.matchedCard = results[0];
         this.state = 'result';
       } else {
-        this.state = 'no-match';
+        this.state = 'previewing';
       }
     } catch {
       this.state = 'error';
@@ -136,10 +156,12 @@ export class CardScannerComponent implements OnDestroy {
   }
 
   retry(): void {
-    this.state = 'previewing';
     this.matchedCard = null;
     this.detectedName = '';
+    this.scanHint = '';
+    this.state = 'previewing';
     this.cdr.markForCheck();
+    this.startScanLoop();
   }
 
   close(): void {
@@ -152,7 +174,12 @@ export class CardScannerComponent implements OnDestroy {
   }
 
   private stopCamera(): void {
+    this.autoScanActive = false;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }

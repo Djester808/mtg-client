@@ -87,6 +87,11 @@
   margin: 0;
   max-width: 480px;
   line-height: 1.6;
+
+  &.scan-status {
+    color: #c9a84c;
+    font-size: 12px;
+  }
 }
 
 .state-icon {
@@ -129,6 +134,33 @@
   border: 2px solid rgba(201, 168, 76, 0.7);
   border-radius: 4px;
   pointer-events: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+
+  &.is-scanning {
+    animation: guide-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes guide-pulse {
+  0%, 100% { border-color: rgba(201, 168, 76, 0.6); box-shadow: none; }
+  50%       { border-color: rgba(201, 168, 76, 1);   box-shadow: 0 0 14px rgba(201, 168, 76, 0.35); }
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(201, 168, 76, 0.9) 50%, transparent 100%);
+  animation: scan-sweep 2s ease-in-out infinite;
+  top: 0;
+}
+
+@keyframes scan-sweep {
+  0%   { top: 13%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 98%; opacity: 0; }
 }
 
 .guide-name-zone {

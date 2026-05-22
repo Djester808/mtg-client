@@ -17,7 +17,7 @@
       </button>
     </div>
 
-    <!-- ── Live preview ── -->
+    <!-- ── Live preview / processing ── -->
     <div class="scanner-body camera-body"
          *ngIf="state === 'previewing' || state === 'processing'">
 
@@ -25,10 +25,12 @@
         <video #videoEl autoplay playsinline muted class="scanner-video"></video>
 
         <!-- Card-shaped guide box -->
-        <div class="card-guide" #guideEl>
+        <div class="card-guide" [class.is-scanning]="state === 'previewing'" #guideEl>
           <div class="guide-name-zone">
             <span class="guide-name-label">card name</span>
           </div>
+          <!-- Moving scan line -->
+          <div class="scan-line" *ngIf="state === 'previewing'"></div>
           <div class="guide-corner tl"></div>
           <div class="guide-corner tr"></div>
           <div class="guide-corner bl"></div>
@@ -44,13 +46,8 @@
 
       <canvas #canvasEl class="hidden-canvas"></canvas>
 
-      <p class="scanner-hint">Align the card inside the guide, name at the top</p>
-
-      <button class="scan-btn primary"
-              [disabled]="state === 'processing'"
-              (click)="capture()">
-        <i class="bi bi-camera-fill"></i> Capture
-      </button>
+      <p class="scanner-hint scan-status" *ngIf="scanHint">{{ scanHint }}</p>
+      <p class="scanner-hint" *ngIf="!scanHint">Align the card name at the top of the guide</p>
     </div>
 
     <!-- ── Result ── -->
@@ -69,24 +66,12 @@
       </div>
       <div class="result-actions">
         <button class="scan-btn secondary" (click)="retry()">
-          <i class="bi bi-arrow-repeat"></i> Try Again
+          <i class="bi bi-arrow-repeat"></i> Scan Again
         </button>
         <button class="scan-btn primary" (click)="confirm()">
           <i class="bi bi-plus-circle"></i> Add to Collection
         </button>
       </div>
-    </div>
-
-    <!-- ── No match ── -->
-    <div class="scanner-body center-body" *ngIf="state === 'no-match'">
-      <i class="bi bi-search state-icon warn"></i>
-      <p class="scanner-hint">
-        Couldn't identify the card<span *ngIf="detectedName"> (read: "<em>{{ detectedName }}</em>")</span>.
-        Try better lighting or hold the card flatter.
-      </p>
-      <button class="scan-btn primary" (click)="retry()">
-        <i class="bi bi-arrow-repeat"></i> Try Again
-      </button>
     </div>
 
     <!-- ── Error ── -->
