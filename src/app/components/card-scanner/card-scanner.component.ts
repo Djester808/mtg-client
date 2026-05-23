@@ -121,11 +121,23 @@ export class CardScannerComponent implements OnDestroy {
   private captureFrame(): string {
     const video = this.videoEl.nativeElement;
     const canvas = this.canvasEl.nativeElement;
-    canvas.width = 640;
-    canvas.height = 360;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
+    // Crop to the guide box region (35% wide, 5:7 aspect, centered) + 10% margin
+    const guideW = vw * 0.35;
+    const guideH = guideW * (7 / 5);
+    const margin = guideW * 0.1;
+    const srcX = Math.max(0, (vw - guideW) / 2 - margin);
+    const srcY = Math.max(0, (vh - guideH) / 2 - margin);
+    const srcW = Math.min(guideW + margin * 2, vw - srcX);
+    const srcH = Math.min(guideH + margin * 2, vh - srcY);
+
+    canvas.width = Math.round(srcW);
+    canvas.height = Math.round(srcH);
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(video, 0, 0, 640, 360);
-    return canvas.toDataURL('image/jpeg', 0.82).split(',')[1];
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
   }
 
   private tryFocus(): void {
