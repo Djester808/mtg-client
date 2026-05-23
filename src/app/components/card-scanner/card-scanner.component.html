@@ -9,7 +9,7 @@
     <!-- ── Idle ── -->
     <div class="scanner-body" *ngIf="state === 'idle'">
       <p class="scanner-hint">
-        Hold a Magic card up to your camera — we'll read the name and find it for you.
+        Hold a Magic card up to your camera — we'll identify it automatically.
       </p>
       <button class="scan-btn primary" (click)="startCamera()">
         <i class="bi bi-camera-fill"></i> Open Camera
@@ -20,13 +20,25 @@
     <div class="scanner-body camera-body" *ngIf="state === 'previewing'">
       <div class="video-wrap">
         <video #videoEl autoplay playsinline muted class="scanner-video"></video>
-        <canvas #overlayEl class="card-outline-canvas"></canvas>
+
+        <div class="card-guide" [class.is-analyzing]="analyzing">
+          <div class="guide-corner tl"></div>
+          <div class="guide-corner tr"></div>
+          <div class="guide-corner bl"></div>
+          <div class="guide-corner br"></div>
+        </div>
+
+        <div class="analyzing-badge" *ngIf="analyzing">
+          <i class="bi bi-cpu"></i> Analyzing…
+        </div>
       </div>
 
       <canvas #canvasEl class="hidden-canvas"></canvas>
 
       <p class="scanner-hint scan-status" *ngIf="scanHint">{{ scanHint }}</p>
-      <p class="scanner-hint" *ngIf="!scanHint">Fill the box with the card — name reads above the line</p>
+      <p class="scanner-hint" *ngIf="!scanHint && !analyzing">
+        Center the card in the box — scanning every few seconds
+      </p>
     </div>
 
     <!-- ── Result ── -->
@@ -37,7 +49,7 @@
              [src]="matchedCard.imageUriNormal"
              [alt]="matchedCard.name">
         <div class="result-info">
-          <p class="result-detected">Detected: <em>"{{ detectedName }}"</em></p>
+          <p class="result-detected">Identified: <em>"{{ detectedName }}"</em></p>
           <p class="result-name">{{ matchedCard.name }}</p>
           <p class="result-type">{{ matchedCard.cardTypes.join(' · ') }}</p>
           <p class="result-set" *ngIf="matchedCard.setCode">{{ matchedCard.setCode | uppercase }}</p>

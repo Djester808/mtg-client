@@ -118,16 +118,72 @@
   display: none;
 }
 
-// ── Card outline canvas ───────────────────────────────────────────────────────
+// ── Card guide overlay ────────────────────────────────────────────────────────
 
-.card-outline-canvas {
+.card-guide {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  // 35% wide; at 16:9 this gives ~87% of video height — fits with margin
+  width: 35%;
+  aspect-ratio: 5 / 7;
+  border: 2px solid rgba(201, 168, 76, 0.5);
+  border-radius: 4px;
   pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.3s;
+
+  &.is-analyzing {
+    border-color: rgba(201, 168, 76, 0.9);
+    animation: guide-pulse 1s ease-in-out infinite;
+  }
 }
 
+@keyframes guide-pulse {
+  0%, 100% { border-color: rgba(201, 168, 76, 0.6); }
+  50%       { border-color: rgba(201, 168, 76, 1); }
+}
+
+// Corner brackets
+.guide-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: #c9a84c;
+  border-style: solid;
+
+  &.tl { top: -2px;  left: -2px;  border-width: 2px 0 0 2px; }
+  &.tr { top: -2px;  right: -2px; border-width: 2px 2px 0 0; }
+  &.bl { bottom: -2px; left: -2px;  border-width: 0 0 2px 2px; }
+  &.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+}
+
+// ── Analyzing badge ───────────────────────────────────────────────────────────
+
+.analyzing-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 20px;
+  color: #c9a84c;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  i { animation: spin 1s linear infinite; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 
