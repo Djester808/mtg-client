@@ -25,11 +25,11 @@ export class GameApiService {
     return this.http.get<RulingDto[]>(`${this.base}/cards/${oracleId}/rulings`);
   }
 
-  identifyCard(imageBase64: string): Observable<{ cardName: string | null }> {
-    return this.http.post<{ cardName: string | null }>(`${this.base}/vision/identify-card`, {
-      imageBase64,
-      mediaType: 'image/jpeg',
-    });
+  identifyCard(imageBase64: string): Observable<{ cardName: string | null; error: string | null }> {
+    return this.http.post<{ cardName: string | null; error: string | null }>(
+      `${this.base}/vision/identify-card`,
+      { imageBase64, mediaType: 'image/jpeg' },
+    );
   }
 
   searchCards(

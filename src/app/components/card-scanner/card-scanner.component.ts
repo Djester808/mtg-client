@@ -102,6 +102,9 @@ export class CardScannerComponent implements OnDestroy {
           return;
         }
         this.scanHint = `"${result.cardName}" — not in database`;
+      } else if (result?.error) {
+        this.scanHint = result.error;
+        console.error('[CardScanner]', result.error);
       } else {
         this.scanHint = 'No card detected';
       }
