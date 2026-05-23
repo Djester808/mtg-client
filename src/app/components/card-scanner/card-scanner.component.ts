@@ -157,6 +157,13 @@ export class CardScannerComponent implements OnDestroy {
     const yp = this.peakPair(yProj, Math.floor(H * 0.12));
     if (!xp || !yp) return null;
 
+    // Both peaks on each axis must be roughly comparable in strength.
+    // A card's two parallel edges are the same object → similar projection values.
+    // If one peak is >> the other, they're from different objects at different depths.
+    const xRatio = Math.min(xProj[xp[0]], xProj[xp[1]]) / Math.max(xProj[xp[0]], xProj[xp[1]]);
+    const yRatio = Math.min(yProj[yp[0]], yProj[yp[1]]) / Math.max(yProj[yp[0]], yProj[yp[1]]);
+    if (xRatio < 0.28 || yRatio < 0.28) return null;
+
     const bw = xp[1] - xp[0];
     const bh = yp[1] - yp[0];
     const aspect = bh / bw;
