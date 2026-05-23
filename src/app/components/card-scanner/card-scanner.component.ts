@@ -166,9 +166,10 @@ export class CardScannerComponent implements OnDestroy {
 
     const bw = xp[1] - xp[0];
     const bh = yp[1] - yp[0];
-    const aspect = bh / bw;
-    // MTG cards are portrait ~0.714; allow perspective distortion but reject squares/wide
-    if (bw < W * 0.15 || bh < H * 0.2 || aspect < 0.45 || aspect > 1.85) return null;
+    // Orientation-independent: always divide longer side by shorter side.
+    // MTG card is 88/63 ≈ 1.40 regardless of portrait or landscape hold.
+    const ratio = Math.max(bw, bh) / Math.min(bw, bh);
+    if (bw < W * 0.12 || bh < H * 0.12 || ratio < 1.1 || ratio > 2.2) return null;
 
     // All four boundary lines must have consistently strong straight edges.
     // A card edge is a straight line → every pixel along it fires.
