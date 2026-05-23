@@ -36,6 +36,7 @@ export class CardScannerComponent implements OnDestroy {
   errorMessage = '';
   scanHint = '';
   analyzing = false;
+  scanCount = 0;
 
   private stream: MediaStream | null = null;
   private scanTimer: ReturnType<typeof setTimeout> | null = null;
@@ -75,8 +76,9 @@ export class CardScannerComponent implements OnDestroy {
   private async doScan(): Promise<void> {
     if (!this.active || this.state !== 'previewing') return;
 
+    this.scanCount++;
     this.analyzing = true;
-    this.scanHint = 'Analyzing…';
+    this.scanHint = '';
     this.cdr.markForCheck();
 
     try {
@@ -99,11 +101,13 @@ export class CardScannerComponent implements OnDestroy {
           this.cdr.markForCheck();
           return;
         }
+        this.scanHint = `"${result.cardName}" — not in database`;
+      } else {
+        this.scanHint = 'No card detected';
       }
-
-      this.scanHint = '';
-    } catch {
-      this.scanHint = '';
+    } catch (err) {
+      this.scanHint = 'Error — check console';
+      console.error('[CardScanner] scan failed', err);
     } finally {
       this.analyzing = false;
       this.cdr.markForCheck();
