@@ -160,17 +160,28 @@ export class CardScannerComponent implements OnDestroy {
     const bw = xp[1] - xp[0];
     const bh = yp[1] - yp[0];
     const aspect = bh / bw;
-    // Accept any aspect from roughly square to 1:2 (handles perspective tilt)
-    if (bw < W * 0.12 || bh < H * 0.12 || aspect < 0.7 || aspect > 2.5) return null;
+    // MTG cards are portrait ~0.714; allow perspective distortion but reject squares/wide
+    if (bw < W * 0.15 || bh < H * 0.2 || aspect < 0.45 || aspect > 1.85) return null;
 
-    // Verify actual edges exist along the four detected boundary lines
-    const avgBoundaryEdge =
-      (this.projSlice(ex, 'col', xp[0], yp[0], yp[1], W) +
-        this.projSlice(ex, 'col', xp[1], yp[0], yp[1], W) +
-        this.projSlice(ey, 'row', yp[0], xp[0], xp[1], W) +
-        this.projSlice(ey, 'row', yp[1], xp[0], xp[1], W)) /
-      4;
-    if (avgBoundaryEdge < 12) return null;
+    // All four boundary lines must have consistently strong straight edges.
+    // A card edge is a straight line → every pixel along it fires.
+    // A face silhouette is curved → only some pixels fire at any fixed x/y position.
+    const leftEdge = this.projSlice(ex, 'col', xp[0], yp[0], yp[1], W);
+    const rightEdge = this.projSlice(ex, 'col', xp[1], yp[0], yp[1], W);
+    const topEdge = this.projSlice(ey, 'row', yp[0], xp[0], xp[1], W);
+    const bottomEdge = this.projSlice(ey, 'row', yp[1], xp[0], xp[1], W);
+    const avgBoundaryEdge = (leftEdge + rightEdge + topEdge + bottomEdge) / 4;
+    if (avgBoundaryEdge < 22) return null;
+    // Each side must be independently strong — not just a high average from one good side
+    if (Math.min(leftEdge, rightEdge, topEdge, bottomEdge) < 10) return null;
+    // At least 45% of pixels along each boundary must individually exceed threshold
+    if (
+      !this.isEdgeStraight(ex, 'col', xp[0], yp[0], yp[1], W) ||
+      !this.isEdgeStraight(ex, 'col', xp[1], yp[0], yp[1], W) ||
+      !this.isEdgeStraight(ey, 'row', yp[0], xp[0], xp[1], W) ||
+      !this.isEdgeStraight(ey, 'row', yp[1], xp[0], xp[1], W)
+    )
+      return null;
 
     const sx = video.clientWidth / W;
     const sy = video.clientHeight / H;
@@ -188,7 +199,9 @@ export class CardScannerComponent implements OnDestroy {
         p1 = i;
       }
     }
-    if (v1 < 200) return null; // not enough signal
+    // A card's straight edge sums across the full card height → very high peak.
+    // A curved face silhouette only contributes a few rows per column → much lower.
+    if (v1 < 450) return null;
 
     let p2 = -1,
       v2 = 0;
@@ -199,7 +212,7 @@ export class CardScannerComponent implements OnDestroy {
         p2 = i;
       }
     }
-    if (p2 < 0 || v2 < 100) return null;
+    if (p2 < 0 || v2 < 280) return null;
 
     return p1 < p2 ? [p1, p2] : [p2, p1];
   }
@@ -220,6 +233,27 @@ export class CardScannerComponent implements OnDestroy {
       sum += axis === 'row' ? map[pos * W + i] : map[i * W + pos];
     }
     return sum / n;
+  }
+
+  // True if ≥45% of pixels along the boundary exceed the per-pixel threshold.
+  // Cards have straight edges so nearly every pixel fires; curved face edges don't.
+  private isEdgeStraight(
+    map: Float32Array,
+    axis: 'row' | 'col',
+    pos: number,
+    from: number,
+    to: number,
+    W: number,
+    threshold = 12,
+    minFraction = 0.45,
+  ): boolean {
+    const n = to - from;
+    if (n <= 0) return false;
+    let above = 0;
+    for (let i = from; i < to; i++) {
+      if ((axis === 'row' ? map[pos * W + i] : map[i * W + pos]) > threshold) above++;
+    }
+    return above / n >= minFraction;
   }
 
   // ── Overlay drawing ───────────────────────────────────────────────────────
