@@ -15,6 +15,16 @@ import { CardDto } from '../../models/game.models';
 
 type ScanState = 'idle' | 'previewing' | 'result' | 'error';
 
+// Chrome Shape Detection API — not in lib.dom.d.ts yet
+interface DetectedText {
+  rawValue: string;
+  boundingBox: DOMRectReadOnly;
+}
+interface TextDetectorCtor {
+  new (): { detect(src: ImageBitmapSource): Promise<DetectedText[]> };
+}
+declare const TextDetector: TextDetectorCtor | undefined;
+
 @Component({
   selector: 'app-card-scanner',
   standalone: true,
@@ -41,6 +51,8 @@ export class CardScannerComponent implements OnDestroy {
   private stream: MediaStream | null = null;
   private scanTimer: ReturnType<typeof setTimeout> | null = null;
   private active = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private detector: any = null;
 
   constructor(
     private gameApi: GameApiService,
@@ -48,6 +60,15 @@ export class CardScannerComponent implements OnDestroy {
   ) {}
 
   async startCamera(): Promise<void> {
+    if (typeof TextDetector === 'undefined') {
+      this.state = 'error';
+      this.errorMessage =
+        'Text detection requires Chrome or Edge. Please open this page in Chrome.';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.detector = new TextDetector();
+
     this.state = 'previewing';
     this.cdr.markForCheck();
     try {
@@ -70,7 +91,7 @@ export class CardScannerComponent implements OnDestroy {
   }
 
   private scheduleScan(): void {
-    this.scanTimer = setTimeout(() => this.doScan(), 2500);
+    this.scanTimer = setTimeout(() => this.doScan(), 1800);
   }
 
   private async doScan(): Promise<void> {
@@ -82,35 +103,29 @@ export class CardScannerComponent implements OnDestroy {
     this.cdr.markForCheck();
 
     try {
-      const imageBase64 = this.captureFrame();
-      const result = await firstValueFrom(this.gameApi.identifyCard(imageBase64));
+      const name = await this.readCardName();
 
       if (!this.active || this.state !== 'previewing') return;
 
-      if (result?.cardName) {
-        const cards = await firstValueFrom(this.gameApi.searchCards(result.cardName, 5)).catch(
-          () => null,
-        );
+      if (name) {
+        const cards = await firstValueFrom(this.gameApi.searchCards(name, 5)).catch(() => null);
 
         if (!this.active || this.state !== 'previewing') return;
 
         if (cards?.length) {
-          this.detectedName = result.cardName;
+          this.detectedName = name;
           this.matchedCard = cards[0];
           this.state = 'result';
           this.cdr.markForCheck();
           return;
         }
-        this.scanHint = `"${result.cardName}" — not in database`;
-      } else if (result?.error) {
-        this.scanHint = result.error;
-        console.error('[CardScanner]', result.error);
+        this.scanHint = `"${name}" — not found`;
       } else {
-        this.scanHint = 'No card detected';
+        this.scanHint = 'No card detected — center the card in the box';
       }
     } catch (err) {
-      this.scanHint = 'Error — check console';
-      console.error('[CardScanner] scan failed', err);
+      console.error('[CardScanner]', err);
+      this.scanHint = '';
     } finally {
       this.analyzing = false;
       this.cdr.markForCheck();
@@ -121,15 +136,45 @@ export class CardScannerComponent implements OnDestroy {
     }
   }
 
-  private captureFrame(): string {
+  private async readCardName(): Promise<string | null> {
     const video = this.videoEl.nativeElement;
     const canvas = this.canvasEl.nativeElement;
-    // Send the full frame — Sonnet finds the card wherever it is in the image
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+
+    // Crop to the guide box (35% wide, 5:7 aspect, centered) — name strip is top 15%
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const guideW = vw * 0.35;
+    const guideH = guideW * (7 / 5);
+    const guideX = (vw - guideW) / 2;
+    const guideY = Math.max(0, (vh - guideH) / 2);
+    const stripH = guideH * 0.18; // top 18% = name line
+
+    // Scale up 3× so text is big enough for the detector
+    const scale = 3;
+    canvas.width = Math.round(guideW * scale);
+    canvas.height = Math.round(stripH * scale);
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(video, guideX, guideY, guideW, stripH, 0, 0, canvas.width, canvas.height);
+
+    const bitmap = await createImageBitmap(canvas);
+    const results: DetectedText[] = await this.detector.detect(bitmap);
+    bitmap.close();
+
+    // Pick the best candidate — longest text that passes the card-name filter
+    const candidate = results
+      .map((r) => r.rawValue.trim())
+      .filter((t) => this.isLikelyCardName(t))
+      .sort((a, b) => b.length - a.length)[0];
+
+    return candidate ?? null;
+  }
+
+  private isLikelyCardName(text: string): boolean {
+    if (!text || text.length < 2 || text.length > 50) return false;
+    const letters = (text.match(/[a-zA-Z]/g) ?? []).length;
+    return letters >= 2 && letters / text.length >= 0.65;
   }
 
   private tryFocus(): void {
