@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { CommandersApiService } from '../../services/commanders-api.service';
 import { CommanderSummary } from '../../models/commander.models';
 import { ManaCostPipe } from '../../pipes/mana-cost.pipe';
+import { SearchInputComponent } from '../../components/search-input/search-input.component';
 
 @Component({
   selector: 'app-commander-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ManaCostPipe],
+  imports: [CommonModule, RouterModule, FormsModule, ManaCostPipe, SearchInputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './commander-list.component.html',
   styleUrls: ['./commander-list.component.scss'],
@@ -43,8 +44,19 @@ export class CommanderListComponent implements OnInit {
 
   loadCommanders(): void {
     this.loading = true;
+    this.error = null;
     this.cdr.markForCheck();
-    this.api.getTopCommanders(200, this.dateMonths).subscribe({
+
+    const q = this.searchQuery.trim();
+
+    // With no query, show the community ranking. With one, search the whole card
+    // corpus: the ranked list only holds commanders that already have a deck here,
+    // so filtering it locally could never find most commanders.
+    const source$ = q
+      ? this.api.searchCommanders(q, 200)
+      : this.api.getTopCommanders(200, this.dateMonths);
+
+    source$.subscribe({
       next: (data) => {
         this.commanders = data;
         this.loading = false;
@@ -58,6 +70,12 @@ export class CommanderListComponent implements OnInit {
     });
   }
 
+  /** Debouncing lives in the shared search box. */
+  onSearchChanged(q: string): void {
+    this.searchQuery = q;
+    this.loadCommanders();
+  }
+
   setDatePreset(months: number): void {
     if (this.dateMonths === months) return;
     this.dateMonths = months;
@@ -65,9 +83,8 @@ export class CommanderListComponent implements OnInit {
   }
 
   get filteredCommanders(): CommanderSummary[] {
-    const q = this.searchQuery.trim().toLowerCase();
+    // Name matching is done server-side now; only colour filtering stays local.
     return this.commanders.filter((cmd) => {
-      if (q && !cmd.name.toLowerCase().includes(q)) return false;
       if (this.selectedColors.size > 0) {
         const hasAll = [...this.selectedColors].every((c) => cmd.colorIdentity.includes(c));
         if (!hasAll) return false;
@@ -86,9 +103,12 @@ export class CommanderListComponent implements OnInit {
   }
 
   clearFilters(): void {
+    const hadQuery = !!this.searchQuery.trim();
     this.searchQuery = '';
     this.selectedColors.clear();
-    if (this.dateMonths !== 0) {
+    // Clearing a search must reload: the results on screen came from the search
+    // endpoint, not the ranked list, so dropping the query alone would leave them up.
+    if (this.dateMonths !== 0 || hadQuery) {
       this.dateMonths = 0;
       this.loadCommanders();
     } else {

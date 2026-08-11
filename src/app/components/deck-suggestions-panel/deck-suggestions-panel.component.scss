@@ -51,11 +51,9 @@
   flex-shrink: 0;
 }
 
-.sugg-cmdr-art {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  object-fit: cover;
+// Was a 36px square crop of the whole card, which framed the type line rather than the
+// art. Shares the row treatment now: art crop in a landscape box.
+.sugg-cmdr-art-wrap {
   flex-shrink: 0;
 }
 
@@ -256,6 +254,205 @@
   i { font-size: 13px; }
 }
 
+// ---- "Show more" per section --------------------------------------
+
+.sugg-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: calc(100% - 24px);
+  margin: 6px 12px 10px;
+  padding: 6px;
+  background: none;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: capitalize;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+  }
+
+  i { font-size: 15px; }
+}
+
+.sugg-more-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.sugg-more-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: min(720px, 100%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+.sugg-more-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--accent, var(--text-primary));
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sugg-more-total {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.sugg-more-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 2px 4px;
+
+  &:hover { color: var(--text-primary); }
+}
+
+// Styling lives in app-search-input; this only positions it.
+.sugg-more-search {
+  padding: 10px 14px 8px;
+}
+
+// The section's own scroll container: paging is driven by this element, not the page.
+.sugg-more-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  .sugg-card { cursor: pointer; }
+}
+
+.sugg-set-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.sugg-more-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Two rows: card types above, mana value and sort below. Only the last row carries
+// the divider, so the pair reads as one block.
+.sugg-more-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px 4px;
+}
+
+.sugg-more-filters--secondary {
+  padding: 0 14px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sugg-filter-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.sugg-filter-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 4px;
+  background: var(--border-subtle);
+}
+
+.sugg-chip {
+  padding: 3px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { color: var(--text-primary); }
+
+  &.is-active {
+    background: color-mix(in srgb, var(--gold, #c9a84c) 18%, transparent);
+    border-color: var(--gold, #c9a84c);
+    color: var(--gold, #c9a84c);
+  }
+}
+
+.sugg-chip--cmc { min-width: 26px; }
+
+.sugg-chip--clear {
+  margin-left: auto;
+  i { font-size: 10px; }
+}
+
+// Skeleton rows while the first page is in flight.
+.sugg-card--skeleton {
+  pointer-events: none;
+
+  .sugg-card-body { gap: 6px; }
+}
+
+.sk-line {
+  height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(
+    100deg,
+    var(--bg-deep) 30%,
+    color-mix(in srgb, var(--text-dim) 12%, var(--bg-deep)) 50%,
+    var(--bg-deep) 70%
+  );
+  background-size: 300% 100%;
+  animation: art-shimmer 1.1s ease-in-out infinite;
+}
+
+.sk-line--title { width: 45%; }
+.sk-line--type { width: 30%; height: 7px; }
+.sk-line--text { width: 80%; height: 7px; }
+
 .sugg-cat-count {
   margin-left: auto;
   font-size: 10px;
@@ -291,24 +488,72 @@
   }
 }
 
+// Landscape to match the shape of a card's art box, so the crop keeps the whole
+// illustration instead of slicing a vertical strip out of the middle of it.
 .sugg-card-art-wrap {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 64px;
+  height: 48px;
   border-radius: 4px;
+  overflow: hidden;
   transition: box-shadow 0.12s;
 }
 
+// Scryfall art loads over the network one row at a time; without this the list is a
+// column of empty boxes that fill in at random.
+.sugg-card-art-wrap.is-loading {
+  background: linear-gradient(
+    100deg,
+    var(--bg-deep) 30%,
+    color-mix(in srgb, var(--text-dim) 12%, var(--bg-deep)) 50%,
+    var(--bg-deep) 70%
+  );
+  background-size: 300% 100%;
+  animation: art-shimmer 1.1s ease-in-out infinite;
+
+  .sugg-card-art { opacity: 0; }
+}
+
+@keyframes art-shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
 .sugg-card-art {
-  width: 36px;
-  height: 36px;
+  width: 64px;
+  height: 48px;
   border-radius: 4px;
   object-fit: cover;
+  object-position: center 28%; // faces sit above centre in most card art
+  display: block;
+  opacity: 1;
+  transition: opacity 0.18s ease-in;
+}
+
+// Placeholder shown while the batch scorer is still working on this page.
+.sugg-score--pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .dot-pulse {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+    animation: score-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes score-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 0.8; transform: scale(1.1); }
 }
 
 .sugg-art-placeholder {
-  width: 36px;
-  height: 36px;
+  width: 64px;
+  height: 48px;
   border-radius: 4px;
   background: var(--bg-deep);
   display: flex;
@@ -347,6 +592,11 @@
 
 .sugg-score {
   margin-left: auto;
+  // Fixed box, wide enough for "100%". The score lands after the row has rendered, so
+  // a chip that grows when it arrives nudges the whole row -- very visible when it
+  // happens to rows you are scrolling past.
+  min-width: 34px;
+  text-align: center;
   font-size: 10px;
   font-weight: 700;
   padding: 1px 5px;

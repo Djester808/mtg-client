@@ -5,7 +5,12 @@
 
 <!-- Commander context bar -->
 <div class="sugg-commander" *ngIf="commanderCard">
-  <img class="sugg-cmdr-art" *ngIf="commanderCard.imageUriSmall" [src]="commanderCard.imageUriSmall" [alt]="commanderCard.name" />
+  <div class="sugg-card-art-wrap sugg-cmdr-art-wrap"
+       [class.is-loading]="artOf(commanderCard) && !isImageLoaded(artOf(commanderCard))">
+    <img class="sugg-card-art" *ngIf="artOf(commanderCard) as src"
+         [src]="src" [alt]="commanderCard.name"
+         (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
+  </div>
   <div class="sugg-cmdr-info">
     <span class="sugg-cmdr-name">{{ commanderCard.name }}</span>
     <span class="sugg-cmdr-sub">Commander · {{ (deck?.cards?.length ?? 0) }} cards in deck</span>
@@ -66,11 +71,12 @@
 
     <div class="sugg-card-list">
       <div class="sugg-card" *ngFor="let s of cardsFor(cat.key)" (click)="openDetail(s, $event)">
-        <div class="sugg-card-art-wrap">
+        <div class="sugg-card-art-wrap"
+             [class.is-loading]="artOf(s.card) && !isImageLoaded(artOf(s.card))">
           <img class="sugg-card-art"
-               *ngIf="s.card?.imageUriSmall; else artPlaceholder"
-               [src]="s.card!.imageUriSmall!"
-               [alt]="s.name" />
+               *ngIf="artOf(s.card) as src; else artPlaceholder"
+               [src]="src" [alt]="s.name"
+               (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
           <ng-template #artPlaceholder>
             <div class="sugg-art-placeholder">◈</div>
           </ng-template>
@@ -102,6 +108,129 @@
                 title="Remove from deck">
           <i class="bi bi-check-lg"></i>
         </button>
+      </div>
+    </div>
+
+    <!-- Each list is short on purpose, so each one keeps a door into the pool it was
+         drawn from rather than one catch-all browser at the bottom. -->
+    <button class="sugg-more-btn" (click)="openMore(cat)">
+      Show more {{ cat.label | lowercase }}
+      <i class="bi bi-arrow-right-short"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Per-section pool. Scrolls and pages on its own, scoped to the section it opened from. -->
+<div class="sugg-more-backdrop" *ngIf="moreCategory" (click)="closeMore()">
+  <div class="sugg-more-modal" (click)="$event.stopPropagation()">
+    <div class="sugg-more-header" [style.--accent]="moreCategory.accent">
+      <i class="bi" [ngClass]="moreCategory.icon"></i>
+      <span>{{ moreCategory.label }}</span>
+      <span class="sugg-more-total" *ngIf="moreTotal">
+        {{ moreTotal }} card{{ moreTotal === 1 ? '' : 's' }}<ng-container *ngIf="scoringInFlight"> · scoring…</ng-container>
+      </span>
+      <button class="sugg-more-close" (click)="closeMore()" title="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="sugg-more-search">
+      <app-search-input
+        [value]="moreQuery"
+        (debouncedChange)="onMoreQuerySearch($event)"
+        placeholder="Search by name, creature type or rules text…"
+        title="Search this pool by card name, creature type or rules text"
+      ></app-search-input>
+    </div>
+
+    <!-- Types on their own row: mana value and sort read as one control each and were
+         being split across the wrap when they shared a row with seven type chips. -->
+    <div class="sugg-more-filters">
+      <button class="sugg-chip" *ngFor="let t of typeFilters"
+              [class.is-active]="selectedTypes.has(t)"
+              (click)="toggleTypeFilter(t)">{{ t }}</button>
+    </div>
+
+    <div class="sugg-more-filters sugg-more-filters--secondary">
+      <span class="sugg-filter-label">MV</span>
+      <button class="sugg-chip sugg-chip--cmc" *ngFor="let c of cmcFilters; let i = index"
+              [class.is-active]="cmcIndex === i"
+              (click)="setCmcFilter(i)">{{ c.label }}</button>
+
+      <span class="sugg-filter-sep"></span>
+
+      <span class="sugg-filter-label">Sort</span>
+      <button class="sugg-chip" *ngFor="let s of sortOptions"
+              [class.is-active]="moreSort === s.value"
+              (click)="setMoreSort(s.value)"
+              [title]="s.hint">{{ s.label }}</button>
+
+      <button class="sugg-chip sugg-chip--clear" *ngIf="hasMoreFilters" (click)="clearMoreFilters()"
+              title="Clear search and filters">
+        <i class="bi bi-x-circle"></i> Clear
+      </button>
+    </div>
+
+    <div class="sugg-more-list" (scroll)="onMoreScroll($event)">
+      <div class="sugg-card" *ngFor="let c of displayCards; trackBy: trackCandidate"
+           (click)="openCandidateDetail(c, $event)">
+        <div class="sugg-card-art-wrap"
+             [class.is-loading]="artOf(c.card) && !isImageLoaded(artOf(c.card))">
+          <img class="sugg-card-art" *ngIf="artOf(c.card) as src; else morePlaceholder"
+               [src]="src" [alt]="c.card.name"
+               (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
+          <ng-template #morePlaceholder><div class="sugg-art-placeholder">◈</div></ng-template>
+        </div>
+
+        <div class="sugg-card-body">
+          <div class="sugg-card-top">
+            <span class="sugg-card-name">{{ c.card.name }}</span>
+            <app-mana-cost *ngIf="c.card.manaCost" [cost]="c.card.manaCost" class="sugg-mana"></app-mana-cost>
+            <span class="sugg-score" *ngIf="scoreFor(c) as score"
+                  [class.sugg-score--high]="score >= 80"
+                  [class.sugg-score--mid]="score >= 60 && score < 80"
+                  title="Synergy with this commander">{{ score }}%</span>
+            <span class="sugg-score sugg-score--pending" *ngIf="scoreFor(c) === null" title="Scoring…">
+              <span class="dot-pulse"></span>
+            </span>
+          </div>
+          <span class="sugg-card-type">
+            {{ c.card.supertypes.join(' ') }} {{ c.card.cardTypes.join(' ') }}
+            <ng-container *ngIf="c.card.subtypes?.length"> — {{ c.card.subtypes.join(' ') }}</ng-container>
+            <span class="sugg-set-chip" *ngIf="c.setCode" [title]="c.setName || c.setCode">{{ c.setCode }}</span>
+          </span>
+          <span class="sugg-card-reason">{{ c.card.oracleText }}</span>
+        </div>
+
+        <button class="sugg-add-btn" *ngIf="!isCandidateInDeck(c)"
+                [disabled]="!c.scryfallId" (click)="addCandidate(c); $event.stopPropagation()"
+                [title]="c.scryfallId ? 'Add to deck' : 'No printing available'">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button class="sugg-add-btn sugg-add-btn--added" *ngIf="isCandidateInDeck(c)"
+                (click)="removeCandidate(c); $event.stopPropagation()" title="Remove from deck">
+          <i class="bi bi-check-lg"></i>
+        </button>
+      </div>
+
+      <!-- Skeleton rows on a first load: a bare spinner in an empty panel reads as
+           "nothing here" rather than "still fetching". -->
+      <div class="sugg-skeleton" *ngIf="moreLoading && moreCards.length === 0">
+        <div class="sugg-card sugg-card--skeleton" *ngFor="let _ of [1,2,3,4,5,6]">
+          <div class="sugg-card-art-wrap is-loading"></div>
+          <div class="sugg-card-body">
+            <div class="sk-line sk-line--title"></div>
+            <div class="sk-line sk-line--type"></div>
+            <div class="sk-line sk-line--text"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sugg-more-status" *ngIf="moreLoading && moreCards.length > 0">
+        <div class="spinner"></div><span>Loading…</span>
+      </div>
+      <div class="sugg-more-status" *ngIf="!moreLoading && moreCards.length === 0">
+        No cards match those filters.
       </div>
     </div>
   </div>

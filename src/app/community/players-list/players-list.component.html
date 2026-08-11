@@ -14,13 +14,13 @@
 
     <!-- Filter bar -->
     <div class="pl-filters">
-      <div class="pf-search-wrap">
-        <i class="bi bi-search pf-search-icon"></i>
-        <input class="pf-search" type="text" [(ngModel)]="searchQuery"
-               (ngModelChange)="cdr.markForCheck()"
-               placeholder="Search players…" autocomplete="off"
-               title="Filter players by username">
-      </div>
+      <app-search-input class="pf-search-wrap"
+        [value]="searchQuery"
+        [debounceMs]="0"
+        (valueChange)="searchQuery = $event; cdr.markForCheck()"
+        placeholder="Search players…"
+        title="Filter players by username"
+      ></app-search-input>
 
       <div class="pf-sep"></div>
 
