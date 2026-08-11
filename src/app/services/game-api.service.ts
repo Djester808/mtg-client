@@ -1,7 +1,35 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CardDto, RulingDto, SetSummaryDto } from '../models/game.models';
+import {
+  CandidatePoolDto,
+  CardDto,
+  PrintingDto,
+  RulingDto,
+  SetSummaryDto,
+} from '../models/game.models';
+
+/**
+ * Result of scanning a card photo.
+ *
+ * `setName`/`setCode` are only populated when the API could tie the reading to a real
+ * printing of the identified card; they are null when the printing is uncertain. They
+ * are never the model's raw guess, so a null here means "unknown", not "failed".
+ *
+ * `error` covers only the recoverable case where the image was processed but no card
+ * could be read. A provider failure is an HTTP 502, not an `error` value.
+ */
+export interface CardVisionResult {
+  cardName: string | null;
+  collectorNumber: string | null;
+  setName: string | null;
+  setCode: string | null;
+  oracleId: string | null;
+  scryfallId: string | null;
+  /** True when the card name resolved against Scryfall. */
+  verified: boolean;
+  error: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class GameApiService {
@@ -21,15 +49,60 @@ export class GameApiService {
     return this.http.get<SetSummaryDto[]>(`${this.base}/cards/sets`, { params });
   }
 
+  /**
+   * The pool a suggestion category was drawn from, for seeing more than the few the
+   * model picked. Deterministic — no model involved.
+   *
+   * @param scope 'latest' | 'gamechangers' | 'all'
+   */
+  getCandidates(
+    commanderOracleId: string,
+    q: string,
+    scope: string,
+    filters: {
+      types?: string[];
+      cmcMin?: number | null;
+      cmcMax?: number | null;
+      /** Themes the player asked to build around; changes the scores, so it changes the order. */
+      focus?: string[];
+      /** 'synergy' asks the server to rank by score. Anything else keeps relevance order. */
+      rank?: 'synergy' | 'relevance';
+    } = {},
+    limit = 30,
+    offset = 0,
+  ): Observable<CandidatePoolDto> {
+    const params: Record<string, string> = {
+      commanderOracleId,
+      scope,
+      limit: String(limit),
+      offset: String(offset),
+    };
+    if (q.trim()) params['q'] = q.trim();
+    if (filters.types?.length) params['types'] = filters.types.join(',');
+    if (filters.cmcMin != null) params['cmcMin'] = String(filters.cmcMin);
+    if (filters.cmcMax != null) params['cmcMax'] = String(filters.cmcMax);
+    if (filters.focus?.length) params['focus'] = filters.focus.join(',');
+    if (filters.rank) params['rank'] = filters.rank;
+    return this.http.get<CandidatePoolDto>(`${this.base}/cards/candidates`, { params });
+  }
+
   getCardRulings(oracleId: string): Observable<RulingDto[]> {
     return this.http.get<RulingDto[]>(`${this.base}/cards/${oracleId}/rulings`);
   }
 
-  identifyCard(imageBase64: string): Observable<{ cardName: string | null; error: string | null }> {
-    return this.http.post<{ cardName: string | null; error: string | null }>(
-      `${this.base}/vision/identify-card`,
-      { imageBase64, mediaType: 'image/jpeg' },
-    );
+  getCardPrintings(oracleId: string): Observable<PrintingDto[]> {
+    return this.http.get<PrintingDto[]>(`${this.base}/cards/${oracleId}/printings`);
+  }
+
+  getCardByName(name: string): Observable<CardDto> {
+    return this.http.get<CardDto>(`${this.base}/cards/by-name`, { params: { name } });
+  }
+
+  identifyCard(imageBase64: string): Observable<CardVisionResult> {
+    return this.http.post<CardVisionResult>(`${this.base}/vision/identify-card`, {
+      imageBase64,
+      mediaType: 'image/jpeg',
+    });
   }
 
   searchCards(

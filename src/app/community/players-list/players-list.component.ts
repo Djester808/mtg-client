@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { SearchInputComponent } from '../../components/search-input/search-input.component';
 
 interface PlayerSummary {
   username: string;
@@ -14,7 +15,7 @@ interface PlayerSummary {
 @Component({
   selector: 'app-players-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, SearchInputComponent],
   templateUrl: './players-list.component.html',
   styleUrls: ['./players-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

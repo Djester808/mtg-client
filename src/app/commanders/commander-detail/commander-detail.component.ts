@@ -94,7 +94,6 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
     { key: 'topSynergy', label: 'High Synergy' },
     { key: 'gameChangers', label: 'Game Changers' },
     { key: 'latestSet', label: 'New Cards' },
-    { key: 'notableMentions', label: 'Notable Mentions' },
   ];
 
   oracleId = '';

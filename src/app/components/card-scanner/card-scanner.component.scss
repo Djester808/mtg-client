@@ -118,58 +118,27 @@
   display: none;
 }
 
-// ── Card guide overlay ────────────────────────────────────────────────────────
+// ── Live detection overlay ────────────────────────────────────────────────────
 
-.card-guide {
+.overlay-canvas {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  // 35% wide; at 16:9 this gives ~87% of video height — fits with margin
-  width: 35%;
-  aspect-ratio: 5 / 7;
-  border: 2px solid rgba(201, 168, 76, 0.5);
-  border-radius: 4px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-  transition: border-color 0.3s;
-
-  &.is-analyzing {
-    border-color: rgba(201, 168, 76, 0.9);
-    animation: guide-pulse 1s ease-in-out infinite;
-  }
 }
 
-@keyframes guide-pulse {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.6); }
-  50%       { border-color: rgba(201, 168, 76, 1); }
-}
+// ── Status badge ──────────────────────────────────────────────────────────────
 
-// Corner brackets
-.guide-corner {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: #c9a84c;
-  border-style: solid;
-
-  &.tl { top: -2px;  left: -2px;  border-width: 2px 0 0 2px; }
-  &.tr { top: -2px;  right: -2px; border-width: 2px 2px 0 0; }
-  &.bl { bottom: -2px; left: -2px;  border-width: 0 0 2px 2px; }
-  &.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
-}
-
-// ── Analyzing badge ───────────────────────────────────────────────────────────
-
-.analyzing-badge {
+.status-badge {
   position: absolute;
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(201, 168, 76, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  color: #c9a84c;
+  color: #6b6050;
   font-size: 12px;
   font-weight: 600;
   padding: 5px 14px;
@@ -177,8 +146,40 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
 
-  i { animation: spin 1s linear infinite; }
+  &.detected {
+    color: #7db87d;
+    border-color: rgba(125, 184, 125, 0.4);
+  }
+
+  &.scanning {
+    color: #c9a84c;
+    border-color: rgba(201, 168, 76, 0.4);
+
+    i { animation: spin 1s linear infinite; }
+  }
+}
+
+.preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+
+  .scanner-hint {
+    flex: 1;
+    text-align: left;
+  }
+}
+
+.scan-now-btn {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  font-size: 12px;
+
+  &:disabled { opacity: 0.5; cursor: default; }
 }
 
 .scan-counter {
@@ -229,6 +230,13 @@
 
 // ── Result ────────────────────────────────────────────────────────────────────
 
+.result-body {
+  max-height: 80vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,160,80,0.3) transparent;
+}
+
 .result-row {
   display: flex;
   gap: 20px;
@@ -257,24 +265,130 @@
   em { font-style: normal; color: #a09070; }
 }
 
+.result-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+  flex-wrap: wrap;
+}
+
 .result-name {
   font-family: 'Cinzel', serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #e8e0ce;
-  margin: 0 0 6px;
+}
+
+.result-mana {
+  flex-shrink: 0;
 }
 
 .result-type {
-  font-size: 12px;
+  font-size: 11px;
   color: #a09070;
+  margin: 0 0 6px;
+  font-style: italic;
+}
+
+.result-oracle {
+  font-size: 12px;
+  color: #c8c0b0;
+  line-height: 1.55;
+  margin: 0 0 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,160,80,0.3) transparent;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 6px 0;
+
+  p { margin: 0 0 4px; &:last-child { margin: 0; } }
+}
+
+.result-pt {
+  font-size: 12px;
+  color: #e8e0ce;
+  font-weight: 600;
   margin: 0 0 4px;
+  text-align: right;
 }
 
 .result-set {
   font-size: 11px;
   color: #6b6050;
   margin: 0;
+  letter-spacing: 0.05em;
+
+  &.muted {
+    color: #4a4035;
+    font-style: italic;
+  }
+}
+
+.printing-section {
+  width: 100%;
+  margin: 8px 0 4px;
+}
+
+.printing-label {
+  font-size: 11px;
+  color: #8a7860;
+  margin: 0 0 6px;
+  letter-spacing: 0.04em;
+}
+
+.printing-loading {
+  font-size: 12px;
+  color: #6b6050;
+  font-style: italic;
+}
+
+.printing-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,160,80,0.3) transparent;
+}
+
+.printing-thumb {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  img {
+    width: 46px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+  }
+
+  &.selected {
+    border-color: #c8a050;
+    background: rgba(200,160,80,0.12);
+  }
+
+  &:hover:not(.selected) {
+    border-color: rgba(200,160,80,0.5);
+    background: rgba(255,255,255,0.07);
+  }
+}
+
+.printing-set {
+  font-size: 9px;
+  color: #8a7860;
   letter-spacing: 0.05em;
 }
 

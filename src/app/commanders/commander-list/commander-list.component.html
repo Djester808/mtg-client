@@ -7,13 +7,12 @@
 
   <!-- Filter bar -->
   <div class="cl-filters" *ngIf="!loading && commanders.length > 0">
-    <div class="clf-search-wrap">
-      <i class="bi bi-search clf-search-icon"></i>
-      <input class="clf-search" type="text" [(ngModel)]="searchQuery"
-             (ngModelChange)="cdr.markForCheck()"
-             placeholder="Search commanders…" autocomplete="off"
-             title="Filter by commander name">
-    </div>
+    <app-search-input class="clf-search-wrap"
+      [value]="searchQuery"
+      (debouncedChange)="onSearchChanged($event)"
+      placeholder="Search all commanders…"
+      title="Search every Commander-legal commander by name or creature type"
+    ></app-search-input>
 
     <div class="clf-sep"></div>
 

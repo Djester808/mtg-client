@@ -23,6 +23,19 @@ export class CommandersApiService {
     return this.http.get<CommanderSummary[]>(this.base, { params });
   }
 
+  /**
+   * Searches every Commander-legal commander by name.
+   *
+   * Distinct from {@link getTopCommanders}, which only returns commanders that already
+   * have a published deck here (a few dozen). Filtering that list client-side means most
+   * commanders can never be found, so any name-based search must go through here.
+   */
+  searchCommanders(query: string, limit = 100): Observable<CommanderSummary[]> {
+    const params: Record<string, string | number> = { limit };
+    if (query.trim()) params['q'] = query.trim();
+    return this.http.get<CommanderSummary[]>(`${this.base}/search`, { params });
+  }
+
   getCommanderProfile(oracleId: string): Observable<CommanderProfile> {
     return this.http.get<CommanderProfile>(`${this.base}/${oracleId}`);
   }

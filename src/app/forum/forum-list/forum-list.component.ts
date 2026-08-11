@@ -10,13 +10,14 @@ import { selectForumPosts, selectForumLoading } from '../../store/forum/forum.se
 import { selectIsLoggedIn } from '../../store/auth/auth.selectors';
 import { ForumPostSummary } from '../../models/forum.models';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
+import { SearchInputComponent } from '../../components/search-input/search-input.component';
 
 type SortOption = 'newest' | 'comments' | 'cards';
 
 @Component({
   selector: 'app-forum-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, OracleSymbolsPipe],
+  imports: [CommonModule, RouterModule, FormsModule, OracleSymbolsPipe, SearchInputComponent],
   templateUrl: './forum-list.component.html',
   styleUrls: ['./forum-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

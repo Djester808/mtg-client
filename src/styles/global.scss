@@ -211,3 +211,32 @@ body.is-dragging-card * {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/*
+ * Shared spinner keyframe.
+ *
+ * Component stylesheets are only injected once that component renders, so a component
+ * that writes `animation: spin ...` without defining the keyframe itself only animates
+ * while some *other* spin-defining component happens to be mounted. That left the
+ * "Asking the oracle" spinner and the home-page loader frozen.
+ */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * The same trap one level up: several components style their own `.spinner`, but a
+ * component that writes `<div class="spinner">` without defining the class renders an
+ * empty, invisible div — which is why the card-browser had no visible loading state.
+ * Components that define their own `.spinner` still win, being encapsulated.
+ */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(201, 168, 76, 0.2);
+  border-top-color: var(--gold, #c9a84c);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}

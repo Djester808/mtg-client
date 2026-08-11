@@ -93,34 +93,10 @@
   border-radius: 12px;
 }
 
+// Field itself is app-search-input; this only sizes it.
 .ff-search-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.ff-search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b6050;
-  font-size: 12px;
-  pointer-events: none;
-}
-
-.ff-search {
   width: 200px;
-  padding: 6px 10px 6px 30px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px;
-  color: #e8e0ce;
-  font-size: 12px;
-  outline: none;
-  transition: border-color 0.15s;
-
-  &::placeholder { color: #5a5040; }
-  &:focus { border-color: rgba(201,168,76,0.4); }
+  flex-shrink: 0;
 }
 
 .ff-sep {

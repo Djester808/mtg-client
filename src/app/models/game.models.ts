@@ -10,10 +10,32 @@ export interface RulingDto {
   comment: string;
 }
 
+export interface CandidateCardDto {
+  card: CardDto;
+  scryfallId: string | null;
+  /** Set of the printing shown, preferring the set being browsed over the oldest one. */
+  setCode: string | null;
+  setName: string | null;
+  /**
+   * Synergy score, present only when the pool was ranked by it. Rendering this rather than
+   * fetching scores separately is what keeps the displayed number and the sort order the
+   * same number.
+   */
+  score: number | null;
+}
+
+/** A page of the browsable candidate pool; `total` is the unpaged match count. */
+export interface CandidatePoolDto {
+  total: number;
+  cards: CandidateCardDto[];
+}
+
 export interface SetSummaryDto {
   code: string;
   name: string;
   cardCount: number;
+  /** ISO date, or null for the few sets with no dated printing. Server returns newest first. */
+  releasedAt: string | null;
 }
 
 export interface CardDto {

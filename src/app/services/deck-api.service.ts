@@ -80,6 +80,13 @@ export interface SynergyResult {
   reason: string;
 }
 
+export interface ScoredCardDto {
+  oracleId: string;
+  name: string;
+  score: number;
+  reason: string;
+}
+
 export interface SuggestedCardDto {
   name: string;
   reason: string;
@@ -88,11 +95,19 @@ export interface SuggestedCardDto {
   card: import('../models/game.models').CardDto | null;
 }
 
+export interface RecentSetDto {
+  code: string;
+  name: string;
+  releasedAt: string;
+  legalCardCount: number;
+}
+
 export interface DeckSuggestionsDto {
   latestSet: SuggestedCardDto[];
   topSynergy: SuggestedCardDto[];
   gameChangers: SuggestedCardDto[];
-  notableMentions: SuggestedCardDto[];
+  /** Which sets latestSet was actually drawn from, so the label can name them. */
+  latestSetSources?: RecentSetDto[];
 }
 
 export interface DeckSuggestionsRequest {
@@ -171,6 +186,24 @@ export class DeckApiService {
 
   analyzeSynergy(req: SynergyRequest): Observable<SynergyResult> {
     return this.http.post<SynergyResult>(`${this.base}/synergy`, req);
+  }
+
+  /** Scores a page of cards in one request instead of one per row. */
+  /**
+   * @param focus Themes the player asked to build around. Scoring without them answers a
+   * different question, so the same card comes back with a different percentage than the
+   * suggestion lists show — which is exactly what happened before this was passed through.
+   */
+  analyzeSynergyBatch(
+    commanderOracleId: string,
+    cardOracleIds: string[],
+    focus: string[] = [],
+  ): Observable<ScoredCardDto[]> {
+    return this.http.post<ScoredCardDto[]>(`${this.base}/synergy/batch`, {
+      commanderOracleId,
+      cardOracleIds,
+      focus,
+    });
   }
 
   getSuggestions(req: DeckSuggestionsRequest): Observable<DeckSuggestionsDto> {

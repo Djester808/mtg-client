@@ -20,13 +20,13 @@
     <!-- Filter bar -->
     <div class="forum-filters">
       <!-- Search -->
-      <div class="ff-search-wrap">
-        <i class="bi bi-search ff-search-icon"></i>
-        <input class="ff-search" type="text" [(ngModel)]="searchQuery"
-               (ngModelChange)="cdr.markForCheck()"
-               placeholder="Search decks or players…" autocomplete="off"
-               title="Filter by deck name or player">
-      </div>
+      <app-search-input class="ff-search-wrap"
+        [value]="searchQuery"
+        [debounceMs]="0"
+        (valueChange)="searchQuery = $event; cdr.markForCheck()"
+        placeholder="Search decks or players…"
+        title="Filter by deck name or player"
+      ></app-search-input>
 
       <div class="ff-sep"></div>
 
