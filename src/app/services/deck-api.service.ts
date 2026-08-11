@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -119,6 +119,19 @@ export interface DeckSuggestionsRequest {
   suggestionTags?: string[];
 }
 
+/**
+ * Events streamed from the suggestions SSE endpoint.
+ * - `stage`: a coarse progress step to show under the spinner.
+ * - `cards`: the provisional (pre-judge) lists — render them right away.
+ * - `final`: the validated result; replaces whatever `cards` showed.
+ * - `error`: generation failed.
+ */
+export type SuggestionStreamEvent =
+  | { type: 'stage'; label: string; step: number; total: number }
+  | { type: 'cards'; data: DeckSuggestionsDto }
+  | { type: 'final'; data: DeckSuggestionsDto }
+  | { type: 'error'; message: string };
+
 export interface ManaFineTuneRequest {
   format: string;
   deckCardNames: string[];
@@ -142,7 +155,10 @@ export interface ManaFineTuneDto {
 export class DeckApiService {
   private readonly base = '/api/decks';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private zone: NgZone,
+  ) {}
 
   getDecks(): Observable<DeckDto[]> {
     return this.http.get<DeckDto[]>(this.base);
@@ -206,8 +222,93 @@ export class DeckApiService {
     });
   }
 
-  getSuggestions(req: DeckSuggestionsRequest): Observable<DeckSuggestionsDto> {
-    return this.http.post<DeckSuggestionsDto>(`${this.base}/suggestions`, req);
+  /**
+   * Streams suggestion progress over Server-Sent Events so the panel can show stages and
+   * reveal cards before the (slow) reason-grounding finishes. Uses `fetch` rather than
+   * HttpClient because we need to read the response body incrementally; the JWT is attached
+   * manually since the HttpClient interceptor does not run here. Emissions are marshalled
+   * back into Angular's zone so OnPush change detection fires. Unsubscribe aborts the request.
+   */
+  getSuggestionsStream(req: DeckSuggestionsRequest): Observable<SuggestionStreamEvent> {
+    return new Observable<SuggestionStreamEvent>((subscriber) => {
+      const controller = new AbortController();
+      const token = localStorage.getItem('auth_token');
+
+      const emit = (ev: SuggestionStreamEvent) => this.zone.run(() => subscriber.next(ev));
+
+      const parseFrame = (frame: string): SuggestionStreamEvent | null => {
+        let event = 'message';
+        const dataLines: string[] = [];
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event:')) event = line.slice(6).trim();
+          else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+        }
+        if (dataLines.length === 0) return null;
+        let payload: unknown;
+        try {
+          payload = JSON.parse(dataLines.join('\n'));
+        } catch {
+          return null;
+        }
+        if (event === 'stage') {
+          const p = payload as { label: string; step: number; total: number };
+          return { type: 'stage', label: p.label, step: p.step, total: p.total };
+        }
+        if (event === 'cards') return { type: 'cards', data: payload as DeckSuggestionsDto };
+        if (event === 'final') return { type: 'final', data: payload as DeckSuggestionsDto };
+        if (event === 'error')
+          return { type: 'error', message: (payload as { message?: string }).message ?? 'Failed' };
+        return null;
+      };
+
+      (async () => {
+        try {
+          const resp = await fetch(`${this.base}/suggestions/stream`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(req),
+            signal: controller.signal,
+          });
+
+          if (!resp.ok || !resp.body) {
+            emit({ type: 'error', message: `Request failed (${resp.status})` });
+            this.zone.run(() => subscriber.complete());
+            return;
+          }
+
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let sep: number;
+            // SSE frames are separated by a blank line (\n\n).
+            while ((sep = buffer.indexOf('\n\n')) >= 0) {
+              const frame = buffer.slice(0, sep);
+              buffer = buffer.slice(sep + 2);
+              const parsed = parseFrame(frame);
+              if (parsed) emit(parsed);
+            }
+          }
+          this.zone.run(() => subscriber.complete());
+        } catch (err) {
+          if (controller.signal.aborted) {
+            this.zone.run(() => subscriber.complete());
+            return;
+          }
+          emit({ type: 'error', message: (err as Error)?.message ?? 'Stream failed' });
+          this.zone.run(() => subscriber.complete());
+        }
+      })();
+
+      return () => controller.abort();
+    });
   }
 
   getManaFineTune(req: ManaFineTuneRequest): Observable<ManaFineTuneDto> {

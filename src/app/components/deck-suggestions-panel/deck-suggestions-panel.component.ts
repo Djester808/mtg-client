@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { trigger, transition, query, stagger, style, animate } from '@angular/animations';
 import { Subject } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -23,6 +24,7 @@ import {
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SearchInputComponent } from '../search-input/search-input.component';
+import { ToBodyDirective } from '../../shared/to-body.directive';
 
 /**
  * Keys of DeckSuggestionsDto that hold card lists. Named explicitly rather than as
@@ -44,10 +46,49 @@ export interface SuggestionCategory {
 @Component({
   selector: 'app-deck-suggestions-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, ManaCostComponent, CardModalComponent, SearchInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ManaCostComponent,
+    CardModalComponent,
+    SearchInputComponent,
+    ToBodyDirective,
+  ],
   templateUrl: './deck-suggestions-panel.component.html',
   styleUrls: ['./deck-suggestions-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    // Cards flow into a list one at a time instead of the whole block popping in: each
+    // newly-entering row fades and rises, offset from the last by a small stagger. Bound to
+    // the list's length, so it fires on first fill AND every time cards are appended — the
+    // provisional reveal, the judged result's new picks, and each page of the "show more"
+    // pool as it loads on scroll. trackBy keeps surviving rows out of the :enter set, so only
+    // genuinely new cards animate; the rest stay put and resolve in place.
+    trigger('listStagger', [
+      transition(':enter, * => *', [
+        query(
+          ':enter',
+          [
+            style({ opacity: 0, transform: 'translateY(14px)' }),
+            stagger(120, [
+              animate(
+                '620ms cubic-bezier(0.22, 1, 0.36, 1)',
+                style({ opacity: 1, transform: 'translateY(0)' }),
+              ),
+            ]),
+          ],
+          { optional: true },
+        ),
+        // Cut cards (a judge drop, a filter change) fade out rather than vanishing. No stagger
+        // here: a filter that removes many at once should clear quickly, not ripple for seconds.
+        query(
+          ':leave',
+          [animate('160ms ease', style({ opacity: 0, transform: 'translateY(-6px)' }))],
+          { optional: true },
+        ),
+      ]),
+    ]),
+  ],
 })
 export class DeckSuggestionsPanelComponent implements OnDestroy {
   @Input() deck: DeckDetailDto | null = null;
@@ -61,6 +102,14 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   suggestions: DeckSuggestionsDto | null = null;
   loading = false;
   error: string | null = null;
+
+  // Streaming progress: a coarse stage label shown under the spinner, and a flag marking the
+  // currently shown lists as provisional (revealed before the judge pass finishes).
+  stageLabel: string | null = null;
+  provisional = false;
+  /** Smoothly-animated 0–100 width that trickles toward the next stage between events. */
+  displayProgress = 0;
+  private trickleTimer: ReturnType<typeof setInterval> | null = null;
 
   // Suggestion fine-tuning tags
   suggestionTags: string[] = [];
@@ -105,6 +154,53 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   moreTotal = 0;
   moreLoading = false;
   private readonly morePageSize = 30;
+
+  /**
+   * True while the pool is being fetched from scratch with nothing yet on screen — a sort
+   * switch, a filter change, or the first open. Switching Relevance↔Synergy re-queries the
+   * server (each order is a different query); this disables the sort toggle until the
+   * reordered list arrives. Distinct from paging, where rows are already shown and a footer
+   * spinner covers the next page.
+   */
+  get moreReloading(): boolean {
+    return this.moreLoading && this.moreCards.length === 0;
+  }
+
+  /**
+   * Drives the panel loading bar. Kept separate from {@link moreReloading} because a reorder
+   * can complete in well under a frame (synergy rows arrive already scored), which flashed the
+   * bar too fast to register. We latch it on when a reload starts, hold it through any scoring
+   * that follows, and keep it up for a minimum time so the switch always reads as acknowledged.
+   */
+  loadbarVisible = false;
+  private loadbarShownAt = 0;
+  private loadbarHideTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly LOADBAR_MIN_MS = 650;
+
+  private showLoadbar(): void {
+    if (this.loadbarHideTimer) {
+      clearTimeout(this.loadbarHideTimer);
+      this.loadbarHideTimer = null;
+    }
+    this.loadbarShownAt = Date.now();
+    this.loadbarVisible = true;
+  }
+
+  /** Hide the bar once nothing is loading, but never before it has been up its minimum time. */
+  private settleLoadbar(): void {
+    if (!this.loadbarVisible) return;
+    if (this.moreReloading || this.scoringInFlight > 0) return; // still working
+    const remaining = Math.max(
+      0,
+      DeckSuggestionsPanelComponent.LOADBAR_MIN_MS - (Date.now() - this.loadbarShownAt),
+    );
+    if (this.loadbarHideTimer) clearTimeout(this.loadbarHideTimer);
+    this.loadbarHideTimer = setTimeout(() => {
+      this.loadbarVisible = false;
+      this.loadbarHideTimer = null;
+      this.cdr.markForCheck();
+    }, remaining);
+  }
 
   readonly sortOptions: { value: MoreSort; label: string; hint: string }[] = [
     {
@@ -151,8 +247,9 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }
 
   /**
-   * What to search the pool for. Defaults to the focus tags so the list opens on the
-   * theme the player asked for, and is theirs to overwrite from the modal's search box.
+   * What to search the pool for. Starts empty so Show More opens on the whole pool; the
+   * player's focus still ranks themed cards to the top through the separate `focus` score
+   * input. Typing here adds a hard text filter on top.
    */
   moreQuery = '';
 
@@ -179,6 +276,8 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }
 
   openMore(cat: SuggestionCategory): void {
+    // The category pool is not settled while the lists are still being thought through.
+    if (this.isThinking) return;
     // Keep scores across opens, drop them when the commander or the focus changed.
     const key = this.currentScoreKey();
     if (this.scoredKey !== key) {
@@ -187,7 +286,11 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     }
 
     this.moreCategory = cat;
-    this.moreQuery = this.suggestionTags.join(' ');
+    // Open on the whole pool. The focus still ranks themed cards to the top (it is sent as
+    // the `focus` score input, not as a query), so seeding the search box with it only hard-
+    // filtered the list — and emptied small curated pools like Game Changers, where nothing
+    // matches the literal focus word. The box starts empty and is the player's to type into.
+    this.moreQuery = '';
     this.selectedTypes.clear();
     this.cmcIndex = 0;
     this.moreCards = [];
@@ -279,11 +382,18 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     this.moreTotal = 0;
     this.moreLoadedOnce = false;
     this.moreFailures = 0;
+    // A from-scratch load (sort switch, filter, first open) drives the panel loading bar.
+    this.showLoadbar();
     this.loadMore();
   }
 
   closeMore(): void {
     this.moreCategory = null;
+    if (this.loadbarHideTimer) {
+      clearTimeout(this.loadbarHideTimer);
+      this.loadbarHideTimer = null;
+    }
+    this.loadbarVisible = false;
     this.cdr.markForCheck();
   }
 
@@ -324,6 +434,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
         // complete, quietly end paging for the rest of the session.
         if (!page) {
           this.moreFailures++;
+          this.settleLoadbar();
           this.cdr.markForCheck();
           return;
         }
@@ -335,6 +446,9 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
         this.applySort();
         this.cdr.markForCheck();
         this.scorePage(page.cards);
+        // Fetch is done; if this page needs no scoring the bar settles now, otherwise the
+        // scoring pass below keeps it up until the scores land.
+        this.settleLoadbar();
       });
   }
 
@@ -358,6 +472,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       .filter((id) => !this.moreScores.has(id));
 
     if (!oracleId || ids.length === 0) {
+      this.settleLoadbar();
       this.cdr.markForCheck();
       return;
     }
@@ -379,6 +494,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
         // slides rows out from under the cursor mid-scroll; unscored rows are already
         // sorted to the bottom, so they stay put until the page settles.
         if (this.scoringInFlight === 0) this.applySort();
+        this.settleLoadbar();
         this.cdr.markForCheck();
       });
   }
@@ -498,6 +614,10 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     this.loading = true;
     this.error = null;
     this.suggestions = null;
+    this.provisional = false;
+    this.stageLabel = null;
+    this.displayProgress = 0;
+    this.stopTrickle();
     this.cdr.markForCheck();
 
     const deckCardNames = (this.deck.cards ?? [])
@@ -505,8 +625,11 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       .map((c) => c.cardDetails?.name)
       .filter((n): n is string => !!n);
 
+    // Streamed: stage events drive the label under the spinner, the "cards" event reveals the
+    // provisional lists, and "final" replaces them with the judged result. On a cache hit the
+    // server sends only "final", so this collapses to the old single-shot behaviour.
     this.deckApi
-      .getSuggestions({
+      .getSuggestionsStream({
         commanderOracleId: this.commanderCard.oracleId,
         commanderName: this.commanderCard.name,
         commanderText: this.commanderCard.oracleText,
@@ -514,27 +637,89 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
         deckTags: this.deck.tags ?? [],
         suggestionTags: this.suggestionTags,
       })
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError(() => {
-          this.error = 'Failed to generate suggestions. Try again.';
-          this.loading = false;
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (ev) => {
+          switch (ev.type) {
+            case 'stage':
+              this.stageLabel = ev.label;
+              this.startTrickle(ev.step, ev.total);
+              break;
+            case 'cards':
+              // Provisional reveal — cards on screen, reasons still being written/verified.
+              this.suggestions = ev.data;
+              this.provisional = true;
+              break;
+            case 'final':
+              this.stopTrickle();
+              this.displayProgress = 100;
+              this.suggestions = ev.data;
+              this.provisional = false;
+              this.loading = false;
+              this.stageLabel = null;
+              this.suggestionsCache.set(key, ev.data);
+              break;
+            case 'error':
+              this.stopTrickle();
+              this.error = ev.message || 'Failed to generate suggestions. Try again.';
+              this.loading = false;
+              this.provisional = false;
+              break;
+          }
           this.cdr.markForCheck();
-          return of(null);
-        }),
-      )
-      .subscribe((result) => {
-        if (result) {
-          this.suggestionsCache.set(key, result);
-          this.suggestions = result;
-          this.loading = false;
-          this.cdr.markForCheck();
-        }
+        },
+        complete: () => {
+          // Safety net: if the stream closed without a final event, stop the spinner rather
+          // than leaving it spinning forever.
+          this.stopTrickle();
+          if (this.loading) {
+            this.loading = false;
+            this.provisional = false;
+            if (!this.suggestions && !this.error)
+              this.error = 'Failed to generate suggestions. Try again.';
+            this.cdr.markForCheck();
+          }
+        },
       });
+  }
+
+  /**
+   * Eases {@link displayProgress} toward the current stage's share of the bar and keeps
+   * creeping while the stage runs, so the fill moves gradually between events instead of
+   * jumping. It stops ~1.5% short of the next boundary so the bar never looks finished
+   * until the next stage — or the final result — advances it.
+   */
+  private startTrickle(step: number, total: number): void {
+    this.stopTrickle();
+    const floor = total ? ((step - 1) / total) * 100 : 0;
+    const ceil = total ? (step / total) * 100 : 100;
+    if (this.displayProgress < floor) this.displayProgress = floor;
+    this.trickleTimer = setInterval(() => {
+      const target = ceil - 1.5;
+      if (this.displayProgress < target) {
+        this.displayProgress += (target - this.displayProgress) * 0.12;
+        this.cdr.markForCheck();
+      }
+    }, 200);
+  }
+
+  private stopTrickle(): void {
+    if (this.trickleTimer) {
+      clearInterval(this.trickleTimer);
+      this.trickleTimer = null;
+    }
+  }
+
+  /** A row is inert while its result is still being thought through (provisional + loading). */
+  get isThinking(): boolean {
+    return this.provisional && this.loading;
   }
 
   openDetail(s: SuggestedCardDto, e: MouseEvent): void {
     e.stopPropagation();
+    // Provisional rows are not actionable — pointer-events:none blocks the mouse, this blocks
+    // a keyboard-triggered click that would open a half-thought-through card.
+    if (this.isThinking) return;
     this.selectedSuggestion = s;
     this.modalFlipped = false;
 
@@ -583,6 +768,8 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }
 
   addCard(s: SuggestedCardDto): void {
+    // Cannot add a card that is still being thought through — the pick may yet be cut.
+    if (this.isThinking) return;
     if (!s.card || !s.scryfallId) return;
     this.cardAdd.emit({ oracleId: s.card.oracleId, scryfallId: s.scryfallId });
   }
@@ -610,7 +797,19 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     return this.suggestions?.[key] ?? [];
   }
 
+  /**
+   * Track cards by name so a row survives the provisional→final swap in place: its reason
+   * un-blurs and sharpens via CSS transition instead of the element being torn down and
+   * re-created (which would restart the "thinking" animation and flash). A card the judge
+   * cut simply drops out; the survivors do not move.
+   */
+  trackByCardName(_: number, s: SuggestedCardDto): string {
+    return s.name;
+  }
+
   ngOnDestroy(): void {
+    this.stopTrickle();
+    if (this.loadbarHideTimer) clearTimeout(this.loadbarHideTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }

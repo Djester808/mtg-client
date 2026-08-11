@@ -76,7 +76,6 @@ async function setup() {
     'removeCard',
     'importDeck',
     'analyzeSynergy',
-    'getSuggestions',
     'getPrintings',
     'getCardByScryfallId',
   ]);

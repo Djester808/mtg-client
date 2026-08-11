@@ -15,6 +15,7 @@ import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { GameApiService } from '../../services/game-api.service';
+import { ToBodyDirective } from '../../shared/to-body.directive';
 
 @Component({
   selector: 'app-card-modal',
@@ -23,6 +24,9 @@ import { GameApiService } from '../../services/game-api.service';
   templateUrl: './card-modal.component.html',
   styleUrls: ['./card-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
+  // Re-parent to <body> so the fixed overlay escapes .detail-body's stacking context and
+  // paints above the app header instead of behind it.
+  hostDirectives: [ToBodyDirective],
 })
 export class CardModalComponent implements OnInit, OnChanges {
   @Input() card: CardDto | null = null;
@@ -80,6 +84,16 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   readonly CAROUSEL_PAGE = 5;
   carouselStart = 0;
+
+  /**
+   * True once a close has been requested: the template adds `.is-closing`, which plays the
+   * exit animation, and only after it finishes do we emit `closed` so the parent unmounts us.
+   * Driving it here (rather than Angular's :leave) keeps the exit reliable despite the host
+   * being re-parented to <body> by ToBodyDirective, which was cancelling the :leave.
+   */
+  closing = false;
+  /** Must match the .card-modal.is-closing animation duration in the SCSS. */
+  private static readonly CLOSE_MS = 240;
 
   constructor(private gameApi: GameApiService) {}
 
@@ -239,7 +253,11 @@ export class CardModalComponent implements OnInit, OnChanges {
   // ---- User actions ---------------------------------------------------
 
   close(): void {
-    this.closed.emit();
+    // Play the exit animation first, then tell the parent to unmount. Guard re-entry so a
+    // second click (or Escape during the fade) doesn't stack timers.
+    if (this.closing) return;
+    this.closing = true;
+    setTimeout(() => this.closed.emit(), CardModalComponent.CLOSE_MS);
   }
 
   selectPrinting(p: PrintingDto): void {

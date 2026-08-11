@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
 import { CardModalComponent } from './card-modal.component';
@@ -202,11 +202,15 @@ describe('CardModalComponent', () => {
 
   // ---- close ----------------------------------------
 
-  it('close emits the closed event', () => {
+  it('close emits the closed event after the exit animation', fakeAsync(() => {
     spyOn(component.closed, 'emit');
     component.close();
+    // The emit is deferred until the exit animation finishes, so the parent unmounts only
+    // after it plays. It has not fired synchronously...
+    expect(component.closed.emit).not.toHaveBeenCalled();
+    tick(250); // ...but does once the close duration elapses.
     expect(component.closed.emit).toHaveBeenCalled();
-  });
+  }));
 
   // ---- toggleFlip ----------------------------------------
 

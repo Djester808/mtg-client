@@ -12,7 +12,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 12px;
+  // Tight bottom padding: the header sits directly on the raised commander bar, and a larger
+  // gap here reads as a dead dark band between the title and the commander.
+  padding: 14px 16px 10px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -45,7 +47,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
@@ -170,12 +172,14 @@
 // ---- States -------------------------------------------------------
 
 .sugg-loading {
+  // Compact status bar rather than a full-height splash: provisional cards render directly
+  // below it while streaming, so it must not balloon and push them off-screen.
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  flex: 1;
+  gap: 10px;
+  padding: 18px 16px;
   color: var(--text-secondary);
   font-size: 14px;
 }
@@ -183,6 +187,166 @@
 .sugg-spin {
   font-size: 28px;
   animation: spin 1s linear infinite;
+}
+
+.sugg-stage-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sugg-stage-track {
+  width: min(280px, 80%);
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sugg-stage-fill {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #818cf8, #4ade80);
+  overflow: hidden;
+  // Long, soft ease so each trickle step glides toward the next rather than snapping.
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  // Gentle breathing glow so the bar reads as "working" even while its width holds.
+  animation: stage-glow 1.7s ease-in-out infinite;
+}
+
+// A highlight that sweeps across the fill, giving constant motion between stage steps.
+.sugg-stage-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: stage-sheen 1.5s ease-in-out infinite;
+}
+
+@keyframes stage-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 3px rgba(129, 140, 248, 0.35);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 11px rgba(129, 140, 248, 0.85);
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes stage-sheen {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.sugg-stage-hint {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+// ---- "Thinking" state --------------------------------------------------------
+// While the judge pass runs, the shown cards are provisional: their ranking is settled (which
+// cards, in what order) but their reasons are still being written and any card may yet be cut.
+// We OBSCURE the whole row — art, name, type and reason all blur behind a frosted veil that
+// breathes — so it reads as "still being worked out", not a finished answer you can act on.
+// When the final event drops the .is-provisional flag everything RESOLVES into focus.
+//
+// Every blur transition lives on the BASE rule, not inside .is-provisional, so it also plays
+// on the way OUT: removing the flag eases the blur back to zero and the row sharpens rather
+// than snapping. The reveal is deliberately slow (0.9s) so the row settles into focus rather
+// than blinking clear. trackBy keeps surviving rows mounted across the provisional→final swap,
+// so this is a resolve-in-place, while any brand-new judged card staggers in via @listStagger.
+.sugg-card-art,
+.sugg-card-name,
+.sugg-card-type,
+.sugg-card-reason,
+.sugg-mana,
+.sugg-score {
+  // Slow, eased reveal so the row settles into focus rather than blinking clear. Same curve as
+  // the entrance stagger and the veil fade-out, so the whole resolve reads as one motion.
+  transition:
+    filter 1.1s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sugg-results.is-provisional {
+  // A provisional row is not a finished answer: no clicking through to the card, no add, no
+  // hover highlight. pointer-events:none on the row kills all three at once.
+  .sugg-card {
+    pointer-events: none;
+
+    // Drive the always-present veil (defined on the base rule) so it breathes gently while the
+    // row is being thought through, then fades out via its base transition when the flag drops.
+    &::after {
+      animation: thinking-veil 2.6s ease-in-out infinite;
+    }
+  }
+
+  // The illustration is desaturated and blurred to a smear — recognisable as art, not as a
+  // specific card, until the pick is confirmed.
+  .sugg-card-art {
+    filter: blur(3px) saturate(0.6);
+    opacity: 0.85;
+  }
+
+  // Name and type are teased through the haze but not readable.
+  .sugg-card-name {
+    filter: blur(3px);
+    opacity: 0.8;
+  }
+
+  .sugg-card-type {
+    filter: blur(2px);
+    opacity: 0.55;
+  }
+
+  // Mana cost, synergy score and the add button are hidden entirely, not just blurred —
+  // nothing about a provisional row should look finished or actionable. They fade back in on
+  // the slow reveal above once the pick is confirmed.
+  .sugg-mana,
+  .sugg-score,
+  .sugg-add-btn {
+    opacity: 0;
+  }
+
+  // The reason is the most provisional part — a heavier blur, plus a slow sheen crawling
+  // across it so it reads as active generation rather than a stalled row.
+  .sugg-card-reason {
+    filter: blur(5px);
+    opacity: 0.5;
+    border-radius: 3px;
+    background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--text-dim) 16%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 300% 100%;
+    animation: art-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+// Gentle: a low, slow breath so the row reads as alive without the veil throbbing.
+@keyframes thinking-veil {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.34;
+  }
 }
 
 
@@ -224,7 +388,9 @@
 .sugg-results {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0 16px;
+  // No top padding: the first category header sits directly under the tags row. The 8px that
+  // used to be here read as a dead gap between "+ focus" and the first section.
+  padding: 0 0 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
 }
@@ -271,6 +437,8 @@
   font-size: 11px;
   cursor: pointer;
   text-transform: capitalize;
+  // Fades in on the same slow curve as the cards when the result resolves.
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
     color: var(--text-primary);
@@ -278,6 +446,13 @@
   }
 
   i { font-size: 15px; }
+}
+
+// The pool a "show more" opens is not settled while the lists are still being thought through,
+// so the door into it is hidden and inert until the result resolves.
+.sugg-results.is-provisional .sugg-more-btn {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sugg-more-backdrop {
@@ -289,6 +464,8 @@
   justify-content: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.6);
+  // Backdrop fades in as the pool opens, matching the card modal.
+  animation: more-backdrop-in 0.2s ease-out;
 }
 
 .sugg-more-modal {
@@ -301,6 +478,29 @@
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  // Eases up from slightly small/low — same curve and feel as the card modal's open.
+  transform-origin: center;
+  animation: more-modal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes more-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes more-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .sugg-more-header {
@@ -314,6 +514,37 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+// Indeterminate loading bar spanning the panel, shown while a reorder/filter fetch is in
+// flight (switching Relevance↔Synergy re-queries the server). Sits just under the header so
+// it reads as "the whole pool is rebuilding", not tied to any one control.
+.sugg-more-loadbar {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent, var(--gold, #c9a84c)) 16%, transparent);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 35%;
+    background: var(--accent, var(--gold, #c9a84c));
+    box-shadow: 0 0 8px var(--accent, var(--gold, #c9a84c));
+    animation: more-loadbar 1.1s ease-in-out infinite;
+  }
+}
+
+@keyframes more-loadbar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
 }
 
 .sugg-more-total {
@@ -420,6 +651,10 @@
     border-color: var(--gold, #c9a84c);
     color: var(--gold, #c9a84c);
   }
+
+  // Disabled only while a reorder/filter fetch is in flight, so a second switch can't race the
+  // first. The loading indicator itself lives on the panel (.sugg-more-loadbar), not here.
+  &:disabled { cursor: default; opacity: 0.7; }
 }
 
 .sugg-chip--cmc { min-width: 26px; }
@@ -471,6 +706,7 @@
 }
 
 .sugg-card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -485,6 +721,20 @@
       box-shadow: 0 0 0 2px var(--gold-dim);
       border-radius: 4px;
     }
+  }
+
+  // The "thinking" frosted veil lives here — always present but invisible — so that when the
+  // provisional flag drops it fades out over the same slow curve as the blur instead of the
+  // pseudo-element being torn off mid-resolve (which read as a pop). It only breathes while
+  // .is-provisional drives its animation; otherwise it holds at opacity 0.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: color-mix(in srgb, var(--bg-deep) 30%, transparent);
+    transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 

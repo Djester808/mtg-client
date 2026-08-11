@@ -8,6 +8,11 @@
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(3px);
   z-index: 300;
+  animation: modal-overlay-in 0.28s ease-out both;
+
+  &.is-closing {
+    animation: modal-overlay-out 0.24s ease-in both;
+  }
 }
 
 // ---- Modal window ------------------------------------------
@@ -26,12 +31,48 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  // Opens by easing up from slightly small and low; closes by reversing. The soft curve and
+  // longer durations keep both feeling gentle rather than snappy. Position is left/top only,
+  // so animating transform here never fights drag/resize.
+  transform-origin: center;
+  animation: modal-pop-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  &.is-closing {
+    animation: modal-pop-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  // A drag or resize in progress cancels the entrance transform so the grabbed window tracks
+  // the cursor exactly instead of being offset by a mid-flight scale.
+  &.is-dragging,
+  &.is-resizing {
+    animation: none;
+  }
 
   &.is-resizing,
   &.is-resizing * { cursor: nwse-resize !important; }
 
   &.is-dragging .modal-drag { cursor: grabbing; }
   &.is-dragging * { cursor: grabbing !important; }
+}
+
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-pop-in {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modal-pop-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.96) translateY(8px); }
 }
 
 .modal-resize-handle {

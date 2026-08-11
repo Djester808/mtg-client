@@ -1,7 +1,8 @@
-<div class="modal-overlay" *ngIf="showOverlay" (click)="close()"></div>
+<div class="modal-overlay" *ngIf="showOverlay" [class.is-closing]="closing" (click)="close()"></div>
 
 <div
   class="card-modal"
+  [class.is-closing]="closing"
   [class.is-dragging]="isDragging"
   [class.is-resizing]="isResizing"
   [style.left.px]="modalX"

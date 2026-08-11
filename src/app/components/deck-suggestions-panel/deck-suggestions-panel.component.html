@@ -43,10 +43,16 @@
   </div>
 </div>
 
-<!-- Loading -->
+<!-- Loading / live progress -->
 <div class="sugg-loading" *ngIf="loading">
   <i class="bi bi-arrow-repeat sugg-spin"></i>
-  <span>Asking the oracle…</span>
+  <span class="sugg-stage-label">{{ stageLabel || 'Asking the oracle…' }}</span>
+  <div class="sugg-stage-track">
+    <div class="sugg-stage-fill" [style.width.%]="displayProgress"></div>
+  </div>
+  <span class="sugg-stage-hint" *ngIf="provisional">
+    Showing early picks — verifying and writing reasons…
+  </span>
 </div>
 
 <!-- Error -->
@@ -60,8 +66,8 @@
   <p>Click <strong>Generate</strong> to get AI-powered card suggestions tailored to your deck.</p>
 </div>
 
-<!-- Results -->
-<div class="sugg-results" *ngIf="suggestions && !loading">
+<!-- Results (rendered during streaming too: provisional cards appear before the final event) -->
+<div class="sugg-results" *ngIf="suggestions" [class.is-provisional]="provisional && loading">
   <div class="sugg-category" *ngFor="let cat of categories">
     <div class="sugg-cat-header" [style.--accent]="cat.accent">
       <i class="bi" [ngClass]="cat.icon"></i>
@@ -69,8 +75,8 @@
       <span class="sugg-cat-count">{{ cardsFor(cat.key).length }}</span>
     </div>
 
-    <div class="sugg-card-list">
-      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key)" (click)="openDetail(s, $event)">
+    <div class="sugg-card-list" [@listStagger]="cardsFor(cat.key).length">
+      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key); trackBy: trackByCardName" (click)="openDetail(s, $event)">
         <div class="sugg-card-art-wrap"
              [class.is-loading]="artOf(s.card) && !isImageLoaded(artOf(s.card))">
           <img class="sugg-card-art"
@@ -121,7 +127,7 @@
 </div>
 
 <!-- Per-section pool. Scrolls and pages on its own, scoped to the section it opened from. -->
-<div class="sugg-more-backdrop" *ngIf="moreCategory" (click)="closeMore()">
+<div class="sugg-more-backdrop" *ngIf="moreCategory" appToBody (click)="closeMore()">
   <div class="sugg-more-modal" (click)="$event.stopPropagation()">
     <div class="sugg-more-header" [style.--accent]="moreCategory.accent">
       <i class="bi" [ngClass]="moreCategory.icon"></i>
@@ -133,6 +139,9 @@
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
+
+    <!-- Panel-level loading bar while the reordered/filtered pool is being fetched or scored. -->
+    <div class="sugg-more-loadbar" *ngIf="loadbarVisible" aria-label="Loading"></div>
 
     <div class="sugg-more-search">
       <app-search-input
@@ -162,6 +171,7 @@
       <span class="sugg-filter-label">Sort</span>
       <button class="sugg-chip" *ngFor="let s of sortOptions"
               [class.is-active]="moreSort === s.value"
+              [disabled]="moreReloading"
               (click)="setMoreSort(s.value)"
               [title]="s.hint">{{ s.label }}</button>
 
@@ -171,7 +181,7 @@
       </button>
     </div>
 
-    <div class="sugg-more-list" (scroll)="onMoreScroll($event)">
+    <div class="sugg-more-list" [@listStagger]="displayCards.length" (scroll)="onMoreScroll($event)">
       <div class="sugg-card" *ngFor="let c of displayCards; trackBy: trackCandidate"
            (click)="openCandidateDetail(c, $event)">
         <div class="sugg-card-art-wrap"
