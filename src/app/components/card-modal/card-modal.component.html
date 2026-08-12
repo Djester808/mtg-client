@@ -20,8 +20,9 @@
   <!-- Two-column body -->
   <div class="modal-body">
 
-    <!-- Left: card art + optional collection controls -->
+    <!-- Left: card art + optional host-page controls above and below it -->
     <div class="modal-art-col">
+      <ng-content select="[extra-top]"></ng-content>
       <div class="modal-art"
            [class.is-game-changer]="isGameChanger"
            [class.is-banned]="isBanned"
@@ -60,7 +61,11 @@
     <div class="modal-info-col">
 
       <div class="modal-name-row">
-        <span class="modal-card-name">{{ displayName }}</span>
+        <span class="modal-card-name">{{ displayName }}<span
+            class="modal-count-badge"
+            *ngIf="countBadge"
+            [title]="countBadge + ' in deck'"
+          >×{{ countBadge }}</span></span>
         <div class="modal-cost-col">
           <app-mana-cost *ngIf="effectiveCard?.manaCost" [cost]="effectiveCard!.manaCost"></app-mana-cost>
           <span class="modal-mv" *ngIf="effectiveCard?.manaValue && !isLand">

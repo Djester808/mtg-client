@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   Input,
   Output,
   EventEmitter,
@@ -16,6 +17,7 @@ import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { GameApiService } from '../../services/game-api.service';
 import { ToBodyDirective } from '../../shared/to-body.directive';
+import { cardArtWindow } from '../../shared/fly-card';
 
 @Component({
   selector: 'app-card-modal',
@@ -46,6 +48,9 @@ export class CardModalComponent implements OnInit, OnChanges {
   @Input() primaryScryfallId: string | null = null;
   /** Optional: scryfallIds of other printings the user also owns (shows blue "Owned" banner). */
   @Input() alsoOwnedIds: string[] = [];
+
+  /** Optional: copies of this card the viewer owns in the current deck — shown beside the name. */
+  @Input() countBadge: number | null = null;
 
   @Input() isGameChanger = false;
   /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
@@ -95,7 +100,24 @@ export class CardModalComponent implements OnInit, OnChanges {
   /** Must match the .card-modal.is-closing animation duration in the SCSS. */
   private static readonly CLOSE_MS = 240;
 
-  constructor(private gameApi: GameApiService) {}
+  constructor(
+    private gameApi: GameApiService,
+    private host: ElementRef<HTMLElement>,
+  ) {}
+
+  /**
+   * Screen rect of the card's art window (not the whole frame), for callers that fly a
+   * ghost of the artwork (e.g. add-to-deck).
+   */
+  artRect(): DOMRect | null {
+    const img = this.host.nativeElement.querySelector('.modal-card-img');
+    return img ? cardArtWindow(img.getBoundingClientRect()) : null;
+  }
+
+  /** The artwork image for that ghost; falls back to the full card when no crop exists. */
+  get artImageUrl(): string | null {
+    return this.card?.imageUriArtCrop ?? this.modalImage;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['card']) {

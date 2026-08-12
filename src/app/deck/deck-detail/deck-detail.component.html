@@ -35,16 +35,23 @@
           <span class="deck-tag" *ngFor="let t of (deck.tags ?? [])">
             {{ t }}<button class="deck-tag-remove" (click)="removeTag(deck, t)" title="Remove tag"><i class="bi bi-x"></i></button>
           </span>
-          <input class="deck-tag-input"
-                 [(ngModel)]="tagDraft"
-                 placeholder="+ tag"
-                 list="deck-tag-sugg"
-                 autocomplete="off"
-                 (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
-                 (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
-          <datalist id="deck-tag-sugg">
-            <option *ngFor="let t of tagHistory" [value]="t"></option>
-          </datalist>
+          <span class="tag-input-wrap">
+            <input class="deck-tag-input"
+                   [(ngModel)]="tagDraft"
+                   placeholder="+ tag"
+                   autocomplete="off"
+                   (focus)="tagSuggOpen = true"
+                   (input)="tagSuggOpen = true"
+                   (blur)="closeTagSuggSoon()"
+                   (keydown.escape)="tagSuggOpen = false"
+                   (keydown.enter)="commitTagInput(deck); $event.preventDefault()"
+                   (keydown.comma)="commitTagInput(deck); $event.preventDefault()" />
+            <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
+            <div class="app-menu tag-sugg-menu" *ngIf="tagSuggOpen && tagSuggestions(deck).length > 0">
+              <button class="app-menu-item" *ngFor="let t of tagSuggestions(deck)"
+                      (mousedown)="pickDeckTag(t, deck); $event.preventDefault()">{{ t }}</button>
+            </div>
+          </span>
         </div>
       </div>
 
@@ -87,11 +94,6 @@
         </div>
         </div>
       </div>
-
-      <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
-        <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
-        {{ showSearchPanel ? 'Close' : commanderSearchMode ? 'Add Commander' : 'Add Cards' }}
-      </button>
 
       <button class="publish-btn" *ngIf="!deck.isPublished"
               (click)="openPublishModal()" title="Share this deck on the community forum">
@@ -197,7 +199,8 @@
             <button class="tool-btn" [class.is-active]="showSidePanel && sideTab === 'stats'" (click)="openSidePanel('stats')" title="Stats">
               <i class="bi bi-bar-chart-line"></i><span>Stats</span>
             </button>
-            <button class="tool-btn tool-btn--cmdr" [class.is-active]="showSidePanel && sideTab === 'commander'" (click)="openSidePanel('commander')" title="Commander">
+            <button class="tool-btn tool-btn--cmdr" [class.is-active]="showSidePanel && sideTab === 'commander'"
+                    [class.is-bumped]="commanderBumped" (click)="openSidePanel('commander')" title="Commander">
               <i class="bi bi-person-badge"></i><span>Commander</span>
             </button>
             <button class="tool-btn tool-btn--mana" [class.is-active]="showManaSuggestPanel"
@@ -275,15 +278,18 @@
 
       <!-- Board tabs (list/visual only — free mode manages its own layout) -->
       <div class="board-tabs" *ngIf="viewMode !== 'free'">
-        <button class="board-tab" [class.is-active]="activeBoard === 'main'" (click)="activeBoard = 'main'">
+        <button class="board-tab" [class.is-active]="activeBoard === 'main'"
+                [class.is-bumped]="bumpedBoard === 'main'" (click)="activeBoard = 'main'">
           Main Deck
           <span class="board-tab-count">{{ boardCount(deck, 'main') }}</span>
         </button>
-        <button class="board-tab" [class.is-active]="activeBoard === 'side'" (click)="activeBoard = 'side'">
+        <button class="board-tab" [class.is-active]="activeBoard === 'side'"
+                [class.is-bumped]="bumpedBoard === 'side'" (click)="activeBoard = 'side'">
           Sideboard
           <span class="board-tab-count" *ngIf="boardCount(deck, 'side') > 0">{{ boardCount(deck, 'side') }}</span>
         </button>
-        <button class="board-tab" [class.is-active]="activeBoard === 'maybe'" (click)="activeBoard = 'maybe'">
+        <button class="board-tab" [class.is-active]="activeBoard === 'maybe'"
+                [class.is-bumped]="bumpedBoard === 'maybe'" (click)="activeBoard = 'maybe'">
           Maybeboard
           <span class="board-tab-count" *ngIf="boardCount(deck, 'maybe') > 0">{{ boardCount(deck, 'maybe') }}</span>
         </button>
@@ -296,18 +302,12 @@
           <div class="fbar-labeled-group">
             <span class="fbar-label">Group By</span>
             <div class="sort-group">
-              <select class="sort-select" [ngModel]="sortMode" (ngModelChange)="setSortMode($event, deck)">
-                <option value="cmc">CMC</option>
-                <option value="type">Type</option>
-                <option value="creature-split">Creature / Non-Creature</option>
-                <option value="name">Name</option>
-                <option value="subtype">Subtype</option>
-                <option value="color">Color</option>
-                <option value="color-identity">Color Identity</option>
-                <option value="rarity">Rarity</option>
-                <option value="artist">Artist</option>
-                <option value="set">Set</option>
-              </select>
+              <app-select-menu
+                class="sort-select-menu"
+                [options]="sortModeOptions"
+                [value]="sortMode"
+                (valueChange)="setSortMode($any($event), deck)"
+              ></app-select-menu>
             </div>
           </div>
           <div class="fbar-labeled-group">
@@ -331,13 +331,22 @@
                 class="filter-input"
                 type="text"
                 [(ngModel)]="filterQuery"
-                list="deck-filter-sugg"
                 autocomplete="off"
                 placeholder="Search…"
+                (focus)="filterSuggOpen = true"
+                (input)="filterSuggOpen = true"
+                (blur)="closeFilterSuggSoon()"
+                (keydown.escape)="filterSuggOpen = false"
+                (keydown.enter)="pickFirstFilterSuggestion()"
               />
-              <datalist id="deck-filter-sugg">
-                <option *ngFor="let n of filterCardNames" [value]="n"></option>
-              </datalist>
+              <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
+              <div class="app-menu filter-sugg-menu" *ngIf="filterSuggOpen && filterSuggestions.length > 0">
+                <button
+                  class="app-menu-item"
+                  *ngFor="let n of filterSuggestions"
+                  (mousedown)="selectFilterSuggestion(n); $event.preventDefault()"
+                >{{ n }}</button>
+              </div>
             </div>
           </div>
           <div class="filter-bar-spacer"></div>
@@ -372,6 +381,11 @@
           <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
         </div>
 
+        <button class="add-btn fbar-add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
+          {{ showSearchPanel ? 'Close' : commanderSearchMode ? 'Add Commander' : 'Add Cards' }}
+        </button>
+
       </div>
 
       <!-- Loading -->
@@ -389,8 +403,10 @@
 
       <!-- CMC / Type / Name groups (list + visual + stack) -->
       <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length > 0">
-        <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-vert]="viewMode === 'visual' && groupDir === 'v'">
-          <div class="cmc-group" *ngFor="let group of getGroups(deck); trackBy: trackByGroupKey">
+        <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-vert]="viewMode === 'visual' && groupDir === 'v'"
+             [class.is-drag-live]="stackDragGroupKey !== null || listDragGroupKey !== null">
+          <div class="cmc-group" *ngFor="let group of getGroups(deck); let gi = index; trackBy: trackByGroupKey"
+               [style.--g]="gi">
 
             <div class="group-header">
               <span class="group-label">{{ group.label }}</span>
@@ -404,6 +420,7 @@
               <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === i"></div>
               <div
                 class="card-row list-drag-row"
+                [style.--i]="i"
                 [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
                 (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
@@ -445,6 +462,7 @@
               <div class="drop-line" [class.active]="listDragGroupKey === group.key && listDragOverIdx === i"></div>
               <div
                 class="card-row list-row list-drag-row"
+                [style.--i]="i"
                 [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
                 (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
@@ -473,7 +491,9 @@
                 [class.density-name]="stackDensity === 'name'"
                 [ngClass]="cardViolationClass(card, deck)"
                 *ngFor="let card of getStackCards(group.key, group.cards); let i = index; trackBy: trackByIdx"
+                [style.--i]="i"
                 [style.z-index]="i + 1"
+                [class.is-gap-shifted]="stackShifted(group.key, i)"
                 [class.is-stack-dragging]="stackDragGroupKey === group.key && stackDragFromIdx === i"
                 [class.is-stack-drop-target]="stackDragGroupKey === group.key && stackDragOverIdx === i && stackDragFromIdx !== i"
                 (pointerdown)="onStackPointerDown(group.key, i, card, $event)"
@@ -671,7 +691,8 @@
                  (dragover)="onCpSlotDragOver($event, deck)"
                  (dragleave)="cpSlotDragOver = false"
                  (drop)="onCpSlotDrop(deck, $event)"
-                 [class.is-cmdr-drop-target]="cpSlotDragOver">
+                 [class.is-cmdr-drop-target]="cpSlotDragOver"
+                 [class.is-bumped]="commanderBumped">
               <ng-container *ngIf="commanderCard(deck) as cmdr; else noCommander">
                 <div class="cp-portrait"
                      [style.backgroundImage]="(cmdr.cardDetails?.imageUriLarge || cmdr.cardDetails?.imageUriNormal) ? 'url(' + (cmdr.cardDetails!.imageUriLarge ?? cmdr.cardDetails!.imageUriNormal) + ')' : 'none'"
@@ -909,6 +930,8 @@
       <app-mana-suggest-panel
         *ngIf="showManaSuggestPanel"
         [deck]="deck$ | async"
+        (cardAdd)="addSuggestedCard($event)"
+        (cardRemove)="removeSuggestedCard($event)"
         (panelClose)="showManaSuggestPanel = false"
       ></app-mana-suggest-panel>
     </div>
@@ -937,14 +960,16 @@
     [alsoOwnedIds]="getAlsoOwnedIds(modalDeck)"
     [isGameChanger]="modalDeck.format === 'commander' && (card.cardDetails?.gameChanger === true)"
     [isBanned]="modalDeck.format === 'commander' && (card.cardDetails?.legalities?.['commander'] === 'banned')"
+    [countBadge]="cardCount(card)"
     (closed)="closeCard()"
   >
-    <div extra class="modal-extra-wrap">
-      <span class="modal-deck-badge" *ngIf="cardCount(card) as n">{{ n }}<span class="modal-btn-label">in deck</span></span>
+    <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
       <button class="modal-action-btn"
               (click)="increment(card)">
         <i class="bi bi-plus-lg"></i><span class="modal-btn-label"> Add Another</span>
       </button>
+    </div>
+    <div extra class="modal-extra-wrap">
       <button class="modal-action-btn modal-action-btn--remove"
               [disabled]="cardCount(card) <= 0"
               (click)="decrement(card)"

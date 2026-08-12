@@ -40,6 +40,10 @@ import { CardModalComponent } from '../../components/card-modal/card-modal.compo
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { CardScannerComponent } from '../../components/card-scanner/card-scanner.component';
+import {
+  SelectMenuComponent,
+  SelectMenuOption,
+} from '../../components/select-menu/select-menu.component';
 
 @Component({
   selector: 'app-collection-detail',
@@ -53,6 +57,7 @@ import { CardScannerComponent } from '../../components/card-scanner/card-scanner
     CardSearchPanelComponent,
     CoverPickerModalComponent,
     CardScannerComponent,
+    SelectMenuComponent,
   ],
   templateUrl: './collection-detail.component.html',
   styleUrls: ['./collection-detail.component.scss'],
@@ -320,10 +325,56 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  currentSetTooltip(card: CollectionCardDto): string {
-    const p = this.printingsCache.get(card.oracleId)?.find((x) => x.scryfallId === card.scryfallId);
-    if (p) return `${p.setName}${p.collectorNumber ? ' #' + p.collectorNumber : ''}`;
-    return card.cardDetails?.setCode?.toUpperCase() ?? '';
+  /** Printings as select-menu options, memoized per cached printings array. */
+  private printingOptionsCache = new Map<
+    string,
+    { src: PrintingDto[]; opts: SelectMenuOption[] }
+  >();
+
+  printingOptions(card: CollectionCardDto): SelectMenuOption[] {
+    const printings = this.printingsCache.get(card.oracleId);
+    if (!printings) {
+      // Not loaded yet — show the owned printing so the button has a label.
+      return [
+        {
+          value: card.scryfallId ?? '',
+          label: card.cardDetails?.setCode?.toUpperCase() ?? '···',
+        },
+      ];
+    }
+    const hit = this.printingOptionsCache.get(card.oracleId);
+    if (hit && hit.src === printings) return hit.opts;
+    const opts = printings.map((p) => ({
+      value: p.scryfallId,
+      label: `${p.setCode.toUpperCase()} #${p.collectorNumber}`,
+      title: p.setName,
+    }));
+    this.printingOptionsCache.set(card.oracleId, { src: printings, opts });
+    return opts;
+  }
+
+  // ---- Filter suggestions --------------------------------------------
+
+  filterSuggOpen = false;
+
+  filterSuggestions(collection: CollectionDetailDto): string[] {
+    const q = this.filterQuery.trim().toLowerCase();
+    const pool = this.collectionCardNames(collection);
+    return (q ? pool.filter((n) => n.toLowerCase().includes(q)) : pool).slice(0, 8);
+  }
+
+  selectFilterSuggestion(name: string): void {
+    this.filterQuery = name;
+    this.filterSuggOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Delayed so a mousedown on a suggestion wins the race against the input's blur. */
+  closeFilterSuggSoon(): void {
+    setTimeout(() => {
+      this.filterSuggOpen = false;
+      this.cdr.markForCheck();
+    }, 120);
   }
 
   // ---- Card list helpers -----------------------------------------

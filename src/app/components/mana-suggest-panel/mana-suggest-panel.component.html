@@ -103,8 +103,25 @@
         <div *ngIf="fineTuneResult.landSuggestions.length > 0" class="mana-finetune-lands">
           <div class="mana-finetune-sublabel">Suggested Lands</div>
           <div class="mana-land-suggestion" *ngFor="let ls of fineTuneResult.landSuggestions">
-            <span class="mana-land-suggestion-name">{{ ls.name }}</span>
-            <span class="mana-land-suggestion-reason">{{ ls.reason }}</span>
+            <div class="mana-land-art" *ngIf="artOf(ls) as art"
+                 [style.backgroundImage]="'url(' + art + ')'"></div>
+            <div class="mana-land-body">
+              <span class="mana-land-suggestion-name">{{ ls.name }}</span>
+              <span class="mana-land-suggestion-reason">{{ ls.reason }}</span>
+            </div>
+            <button class="mana-land-add"
+                    *ngIf="!isInDeck(ls)"
+                    [disabled]="!ls.scryfallId"
+                    (click)="addLand(ls, $event)"
+                    title="Add to deck">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+            <button class="mana-land-add mana-land-add--added"
+                    *ngIf="isInDeck(ls)"
+                    (click)="removeLand(ls)"
+                    title="Remove from deck">
+              <i class="bi bi-check-lg"></i>
+            </button>
           </div>
         </div>
 

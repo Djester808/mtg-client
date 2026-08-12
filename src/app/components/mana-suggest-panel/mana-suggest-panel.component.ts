@@ -14,7 +14,13 @@ import { CommonModule } from '@angular/common';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CollectionCardDto, CardType } from '../../models/game.models';
-import { DeckDetailDto, DeckApiService, ManaFineTuneDto } from '../../services/deck-api.service';
+import {
+  DeckDetailDto,
+  DeckApiService,
+  ManaFineTuneDto,
+  ManaLandSuggestion,
+} from '../../services/deck-api.service';
+import { FlightSource } from '../../shared/fly-card';
 
 type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 
@@ -74,6 +80,14 @@ function countPips(manaCost: string): Partial<Record<ManaColor, number>> {
 export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   @Input() deck: DeckDetailDto | null = null;
   @Output() panelClose = new EventEmitter<void>();
+
+  /** Same contract as the suggestions panel: the parent owns the fly-to-deck landing. */
+  @Output() cardAdd = new EventEmitter<{
+    oracleId: string;
+    scryfallId: string;
+    flight?: FlightSource;
+  }>();
+  @Output() cardRemove = new EventEmitter<string>(); // emits oracleId
 
   readonly COLOR_LABEL: Record<ManaColor, string> = {
     W: 'White',
@@ -170,6 +184,32 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
 
   close(): void {
     this.panelClose.emit();
+  }
+
+  // ---- Actionable land suggestions -----------------------------------
+
+  artOf(ls: ManaLandSuggestion): string | null {
+    return ls.card?.imageUriArtCrop || ls.card?.imageUriSmall || null;
+  }
+
+  isInDeck(ls: ManaLandSuggestion): boolean {
+    if (!ls.card) return false;
+    return (this.deck?.cards ?? []).some((c) => c.cardDetails?.oracleId === ls.card!.oracleId);
+  }
+
+  addLand(ls: ManaLandSuggestion, e: Event): void {
+    if (!ls.card || !ls.scryfallId) return;
+    const row = (e.currentTarget as HTMLElement | null)?.closest('.mana-land-suggestion');
+    const from = row?.querySelector('.mana-land-art')?.getBoundingClientRect();
+    this.cardAdd.emit({
+      oracleId: ls.card.oracleId,
+      scryfallId: ls.scryfallId,
+      flight: from ? { from, imageUrl: this.artOf(ls) } : undefined,
+    });
+  }
+
+  removeLand(ls: ManaLandSuggestion): void {
+    if (ls.card) this.cardRemove.emit(ls.card.oracleId);
   }
 
   private deckKey(deck: DeckDetailDto): string {

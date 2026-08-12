@@ -507,34 +507,30 @@
   align-items: stretch;
 }
 
-.set-select {
+// Printing picker (app-select-menu) — blends into the card-bottom strip.
+.set-select-menu {
   flex: 1 1 auto;
   min-width: 0;
-  background: var(--bg-deep);
-  border: none;
-  border-right: 1px solid var(--border-dim);
-  color: var(--text-dim);
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 4px 6px;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  text-align: center;
 
-  &:hover   { color: var(--text-secondary); background: var(--bg-raised); }
-  &:focus   { color: var(--gold); border-right-color: var(--gold-dim); }
-
-  option {
-    background: #0e0c08;
-    color: var(--text-secondary);
-    font-size: 11px;
-    text-transform: none;
-    letter-spacing: 0;
+  ::ng-deep .asm-btn {
+    background: var(--bg-deep);
+    border: none;
+    border-radius: 0;
+    border-right: 1px solid var(--border-dim);
+    font-family: var(--font-display);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    &:hover:not(:disabled),
+    &.is-open { background: var(--bg-raised); border: none; border-right: 1px solid var(--border-dim); }
   }
+}
+
+// Filter suggestions under the collection filter box (global .app-menu chrome).
+.filter-sugg-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
 }
 
 .ctrl-row {

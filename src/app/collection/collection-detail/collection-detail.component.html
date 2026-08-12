@@ -49,13 +49,18 @@
             class="filter-input"
             type="text"
             [(ngModel)]="filterQuery"
-            list="col-filter-sugg"
             autocomplete="off"
             placeholder="Filter cards in collection…"
+            (focus)="filterSuggOpen = true"
+            (input)="filterSuggOpen = true"
+            (blur)="closeFilterSuggSoon()"
+            (keydown.escape)="filterSuggOpen = false"
           />
-          <datalist id="col-filter-sugg">
-            <option *ngFor="let n of collectionCardNames(col)" [value]="n"></option>
-          </datalist>
+          <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
+          <div class="app-menu filter-sugg-menu" *ngIf="filterSuggOpen && filterSuggestions(col).length > 0">
+            <button class="app-menu-item" *ngFor="let n of filterSuggestions(col)"
+                    (mousedown)="selectFilterSuggestion(n); $event.preventDefault()">{{ n }}</button>
+          </div>
         </div>
         <div class="zoom-group">
           <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
@@ -158,24 +163,14 @@
 
               <!-- Single-row bottom: set · normal qty · foil qty · flip -->
               <div class="card-bottom">
-                <select
-                  class="set-select"
-                  [ngModel]="card.scryfallId"
-                  [title]="currentSetTooltip(card)"
-                  (focus)="onSelectFocus(card)"
-                  (ngModelChange)="onSetChange(card, $event)"
-                >
-                  <ng-container *ngIf="printingsCache.get(card.oracleId) as prints; else noprints">
-                    <option *ngFor="let p of prints" [value]="p.scryfallId" [title]="p.setName">
-                      {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-                    </option>
-                  </ng-container>
-                  <ng-template #noprints>
-                    <option [value]="card.scryfallId">
-                      {{ card.cardDetails?.setCode?.toUpperCase() ?? '···' }}
-                    </option>
-                  </ng-template>
-                </select>
+                <app-select-menu
+                  class="set-select-menu"
+                  [options]="printingOptions(card)"
+                  [value]="card.scryfallId"
+                  [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
+                  (opened)="onSelectFocus(card)"
+                  (valueChange)="onSetChange(card, $event)"
+                ></app-select-menu>
 
                 <div class="ctrl-row">
                   <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>

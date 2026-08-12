@@ -1,3 +1,5 @@
+@use '../../../styles/add-controls' as *;
+
 // ---- Host (the panel itself) ------------------------------------
 
 :host {
@@ -190,32 +192,26 @@
   flex-shrink: 0;
 }
 
-// Color pips (compact)
+// Color pips: the real mana symbols (mana-font brings its own colored circle),
+// dimmed until active, with the same ring treatment as before.
 .color-pip {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 2px solid transparent;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 900;
+  background: none;
+  padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
-  opacity: 0.55;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s;
+  opacity: 0.5;
+
+  .ms { font-size: 16px; }
 
   &:hover { opacity: 0.85; transform: scale(1.1); }
   &.is-active { opacity: 1; border-color: rgba(255,255,255,0.7); transform: scale(1.1); box-shadow: 0 0 6px rgba(255,255,255,0.2); }
-
-  &.pip-W { background: radial-gradient(circle at 35% 35%, #f0e6c8, #9a8a60); color: #3a3322; }
-  &.pip-U { background: radial-gradient(circle at 35% 35%, #6aabf0, #2a5a90); color: #e8f4fc; }
-  &.pip-B { background: radial-gradient(circle at 35% 35%, #6a4a8a, #1a0a2a); color: #c8b8d4; }
-  &.pip-R { background: radial-gradient(circle at 35% 35%, #e74c3c, #8a1a10); color: #ffe8e0; }
-  &.pip-G { background: radial-gradient(circle at 35% 35%, #27ae60, #0a4a20); color: #c8f0d4; }
-  &.pip-C { background: radial-gradient(circle at 35% 35%, #b0b8c4, #6a7480); color: #f0f0f0; }
-  &.pip-M { background: radial-gradient(circle at 35% 35%, #f0c040, #c09020); color: #0e0c08; }
 }
 
 // Rarity badges (compact)
@@ -586,6 +582,9 @@
   align-items: center;
   gap: 10px;
   width: 100%;
+  // When the fixed-width controls outgrow the panel (narrow panel, long button labels),
+  // they wrap below the name instead of crushing it down to a single character.
+  flex-wrap: wrap;
 }
 
 .result-art {
@@ -637,7 +636,9 @@
 
 .result-info {
   flex: 1;
-  min-width: 0;
+  // The name keeps at least this much room; anything that cannot fit beside it wraps to
+  // the next line (see .result-row-main) rather than ellipsizing the name into nothing.
+  min-width: 110px;
 }
 
 .result-name {
@@ -667,45 +668,22 @@
   width: 108px;
 }
 
-.result-set-select {
+// Printing picker (app-select-menu) — sized to the row's set column.
+.result-set-menu {
   width: 100%;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 5px;
-  color: var(--text-dim);
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 5px;
-  cursor: pointer;
-  outline: none;
 
-  &:hover { color: var(--text-secondary); border-color: var(--border-dim); }
-  &:focus { color: var(--gold); border-color: var(--gold-dim); }
-  &.has-error { border-color: rgba(231,76,60,0.6); }
-
-  option {
-    background: #0e0c08;
-    color: var(--text-secondary);
-    font-size: 11px;
-    text-transform: none;
+  ::ng-deep .asm-btn {
+    font-family: var(--font-display);
+    text-transform: uppercase;
   }
 }
 
-.result-set-single {
-  display: block;
-  width: 100%;
-  padding: 4px 5px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+// History suggestions under the main search box.
+.search-hist-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
 }
 
 .result-set-error {
@@ -784,6 +762,9 @@
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  // Keeps the cluster on the right edge when the row wraps it to its own line
+  // (in-deck rows carry the most controls), instead of stranding it bottom-left.
+  margin-left: auto;
 }
 
 .owned-qty {
@@ -799,25 +780,20 @@
   letter-spacing: 0.04em;
 }
 
+// Same button family as the suggestion rows, so every add control reads the same.
 .add-result-btn {
-  background: var(--gold);
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #0e0c08;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 5px 9px;
-  transition: all 0.15s;
-  white-space: nowrap;
+  @include icon-action-btn;
+  @include icon-action-btn-add;
 
-  &:hover {
-    background: #dbb954;
-    box-shadow: 0 2px 8px rgba(201,168,76,0.3);
+  // Commander mode carries a label — the action sets the commander, not just an add.
+  &.is-labeled {
+    width: auto;
+    gap: 5px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
   }
-
 }
 
 .load-more-row {
@@ -856,24 +832,8 @@
 }
 
 .remove-deck-btn {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  background: rgba(248, 113, 113, 0.08);
-  color: #f87171;
-  cursor: pointer;
-  font-size: 14px;
-  flex-shrink: 0;
-  transition: all 0.15s;
-
-  &:hover {
-    background: rgba(248, 113, 113, 0.2);
-    border-color: #f87171;
-  }
+  @include icon-action-btn;
+  @include icon-action-btn-remove;
 }
 
 .violation-badge {
@@ -933,6 +893,32 @@
   background: var(--bg-raised);
   flex-wrap: wrap;
   flex-shrink: 0;
+
+  // Deck context: full-width buttons flanking the art — Add above (green), Remove
+  // below (red) — matching the deck page's card modal. Collection context keeps its
+  // own gold row layout.
+  &--deck {
+    flex-direction: column;
+    align-items: stretch;
+
+    .modal-action-btn {
+      @include icon-action-btn;
+      @include icon-action-btn-labeled;
+      @include icon-action-btn-add-accent;
+      width: 100%;
+      justify-content: center;
+
+      &--remove {
+        @include icon-action-btn-remove;
+      }
+    }
+  }
+
+  &--top {
+    border-top: none;
+    border-bottom: 1px solid var(--border-dim);
+    padding: 8px 16px 10px;
+  }
 }
 
 .modal-deck-badge {

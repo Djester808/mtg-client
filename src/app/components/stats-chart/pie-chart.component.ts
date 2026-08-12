@@ -37,7 +37,11 @@ export interface PieSlice {
       <canvas #canvas></canvas>
     </div>
     <div class="pc-legend">
-      <div class="pc-legend-row" *ngFor="let s of slices; let i = index">
+      <div
+        class="pc-legend-row"
+        *ngFor="let s of slices; let i = index; trackBy: trackSlice"
+        [style.--i]="i"
+      >
         <i
           *ngIf="s.manaSymbol"
           class="ms ms-cost ms-shadow pc-ms"
@@ -72,6 +76,14 @@ export interface PieSlice {
         align-items: center;
         gap: 7px;
         font-size: 11px;
+        animation: pc-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation-delay: calc(var(--i, 0) * 45ms);
+      }
+      @keyframes pc-fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
       }
       .pc-dot {
         width: 8px;
@@ -104,6 +116,12 @@ export class PieChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: Chart | null = null;
+  /** Content signature of the last-rendered slices; see ngOnChanges. */
+  private renderedSig = '';
+
+  trackSlice(_: number, s: PieSlice): string {
+    return s.label;
+  }
 
   get total(): number {
     return this.slices.reduce((s, d) => s + d.value, 0) || 1;
@@ -118,7 +136,17 @@ export class PieChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(_changes: SimpleChanges): void {
+    // The parent rebuilds the slices array every change-detection pass (which mouse
+    // movement triggers), so gate the animated chart update on the content actually
+    // changing — updating on identity alone re-animated the doughnut continuously.
+    const sig = this.sliceSig();
+    if (sig === this.renderedSig) return;
+    this.renderedSig = sig;
     if (this.chart) this.syncChart();
+  }
+
+  private sliceSig(): string {
+    return this.slices.map((s) => `${s.label}:${s.value}:${s.color}`).join('|');
   }
 
   ngOnDestroy(): void {
@@ -128,6 +156,7 @@ export class PieChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   private createChart(): void {
     const canvas = this.canvasRef?.nativeElement;
     if (!canvas) return;
+    this.renderedSig = this.sliceSig();
     this.chart = new Chart(canvas, {
       type: 'doughnut',
       data: this.buildData(),
@@ -138,7 +167,8 @@ export class PieChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   private syncChart(): void {
     if (!this.chart) return;
     this.chart.data = this.buildData();
-    this.chart.update('none');
+    // Animated update: arcs glide to their new angles instead of snapping.
+    this.chart.update();
   }
 
   private buildData(): ChartData<'doughnut'> {
@@ -161,6 +191,13 @@ export class PieChartComponent implements AfterViewInit, OnChanges, OnDestroy {
       responsive: true,
       maintainAspectRatio: true,
       cutout: '40%',
+      // Sweep the arcs in on creation, close to the app's shared decelerating ease.
+      animation: {
+        animateRotate: true,
+        animateScale: false,
+        duration: 650,
+        easing: 'easeOutQuint',
+      },
       plugins: {
         legend: { display: false },
         tooltip: {

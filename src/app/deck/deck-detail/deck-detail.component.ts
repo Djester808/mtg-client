@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   OnInit,
   OnDestroy,
   ChangeDetectionStrategy,
@@ -42,12 +43,17 @@ import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { buildTypeLine } from '../../utils/card.utils';
+import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
 import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/mana-suggest-panel.component';
+import {
+  SelectMenuComponent,
+  SelectMenuOption,
+} from '../../components/select-menu/select-menu.component';
 import { ForumActions } from '../../store/forum/forum.actions';
 import { selectForumPublishLoading } from '../../store/forum/forum.selectors';
 
@@ -118,6 +124,7 @@ export interface DeckStats {
     DeckSuggestionsPanelComponent,
     ManaSuggestPanelComponent,
     StatsChartComponent,
+    SelectMenuComponent,
   ],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
@@ -130,7 +137,79 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   filterQuery = '';
   filterCardNames: string[] = [];
+  filterSuggOpen = false;
   sortMode: SortMode = 'cmc';
+
+  readonly sortModeOptions: SelectMenuOption[] = [
+    { value: 'cmc', label: 'CMC' },
+    { value: 'type', label: 'Type' },
+    { value: 'creature-split', label: 'Creature / Non-Creature' },
+    { value: 'name', label: 'Name' },
+    { value: 'subtype', label: 'Subtype' },
+    { value: 'color', label: 'Color' },
+    { value: 'color-identity', label: 'Color Identity' },
+    { value: 'rarity', label: 'Rarity' },
+    { value: 'artist', label: 'Artist' },
+    { value: 'set', label: 'Set' },
+  ];
+
+  /** Card-name suggestions for the filter box, narrowed by the current query. */
+  get filterSuggestions(): string[] {
+    const q = this.filterQuery.trim().toLowerCase();
+    const pool = q
+      ? this.filterCardNames.filter((n) => n.toLowerCase().includes(q))
+      : this.filterCardNames;
+    return pool.slice(0, 8);
+  }
+
+  selectFilterSuggestion(name: string): void {
+    this.filterQuery = name;
+    this.filterSuggOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  pickFirstFilterSuggestion(): void {
+    if (this.filterSuggOpen && this.filterSuggestions.length > 0 && this.filterQuery.trim()) {
+      this.selectFilterSuggestion(this.filterSuggestions[0]);
+    } else {
+      this.filterSuggOpen = false;
+    }
+  }
+
+  /** Delayed so a mousedown on a suggestion wins the race against the input's blur. */
+  closeFilterSuggSoon(): void {
+    setTimeout(() => {
+      this.filterSuggOpen = false;
+      this.cdr.markForCheck();
+    }, 120);
+  }
+
+  // ---- Tag input suggestions -----------------------------------
+
+  tagSuggOpen = false;
+
+  tagSuggestions(deck: DeckDetailDto): string[] {
+    const q = this.tagDraft.trim().toLowerCase();
+    const existing = new Set((deck.tags ?? []).map((t) => t.toLowerCase()));
+    return this.tagHistory
+      .filter((t) => !existing.has(t.toLowerCase()))
+      .filter((t) => !q || t.toLowerCase().includes(q))
+      .slice(0, 8);
+  }
+
+  pickDeckTag(tag: string, deck: DeckDetailDto): void {
+    this.tagDraft = tag;
+    this.commitTagInput(deck);
+    this.tagSuggOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  closeTagSuggSoon(): void {
+    setTimeout(() => {
+      this.tagSuggOpen = false;
+      this.cdr.markForCheck();
+    }, 120);
+  }
 
   viewMode: ViewMode = 'list';
   textStyle = false;
@@ -248,6 +327,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private deckApi: DeckApiService,
     private cdr: ChangeDetectorRef,
     private prefs: PreferencesApiService,
+    private host: ElementRef<HTMLElement>,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
@@ -352,6 +432,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.stopEdgeScroll();
+    if (this.boardBumpTimer) clearTimeout(this.boardBumpTimer);
+    if (this.commanderBumpTimer) clearTimeout(this.commanderBumpTimer);
   }
 
   goBack(): void {
@@ -901,6 +983,32 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     ghost.style.transform = `translate3d(${x - grabOffsetX}px,${y - grabOffsetY}px,0) rotate(0deg) scale(0.8)`;
     ghost.style.opacity = '0';
     setTimeout(done, 180);
+  }
+
+  /**
+   * Glides a drag ghost into its landing point and fades it on arrival, so a release
+   * reads as the card settling into the gap instead of evaporating at the cursor. The
+   * caller applies the reorder in `done`, which keeps the opened gap visible right up
+   * until the card lands in it. Also used to spring the ghost back home on a cancelled
+   * or targetless drop.
+   */
+  private glideGhostTo(ghost: HTMLElement, x: number, y: number, done: () => void): void {
+    ghost.style.transition =
+      'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease 0.12s';
+    ghost.style.transform = `translate3d(${x}px,${y}px,0) rotate(0deg) scale(1)`;
+    ghost.style.opacity = '0';
+    // Outlasts both the transform (220ms) and the delayed fade (120ms + 160ms).
+    setTimeout(done, 290);
+  }
+
+  /** True when a stack card should slide down to open the insertion gap under a drag. */
+  stackShifted(groupKey: string, i: number): boolean {
+    if (this.groupDir === 'v') return false; // horizontal wrap uses the line indicator
+    if (this.stackDragGroupKey !== groupKey || this.stackDragOverIdx == null) return false;
+    if (this.stackDragFromIdx === i) return false;
+    // Position among the non-dragged cards, which is what stackDragOverIdx indexes.
+    const pos = this.stackDragFromIdx != null && i > this.stackDragFromIdx ? i - 1 : i;
+    return pos >= this.stackDragOverIdx;
   }
 
   private createDragGhost(
@@ -1913,10 +2021,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       ((d.cardTypes?.includes(CardType.Creature) ?? false) ||
         (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
 
-    const cleanup = (drop: boolean) => {
+    const detach = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
+    };
+
+    const finish = (drop: boolean) => {
       ghost?.remove();
       ghost = null;
       if (dragging && drop) {
@@ -1943,6 +2054,35 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cpSlotDragOver = false;
       }
       if (dragging) this.cdr.markForCheck();
+    };
+
+    /** Where a released ghost should glide: the insertion gap, or home when there is none. */
+    const settlePoint = (): { x: number; y: number } | null => {
+      // A commander drop gets the slot's own bump; the shrink-out exit fits there.
+      if (overCommander && isCommanderEligible) return null;
+      const springBack = () => {
+        const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
+        return { x: r.left, y: r.top };
+      };
+      const dst = this.stackDragOverIdx;
+      if (dst == null) return springBack();
+      const listEl = document.querySelector<HTMLElement>(
+        `.visual-stack[data-group-key="${groupKey}"]`,
+      );
+      if (!listEl) return springBack();
+      const others = Array.from(
+        listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
+      );
+      if (others.length === 0) {
+        const r = listEl.getBoundingClientRect();
+        return { x: r.left, y: r.top };
+      }
+      if (dst < others.length) {
+        const r = others[dst].getBoundingClientRect();
+        return { x: r.left, y: r.top - 6 };
+      }
+      const r = others[others.length - 1].getBoundingClientRect();
+      return { x: r.left, y: r.bottom + 4 };
     };
 
     const onMove = (e: PointerEvent) => {
@@ -2017,13 +2157,40 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
 
     const onUp = () => {
-      if (dragging && ghost) {
-        this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
+      detach();
+      if (!(dragging && ghost)) {
+        finish(true);
+        return;
+      }
+      const g = ghost;
+      ghost = null;
+      const to = settlePoint();
+      if (to) {
+        this.glideGhostTo(g, to.x, to.y, () => {
+          g.remove();
+          finish(true);
+        });
       } else {
-        cleanup(true);
+        this.animateGhostDrop(g, lastX, lastY, grabOffsetX, grabOffsetY, () => {
+          g.remove();
+          finish(true);
+        });
       }
     };
-    const onCancel = () => cleanup(false);
+    const onCancel = () => {
+      detach();
+      if (dragging && ghost) {
+        const g = ghost;
+        ghost = null;
+        const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
+        this.glideGhostTo(g, r.left, r.top, () => {
+          g.remove();
+          finish(false);
+        });
+      } else {
+        finish(false);
+      }
+    };
 
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -2061,17 +2228,18 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const cardEl = event.currentTarget as HTMLElement;
     const startX = event.clientX;
     const startY = event.clientY;
-    let lastX = startX;
-    let lastY = startY;
     let dragging = false;
     let ghost: HTMLElement | null = null;
     let grabOffsetX = 0;
     let grabOffsetY = 0;
 
-    const cleanup = (drop: boolean) => {
+    const detach = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
+    };
+
+    const finish = (drop: boolean) => {
       ghost?.remove();
       ghost = null;
       if (dragging && drop) {
@@ -2096,6 +2264,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (dragging) this.cdr.markForCheck();
     };
 
+    /** The active drop-line is the landing point; no line means spring back home. */
+    const settlePoint = (g: HTMLElement): { x: number; y: number } => {
+      const dst = this.listDragOverIdx;
+      const listEl = document.querySelector<HTMLElement>(
+        `.list-drag-group[data-group-key="${groupKey}"]`,
+      );
+      if (dst != null && listEl) {
+        const line = listEl.querySelectorAll<HTMLElement>('.drop-line')[dst];
+        if (line) {
+          const r = line.getBoundingClientRect();
+          return { x: r.left + 8, y: r.top - g.getBoundingClientRect().height / 2 };
+        }
+      }
+      const r = cardEl.getBoundingClientRect();
+      return { x: r.left, y: r.top };
+    };
+
     const onMove = (e: PointerEvent) => {
       if (!dragging) {
         if (Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
@@ -2106,8 +2291,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
         this.cdr.markForCheck();
       }
-      lastX = e.clientX;
-      lastY = e.clientY;
       if (ghost)
         ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
       const listEl = document.querySelector<HTMLElement>(
@@ -2132,13 +2315,33 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
 
     const onUp = () => {
+      detach();
+      if (!(dragging && ghost)) {
+        finish(true);
+        return;
+      }
+      const g = ghost;
+      ghost = null;
+      const to = settlePoint(g);
+      this.glideGhostTo(g, to.x, to.y, () => {
+        g.remove();
+        finish(true);
+      });
+    };
+    const onCancel = () => {
+      detach();
       if (dragging && ghost) {
-        this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
+        const g = ghost;
+        ghost = null;
+        const r = cardEl.getBoundingClientRect();
+        this.glideGhostTo(g, r.left, r.top, () => {
+          g.remove();
+          finish(false);
+        });
       } else {
-        cleanup(true);
+        finish(false);
       }
     };
-    const onCancel = () => cleanup(false);
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
@@ -2535,11 +2738,103 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Briefly set to the board whose tab just received a card, driving its bump animation. */
+  bumpedBoard: 'main' | 'side' | 'maybe' | null = null;
+  private boardBumpTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Pulses a board tab to acknowledge its count ticking up. */
+  private bumpBoardTab(board: 'main' | 'side' | 'maybe'): void {
+    this.bumpedBoard = board;
+    this.cdr.markForCheck();
+    if (this.boardBumpTimer) clearTimeout(this.boardBumpTimer);
+    // Must outlast the board-tab bump animation so the class is not removed mid-play.
+    this.boardBumpTimer = setTimeout(() => {
+      this.bumpedBoard = null;
+      this.boardBumpTimer = null;
+      this.cdr.markForCheck();
+    }, 500);
+  }
+
+  /**
+   * A landing target must actually be laid out on screen. Elements inside a collapsed
+   * side panel stay in the DOM with a degenerate rect — flying a ghost "there" strands it
+   * mid-screen.
+   */
+  private visibleRect(el: Element | null): DOMRect | null {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 ? r : null;
+  }
+
+  /**
+   * Animates an add into the target board's tab. With a flight source the card's ghost
+   * flies there and the tab bumps as it lands; without one — drag-and-drop, where the drag
+   * itself was the motion — the tab just bumps. The tabs are hidden in free layout mode;
+   * both parts quietly skip when there is nowhere to land.
+   */
+  private flyIntoBoard(flight: FlightSource | undefined, board: 'main' | 'side' | 'maybe'): void {
+    const idx = board === 'main' ? 0 : board === 'side' ? 1 : 2;
+    const to = this.visibleRect(this.host.nativeElement.querySelectorAll('.board-tab')[idx]);
+    if (!to) return;
+    if (!flight) {
+      this.bumpBoardTab(board);
+      return;
+    }
+    flyCardGhost({ from: flight.from, to, imageUrl: flight.imageUrl }).then(() =>
+      this.bumpBoardTab(board),
+    );
+  }
+
+  /** The board a deck card lives on, normalized for tab lookups. */
+  private boardOf(card: CollectionCardDto): 'main' | 'side' | 'maybe' {
+    return card.board === 'side' || card.board === 'maybe' ? card.board : 'main';
+  }
+
+  /** Briefly true while the commander target (portrait or header button) plays its bump. */
+  commanderBumped = false;
+  private commanderBumpTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private bumpCommanderTarget(): void {
+    this.commanderBumped = true;
+    this.cdr.markForCheck();
+    if (this.commanderBumpTimer) clearTimeout(this.commanderBumpTimer);
+    this.commanderBumpTimer = setTimeout(() => {
+      this.commanderBumped = false;
+      this.commanderBumpTimer = null;
+      this.cdr.markForCheck();
+    }, 500);
+  }
+
+  /**
+   * Commander pick: the card flies to the commander portrait when it is visibly on screen,
+   * else to the header Commander button (the search panel replaces the side panel mid-pick,
+   * and the collapsed panel keeps the portrait in the DOM with a useless rect — hence the
+   * visibility check, not a bare querySelector). No flight source (a drop on the slot) →
+   * just the bump.
+   */
+  private flyToCommander(flight?: FlightSource): void {
+    const to =
+      this.visibleRect(this.host.nativeElement.querySelector('.cp-portrait-wrap')) ??
+      this.visibleRect(this.host.nativeElement.querySelector('.tool-btn--cmdr'));
+    if (!to) return;
+    if (!flight) {
+      this.bumpCommanderTarget();
+      return;
+    }
+    flyCardGhost({ from: flight.from, to, imageUrl: flight.imageUrl }).then(() =>
+      this.bumpCommanderTarget(),
+    );
+  }
+
   onPanelCardAdd(event: {
     oracleId: string;
     scryfallId: string;
     isCommanderEligible?: boolean;
+    flight?: FlightSource;
   }): void {
+    // A commander pick lands on the commander slot, not the board tab.
+    if (this.commanderSearchMode && event.isCommanderEligible) this.flyToCommander(event.flight);
+    else this.flyIntoBoard(event.flight, this.activeBoard);
     this.store.dispatch(
       DeckActions.addCard({
         deckId: this.deckId,
@@ -2607,7 +2902,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  addSuggestedCard(event: { oracleId: string; scryfallId: string }): void {
+  addSuggestedCard(event: { oracleId: string; scryfallId: string; flight?: FlightSource }): void {
+    // Suggestions always add to the main board, wherever the active tab happens to be.
+    this.flyIntoBoard(event.flight, 'main');
     this.store.dispatch(
       DeckActions.addCard({
         deckId: this.deckId,
@@ -2632,6 +2929,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ---- Card quantity controls --------------------------------
 
   increment(card: CollectionCardDto): void {
+    // No flight for another copy of a card already in the deck — the ghost communicates a
+    // card traveling INTO the deck; a count change inside it just gets the tab bump.
+    this.bumpBoardTab(this.boardOf(card));
     this.store.dispatch(
       DeckActions.updateCard({
         deckId: this.deckId,
@@ -2954,6 +3254,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         return;
       }
+      // Dropped onto the commander slot — the drag was the motion, so just bump the slot.
+      this.flyToCommander();
       this.store.dispatch(
         DeckActions.addCard({
           deckId: this.deckId,

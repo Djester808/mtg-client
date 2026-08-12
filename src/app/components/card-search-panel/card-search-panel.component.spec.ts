@@ -325,7 +325,7 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
     expect(component.searchSelectedScryfallId.get('oracle-2')).toBe('scry-for-oracle-2');
   }));
 
-  it('does NOT auto-select when card has multiple printings', fakeAsync(() => {
+  it('auto-selects the first printing (newest set) when card has multiple printings', fakeAsync(() => {
     initComponent(fixture);
     collectionApi.getPrintings.and.returnValue(
       of([makePrinting('scry-1'), makePrinting('scry-2')]),
@@ -334,15 +334,16 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
     component.searchText.setValue('rat');
     tick(400);
 
-    expect(component.searchSelectedScryfallId.has('oracle-0')).toBeFalse();
+    // The server orders printings newest set first, so [0] is the most recent.
+    expect(component.searchSelectedScryfallId.get('oracle-0')).toBe('scry-1');
   }));
 
-  it('clears old auto-selections when a new search starts', fakeAsync(() => {
+  it('replaces old auto-selections when a new search starts', fakeAsync(() => {
     initComponent(fixture);
     collectionApi.getPrintings.and.returnValue(of([makePrinting('scry-only')]));
     component.searchText.setValue('rat');
     tick(400);
-    expect(component.searchSelectedScryfallId.has('oracle-0')).toBeTrue();
+    expect(component.searchSelectedScryfallId.get('oracle-0')).toBe('scry-only');
 
     collectionApi.getPrintings.and.returnValue(
       of([makePrinting('scry-1'), makePrinting('scry-2')]),
@@ -350,7 +351,9 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
     component.searchText.setValue('bolt');
     tick(400);
 
-    expect(component.searchSelectedScryfallId.has('oracle-0')).toBeFalse();
+    // The selection map was cleared, then re-defaulted. oracle-0's printings are already
+    // cached from the first search, so its default comes from that cache — not a refetch.
+    expect(component.searchSelectedScryfallId.get('oracle-0')).toBe('scry-only');
   }));
 });
 
@@ -656,5 +659,80 @@ describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreview
     component.decrementPreviewFoil();
 
     expect(emitted).toBeFalse();
+  });
+});
+
+// ── Custom dropdown data (printing options + history suggestions) ─────────────
+
+describe('CardSearchPanelComponent — printing options & history suggestions', () => {
+  let component: CardSearchPanelComponent;
+
+  beforeEach(async () => {
+    const { gameApi, collectionApi } = makeSpies();
+    await buildModule(gameApi, collectionApi);
+    component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('printingOptions maps cached printings to labeled options', () => {
+    component.printingsCache.set('oracle-0', [
+      makePrinting('scry-1', 'psos'),
+      makePrinting('scry-2', 'lea'),
+    ]);
+
+    const opts = component.printingOptions('oracle-0');
+
+    expect(opts.map((o) => o.value)).toEqual(['scry-1', 'scry-2']);
+    expect(opts[0].label).toBe('PSOS #1');
+    expect(opts[0].title).toBe('Alpha');
+  });
+
+  it('printingOptions returns the same array for the same cached printings (memoized)', () => {
+    component.printingsCache.set('oracle-0', [makePrinting('scry-1')]);
+
+    const first = component.printingOptions('oracle-0');
+    const second = component.printingOptions('oracle-0');
+    expect(second).toBe(first);
+
+    // A new printings array (reload) produces fresh options.
+    component.printingsCache.set('oracle-0', [makePrinting('scry-9')]);
+    const third = component.printingOptions('oracle-0');
+    expect(third).not.toBe(first);
+    expect(third[0].value).toBe('scry-9');
+  });
+
+  it('printingOptions is empty while printings are not cached yet', () => {
+    expect(component.printingOptions('oracle-unknown')).toEqual([]);
+  });
+
+  it('histSuggestions filters history by the current query, capped at 8', () => {
+    component.searchHistory = [
+      'goblin king',
+      'goblin warchief',
+      'lightning bolt',
+      'g1',
+      'g2',
+      'g3',
+      'g4',
+      'g5',
+      'g6',
+      'g7',
+    ];
+
+    component.searchText.setValue('gob');
+    expect(component.histSuggestions).toEqual(['goblin king', 'goblin warchief']);
+
+    component.searchText.setValue('');
+    expect(component.histSuggestions.length).toBe(8);
+  });
+
+  it('pickHistory fills the search box and closes the menu', () => {
+    component.histOpen = true;
+
+    component.pickHistory('goblin king');
+
+    expect(component.searchText.value).toBe('goblin king');
+    expect(component.histOpen).toBeFalse();
   });
 });

@@ -240,3 +240,66 @@ body.is-dragging-card * {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+
+/*
+ * Shared dropdown-menu chrome. Native <select> popups and <datalist> suggestion lists
+ * take unstylable system chrome, so every dropdown in the app renders through these
+ * classes instead — the SelectMenuComponent for selects, and the per-input suggestion
+ * menus for autocomplete. Components position the menu; this is just the look.
+ */
+@keyframes app-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.app-menu {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-lit);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 400;
+  animation: app-menu-in 0.1s ease;
+  scrollbar-width: thin;
+}
+
+.app-menu-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 8px 12px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s, color 0.1s;
+}
+
+.app-menu-item:hover {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
+.app-menu-item.is-active {
+  color: #a78bfa;
+}
+
+.app-menu-empty {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+}
+
+.app-menu-item.is-key-active {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}

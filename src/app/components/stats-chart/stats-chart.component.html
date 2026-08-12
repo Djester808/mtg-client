@@ -2,7 +2,7 @@
 
   <!-- Horizontal bar chart -->
   <div class="sc-bars" *ngIf="type === 'bar'">
-    <div class="sc-bar-row" *ngFor="let d of data; let i = index">
+    <div class="sc-bar-row" *ngFor="let d of data; let i = index; trackBy: trackEntry" [style.--i]="i">
       <span class="sc-label" [title]="d.label">
         <i *ngIf="d.manaSymbol" class="ms ms-cost ms-shadow" [ngClass]="'ms-' + d.manaSymbol"></i>
         <span *ngIf="!d.manaSymbol">{{ d.label }}</span>
@@ -16,7 +16,7 @@
 
   <!-- Vertical bar chart -->
   <div class="sc-vbars" *ngIf="type === 'vbar'">
-    <div class="sc-vbar-col" *ngFor="let d of data; let i = index">
+    <div class="sc-vbar-col" *ngFor="let d of data; let i = index; trackBy: trackEntry" [style.--i]="i">
       <span class="sc-vbar-val">{{ d.value }}</span>
       <div class="sc-vbar-track">
         <div class="sc-vbar-fill" [style.height.%]="barPct(d.value)" [style.background]="color(i, d.color)"></div>
@@ -36,7 +36,7 @@
   <!-- Stacked vertical bar chart (CMC × color) -->
   <div class="sc-stacked" *ngIf="type === 'stacked'">
     <div class="sc-stacked-chart">
-      <div class="sc-stacked-col" *ngFor="let col of stackedData">
+      <div class="sc-stacked-col" *ngFor="let col of stackedData; let i = index; trackBy: trackStacked" [style.--i]="i">
         <div class="sc-stacked-bar" [style.height.%]="colHeightPct(col)">
           <div class="sc-stacked-seg"
                *ngFor="let seg of col.segments"
@@ -53,7 +53,7 @@
     </div>
 
     <div class="sc-stacked-legend">
-      <div class="sc-stacked-legend-row" *ngFor="let entry of stackedLegend">
+      <div class="sc-stacked-legend-row" *ngFor="let entry of stackedLegend; let i = index; trackBy: trackLegend" [style.--i]="i">
         <i class="ms ms-cost ms-shadow sc-legend-ms" [ngClass]="'ms-' + entry.manaColor"></i>
         <span class="sc-legend-label">{{ entry.label }}</span>
         <span class="sc-legend-pct">{{ entry.total }}</span>

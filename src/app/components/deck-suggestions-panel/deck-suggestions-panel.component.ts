@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   OnDestroy,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -25,6 +26,7 @@ import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SearchInputComponent } from '../search-input/search-input.component';
 import { ToBodyDirective } from '../../shared/to-body.directive';
+import { FlightSource } from '../../shared/fly-card';
 
 /**
  * Keys of DeckSuggestionsDto that hold card lists. Named explicitly rather than as
@@ -95,7 +97,12 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   @Input() commanderCard: CardDto | null = null;
   @Input() tagSuggestions: string[] = [];
 
-  @Output() cardAdd = new EventEmitter<{ oracleId: string; scryfallId: string }>();
+  @Output() cardAdd = new EventEmitter<{
+    oracleId: string;
+    scryfallId: string;
+    /** Where the add was clicked, so the parent can fly the card into its deck. */
+    flight?: FlightSource;
+  }>();
   @Output() cardRemove = new EventEmitter<string>(); // emits oracleId
   @Output() panelClose = new EventEmitter<void>();
 
@@ -120,6 +127,15 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   modalPrintings: PrintingDto[] = [];
   modalViewScryfallId: string | null = null;
   modalFlipped = false;
+
+  @ViewChild(CardModalComponent) private cardModal?: CardModalComponent;
+
+  /**
+   * Set while the modal plays its exit after Add/Remove: the action button swaps to a
+   * confirmation ("Added") for the fade instead of flickering to its opposite state the
+   * moment the deck updates underneath it.
+   */
+  modalCloseAction: 'added' | 'removed' | null = null;
 
   // No "Notable Mentions": it drew from the same pool as Top Synergy, so its cards were
   // always just below that section with nothing but an arbitrary cut between them. Top
@@ -545,9 +561,24 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     return (this.deck?.cards ?? []).some((d) => d.cardDetails?.oracleId === c.card.oracleId);
   }
 
-  addCandidate(c: CandidateCardDto): void {
+  addCandidate(c: CandidateCardDto, flight?: FlightSource): void {
     if (!c.scryfallId) return;
-    this.cardAdd.emit({ oracleId: c.card.oracleId, scryfallId: c.scryfallId });
+    this.cardAdd.emit({ oracleId: c.card.oracleId, scryfallId: c.scryfallId, flight });
+  }
+
+  /** Row-level add carrying the row's art as the flight source for the parent's animation. */
+  addCandidateFromRow(c: CandidateCardDto, e: Event): void {
+    this.addCandidate(c, this.rowFlight(e, this.artOf(c.card)));
+  }
+
+  addCardFromRow(s: SuggestedCardDto, e: Event): void {
+    this.addCard(s, this.rowFlight(e, this.artOf(s.card)));
+  }
+
+  private rowFlight(e: Event, imageUrl: string | null): FlightSource | undefined {
+    const row = (e.currentTarget as HTMLElement | null)?.closest('.sugg-card');
+    const from = row?.querySelector('.sugg-card-art-wrap')?.getBoundingClientRect();
+    return from ? { from, imageUrl } : undefined;
   }
 
   removeCandidate(c: CandidateCardDto): void {
@@ -571,6 +602,35 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     this.suggestionTags = [...this.suggestionTags, t];
     this.tagDraft = '';
     this.cdr.markForCheck();
+  }
+
+  // ---- Focus-tag suggestions ------------------------------------------
+
+  focusSuggOpen = false;
+
+  get focusSuggestions(): string[] {
+    const q = this.tagDraft.trim().toLowerCase();
+    const taken = new Set([
+      ...this.suggestionTags,
+      ...(this.deck?.tags ?? []).map((t) => t.toLowerCase()),
+    ]);
+    return this.tagSuggestions
+      .filter((t) => !taken.has(t.toLowerCase()))
+      .filter((t) => !q || t.toLowerCase().includes(q))
+      .slice(0, 8);
+  }
+
+  pickFocusTag(tag: string): void {
+    this.addSuggestionTag(tag);
+    this.focusSuggOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  closeFocusSuggSoon(): void {
+    setTimeout(() => {
+      this.focusSuggOpen = false;
+      this.cdr.markForCheck();
+    }, 120);
   }
 
   removeSuggestionTag(tag: string): void {
@@ -721,6 +781,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     // a keyboard-triggered click that would open a half-thought-through card.
     if (this.isThinking) return;
     this.selectedSuggestion = s;
+    this.modalCloseAction = null;
     this.modalFlipped = false;
 
     const oracleId = s.card?.oracleId;
@@ -759,6 +820,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
 
   closeDetail(): void {
     this.selectedSuggestion = null;
+    this.modalCloseAction = null;
     this.cdr.markForCheck();
   }
 
@@ -767,11 +829,11 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     return (this.deck?.cards ?? []).some((c) => c.cardDetails?.oracleId === s.card!.oracleId);
   }
 
-  addCard(s: SuggestedCardDto): void {
+  addCard(s: SuggestedCardDto, flight?: FlightSource): void {
     // Cannot add a card that is still being thought through — the pick may yet be cut.
     if (this.isThinking) return;
     if (!s.card || !s.scryfallId) return;
-    this.cardAdd.emit({ oracleId: s.card.oracleId, scryfallId: s.scryfallId });
+    this.cardAdd.emit({ oracleId: s.card.oracleId, scryfallId: s.scryfallId, flight });
   }
 
   removeCard(s: SuggestedCardDto): void {
@@ -780,13 +842,24 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }
 
   addAndClose(s: SuggestedCardDto): void {
-    this.addCard(s);
-    this.closeDetail();
+    if (this.isThinking || !s.card || !s.scryfallId) return;
+    // Capture the art geometry before the exit animation starts shrinking the modal.
+    const from = this.cardModal?.artRect();
+    const flight = from ? { from, imageUrl: this.cardModal?.artImageUrl ?? null } : undefined;
+    this.addCard(s, flight);
+    this.closeWith('added');
   }
 
   removeAndClose(s: SuggestedCardDto): void {
     this.removeCard(s);
-    this.closeDetail();
+    this.closeWith('removed');
+  }
+
+  /** Close via the modal's own exit animation, showing a confirmation button while it fades. */
+  private closeWith(action: 'added' | 'removed'): void {
+    this.modalCloseAction = action;
+    if (this.cardModal) this.cardModal.close();
+    else this.closeDetail();
   }
 
   close(): void {

@@ -18,13 +18,18 @@
       type="text"
       [formControl]="searchText"
       placeholder="Search cards…"
-      list="card-search-hist"
       autocomplete="off"
       spellcheck="false"
+      (focus)="histOpen = true"
+      (input)="histOpen = true"
+      (blur)="closeHistSoon()"
+      (keydown.escape)="histOpen = false"
     />
-    <datalist id="card-search-hist">
-      <option *ngFor="let h of searchHistory" [value]="h"></option>
-    </datalist>
+    <!-- Custom history menu: the native datalist popup cannot be styled. -->
+    <div class="app-menu search-hist-menu" *ngIf="histOpen && histSuggestions.length > 0">
+      <button class="app-menu-item" *ngFor="let h of histSuggestions"
+              (mousedown)="pickHistory(h); $event.preventDefault()">{{ h }}</button>
+    </div>
     <div class="search-flags">
       <button class="search-flag-btn" [class.is-active]="matchCase" (click)="toggleMatchCase()" title="Match case">Aa</button>
       <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
@@ -43,11 +48,10 @@
       <button
         class="color-pip"
         *ngFor="let c of colorOptions"
-        [ngClass]="'pip-' + c.code"
         [class.is-active]="selectedColors.has(c.code)"
         (click)="toggleColor(c.code)"
         [title]="c.title"
-      >{{ c.label }}</button>
+      ><i class="ms ms-cost ms-shadow" [ngClass]="'ms-' + c.symbol"></i></button>
     </div>
     <span class="filter-divider"></span>
     <div class="filter-group">
@@ -195,22 +199,18 @@
           <span class="violation-badge singleton-violation" *ngIf="isSingletonViolation(card)" title="Already in deck (singleton)">⊕ Copy</span>
         </div>
 
-        <!-- Set / printing selector: always a single stable <select> so native dropdowns
-             are never closed by Angular switching between templates as printings load. -->
+        <!-- Set / printing selector — custom menu; open state lives in the component,
+             so option loads and re-renders never snap it shut. -->
         <div class="result-set-wrap">
-          <select
-            class="result-set-select"
-            [ngModel]="searchSelectedScryfallId.get(card.oracleId) ?? ''"
-            [title]="setTooltip(card.oracleId)"
-            [class.has-error]="addErrors.has(card.oracleId)"
-            (focus)="onSelectFocus(card.oracleId)"
-            (ngModelChange)="onSetChange(card.oracleId, $event)"
-          >
-            <option value="" disabled>SET</option>
-            <option *ngFor="let p of (printingsCache.get(card.oracleId) ?? [])" [value]="p.scryfallId" [title]="p.setName">
-              {{ p.setCode.toUpperCase() }} #{{ p.collectorNumber }}
-            </option>
-          </select>
+          <app-select-menu
+            class="result-set-menu"
+            [options]="printingOptions(card.oracleId)"
+            [value]="searchSelectedScryfallId.get(card.oracleId) ?? null"
+            placeholder="SET"
+            [hasError]="addErrors.has(card.oracleId)"
+            (opened)="onSelectFocus(card.oracleId)"
+            (valueChange)="onSetChange(card.oracleId, $event)"
+          ></app-select-menu>
           <span class="result-set-error" *ngIf="addErrors.has(card.oracleId)">Select a set</span>
         </div>
 
@@ -242,13 +242,20 @@
           <span class="owned-qty" *ngIf="!isDeckContext && ownedEntry(card.oracleId) as owned">
             ×{{ owned.quantity + owned.quantityFoil }}
           </span>
-          <!-- Deck context: show in-deck count + remove -->
-          <span class="deck-qty-badge" *ngIf="isDeckContext && deckCount(card.oracleId) as n">
-            {{ n }} in deck
+          <!-- Deck context: show in-deck count + remove. Hidden while picking a commander —
+               they crowd the row, and removing deck cards is not what that mode is for. -->
+          <span class="deck-qty-badge" *ngIf="isDeckContext && !commanderFilter && deckCount(card.oracleId) as n"
+                [title]="n + ' in deck'">
+            ×{{ n }}
           </span>
-          <button class="add-result-btn" (click)="addCard(card)">{{ commanderFilter ? 'Add Commander' : 'Add' }}</button>
+          <button class="add-result-btn"
+                  [class.is-labeled]="commanderFilter"
+                  (click)="addCard(card, $event)"
+                  [title]="commanderFilter ? 'Add and set as commander' : 'Add to deck'">
+            <i class="bi bi-plus-lg"></i><span *ngIf="commanderFilter">Commander</span>
+          </button>
           <button class="remove-deck-btn"
-                  *ngIf="isDeckContext && isInDeck(card)"
+                  *ngIf="isDeckContext && !commanderFilter && isInDeck(card)"
                   (click)="removeFromDeck(card)"
                   title="Remove from deck">
             <i class="bi bi-dash-lg"></i>
@@ -281,9 +288,17 @@
   [(viewedScryfallId)]="previewScryfallId"
   [(flipped)]="previewFlipped"
   [showOverlay]="false"
+  [countBadge]="isDeckContext ? deckCount(previewCard!.oracleId) : null"
   (closed)="closePreview()"
 >
-  <div extra class="modal-extra-wrap">
+  <!-- Deck context: Add rides above the art. -->
+  <div extra-top class="modal-extra-wrap modal-extra-wrap--deck modal-extra-wrap--top" *ngIf="isDeckContext">
+    <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
+      <i class="bi bi-plus-lg"></i> {{ commanderFilter ? 'Add Commander' : deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
+    </button>
+  </div>
+  <div extra class="modal-extra-wrap" [class.modal-extra-wrap--deck]="isDeckContext"
+       *ngIf="!isDeckContext || isInDeck(previewCard!)">
     <!-- Collection context -->
     <ng-container *ngIf="!isDeckContext">
       <ng-container *ngIf="ownedEntry(previewCard!.oracleId) as owned">
@@ -316,12 +331,8 @@
         </button>
       </ng-container>
     </ng-container>
-    <!-- Deck context -->
+    <!-- Deck context: Remove below the art (Add is in the extra-top slot above it). -->
     <ng-container *ngIf="isDeckContext">
-      <span class="modal-deck-badge" *ngIf="deckCount(previewCard!.oracleId) as n">{{ n }} in deck</span>
-      <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
-        <i class="bi bi-plus-lg"></i> {{ commanderFilter ? 'Add Commander' : deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
-      </button>
       <button class="modal-action-btn modal-action-btn--remove"
               *ngIf="isInDeck(previewCard!)"
               (click)="removePreviewCard()">

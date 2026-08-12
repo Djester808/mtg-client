@@ -1,3 +1,5 @@
+@use '../../../styles/add-controls' as *;
+
 :host { display: block; height: 100%; overflow: hidden; }
 
 .detail-shell {
@@ -289,29 +291,21 @@
   &.is-active { background: rgba(167,139,250,0.15); color: #a78bfa; }
 }
 
-.sort-select {
-  background: none;
-  border: none;
-  border-radius: 5px;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 5px 8px;
-  appearance: none;
-  outline: none;
+// Group-by picker (app-select-menu) — blends its button into the .sort-group pill.
+.sort-select-menu {
+  min-width: 96px;
 
-  &:hover { color: var(--gold); }
-
-  option {
-    background: var(--bg-surface, #1a1a2e);
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  ::ng-deep .asm-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-display);
     font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    &:hover:not(:disabled),
+    &.is-open { color: var(--gold); border: none; }
   }
 }
 
@@ -556,10 +550,29 @@
     border-bottom-color: var(--border-subtle);
   }
 
+  // Landing bump: a fly-to-deck ghost just arrived on this tab — answer with a quick
+  // scale-and-glow so the add reads as received by the board.
+  &.is-bumped {
+    animation: add-target-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   &.is-active {
     color: #a78bfa;
     border-bottom-color: #a78bfa;
   }
+}
+
+// Shared landing pulse for anything that receives a card: board tabs, the commander
+// portrait, and the header Commander button.
+@keyframes add-target-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.12); color: var(--gold); }
+  100% { transform: scale(1); }
+}
+
+.tool-btn--cmdr.is-bumped,
+.cp-portrait-wrap.is-bumped {
+  animation: add-target-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .board-tab-count {
@@ -586,6 +599,9 @@
 }
 
 .filter-bar-spacer { flex: 1; }
+
+// The Add Cards button lives at the filter bar's right edge; it must never be squeezed.
+.fbar-add-btn { flex-shrink: 0; }
 
 .fbar-labeled-group {
   display: flex;
@@ -617,6 +633,27 @@
   align-items: center;
   flex: 1;
   max-width: 320px;
+}
+
+// Suggestion menus replacing native datalist popups — chrome comes from the global
+// .app-menu classes; these rules only anchor each menu to its input.
+.filter-sugg-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+}
+
+.tag-input-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.tag-sugg-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 160px;
 }
 
 .density-picker {
@@ -749,7 +786,39 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.cmc-group {}
+// ---- Deck grid entrance -------------------------------------------
+//
+// Columns cascade in left to right, and the cards inside each column follow top to
+// bottom — the same staggered reveal and shared ease the rest of the app uses. Delays
+// are capped so a huge deck never waits long for its last card. Groups are tracked by
+// key and cards by identity/index, so change-detection churn (mouse movement) never
+// recreates the elements and the animation only plays on a real (re)mount: opening the
+// deck, switching view mode, or regrouping.
+
+@keyframes grid-group-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+@keyframes grid-tile-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+}
+
+.cmc-group {
+  animation: grid-group-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--g, 0) * 60ms), 480ms);
+}
+
+// While a drag is live, resting cards hold still: hover lifts pause so nothing
+// jiggles under the ghost. Gap-shifted cards keep their opening translate.
+.groups-list.is-drag-live {
+  .visual-card:hover:not(.is-gap-shifted) {
+    transform: none;
+    box-shadow: none;
+  }
+  .card-row:hover {
+    transform: none;
+  }
+}
 
 .groups-area.is-text.is-visual .cmc-group {
   flex: 0 0 auto;
@@ -808,11 +877,14 @@
   gap: 10px;
   padding: 7px 24px;
   border-radius: 0;
-  transition: background 0.15s, opacity 0.12s;
+  transition: background 0.15s, opacity 0.12s, transform 0.15s;
   cursor: pointer;
+  animation: grid-tile-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--g, 0) * 60ms + var(--i, 0) * 30ms), 600ms);
 
   &:hover {
     background: var(--bg-surface);
+    transform: translateX(3px);
   }
 }
 
@@ -1277,7 +1349,11 @@
   flex-shrink: 0;
   position: relative;
   pointer-events: none;
-  transition: background 0.08s ease, box-shadow 0.08s ease;
+  transition:
+    background 0.08s ease,
+    box-shadow 0.08s ease,
+    height 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 
   &.active {
     height: 6px;
@@ -1298,19 +1374,6 @@
       box-shadow: 0 0 8px rgba(201,168,76,0.9);
     }
   }
-}
-
-.free-card-ghost {
-  position: fixed;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-  z-index: 9999;
-  border-radius: 6px;
-  overflow: hidden;
-  opacity: 0.88;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.55), 0 0 0 2px rgba(201,168,76,0.35), 0 0 24px rgba(201,168,76,0.15);
-  will-change: transform;
 }
 
 .free-card {
@@ -1586,10 +1649,24 @@
   overflow: hidden;
   margin-bottom: 4px;
   cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s;
+  animation: grid-tile-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--g, 0) * 60ms + var(--i, 0) * 35ms), 600ms);
 
   &:last-child { margin-bottom: 0; }
 
-  &:hover { z-index: 999 !important; }
+  &:hover {
+    z-index: 999 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  // Cards below the insertion point slide down to open the landing gap while a stack
+  // drag is live; the transform transition makes the gap follow the cursor smoothly.
+  // Declared after :hover so a shifted card stays shifted even under the pointer.
+  &.is-gap-shifted {
+    transform: translateY(14px);
+  }
 
   &.violation-singleton .visual-art::after,
   &.violation-color-id .visual-art::after,
@@ -2288,32 +2365,35 @@
 // Modal quantity controls
 // ============================================================
 
+// Deck actions flanking the art: Add Another rides above the image (extra-top slot),
+// Remove sits below it. The in-deck count lives beside the card name (countBadge).
 .modal-extra-wrap {
   container-type: inline-size;
   container-name: modal-extra;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   padding: 10px 16px 8px;
   border-top: 1px solid var(--border-dim);
   background: var(--bg-raised);
   flex-shrink: 0;
-}
 
-.modal-deck-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.12);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 8px;
-  padding: 3px 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  .modal-action-btn {
+    width: 100%;
+    justify-content: center;
+
+    // Green add mirrors the red remove — resting color carries the action's meaning.
+    &:not(.modal-action-btn--remove) {
+      @include icon-action-btn-add-accent;
+    }
+  }
+
+  &--top {
+    border-top: none;
+    border-bottom: 1px solid var(--border-dim);
+    padding: 8px 16px 10px;
+  }
 }
 
 .modal-btn-label {
@@ -2325,29 +2405,14 @@
   white-space: nowrap;
 }
 
+// Same button family as the row-level add controls, in the labeled modal size.
 .modal-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  background: var(--gold);
-  color: #1a1a1a;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s, padding 0.25s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  @include icon-action-btn;
+  @include icon-action-btn-add;
+  @include icon-action-btn-labeled;
 
   &--remove {
-    background: rgba(248, 113, 113, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    &:hover:not(:disabled) { filter: brightness(1.2); }
+    @include icon-action-btn-remove;
   }
 }
 

@@ -10,6 +10,7 @@ import {
   HostBinding,
   HostListener,
   ElementRef,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
@@ -32,6 +33,8 @@ import { GameApiService } from '../../services/game-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
+import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-menu.component';
+import { FlightSource } from '../../shared/fly-card';
 
 type RarityCode = 'common' | 'uncommon' | 'rare' | 'mythic';
 type CmcOption = '0' | '1' | '2' | '3' | '4' | '5' | '6+';
@@ -46,7 +49,14 @@ export interface SynergyScore {
 @Component({
   selector: 'app-card-search-panel',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ManaCostComponent, CardModalComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    ManaCostComponent,
+    CardModalComponent,
+    SelectMenuComponent,
+  ],
   templateUrl: './card-search-panel.component.html',
   styleUrls: ['./card-search-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -120,6 +130,8 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     scryfallId: string;
     isCommanderEligible: boolean;
     foil?: boolean;
+    /** Where the add was clicked, so a deck-context parent can fly the card into its deck. */
+    flight?: FlightSource;
   }>();
   @Output() panelClose = new EventEmitter<void>();
 
@@ -186,13 +198,13 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   // ---- Filter option lists ------------------------------------------
 
   readonly colorOptions = [
-    { code: 'W', label: 'W', title: 'White' },
-    { code: 'U', label: 'U', title: 'Blue' },
-    { code: 'B', label: 'B', title: 'Black' },
-    { code: 'R', label: 'R', title: 'Red' },
-    { code: 'G', label: 'G', title: 'Green' },
-    { code: 'C', label: 'C', title: 'Colorless' },
-    { code: 'M', label: 'M', title: 'Multicolor' },
+    { code: 'W', symbol: 'w', title: 'White' },
+    { code: 'U', symbol: 'u', title: 'Blue' },
+    { code: 'B', symbol: 'b', title: 'Black' },
+    { code: 'R', symbol: 'r', title: 'Red' },
+    { code: 'G', symbol: 'g', title: 'Green' },
+    { code: 'C', symbol: 'c', title: 'Colorless' },
+    { code: 'M', symbol: 'multicolor', title: 'Multicolor' },
   ];
 
   readonly typeOptions = [
@@ -345,6 +357,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
           this.addErrors.clear();
           res.forEach((c) => {
             if (!this.printingsCache.has(c.oracleId)) this.printingsLoad$.next(c.oracleId);
+            else this.applyDefaultPrinting(c.oracleId);
           });
         }
         this.cdr.markForCheck();
@@ -379,6 +392,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
         this.loadingMore = false;
         res.forEach((c) => {
           if (!this.printingsCache.has(c.oracleId)) this.printingsLoad$.next(c.oracleId);
+          else this.applyDefaultPrinting(c.oracleId);
         });
         this.cdr.markForCheck();
       });
@@ -403,8 +417,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
           if (!this.previewScryfallId && printings.length)
             this.previewScryfallId = printings[0].scryfallId;
         }
-        if (printings.length === 1 && !this.searchSelectedScryfallId.has(oracleId))
-          this.searchSelectedScryfallId.set(oracleId, printings[0].scryfallId);
+        this.applyDefaultPrinting(oracleId);
         this.cdr.markForCheck();
       });
   }
@@ -517,21 +530,67 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return card.imageUriSmall;
   }
 
+  /**
+   * Default a row to its first cached printing — the server orders them newest set first —
+   * so Add works immediately; the dropdown stays there to change it.
+   */
+  private applyDefaultPrinting(oracleId: string): void {
+    const printings = this.printingsCache.get(oracleId);
+    if (printings?.length && !this.searchSelectedScryfallId.has(oracleId))
+      this.searchSelectedScryfallId.set(oracleId, printings[0].scryfallId);
+  }
+
   onSelectFocus(oracleId: string): void {
     if (!this.printingsCache.has(oracleId)) this.printingsLoad$.next(oracleId);
+  }
+
+  /**
+   * Printings mapped to select-menu options, memoized per cached printings array so
+   * change detection reuses the same reference instead of rebuilding every pass.
+   */
+  private printingOptionsCache = new Map<
+    string,
+    { src: PrintingDto[]; opts: SelectMenuOption[] }
+  >();
+
+  printingOptions(oracleId: string): SelectMenuOption[] {
+    const printings = this.printingsCache.get(oracleId) ?? [];
+    const hit = this.printingOptionsCache.get(oracleId);
+    if (hit && hit.src === printings) return hit.opts;
+    const opts = printings.map((p) => ({
+      value: p.scryfallId,
+      label: `${p.setCode.toUpperCase()} #${p.collectorNumber}`,
+      title: p.setName,
+    }));
+    this.printingOptionsCache.set(oracleId, { src: printings, opts });
+    return opts;
+  }
+
+  // ---- Search history suggestions ------------------------------------
+
+  histOpen = false;
+
+  get histSuggestions(): string[] {
+    const q = (this.searchText.value ?? '').trim().toLowerCase();
+    return this.searchHistory.filter((h) => !q || h.toLowerCase().includes(q)).slice(0, 8);
+  }
+
+  pickHistory(h: string): void {
+    this.searchText.setValue(h);
+    this.histOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  closeHistSoon(): void {
+    setTimeout(() => {
+      this.histOpen = false;
+      this.cdr.markForCheck();
+    }, 120);
   }
 
   onSetChange(oracleId: string, scryfallId: string): void {
     this.searchSelectedScryfallId.set(oracleId, scryfallId);
     this.addErrors.delete(oracleId);
-  }
-
-  setTooltip(oracleId: string): string {
-    const scryfallId = this.searchSelectedScryfallId.get(oracleId);
-    const p = this.printingsCache.get(oracleId)?.find((x) => x.scryfallId === scryfallId);
-    return p
-      ? `${p.setName}${p.collectorNumber ? ' #' + p.collectorNumber : ''}`
-      : 'Select a printing';
   }
 
   ownedEntry(oracleId: string): CollectionCardDto | undefined {
@@ -565,7 +624,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return !isBasic && this.deckCount(card.oracleId) >= 1;
   }
 
-  addCard(card: CardDto): void {
+  addCard(card: CardDto, e?: Event): void {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
       const printings = this.printingsCache.get(card.oracleId);
@@ -586,8 +645,18 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
       oracleId: card.oracleId,
       scryfallId,
       isCommanderEligible: isLegendary && isCreatureOrPw,
+      flight: this.rowFlight(e, card),
     });
     if (card.name) this.saveSearchTerm(card.name);
+  }
+
+  /** The clicked row's art, carried on the add event as the flight source. */
+  private rowFlight(e: Event | undefined, card: CardDto): FlightSource | undefined {
+    const row = (e?.currentTarget as HTMLElement | null)?.closest('.result-row');
+    const from = row?.querySelector('.result-art')?.getBoundingClientRect();
+    if (!from) return undefined;
+    const imageUrl = card.imageUriArtCrop || card.imageUriSmall || card.imageUriNormal || null;
+    return { from, imageUrl };
   }
 
   onDragStart(card: CardDto, event: DragEvent): void {
@@ -634,6 +703,8 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   // ---- Preview modal ------------------------------------------------
 
+  @ViewChild(CardModalComponent) private previewModal?: CardModalComponent;
+
   openPreview(card: CardDto): void {
     this.previewCard = card;
     this.previewFlipped = false;
@@ -662,11 +733,13 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
       (this.previewCard.cardTypes?.includes(CardType.Creature) ||
         this.previewCard.cardTypes?.includes(CardType.Planeswalker)) ??
       false;
+    const from = this.previewModal?.artRect();
     this.cardAdd.emit({
       oracleId: this.previewCard.oracleId,
       scryfallId,
       isCommanderEligible: isLegendary && isCreatureOrPw,
       foil: this.previewFoil,
+      flight: from ? { from, imageUrl: this.previewModal?.artImageUrl ?? null } : undefined,
     });
   }
 

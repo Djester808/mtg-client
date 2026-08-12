@@ -144,6 +144,10 @@ export interface ManaFineTuneRequest {
 export interface ManaLandSuggestion {
   name: string;
   reason: string;
+  /** Newest printing, preselected server-side so the card can be added directly. */
+  scryfallId: string | null;
+  /** Resolved card data; the server drops suggestions it cannot resolve. */
+  card: CardDto | null;
 }
 
 export interface ManaFineTuneDto {
@@ -325,7 +329,7 @@ export class DeckApiService {
 
   getCardByName(name: string): Observable<CardDto | null> {
     const n = encodeURIComponent(name);
-    return this.http.get<CardDto>(`/api/cards/named?name=${n}`).pipe(catchError(() => of(null)));
+    return this.http.get<CardDto>(`/api/cards/by-name?name=${n}`).pipe(catchError(() => of(null)));
   }
 
   aiBuildDeck(

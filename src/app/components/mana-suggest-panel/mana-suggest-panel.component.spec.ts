@@ -377,7 +377,9 @@ describe('ManaSuggestPanelComponent — AI auto-trigger', () => {
   it('sets fineTuneState to done and stores result on success', fakeAsync(async () => {
     const result: ManaFineTuneDto = {
       advice: ['Add fetch lands'],
-      landSuggestions: [{ name: 'Flooded Strand', reason: 'Fixes blue' }],
+      landSuggestions: [
+        { name: 'Flooded Strand', reason: 'Fixes blue', scryfallId: null, card: null },
+      ],
     };
     const spy = makeApiSpy();
     spy.getManaFineTune.and.returnValue(of(result));

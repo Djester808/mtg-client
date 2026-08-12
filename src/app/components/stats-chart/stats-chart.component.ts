@@ -42,6 +42,19 @@ export class StatsChartComponent {
 
   // ── Common ────────────────────────────────────────────
 
+  // The parent rebuilds the data arrays on every change-detection pass, so without
+  // label-keyed tracking every ngFor row is torn down and recreated constantly —
+  // invisible before, but a permanent flicker once rows carry entrance animations.
+  trackEntry(_: number, d: ChartEntry): string {
+    return d.label;
+  }
+  trackStacked(_: number, col: StackedBarEntry): string {
+    return col.label;
+  }
+  trackLegend(_: number, e: { manaColor: string }): string {
+    return e.manaColor;
+  }
+
   get max(): number {
     return Math.max(...this.data.map((d) => d.value), 1);
   }

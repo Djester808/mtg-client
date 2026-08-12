@@ -1,5 +1,19 @@
 :host { display: block; }
 
+// ── Entrance animation ────────────────────────────────
+//
+// Fills grow out of the baseline one after another — the same staggered reveal the
+// suggestion lists use, on the app's shared ease. Replays whenever a chart (re)mounts
+// (opening the panel, switching bar/vbar/pie); the width/height transitions below
+// still handle in-place data edits. `--i` is the row/column index set by the template.
+
+@keyframes sc-grow-x { from { transform: scaleX(0); } }
+@keyframes sc-grow-y { from { transform: scaleY(0); } }
+@keyframes sc-fade-up { from { opacity: 0; transform: translateY(4px); } }
+
+$sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+$sc-stagger: 45ms;
+
 // ── Horizontal bar chart ──────────────────────────────
 
 .sc-bars {
@@ -14,6 +28,8 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  animation: sc-fade-up 0.45s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-label {
@@ -39,6 +55,9 @@
   border-radius: 3px;
   transition: width 0.35s ease;
   min-width: 2px;
+  transform-origin: left center;
+  animation: sc-grow-x 0.6s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-val {
@@ -69,6 +88,8 @@
   align-items: center;
   height: 100%;
   gap: 2px;
+  animation: sc-fade-up 0.45s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-vbar-val {
@@ -94,6 +115,9 @@
   border-radius: 3px 3px 0 0;
   transition: height 0.35s ease;
   min-height: 2px;
+  transform-origin: center bottom;
+  animation: sc-grow-y 0.6s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-vbar-label {
@@ -135,6 +159,8 @@
   align-items: center;
   height: 100%;
   gap: 4px;
+  animation: sc-fade-up 0.45s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-stacked-bar {
@@ -146,6 +172,9 @@
   background: var(--bg-raised);
   transition: height 0.35s ease;
   min-height: 2px;
+  transform-origin: center bottom;
+  animation: sc-grow-y 0.6s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 .sc-stacked-seg {
@@ -173,6 +202,8 @@
   align-items: center;
   gap: 7px;
   font-size: 11px;
+  animation: sc-fade-up 0.45s $sc-ease both;
+  animation-delay: calc(var(--i, 0) * #{$sc-stagger});
 }
 
 // ── Empty state ───────────────────────────────────────

@@ -1,3 +1,5 @@
+@use '../../../styles/add-controls' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -248,12 +250,41 @@
   margin-top: 12px;
 }
 
+// Actionable rows in the same shape as the suggestions panel: art, text, add button.
 .mana-land-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  &:last-child { margin-bottom: 0; }
+}
+
+.mana-land-art {
+  width: 64px;
+  height: 48px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-raised);
+  flex-shrink: 0;
+}
+
+.mana-land-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 10px;
-  &:last-child { margin-bottom: 0; }
+}
+
+.mana-land-add {
+  @include icon-action-btn;
+  @include icon-action-btn-add;
+  margin-top: 4px;
+
+  &--added {
+    @include icon-action-btn-added;
+  }
 }
 
 .mana-land-suggestion-name {

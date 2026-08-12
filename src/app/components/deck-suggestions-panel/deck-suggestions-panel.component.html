@@ -30,16 +30,23 @@
     <span class="sugg-tag sugg-tag--focus" *ngFor="let t of suggestionTags">
       {{ t }}<button class="sugg-tag-remove" (click)="removeSuggestionTag(t)"><i class="bi bi-x"></i></button>
     </span>
-    <input class="sugg-tag-input"
-           [(ngModel)]="tagDraft"
-           placeholder="+ focus"
-           list="sugg-tag-list"
-           autocomplete="off"
-           (keydown.enter)="commitTagInput(); $event.preventDefault()"
-           (keydown.comma)="commitTagInput(); $event.preventDefault()" />
-    <datalist id="sugg-tag-list">
-      <option *ngFor="let t of tagSuggestions" [value]="t"></option>
-    </datalist>
+    <span class="sugg-tag-input-wrap">
+      <input class="sugg-tag-input"
+             [(ngModel)]="tagDraft"
+             placeholder="+ focus"
+             autocomplete="off"
+             (focus)="focusSuggOpen = true"
+             (input)="focusSuggOpen = true"
+             (blur)="closeFocusSuggSoon()"
+             (keydown.escape)="focusSuggOpen = false"
+             (keydown.enter)="commitTagInput(); $event.preventDefault()"
+             (keydown.comma)="commitTagInput(); $event.preventDefault()" />
+      <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
+      <div class="app-menu sugg-tag-menu" *ngIf="focusSuggOpen && focusSuggestions.length > 0">
+        <button class="app-menu-item" *ngFor="let t of focusSuggestions"
+                (mousedown)="pickFocusTag(t); $event.preventDefault()">{{ t }}</button>
+      </div>
+    </span>
   </div>
 </div>
 
@@ -104,7 +111,7 @@
         <button class="sugg-add-btn"
                 *ngIf="!isInDeck(s)"
                 [disabled]="!s.scryfallId"
-                (click)="addCard(s); $event.stopPropagation()"
+                (click)="addCardFromRow(s, $event); $event.stopPropagation()"
                 [title]="s.scryfallId ? 'Add to deck' : 'Card not found in database'">
           <i class="bi bi-plus-lg"></i>
         </button>
@@ -213,7 +220,7 @@
         </div>
 
         <button class="sugg-add-btn" *ngIf="!isCandidateInDeck(c)"
-                [disabled]="!c.scryfallId" (click)="addCandidate(c); $event.stopPropagation()"
+                [disabled]="!c.scryfallId" (click)="addCandidateFromRow(c, $event); $event.stopPropagation()"
                 [title]="c.scryfallId ? 'Add to deck' : 'No printing available'">
           <i class="bi bi-plus-lg"></i>
         </button>
@@ -257,14 +264,23 @@
   (closed)="closeDetail()"
 >
   <div extra class="sugg-modal-extra">
+    <!-- Confirmation states shown while the modal plays its exit after Add/Remove. -->
+    <button class="sugg-modal-add-btn sugg-modal-add-btn--confirm"
+            *ngIf="modalCloseAction === 'added'" disabled>
+      <i class="bi bi-check-lg"></i> Added to Deck
+    </button>
+    <button class="sugg-modal-add-btn sugg-modal-add-btn--confirm sugg-modal-add-btn--confirm-remove"
+            *ngIf="modalCloseAction === 'removed'" disabled>
+      <i class="bi bi-check-lg"></i> Removed
+    </button>
     <button class="sugg-modal-add-btn"
-            *ngIf="!isInDeck(selectedSuggestion!)"
+            *ngIf="!modalCloseAction && !isInDeck(selectedSuggestion!)"
             [disabled]="!selectedSuggestion!.scryfallId"
             (click)="addAndClose(selectedSuggestion!)">
       <i class="bi bi-plus-lg"></i> Add to Deck
     </button>
     <button class="sugg-modal-add-btn sugg-modal-add-btn--remove"
-            *ngIf="isInDeck(selectedSuggestion!)"
+            *ngIf="!modalCloseAction && isInDeck(selectedSuggestion!)"
             (click)="removeAndClose(selectedSuggestion!)">
       <i class="bi bi-dash-lg"></i> Remove from Deck
     </button>
