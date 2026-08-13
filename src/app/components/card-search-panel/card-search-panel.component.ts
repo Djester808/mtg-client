@@ -23,14 +23,21 @@ import {
   startWith,
   map,
   takeUntil,
-  mergeMap,
   of,
   concatMap,
 } from 'rxjs';
-import { CardDto, CollectionCardDto, PrintingDto, SetSummaryDto } from '../../models/game.models';
+import {
+  CardDto,
+  CollectionCardDto,
+  PrintingDto,
+  SetSummaryDto,
+  SynergyScore,
+} from '../../models/game.models';
 import { CardType } from '../../models/enums';
+import { buildTypeLine, colorIdentityViolations } from '../../utils/card.utils';
+import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { GameApiService } from '../../services/game-api.service';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-menu.component';
@@ -40,11 +47,6 @@ type RarityCode = 'common' | 'uncommon' | 'rare' | 'mythic';
 type CmcOption = '0' | '1' | '2' | '3' | '4' | '5' | '6+';
 type SortBy = 'name' | 'cmc';
 type SortDir = 'asc' | 'desc';
-
-export interface SynergyScore {
-  score: number; // 0–100
-  reason: string;
-}
 
 @Component({
   selector: 'app-card-search-panel',
@@ -56,6 +58,7 @@ export interface SynergyScore {
     ManaCostComponent,
     CardModalComponent,
     SelectMenuComponent,
+    OracleSymbolsPipe,
   ],
   templateUrl: './card-search-panel.component.html',
   styleUrls: ['./card-search-panel.component.scss'],
@@ -123,6 +126,16 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   @HostBinding('class.is-open') get openClass() {
     return this._isOpen;
+  }
+
+  /**
+   * Swap mode: the panel takes over the board area (flex: 1) instead of sliding in
+   * as a fixed-width drawer, and the results tile into a responsive grid.
+   */
+  @Input() boardMode = false;
+
+  @HostBinding('class.is-board') get boardClass() {
+    return this.boardMode;
   }
 
   @Output() cardAdd = new EventEmitter<{
@@ -261,19 +274,32 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   // ---- Internal -----------------------------------------------------
 
-  printingsCache = new Map<string, PrintingDto[]>();
-
   private filterChange$ = new BehaviorSubject<void>(undefined);
   private loadMore$ = new Subject<void>();
-  private printingsLoad$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
   constructor(
     private api: GameApiService,
-    private collectionApi: CollectionApiService,
+    private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
     private elRef: ElementRef,
   ) {}
+
+  /** Loads printings through the shared cache and applies this panel's post-load hooks. */
+  private loadPrintings(oracleId: string): void {
+    this.printings
+      .get(oracleId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((printings) => {
+        if (this.previewCard?.oracleId === oracleId) {
+          this.previewPrintings = printings;
+          if (!this.previewScryfallId && printings.length)
+            this.previewScryfallId = printings[0].scryfallId;
+        }
+        this.applyDefaultPrinting(oracleId);
+        this.cdr.markForCheck();
+      });
+  }
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
@@ -355,10 +381,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
           this.flippedIds.clear();
           this.searchSelectedScryfallId.clear();
           this.addErrors.clear();
-          res.forEach((c) => {
-            if (!this.printingsCache.has(c.oracleId)) this.printingsLoad$.next(c.oracleId);
-            else this.applyDefaultPrinting(c.oracleId);
-          });
+          res.forEach((c) => this.loadPrintings(c.oracleId));
         }
         this.cdr.markForCheck();
       });
@@ -390,34 +413,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
         this.results = [...this.results, ...res];
         this.hasMore = res.length === this.PAGE_SIZE;
         this.loadingMore = false;
-        res.forEach((c) => {
-          if (!this.printingsCache.has(c.oracleId)) this.printingsLoad$.next(c.oracleId);
-          else this.applyDefaultPrinting(c.oracleId);
-        });
-        this.cdr.markForCheck();
-      });
-
-    // Printings loader (mergeMap = parallel rows)
-    this.printingsLoad$
-      .pipe(
-        mergeMap((oracleId) => {
-          if (this.printingsCache.has(oracleId))
-            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-          return this.collectionApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
-        if (this.previewCard?.oracleId === oracleId) {
-          this.previewPrintings = printings;
-          if (!this.previewScryfallId && printings.length)
-            this.previewScryfallId = printings[0].scryfallId;
-        }
-        this.applyDefaultPrinting(oracleId);
+        res.forEach((c) => this.loadPrintings(c.oracleId));
         this.cdr.markForCheck();
       });
   }
@@ -530,18 +526,56 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return card.imageUriSmall;
   }
 
+  /** Full-resolution art for the board-mode tiles; the small image is thumbnail-only. */
+  tileImage(card: CardDto): string | null {
+    if (this.flippedIds.has(card.oracleId) && card.imageUriNormalBack)
+      return card.imageUriNormalBack;
+    return card.imageUriNormal ?? card.imageUriSmall;
+  }
+
+  /** Stable identity so appended pages never replay the earlier tiles' entrances. */
+  trackResult(_i: number, card: CardDto): string {
+    return card.oracleId;
+  }
+
+  // ---- Board-mode tile clicks -------------------------------------
+  //
+  // The same click language as the deck and collection grids: a single click toggles
+  // the card's description overlay, a quick second click opens the preview modal.
+
+  tileInfoId: string | null = null;
+  private lastTileClick: { id: string; time: number } | null = null;
+
+  onTileClick(card: CardDto, e: MouseEvent): void {
+    e.stopPropagation();
+    const now = performance.now();
+    if (this.lastTileClick?.id === card.oracleId && now - this.lastTileClick.time < 350) {
+      this.lastTileClick = null;
+      this.tileInfoId = null;
+      this.openPreview(card);
+      return;
+    }
+    this.lastTileClick = { id: card.oracleId, time: now };
+    this.tileInfoId = this.tileInfoId === card.oracleId ? null : card.oracleId;
+    this.cdr.markForCheck();
+  }
+
+  typeLine(card: CardDto): string {
+    return buildTypeLine(card);
+  }
+
   /**
    * Default a row to its first cached printing — the server orders them newest set first —
    * so Add works immediately; the dropdown stays there to change it.
    */
   private applyDefaultPrinting(oracleId: string): void {
-    const printings = this.printingsCache.get(oracleId);
+    const printings = this.printings.cached(oracleId);
     if (printings?.length && !this.searchSelectedScryfallId.has(oracleId))
       this.searchSelectedScryfallId.set(oracleId, printings[0].scryfallId);
   }
 
   onSelectFocus(oracleId: string): void {
-    if (!this.printingsCache.has(oracleId)) this.printingsLoad$.next(oracleId);
+    if (!this.printings.has(oracleId)) this.loadPrintings(oracleId);
   }
 
   /**
@@ -554,7 +588,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   >();
 
   printingOptions(oracleId: string): SelectMenuOption[] {
-    const printings = this.printingsCache.get(oracleId) ?? [];
+    const printings = this.printings.cached(oracleId) ?? [];
     const hit = this.printingOptionsCache.get(oracleId);
     if (hit && hit.src === printings) return hit.opts;
     const opts = printings.map((p) => ({
@@ -613,8 +647,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   isColorViolation(card: CardDto): boolean {
     if (!this.isDeckContext || !this.commanderCard?.colorIdentity?.length) return false;
-    const allowed = new Set(this.commanderCard.colorIdentity);
-    return card.colorIdentity?.some((c) => c !== 'C' && !allowed.has(c)) ?? false;
+    return colorIdentityViolations(card.colorIdentity, this.commanderCard.colorIdentity).length > 0;
   }
 
   isSingletonViolation(card: CardDto): boolean {
@@ -624,10 +657,10 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     return !isBasic && this.deckCount(card.oracleId) >= 1;
   }
 
-  addCard(card: CardDto, e?: Event): void {
+  addCard(card: CardDto, e?: Event, foil = false): void {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
-      const printings = this.printingsCache.get(card.oracleId);
+      const printings = this.printings.cached(card.oracleId);
       if (printings?.length === 1) scryfallId = printings[0].scryfallId;
     }
     if (!scryfallId) {
@@ -645,24 +678,31 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
       oracleId: card.oracleId,
       scryfallId,
       isCommanderEligible: isLegendary && isCreatureOrPw,
+      foil,
       flight: this.rowFlight(e, card),
     });
     if (card.name) this.saveSearchTerm(card.name);
   }
 
-  /** The clicked row's art, carried on the add event as the flight source. */
+  /** The clicked row's or tile's art, carried on the add event as the flight source. */
   private rowFlight(e: Event | undefined, card: CardDto): FlightSource | undefined {
-    const row = (e?.currentTarget as HTMLElement | null)?.closest('.result-row');
-    const from = row?.querySelector('.result-art')?.getBoundingClientRect();
+    const row = (e?.currentTarget as HTMLElement | null)?.closest('.result-row, .result-tile');
+    const from = row?.querySelector('.result-art, .tile-art')?.getBoundingClientRect();
     if (!from) return undefined;
     const imageUrl = card.imageUriArtCrop || card.imageUriSmall || card.imageUriNormal || null;
     return { from, imageUrl };
   }
 
+  /** With a single known printing there is nothing to choose — show it as plain text. */
+  singlePrintingLabel(oracleId: string): string | null {
+    const opts = this.printingOptions(oracleId);
+    return opts.length === 1 ? opts[0].label : null;
+  }
+
   onDragStart(card: CardDto, event: DragEvent): void {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
-      const printings = this.printingsCache.get(card.oracleId);
+      const printings = this.printings.cached(card.oracleId);
       if (printings && printings.length > 0) scryfallId = printings[0].scryfallId;
     }
     if (!scryfallId) {
@@ -709,10 +749,10 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     this.previewCard = card;
     this.previewFlipped = false;
     this.previewFoil = false;
-    const cached = this.printingsCache.get(card.oracleId);
+    const cached = this.printings.cached(card.oracleId);
     this.previewPrintings = cached ?? [];
     this.previewScryfallId = cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.printingsLoad$.next(card.oracleId);
+    if (!cached) this.loadPrintings(card.oracleId);
     this.cdr.markForCheck();
   }
 
@@ -726,7 +766,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     const scryfallId =
       this.previewScryfallId ??
       this.searchSelectedScryfallId.get(this.previewCard.oracleId) ??
-      this.printingsCache.get(this.previewCard.oracleId)?.[0]?.scryfallId;
+      this.printings.cached(this.previewCard.oracleId)?.[0]?.scryfallId;
     if (!scryfallId) return;
     const isLegendary = this.previewCard.supertypes?.includes('Legendary') ?? false;
     const isCreatureOrPw =
@@ -782,6 +822,7 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
     this.searchSelectedScryfallId.clear();
     this.addErrors.clear();
     this.previewCard = null;
+    this.tileInfoId = null;
   }
 
   private buildNonSetQuery(text: string): string {

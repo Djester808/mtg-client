@@ -49,8 +49,20 @@ export class CardModalComponent implements OnInit, OnChanges {
   /** Optional: scryfallIds of other printings the user also owns (shows blue "Owned" banner). */
   @Input() alsoOwnedIds: string[] = [];
 
-  /** Optional: copies of this card the viewer owns in the current deck — shown beside the name. */
+  /** Optional: copies of this card the viewer owns (deck or collection) — shown beside the name. */
   @Input() countBadge: number | null = null;
+
+  /** Optional: foil copies owned — a gold companion badge to countBadge (collections). */
+  @Input() foilCountBadge: number | null = null;
+
+  /**
+   * Optional: label for a host-provided extra info tab (projected via [info-tab]),
+   * e.g. a collection's Notes. Details and Rulings tabs are always present.
+   */
+  @Input() infoTabLabel: string | null = null;
+
+  /** Which info tab is showing; snaps back to details when the card changes. */
+  infoTab: 'details' | 'rulings' | 'extra' = 'details';
 
   @Input() isGameChanger = false;
   /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
@@ -121,6 +133,7 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['card']) {
+      this.infoTab = 'details';
       const oracleId = this.card?.oracleId;
       if (!oracleId) {
         this.rulings = [];

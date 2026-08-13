@@ -5,12 +5,10 @@ import {
   CollectionDto,
   CollectionDetailDto,
   CollectionCardDto,
-  CardDto,
   CreateCollectionRequest,
   UpdateCollectionRequest,
   AddCardToCollectionRequest,
   UpdateCollectionCardRequest,
-  PrintingDto,
 } from '../models/game.models';
 
 @Injectable({ providedIn: 'root' })
@@ -55,11 +53,5 @@ export class CollectionApiService {
     return this.http.delete<void>(`${this.base}/${collectionId}/cards/${cardId}`);
   }
 
-  getPrintings(oracleId: string): Observable<PrintingDto[]> {
-    return this.http.get<PrintingDto[]>(`/api/cards/${oracleId}/printings`);
-  }
-
-  getCardByScryfallId(scryfallId: string): Observable<CardDto> {
-    return this.http.get<CardDto>(`/api/cards/scryfall/${scryfallId}`);
-  }
+  // Printings loading lives in PrintingsService — one cache, one endpoint owner.
 }

@@ -84,3 +84,224 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+// ---- The card surface (single source of truth) -----------------------------
+//
+// A rendered Magic card is ONE strict shape everywhere in the app: the printed
+// 488×680 proportions, the printed corner geometry, and art zoomed just past the
+// frame so a scan's own white corners never show. Every tile, thumbnail, and
+// full-card image derives from these three mixins — never restate the numbers.
+
+// The printed card's corner rounding, expressed against its own box so it holds
+// at any size (deck tile, search tile, modal scan, side-list preview alike).
+@mixin card-corners {
+  border-radius: 4.75% / 3.4%;
+}
+
+// The full card frame: printed proportions + corners, clipped.
+@mixin card-surface {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 488 / 680;
+  @include card-corners;
+}
+
+// Art fill for a background-image card face: zoomed 108% so the scan's own
+// white rounded corners crop outside the visible box.
+@mixin card-art-crop {
+  background-size: 108%;
+  background-position: center center;
+  background-color: var(--bg-raised);
+}
+
+// ---- Card tile chrome (deck + collection grids) ---------------------------
+
+// Mini quantity button for the tile control strip — the icon family at tile scale.
+@mixin tile-ctrl-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+@mixin tile-ctrl-btn-inc {
+  &:hover {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: #4ade80;
+    color: #4ade80;
+  }
+}
+
+@mixin tile-ctrl-btn-dec {
+  &:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: #f87171;
+    color: #f87171;
+  }
+}
+
+/// The tile strip's quantity controls: − count + pairs (normal, and foil where the
+/// host tracks it). Emits .ctrl-strip-row / .ctrl-row / .ctrl-btn / .ctrl-label and
+/// the foil accents — previously copied into three components.
+@mixin tile-ctrl-family {
+  .ctrl-strip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .ctrl-row {
+      flex: 1;
+    }
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .ctrl-btn {
+    @include tile-ctrl-btn;
+
+    &.ctrl-inc {
+      @include tile-ctrl-btn-inc;
+    }
+    &.ctrl-dec {
+      @include tile-ctrl-btn-dec;
+    }
+  }
+
+  .ctrl-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0 3px;
+    min-width: 28px;
+    user-select: none;
+  }
+
+  .ctrl-label-foil {
+    color: var(--text-dim);
+  }
+  .ctrl-row-foil.has-foil .ctrl-label-foil {
+    color: var(--gold);
+  }
+}
+
+/// The card modal's projected action chrome (adds above the art, removes below).
+/// Emits .modal-extra-wrap / .modal-action-btn / .modal-btn-pair / .modal-btn-label.
+/// Previously declared per host, and the copies had drifted: only the deck host had
+/// the container-query label collapse, and the resting button color differed.
+@mixin modal-extra-chrome {
+  .modal-extra-wrap {
+    container-type: inline-size;
+    container-name: modal-extra;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px 16px 8px;
+    border-top: 1px solid var(--border-dim);
+    background: var(--bg-raised);
+    flex-shrink: 0;
+
+    .modal-action-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    &--top {
+      border-top: none;
+      border-bottom: 1px solid var(--border-dim);
+      padding: 8px 16px 10px;
+    }
+  }
+
+  // Normal/Foil side by side, sharing the strip's width.
+  .modal-btn-pair {
+    display: flex;
+    gap: 6px;
+
+    .modal-action-btn {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  // Green add mirrors the red remove — resting color carries the action's meaning.
+  .modal-action-btn {
+    @include icon-action-btn;
+    @include icon-action-btn-labeled;
+    @include icon-action-btn-add-accent;
+
+    &--remove {
+      @include icon-action-btn-remove;
+    }
+  }
+
+  .modal-btn-label {
+    display: inline-block;
+    max-width: 120px;
+    overflow: hidden;
+    opacity: 1;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease;
+    white-space: nowrap;
+  }
+
+  // A narrow art column collapses the labels down to their icons.
+  @container modal-extra (max-width: 260px) {
+    .modal-btn-label {
+      max-width: 0;
+      opacity: 0;
+    }
+    .modal-action-btn {
+      padding: 6px 10px;
+    }
+  }
+}
+
+// The control strip that slides up over the card art when the tile is hovered
+// (or focused, for keyboard users). Resting tiles stay pure card art.
+@mixin tile-hover-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(10, 8, 14, 0.9);
+  border-top: 1px solid var(--border-dim);
+  backdrop-filter: blur(4px);
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.15s ease;
+}
+
+@mixin tile-hover-strip-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}

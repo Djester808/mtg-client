@@ -6,8 +6,8 @@ import {
   CollectionCardDto,
   AddCardToCollectionRequest,
   UpdateCollectionCardRequest,
-  PrintingDto,
   CardDto,
+  SynergyScore,
 } from '../models/game.models';
 
 export interface DeckDto {
@@ -73,11 +73,6 @@ export interface SynergyRequest {
   cardName: string;
   cardText: string;
   deckCardNames?: string[];
-}
-
-export interface SynergyResult {
-  score: number;
-  reason: string;
 }
 
 export interface ScoredCardDto {
@@ -204,8 +199,8 @@ export class DeckApiService {
     return this.http.post<ImportDeckResult>(`${this.base}/import`, req);
   }
 
-  analyzeSynergy(req: SynergyRequest): Observable<SynergyResult> {
-    return this.http.post<SynergyResult>(`${this.base}/synergy`, req);
+  analyzeSynergy(req: SynergyRequest): Observable<SynergyScore> {
+    return this.http.post<SynergyScore>(`${this.base}/synergy`, req);
   }
 
   /** Scores a page of cards in one request instead of one per row. */
@@ -319,13 +314,7 @@ export class DeckApiService {
     return this.http.post<ManaFineTuneDto>(`${this.base}/mana-tune`, req);
   }
 
-  getPrintings(oracleId: string): Observable<PrintingDto[]> {
-    return this.http.get<PrintingDto[]>(`/api/cards/${oracleId}/printings`);
-  }
-
-  getCardByScryfallId(scryfallId: string): Observable<CardDto> {
-    return this.http.get<CardDto>(`/api/cards/scryfall/${scryfallId}`);
-  }
+  // Printings loading lives in PrintingsService — one cache, one endpoint owner.
 
   getCardByName(name: string): Observable<CardDto | null> {
     const n = encodeURIComponent(name);

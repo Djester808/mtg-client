@@ -1,101 +1,21 @@
+@use '../../../styles/add-controls' as *;
+@use '../../../styles/detail-page' as *;
+
 :host { display: block; height: 100%; overflow: hidden; }
 
-.detail-shell {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background: var(--bg-void);
-  overflow: hidden;
-}
+// Page chrome shared with the deck page — see styles/_detail-page.scss.
 
-// ---- Background ------------------------------------------
+.detail-shell { @include detail-shell; }
 
-.detail-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
+@include detail-bg(rgba(201, 168, 76, 0.08));
 
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-}
+.detail-header { @include detail-header; }
 
-.orb-1 {
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(201,168,76,0.08), transparent 70%);
-  top: -200px; right: -100px;
-}
-
-.bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
-}
-
-// ---- Header ----------------------------------------------
-
-.detail-header {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 18px 32px;
-  border-bottom: 1px solid var(--border-dim);
-  backdrop-filter: blur(8px);
-  background: rgba(8,8,8,0.65);
-  flex-shrink: 0;
-}
-
-.back-btn {
-  background: none;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 9px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &:hover { border-color: var(--gold); color: var(--gold); }
-}
+.back-btn { @include back-btn(var(--gold)); }
 
 .header-center { flex: 1; min-width: 0; }
 
-.header-name {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: var(--text-primary);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  &.is-loading {
-    color: var(--text-dim);
-    animation: pulse-text 1.5s ease-in-out infinite;
-  }
-}
-
-@keyframes pulse-text {
-  0%, 100% { opacity: 0.4; }
-  50%       { opacity: 1; }
-}
+.header-name { @include header-name; }
 
 .header-desc {
   font-family: var(--font-body);
@@ -114,15 +34,7 @@
   flex-shrink: 0;
 }
 
-.header-count {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
+.header-count { @include header-count; }
 
 .scan-btn-header {
   display: inline-flex;
@@ -149,31 +61,7 @@
 }
 
 .add-btn {
-  padding: 9px 20px;
-  background: var(--gold);
-  border: none;
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #0e0c08;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-
-  &:hover:not(.is-active) {
-    background: #dbb954;
-    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
-    transform: translateY(-1px);
-  }
-
-  &.is-active {
-    background: var(--bg-raised);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-subtle);
-  }
+  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgba(201, 168, 76, 0.3));
 }
 
 // ---- Body layout -----------------------------------------
@@ -207,76 +95,9 @@
   gap: 12px;
 }
 
-.zoom-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 3px;
-  flex-shrink: 0;
-}
+@include zoom-control;
 
-.zoom-btn {
-  background: none;
-  border: none;
-  border-radius: 5px;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 3px 8px;
-  transition: color 0.15s;
-
-  &:hover:not(:disabled) { color: var(--gold); }
-  &:disabled { opacity: 0.25; cursor: default; }
-}
-
-.zoom-label {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-  min-width: 34px;
-  text-align: center;
-  user-select: none;
-}
-
-.filter-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 100%;
-  max-width: 360px;
-}
-
-.filter-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-dim);
-  font-size: 17px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.filter-input {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  padding: 9px 14px 9px 34px;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.2s;
-
-  &::placeholder { color: var(--text-dim); }
-  &:focus { border-color: var(--gold-dim); }
-}
+@include filter-field(var(--gold-dim));
 
 // Legend bar
 .legend {
@@ -328,38 +149,27 @@
 }
 
 // Loading / empty
-.loading-state {
-  text-align: center;
-  color: var(--text-dim);
-  font-family: var(--font-display);
+.loading-state { @include loading-state; }
+
+.empty-state { @include empty-state(var(--gold-dim)); }
+
+// ---- Swap mode (Arena-style: search fills the grid area, collection as a side list) ----
+
+.disp-btn {
   font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 80px 0;
-  animation: pulse-text 1.5s ease-in-out infinite;
+
+  &.is-active {
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.1);
+  }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 80px 0;
-  text-align: center;
+@include side-list-header-chrome;
+
+.side-list-count {
+  font-size: 11px;
+  color: var(--text-dim);
 }
-
-.empty-icon { font-size: 52px; color: var(--gold-dim); opacity: 0.35; }
-
-.empty-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.empty-sub { font-family: var(--font-body); font-size: 13px; color: var(--text-dim); margin: 0 0 8px; }
 
 .add-btn-primary {
   padding: 11px 28px;
@@ -387,11 +197,6 @@
   animation: fade-up 0.25s ease;
 }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .no-filter-results {
   grid-column: 1 / -1;
   text-align: center;
@@ -412,10 +217,17 @@
 // ---- Card tile -------------------------------------------
 
 .card-tile {
+  position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border-dim);
-  border-radius: var(--card-radius);
   overflow: hidden;
+  @include card-corners;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
 
   &.is-foil {
     border-color: rgba(201,168,76,0.22);
@@ -424,14 +236,10 @@
 }
 
 .card-art {
-  position: relative;
   width: 100%;
-  aspect-ratio: 5 / 7;
-  background-size: 108%;
-  background-position: center center;
-  background-color: var(--bg-raised);
+  @include card-surface;
+  @include card-art-crop;
   cursor: pointer;
-  overflow: hidden;
 }
 
 .flip-btn {
@@ -466,62 +274,45 @@
   &.sm { font-size: 16px; }
 }
 
-.foil-badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  background: rgba(201,168,76,0.88);
-  color: #0e0c08;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 4px;
-  line-height: 1.4;
-  letter-spacing: 0.04em;
-}
-
-.qty-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.78);
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 3px 7px;
-  border-radius: 5px;
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-subtle);
-}
+// Count pills come from the global .tile-badges / .qty-pill styles.
 
 // ---- Set selector dropdown ------------------------------
 
 // ---- Single-row bottom bar: set · normal · foil · flip ----
 
+// The tile control strip: hidden at rest, sliding up over the art on hover/focus.
+// Sits above the hover info panel (z 200), which is pointer-events: none anyway.
 .card-bottom {
-  background: var(--bg-deep);
-  border-top: 1px solid var(--border-dim);
-  display: flex;
-  align-items: stretch;
+  @include tile-hover-strip;
+  z-index: 210;
 }
 
-// Printing picker (app-select-menu) — blends into the card-bottom strip.
+.card-tile:hover .card-bottom,
+.card-tile:focus-within .card-bottom {
+  @include tile-hover-strip-visible;
+}
+
+// While the description overlay is open, the strip stays down — otherwise it covers
+// the overlay's bottom (you are necessarily hovering while reading).
+.card-tile.has-info .card-bottom {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+// Quantity control family (strip rows, −/+ buttons, labels) — shared mixin.
+@include tile-ctrl-family;
+
+// Printing picker (app-select-menu) — the strip's first row.
 .set-select-menu {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
 
   ::ng-deep .asm-btn {
-    background: var(--bg-deep);
-    border: none;
-    border-radius: 0;
-    border-right: 1px solid var(--border-dim);
+    background: rgba(0, 0, 0, 0.35);
     font-family: var(--font-display);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    &:hover:not(:disabled),
-    &.is-open { background: var(--bg-raised); border: none; border-right: 1px solid var(--border-dim); }
   }
 }
 
@@ -533,160 +324,7 @@
   right: 0;
 }
 
-.ctrl-row {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 16px auto 16px;
-  align-items: center;
-  border-right: 1px solid var(--border-dim);
-}
-
-.ctrl-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 4px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s, background 0.15s;
-
-  &:hover { color: var(--text-primary); background: var(--bg-raised); }
-}
-
-.ctrl-dec:hover { color: var(--mana-R, #e74c3c); }
-.ctrl-inc:hover { color: var(--mana-G, #27ae60); }
-
-.ctrl-label {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--text-secondary);
-  text-align: center;
-  padding: 0 3px;
-  min-width: 28px;
-  user-select: none;
-}
-
-.ctrl-label-foil { color: var(--text-dim); }
-.ctrl-row-foil.has-foil .ctrl-label-foil { color: var(--gold); }
-
-// foil badge gold tint in qty-badge
-.qty-foil { color: var(--gold); }
-
-// ---- Hover info panel ------------------------------------
-
-.card-info-panel {
-  position: absolute;
-  inset: 0;
-  z-index: 200;
-  background: rgba(8, 8, 10, 0.92);
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow: hidden;
-  pointer-events: none;
-  text-align: center;
-}
-
-.info-top {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-bottom: 6px;
-}
-
-.info-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.info-name {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.info-type {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-dim);
-  padding-bottom: 6px;
-}
-
-.info-oracle {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  pointer-events: auto;
-  width: 100%;
-  font-family: var(--font-body);
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  text-align: left;
-  padding: 4px 2px;
-
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
-}
-
-.info-bottom {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-dim);
-}
-
-.info-stats {
-  display: flex;
-  gap: 12px;
-}
-
-.info-pt, .info-loyalty {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-  background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 3px 8px;
-}
-
-.info-artist {
-  font-family: var(--font-body);
-  font-size: 10px;
-  font-style: italic;
-  color: var(--text-dim);
-}
+// Card-tile info overlay styles live in global.scss (shared with the deck grid).
 
 
 
@@ -794,93 +432,16 @@
   border-color: rgba(201, 168, 76, 0.2);
 }
 
-.modal-extra-wrap {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
+// Actions flanking the art, matching the deck modal: adds above (green), removes
+// below (red), counts beside the card name (card-modal's count badges).
+@include modal-extra-chrome;
 
-.modal-action-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px 8px;
-  border-top: 1px solid var(--border-dim);
-  background: var(--bg-raised);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-.modal-group-sep {
-  width: 1px;
-  height: 22px;
-  background: var(--border-dim);
-  flex-shrink: 0;
-  margin: 0 2px;
-}
-
-.modal-deck-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.12);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 8px;
-  padding: 3px 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &--foil {
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
-    border-color: rgba(201, 168, 76, 0.3);
-  }
-}
-
-.modal-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  background: var(--gold);
-  color: #1a1a1a;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  &--remove {
-    background: rgba(248, 113, 113, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    &:hover:not(:disabled) { filter: brightness(1.2); }
-  }
-}
-
+// Notes live in the modal's info tab (beside Details), so the section is flat —
+// the tab bar above it provides the framing.
 .modal-notes-section {
-  padding: 6px 12px 10px;
-  background: var(--bg-raised);
-  border-top: 1px solid var(--border-dim);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.modal-notes-label {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  padding-top: 12px;
 }
 
 .modal-notes-input {

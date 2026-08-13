@@ -18,13 +18,12 @@ import {
   startWith,
   map,
   takeUntil,
-  mergeMap,
   of,
   concatMap,
 } from 'rxjs';
 import { CardDto, PrintingDto, SetSummaryDto } from '../models/game.models';
 import { GameApiService } from '../services/game-api.service';
-import { CollectionApiService } from '../services/collection-api.service';
+import { PrintingsService } from '../services/printings.service';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../components/card-modal/card-modal.component';
 
@@ -77,7 +76,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   modalPrintings: PrintingDto[] = [];
   modalViewScryfallId: string | null = null;
   modalFlipped = false;
-  private printingsCache = new Map<string, PrintingDto[]>();
 
   // ---- Filter options ----------------------------------------
 
@@ -148,12 +146,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private filterChange$ = new BehaviorSubject<void>(undefined);
   private loadMore$ = new Subject<void>();
-  private printingsLoad$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
   constructor(
     private api: GameApiService,
-    private collectionApi: CollectionApiService,
+    private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
     private elRef: ElementRef,
   ) {}
@@ -273,28 +270,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.loadingMore = false;
         this.cdr.markForCheck();
       });
-
-    this.printingsLoad$
-      .pipe(
-        mergeMap((oracleId) => {
-          if (this.printingsCache.has(oracleId))
-            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-          return this.collectionApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
-        if (this.selectedCard?.oracleId === oracleId) {
-          this.modalPrintings = printings;
-          if (!this.modalViewScryfallId && printings.length)
-            this.modalViewScryfallId = printings[0].scryfallId;
-        }
-        this.cdr.markForCheck();
-      });
   }
 
   ngOnDestroy(): void {
@@ -409,10 +384,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   openCard(card: CardDto): void {
     this.selectedCard = card;
     this.modalFlipped = false;
-    const cached = this.printingsCache.get(card.oracleId);
+    const cached = this.printings.cached(card.oracleId);
     this.modalPrintings = cached ?? [];
     this.modalViewScryfallId = cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.printingsLoad$.next(card.oracleId);
+    if (!cached) {
+      this.printings
+        .get(card.oracleId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((printings) => {
+          if (this.selectedCard?.oracleId === card.oracleId) {
+            this.modalPrintings = printings;
+            if (!this.modalViewScryfallId && printings.length)
+              this.modalViewScryfallId = printings[0].scryfallId;
+          }
+          this.cdr.markForCheck();
+        });
+    }
     this.cdr.markForCheck();
   }
 

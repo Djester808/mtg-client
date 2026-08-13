@@ -1,4 +1,4 @@
-import { CardDto } from '../models/game.models';
+import { CardDto, ManaColor } from '../models/game.models';
 
 /** Formats the type line for a card, e.g. "Basic Land — Forest" or "Creature — Beast". */
 /**
@@ -23,4 +23,20 @@ export function buildTypeLine(card: CardDto): string {
   const types = card.cardTypes.join(' ');
   const sub = card.subtypes?.length ? ' — ' + card.subtypes.join(' ') : '';
   return sup + types + sub;
+}
+
+/**
+ * The colors of a card's identity that fall outside a commander's — empty means legal.
+ *
+ * Colorless ('C') is never a violation: it is not a color, and colorless cards are
+ * legal in any commander deck. This rule previously lived in four inline copies that
+ * had drifted — only one excluded 'C', so the same card could pass the search panel's
+ * check while the deck's validation bar flagged it.
+ */
+export function colorIdentityViolations(
+  cardIdentity: readonly (ManaColor | string)[] | null | undefined,
+  commanderIdentity: readonly (ManaColor | string)[] | null | undefined,
+): string[] {
+  const allowed = new Set((commanderIdentity ?? []).map((c) => String(c)));
+  return (cardIdentity ?? []).map((c) => String(c)).filter((c) => c !== 'C' && !allowed.has(c));
 }

@@ -4,22 +4,14 @@ import {
   OnDestroy,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  ElementRef,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import {
-  Observable,
-  Subject,
-  switchMap,
-  mergeMap,
-  takeUntil,
-  take,
-  of,
-  catchError,
-  map,
-} from 'rxjs';
+import { Observable, Subject, takeUntil, take } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import {
@@ -33,12 +25,14 @@ import {
   CardDto,
 } from '../../models/game.models';
 import { buildTypeLine } from '../../utils/card.utils';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
+import { CardSideListComponent } from '../../components/card-side-list/card-side-list.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
+import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { CardScannerComponent } from '../../components/card-scanner/card-scanner.component';
 import {
   SelectMenuComponent,
@@ -55,6 +49,7 @@ import {
     OracleSymbolsPipe,
     CardModalComponent,
     CardSearchPanelComponent,
+    CardSideListComponent,
     CoverPickerModalComponent,
     CardScannerComponent,
     SelectMenuComponent,
@@ -68,6 +63,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   loading$: Observable<boolean>;
 
   filterQuery = '';
+  /** Arena-style swap: search browser fills the grid area, collection becomes a side list. */
+  swapMode = false;
   showSearchPanel = false;
   showDetailCoverPicker = false;
   showScanner = false;
@@ -96,7 +93,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   private noteDraft = new Map<string, string>();
 
   get modalPrintings(): PrintingDto[] {
-    return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
+    return this.selectedCard ? (this.printings.cached(this.selectedCard.oracleId) ?? []) : [];
   }
 
   tileImage(card: CollectionCardDto): string | null {
@@ -110,66 +107,32 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   private collectionId = '';
-  private hoverSubject$ = new Subject<string>();
-  private printingsLoad$ = new Subject<string>();
-  printingsCache = new Map<string, PrintingDto[]>();
   private destroy$ = new Subject<void>();
+
+  @ViewChild(CardSideListComponent) sideList?: CardSideListComponent;
 
   constructor(
     private store: Store<AppState>,
     private route: ActivatedRoute,
     private router: Router,
-    private collectionApi: CollectionApiService,
+    private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
+    private host: ElementRef<HTMLElement>,
   ) {
     this.collection$ = this.store.select(selectActiveCollection);
     this.loading$ = this.store.select(selectCollectionLoading);
   }
 
-  ngOnInit(): void {
-    this.collectionId = this.route.snapshot.paramMap.get('id')!;
-    this.store.dispatch(CollectionActions.loadCollection({ id: this.collectionId }));
-    const savedZoom = localStorage.getItem('collection-zoom');
-    if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
-
-    // Card-grid hover: switchMap cancels in-flight when user moves quickly
-    this.hoverSubject$
-      .pipe(
-        switchMap((oracleId) => {
-          const cached = this.printingsCache.get(oracleId);
-          if (cached) return of({ oracleId, printings: cached });
-          this.printingsLoading = true;
-          this.cdr.markForCheck();
-          return this.collectionApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
-        if (this.hoveredCard?.oracleId === oracleId) {
-          this.printingsLoading = false;
-        }
-        this.cdr.markForCheck();
-      });
-
-    // Modal printings loader: mergeMap (one card at a time, but parallel-safe)
-    this.printingsLoad$
-      .pipe(
-        mergeMap((oracleId) => {
-          if (this.printingsCache.has(oracleId))
-            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-          return this.collectionApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
+  /**
+   * Loads printings through the shared cache, driving the hover spinner and the
+   * modal's default-printing selection when the load lands on the relevant card.
+   */
+  private loadPrintings(oracleId: string): void {
+    this.printings
+      .get(oracleId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((printings) => {
+        if (this.hoveredCard?.oracleId === oracleId) this.printingsLoading = false;
         if (
           this.selectedCard?.oracleId === oracleId &&
           !this.modalViewScryfallId &&
@@ -178,6 +141,18 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
           this.modalViewScryfallId = printings[0].scryfallId;
         this.cdr.markForCheck();
       });
+  }
+
+  ngOnInit(): void {
+    this.collectionId = this.route.snapshot.paramMap.get('id')!;
+    this.store.dispatch(CollectionActions.loadCollection({ id: this.collectionId }));
+    const savedZoom = localStorage.getItem('collection-zoom');
+    if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
+
+    // Swap mode keeps the search browser as the grid area; the search panel must be
+    // open from the start or the restored layout would show an empty main area.
+    this.swapMode = localStorage.getItem('collection-swap-mode') === '1';
+    if (this.swapMode) this.showSearchPanel = true;
   }
 
   ngOnDestroy(): void {
@@ -191,6 +166,55 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   toggleSearchPanel(): void {
     this.showSearchPanel = !this.showSearchPanel;
+  }
+
+  // ---- Swap mode (Arena-style) ----------------------------------
+  //
+  // Swaps the two surfaces: the search browser takes over the grid area and the
+  // collection collapses into a compact side list. The search panel stays open for the
+  // whole time — its close button exits swap mode instead of leaving an empty main area.
+
+  toggleSwapMode(): void {
+    this.swapMode = !this.swapMode;
+    this.showSearchPanel = this.swapMode;
+    localStorage.setItem('collection-swap-mode', this.swapMode ? '1' : '0');
+    this.cdr.markForCheck();
+  }
+
+  onSearchPanelClose(): void {
+    if (this.swapMode) this.toggleSwapMode();
+    else this.toggleSearchPanel();
+  }
+
+  /**
+   * A landing target must actually be laid out on screen — elements hidden by a
+   * collapsed panel keep a degenerate rect that would strand the ghost mid-screen.
+   */
+  private visibleRect(el: Element | null): DOMRect | null {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 ? r : null;
+  }
+
+  /**
+   * Swap-mode add acknowledgment: the card's ghost flies onto its own side-list row
+   * (pulsing it as it lands), or onto the list header while the row does not exist yet.
+   */
+  private flyIntoSideList(flight: FlightSource | undefined, oracleId: string): void {
+    if (!this.swapMode) return;
+    const row = this.visibleRect(
+      this.host.nativeElement.querySelector(`.side-list-row[data-oracle-id="${oracleId}"]`),
+    );
+    const to = row ?? this.visibleRect(this.host.nativeElement.querySelector('.side-list-header'));
+    if (!to) return;
+    const land = () => {
+      if (row) this.sideList?.pulse(oracleId);
+    };
+    if (!flight) {
+      land();
+      return;
+    }
+    flyCardGhost({ from: flight.from, to, imageUrl: flight.imageUrl }).then(land);
   }
 
   // ---- Search panel event handler -----------------------------------
@@ -248,7 +272,13 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  onPanelCardAdd(event: { oracleId: string; scryfallId: string; foil?: boolean }): void {
+  onPanelCardAdd(event: {
+    oracleId: string;
+    scryfallId: string;
+    foil?: boolean;
+    flight?: FlightSource;
+  }): void {
+    this.flyIntoSideList(event.flight, event.oracleId);
     this.store.dispatch(
       CollectionActions.addCard({
         collectionId: this.collectionId,
@@ -283,12 +313,16 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   // ---- Card-grid hover -------------------------------------------
+  //
+  // Hover still prefetches printings (for the set picker and modal), but the info
+  // overlay is click-toggled to match the deck grid: single click shows the card's
+  // description, a second quick click opens the modal.
 
   onCardHover(card: CollectionCardDto): void {
     this.hoveredCard = card;
-    this.printingsLoading = !this.printingsCache.has(card.oracleId);
+    this.printingsLoading = !this.printings.has(card.oracleId);
     this.cdr.markForCheck();
-    this.hoverSubject$.next(card.oracleId);
+    this.loadPrintings(card.oracleId);
   }
 
   onCardLeave(): void {
@@ -297,16 +331,31 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  tileInfoId: string | null = null;
+  private lastTileClick: { id: string; time: number } | null = null;
+
+  onTileClick(card: CollectionCardDto, e: MouseEvent): void {
+    e.stopPropagation();
+    const now = performance.now();
+    if (this.lastTileClick?.id === card.id && now - this.lastTileClick.time < 350) {
+      this.lastTileClick = null;
+      this.tileInfoId = null;
+      this.openCard(card);
+      return;
+    }
+    this.lastTileClick = { id: card.id, time: now };
+    this.tileInfoId = this.tileInfoId === card.id ? null : card.id;
+    this.cdr.markForCheck();
+  }
+
   // ---- Card-grid set dropdown ------------------------------------
 
   onSelectFocus(card: CollectionCardDto): void {
-    if (!this.printingsCache.has(card.oracleId)) this.hoverSubject$.next(card.oracleId);
+    if (!this.printings.has(card.oracleId)) this.loadPrintings(card.oracleId);
   }
 
   onSetChange(card: CollectionCardDto, scryfallId: string): void {
-    const printing = this.printingsCache
-      .get(card.oracleId)
-      ?.find((p) => p.scryfallId === scryfallId);
+    const printing = this.printings.cached(card.oracleId)?.find((p) => p.scryfallId === scryfallId);
     if (printing) this.selectPrinting(card, printing);
   }
 
@@ -332,7 +381,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   >();
 
   printingOptions(card: CollectionCardDto): SelectMenuOption[] {
-    const printings = this.printingsCache.get(card.oracleId);
+    const printings = this.printings.cached(card.oracleId);
     if (!printings) {
       // Not loaded yet — show the owned printing so the button has a label.
       return [
@@ -469,9 +518,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   openCard(card: CollectionCardDto): void {
     this.selectedCard = card;
     this.modalFlipped = false;
-    const cached = this.printingsCache.get(card.oracleId);
+    const cached = this.printings.cached(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.printingsLoad$.next(card.oracleId);
+    if (!cached) this.loadPrintings(card.oracleId);
     this.cdr.markForCheck();
   }
 

@@ -5,7 +5,7 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { DeckDetailComponent, FreeColumn } from './deck-detail.component';
 import { DeckActions } from '../../store/deck/deck.actions';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { GameApiService } from '../../services/game-api.service';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
@@ -55,8 +55,10 @@ const INITIAL_STATE = {
 };
 
 async function setup() {
-  const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
-  collectionApi.getPrintings.and.returnValue(of([]));
+  const printings = jasmine.createSpyObj('PrintingsService', ['cached', 'has', 'get']);
+  printings.cached.and.returnValue(null);
+  printings.has.and.returnValue(false);
+  printings.get.and.returnValue(of([]));
 
   const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
     'searchCards',
@@ -76,10 +78,7 @@ async function setup() {
     'removeCard',
     'importDeck',
     'analyzeSynergy',
-    'getPrintings',
-    'getCardByScryfallId',
   ]);
-  deckApi.getPrintings.and.returnValue(of([]));
 
   const preferencesApi = jasmine.createSpyObj<PreferencesApiService>('PreferencesApiService', [
     'load',
@@ -93,7 +92,7 @@ async function setup() {
     schemas: [NO_ERRORS_SCHEMA],
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
-      { provide: CollectionApiService, useValue: collectionApi },
+      { provide: PrintingsService, useValue: printings },
       { provide: GameApiService, useValue: gameApi },
       { provide: DeckApiService, useValue: deckApi },
       { provide: PreferencesApiService, useValue: preferencesApi },

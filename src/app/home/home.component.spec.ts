@@ -6,7 +6,7 @@ import { provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { HomeComponent } from './home.component';
 import { GameApiService } from '../services/game-api.service';
-import { CollectionApiService } from '../services/collection-api.service';
+import { PrintingsService } from '../services/printings.service';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../components/card-modal/card-modal.component';
 import { makeCard } from '../testing/test-factories';
@@ -29,15 +29,17 @@ describe('HomeComponent — search flags', () => {
     gameApi.getSets.and.returnValue(of([]));
     gameApi.searchCards.and.returnValue(of([]));
 
-    const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
-    collectionApi.getPrintings.and.returnValue(of([]));
+    const printings = jasmine.createSpyObj('PrintingsService', ['cached', 'has', 'get']);
+    printings.cached.and.returnValue(null);
+    printings.has.and.returnValue(false);
+    printings.get.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
         { provide: GameApiService, useValue: gameApi },
-        { provide: CollectionApiService, useValue: collectionApi },
+        { provide: PrintingsService, useValue: printings },
         { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],
@@ -207,15 +209,17 @@ describe('HomeComponent — query builder', () => {
     gameApi = jasmine.createSpyObj('GameApiService', ['searchCards', 'getSets']);
     gameApi.getSets.and.returnValue(of([]));
     gameApi.searchCards.and.returnValue(of([]));
-    const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
-    collectionApi.getPrintings.and.returnValue(of([]));
+    const printings = jasmine.createSpyObj('PrintingsService', ['cached', 'has', 'get']);
+    printings.cached.and.returnValue(null);
+    printings.has.and.returnValue(false);
+    printings.get.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
         { provide: GameApiService, useValue: gameApi },
-        { provide: CollectionApiService, useValue: collectionApi },
+        { provide: PrintingsService, useValue: printings },
         { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],
@@ -305,15 +309,17 @@ describe('HomeComponent — flip', () => {
     gameApi = jasmine.createSpyObj('GameApiService', ['searchCards', 'getSets']);
     gameApi.getSets.and.returnValue(of([]));
     gameApi.searchCards.and.returnValue(of([]));
-    const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
-    collectionApi.getPrintings.and.returnValue(of([]));
+    const printings = jasmine.createSpyObj('PrintingsService', ['cached', 'has', 'get']);
+    printings.cached.and.returnValue(null);
+    printings.has.and.returnValue(false);
+    printings.get.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [HomeComponent, CommonModule, ReactiveFormsModule, FormsModule],
       providers: [
         provideMockStore({ initialState: { game: { cards: {} } } }),
         { provide: GameApiService, useValue: gameApi },
-        { provide: CollectionApiService, useValue: collectionApi },
+        { provide: PrintingsService, useValue: printings },
         { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
         ChangeDetectorRef,
       ],

@@ -1,15 +1,45 @@
 import { TestBed, ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { CardSearchPanelComponent } from './card-search-panel.component';
 import { GameApiService } from '../../services/game-api.service';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { makeCard } from '../../testing/test-factories';
 import { CardDto } from '../../models/game.models';
 import { PrintingDto } from '../../models/collection.models';
+
+/**
+ * A stateful PrintingsService double with the real cache semantics: `get` serves the
+ * cache without touching `fetch`, so tests can assert what actually hit the network.
+ */
+class PrintingsStub {
+  private cache = new Map<string, PrintingDto[]>();
+  fetch = jasmine.createSpy('fetch').and.callFake(() => of([] as PrintingDto[]));
+
+  seed(oracleId: string, printings: PrintingDto[]): void {
+    this.cache.set(oracleId, printings);
+  }
+
+  cached(oracleId: string): PrintingDto[] | null {
+    return this.cache.get(oracleId) ?? null;
+  }
+
+  has(oracleId: string): boolean {
+    return this.cache.has(oracleId);
+  }
+
+  get(oracleId: string): Observable<PrintingDto[]> {
+    const hit = this.cache.get(oracleId);
+    if (hit) return of(hit);
+    return (this.fetch(oracleId) as Observable<PrintingDto[]>).pipe(
+      tap((p) => this.cache.set(oracleId, p)),
+    );
+  }
+}
 
 function makeCards(n: number): CardDto[] {
   return Array.from({ length: n }, (_, i) =>
@@ -36,15 +66,12 @@ function makePrinting(scryfallId: string, setCode = 'lea'): PrintingDto {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function buildModule(
-  gameApi: jasmine.SpyObj<GameApiService>,
-  collectionApi: jasmine.SpyObj<CollectionApiService>,
-) {
+function buildModule(gameApi: jasmine.SpyObj<GameApiService>, printings: PrintingsStub) {
   return TestBed.configureTestingModule({
     imports: [CardSearchPanelComponent, CommonModule, ReactiveFormsModule, FormsModule],
     providers: [
       { provide: GameApiService, useValue: gameApi },
-      { provide: CollectionApiService, useValue: collectionApi },
+      { provide: PrintingsService, useValue: printings },
     ],
   })
     .overrideComponent(CardSearchPanelComponent, {
@@ -60,11 +87,8 @@ function makeSpies() {
   ]);
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
-  const collectionApi = jasmine.createSpyObj<CollectionApiService>('CollectionApiService', [
-    'getPrintings',
-  ]);
-  collectionApi.getPrintings.and.returnValue(of([]));
-  return { gameApi, collectionApi };
+  const printings = new PrintingsStub();
+  return { gameApi, printings };
 }
 
 /** Init component inside fakeAsync, flush the initial empty-query debounce. */
@@ -79,8 +103,8 @@ describe('CardSearchPanelComponent — search flags (state)', () => {
   let component: CardSearchPanelComponent;
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
   });
 
@@ -124,7 +148,7 @@ describe('CardSearchPanelComponent — search flags (API args)', () => {
   beforeEach(async () => {
     const spies = makeSpies();
     gameApi = spies.gameApi;
-    await buildModule(gameApi, spies.collectionApi);
+    await buildModule(gameApi, spies.printings);
     fixture = TestBed.createComponent(CardSearchPanelComponent);
     component = fixture.componentInstance;
   });
@@ -189,7 +213,7 @@ describe('CardSearchPanelComponent — pagination', () => {
   beforeEach(async () => {
     const spies = makeSpies();
     gameApi = spies.gameApi;
-    await buildModule(gameApi, spies.collectionApi);
+    await buildModule(gameApi, spies.printings);
     fixture = TestBed.createComponent(CardSearchPanelComponent);
     component = fixture.componentInstance;
   });
@@ -254,54 +278,54 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
   let fixture: ComponentFixture<CardSearchPanelComponent>;
   let component: CardSearchPanelComponent;
   let gameApi: jasmine.SpyObj<GameApiService>;
-  let collectionApi: jasmine.SpyObj<CollectionApiService>;
+  let printings: PrintingsStub;
 
   beforeEach(async () => {
     const spies = makeSpies();
     gameApi = spies.gameApi;
-    collectionApi = spies.collectionApi;
+    printings = spies.printings;
     gameApi.searchCards.and.returnValue(of(makeCards(3)));
-    await buildModule(gameApi, collectionApi);
+    await buildModule(gameApi, printings);
     fixture = TestBed.createComponent(CardSearchPanelComponent);
     component = fixture.componentInstance;
   });
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('calls getPrintings for each new search result', fakeAsync(() => {
+  it('fetches printings for each new search result', fakeAsync(() => {
     initComponent(fixture);
     component.searchText.setValue('rat');
     tick(400);
 
-    expect(collectionApi.getPrintings.calls.count()).toBe(3);
+    expect(printings.fetch.calls.count()).toBe(3);
   }));
 
-  it('calls getPrintings with each result oracle id', fakeAsync(() => {
+  it('fetches printings with each result oracle id', fakeAsync(() => {
     initComponent(fixture);
     component.searchText.setValue('rat');
     tick(400);
 
-    const ids = collectionApi.getPrintings.calls.allArgs().map((a) => a[0] as string);
+    const ids = printings.fetch.calls.allArgs().map((a) => a[0] as string);
     expect(ids).toContain('oracle-0');
     expect(ids).toContain('oracle-1');
     expect(ids).toContain('oracle-2');
   }));
 
-  it('skips getPrintings for cards already in printingsCache', fakeAsync(() => {
+  it('skips the network for cards already in the shared cache', fakeAsync(() => {
     initComponent(fixture);
-    component.printingsCache.set('oracle-0', [makePrinting('cached-scry')]);
+    printings.seed('oracle-0', [makePrinting('cached-scry')]);
 
     component.searchText.setValue('rat');
     tick(400);
 
-    expect(collectionApi.getPrintings.calls.count()).toBe(2);
-    const ids = collectionApi.getPrintings.calls.allArgs().map((a) => a[0] as string);
+    expect(printings.fetch.calls.count()).toBe(2);
+    const ids = printings.fetch.calls.allArgs().map((a) => a[0] as string);
     expect(ids).not.toContain('oracle-0');
   }));
 
   it('auto-selects scryfallId when card has exactly one printing', fakeAsync(() => {
     initComponent(fixture);
-    collectionApi.getPrintings.and.returnValue(of([makePrinting('scry-only')]));
+    printings.fetch.and.returnValue(of([makePrinting('scry-only')]));
 
     component.searchText.setValue('rat');
     tick(400);
@@ -313,9 +337,7 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
 
   it('auto-selects the correct scryfallId per card', fakeAsync(() => {
     initComponent(fixture);
-    collectionApi.getPrintings.and.callFake((oracleId: string) =>
-      of([makePrinting(`scry-for-${oracleId}`)]),
-    );
+    printings.fetch.and.callFake((oracleId: string) => of([makePrinting(`scry-for-${oracleId}`)]));
 
     component.searchText.setValue('rat');
     tick(400);
@@ -327,9 +349,7 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
 
   it('auto-selects the first printing (newest set) when card has multiple printings', fakeAsync(() => {
     initComponent(fixture);
-    collectionApi.getPrintings.and.returnValue(
-      of([makePrinting('scry-1'), makePrinting('scry-2')]),
-    );
+    printings.fetch.and.returnValue(of([makePrinting('scry-1'), makePrinting('scry-2')]));
 
     component.searchText.setValue('rat');
     tick(400);
@@ -340,14 +360,12 @@ describe('CardSearchPanelComponent — eager printing load & auto-select', () =>
 
   it('replaces old auto-selections when a new search starts', fakeAsync(() => {
     initComponent(fixture);
-    collectionApi.getPrintings.and.returnValue(of([makePrinting('scry-only')]));
+    printings.fetch.and.returnValue(of([makePrinting('scry-only')]));
     component.searchText.setValue('rat');
     tick(400);
     expect(component.searchSelectedScryfallId.get('oracle-0')).toBe('scry-only');
 
-    collectionApi.getPrintings.and.returnValue(
-      of([makePrinting('scry-1'), makePrinting('scry-2')]),
-    );
+    printings.fetch.and.returnValue(of([makePrinting('scry-1'), makePrinting('scry-2')]));
     component.searchText.setValue('bolt');
     tick(400);
 
@@ -377,8 +395,8 @@ describe('CardSearchPanelComponent — flip', () => {
   });
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     fixture = TestBed.createComponent(CardSearchPanelComponent);
     component = fixture.componentInstance;
   });
@@ -434,8 +452,8 @@ describe('CardSearchPanelComponent — addCard', () => {
   let component: CardSearchPanelComponent;
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
   });
 
@@ -484,8 +502,8 @@ describe('CardSearchPanelComponent — addPreviewNormal / addPreviewFoil', () =>
   let component: CardSearchPanelComponent;
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
     component.previewCard = makeCard({ oracleId: 'oracle-p' });
     component.previewScryfallId = 'scry-p';
@@ -545,8 +563,8 @@ describe('CardSearchPanelComponent — search history', () => {
 
   beforeEach(async () => {
     localStorage.clear();
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
   });
 
@@ -614,8 +632,8 @@ describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreview
   let component: CardSearchPanelComponent;
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
     component.previewCard = makeCard({ oracleId: 'oracle-p' });
     component.previewScryfallId = 'scry-p';
@@ -666,20 +684,19 @@ describe('CardSearchPanelComponent — decrementPreviewNormal / decrementPreview
 
 describe('CardSearchPanelComponent — printing options & history suggestions', () => {
   let component: CardSearchPanelComponent;
+  let printings: PrintingsStub;
 
   beforeEach(async () => {
-    const { gameApi, collectionApi } = makeSpies();
-    await buildModule(gameApi, collectionApi);
+    const spies = makeSpies();
+    printings = spies.printings;
+    await buildModule(spies.gameApi, printings);
     component = TestBed.createComponent(CardSearchPanelComponent).componentInstance;
   });
 
   afterEach(() => TestBed.resetTestingModule());
 
   it('printingOptions maps cached printings to labeled options', () => {
-    component.printingsCache.set('oracle-0', [
-      makePrinting('scry-1', 'psos'),
-      makePrinting('scry-2', 'lea'),
-    ]);
+    printings.seed('oracle-0', [makePrinting('scry-1', 'psos'), makePrinting('scry-2', 'lea')]);
 
     const opts = component.printingOptions('oracle-0');
 
@@ -689,14 +706,14 @@ describe('CardSearchPanelComponent — printing options & history suggestions', 
   });
 
   it('printingOptions returns the same array for the same cached printings (memoized)', () => {
-    component.printingsCache.set('oracle-0', [makePrinting('scry-1')]);
+    printings.seed('oracle-0', [makePrinting('scry-1')]);
 
     const first = component.printingOptions('oracle-0');
     const second = component.printingOptions('oracle-0');
     expect(second).toBe(first);
 
     // A new printings array (reload) produces fresh options.
-    component.printingsCache.set('oracle-0', [makePrinting('scry-9')]);
+    printings.seed('oracle-0', [makePrinting('scry-9')]);
     const third = component.printingOptions('oracle-0');
     expect(third).not.toBe(first);
     expect(third[0].value).toBe('scry-9');

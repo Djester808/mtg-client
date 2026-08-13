@@ -1,3 +1,5 @@
+@use '../../../styles/detail-page' as *;
+
 .detail-shell {
   min-height: 100vh;
   padding-top: 52px;
@@ -332,38 +334,8 @@
   &.is-active { background: rgba(201,168,76,0.15); color: rgba(201,168,76,0.95); }
 }
 
-.zoom-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  padding: 2px 6px;
-}
-
-.zoom-btn {
-  border: none;
-  background: none;
-  color: #8a7a60;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-  transition: color 0.12s;
-
-  &:hover:not([disabled]) { color: #c9a84c; }
-  &[disabled] { opacity: 0.3; cursor: default; }
-}
-
-.zoom-label {
-  font-size: 10px;
-  color: #a09070;
-  font-family: 'Cinzel', serif;
-  min-width: 32px;
-  text-align: center;
-}
+// Shared zoom control (this page's copy had drifted onto raw hex colors).
+@include zoom-control;
 
 .board-tabs-spacer { flex: 1; }
 
@@ -802,4 +774,3 @@
   animation: spin 0.7s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }

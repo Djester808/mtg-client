@@ -9,17 +9,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import {
-  Observable,
-  Subject,
-  forkJoin,
-  of,
-  switchMap,
-  takeUntil,
-  mergeMap,
-  map,
-  catchError,
-} from 'rxjs';
+import { Observable, Subject, forkJoin, of, switchMap, takeUntil } from 'rxjs';
 import { AppState } from '../../store';
 import { ForumActions } from '../../store/forum/forum.actions';
 import {
@@ -37,6 +27,7 @@ import {
 } from '../../components/stats-chart/stats-chart.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { DeckApiService } from '../../services/deck-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 
@@ -79,8 +70,6 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
   zoomLevel = 1.0;
   selectedCard: CollectionCardDto | null = null;
   modalViewScryfallId: string | null = null;
-  printingsCache = new Map<string, PrintingDto[]>();
-  private printingsLoad$ = new Subject<string>();
   copyState: 'idle' | 'copying' | 'done' | 'error' = 'idle';
   copyError: string | null = null;
 
@@ -104,6 +93,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private deckApi: DeckApiService,
+    private printings: PrintingsService,
     private prefs: PreferencesApiService,
   ) {
     this.post$ = this.store.select(selectActiveForumPost);
@@ -114,7 +104,23 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
   }
 
   get modalPrintings(): PrintingDto[] {
-    return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
+    return this.selectedCard ? (this.printings.cached(this.selectedCard.oracleId) ?? []) : [];
+  }
+
+  /** Loads printings through the shared cache; defaults the modal's viewed printing. */
+  private loadPrintings(oracleId: string): void {
+    this.printings
+      .get(oracleId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((printings) => {
+        if (
+          this.selectedCard?.oracleId === oracleId &&
+          !this.modalViewScryfallId &&
+          printings.length
+        )
+          this.modalViewScryfallId = printings[0].scryfallId;
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnInit(): void {
@@ -133,29 +139,6 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
       this.currentUsername = u;
       this.cdr.markForCheck();
     });
-
-    this.printingsLoad$
-      .pipe(
-        mergeMap((oracleId) => {
-          if (this.printingsCache.has(oracleId))
-            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-          return this.deckApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
-        if (
-          this.selectedCard?.oracleId === oracleId &&
-          !this.modalViewScryfallId &&
-          printings.length
-        )
-          this.modalViewScryfallId = printings[0].scryfallId;
-        this.cdr.markForCheck();
-      });
   }
 
   ngOnDestroy(): void {
@@ -355,9 +338,9 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
 
   openCard(card: CollectionCardDto): void {
     this.selectedCard = card;
-    const cached = this.printingsCache.get(card.oracleId);
+    const cached = this.printings.cached(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.printingsLoad$.next(card.oracleId);
+    if (!cached) this.loadPrintings(card.oracleId);
     this.cdr.markForCheck();
   }
 
@@ -378,9 +361,9 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
         cardDetails: card,
       };
       this.selectedCard = collCard;
-      const cached = this.printingsCache.get(oracleId);
+      const cached = this.printings.cached(oracleId);
       this.modalViewScryfallId = cached?.[0]?.scryfallId ?? null;
-      if (!cached) this.printingsLoad$.next(oracleId);
+      if (!cached) this.loadPrintings(oracleId);
       this.cdr.markForCheck();
     });
   }

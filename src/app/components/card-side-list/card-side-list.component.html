@@ -1,0 +1,66 @@
+<ng-content select="[side-list-header]"></ng-content>
+
+<div class="side-list-rows">
+  <div
+    class="side-list-item"
+    *ngFor="let card of cards; let i = index; trackBy: trackById"
+    [style.--i]="i"
+  >
+    <div
+      class="side-list-row"
+      [attr.data-oracle-id]="card.oracleId"
+      [class.is-pulsed]="pulsedOracleId === card.oracleId"
+      [class.is-expanded]="expandedId === card.id"
+      (click)="onRowClick(card)"
+    >
+      <div
+        class="row-art"
+        [style.backgroundImage]="art(card) ? 'url(' + art(card) + ')' : 'none'"
+      ></div>
+      <div class="row-scrim"></div>
+
+      <span class="row-qty" *ngIf="!foilMode">{{ qty(card) }}x</span>
+      <span class="row-qty" *ngIf="foilMode && card.quantity > 0">{{ card.quantity }}x</span>
+      <span class="row-qty row-qty--foil" *ngIf="foilMode && card.quantityFoil > 0">✦{{ card.quantityFoil }}</span>
+
+      <span class="row-name">{{ name(card) }}</span>
+
+      <app-mana-cost
+        *ngIf="card.cardDetails?.manaCost"
+        [cost]="card.cardDetails!.manaCost"
+        class="row-mana"
+      ></app-mana-cost>
+
+      <div class="row-ctrls" (click)="$event.stopPropagation()">
+        <ng-container *ngIf="!foilMode">
+          <button class="row-btn row-dec" (click)="rowDec.emit(card)" title="Remove one">−</button>
+          <button class="row-btn row-inc" (click)="rowInc.emit(card)" title="Add one">+</button>
+        </ng-container>
+        <ng-container *ngIf="foilMode">
+          <button class="row-btn row-dec" (click)="rowDec.emit(card)" title="Remove regular">−</button>
+          <button class="row-btn row-inc" (click)="rowInc.emit(card)" title="Add regular">+</button>
+          <span class="row-ctrl-sep">✦</span>
+          <button class="row-btn row-dec" (click)="rowDecFoil.emit(card)" title="Remove foil">−</button>
+          <button class="row-btn row-inc" (click)="rowIncFoil.emit(card)" title="Add foil">+</button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Single click expands the full card; another quick click opens the modal -->
+    <div class="row-card-preview"
+         *ngIf="expandedId === card.id || closingId === card.id"
+         [class.is-closing]="closingId === card.id"
+         (click)="onRowClick(card)">
+      <img
+        class="row-card-img"
+        *ngIf="fullImage(card)"
+        [src]="fullImage(card)"
+        [alt]="name(card)"
+        draggable="false"
+      />
+      <div class="row-card-placeholder" *ngIf="!fullImage(card)">◈</div>
+    </div>
+  </div>
+
+  <div class="side-list-empty" *ngIf="cards.length === 0">{{ emptyText }}</div>
+</div>

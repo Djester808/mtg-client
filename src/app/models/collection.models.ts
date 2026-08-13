@@ -74,8 +74,5 @@ export interface PrintingDto {
   manaCost: string | null;
 }
 
-export interface SetSummaryDto {
-  code: string;
-  name: string;
-  cardCount: number;
-}
+// SetSummaryDto lives in game.models.ts. A second, narrower copy here used to shadow
+// it through game.models' re-export — which shape you got depended on the import path.

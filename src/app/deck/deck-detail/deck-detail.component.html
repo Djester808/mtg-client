@@ -196,6 +196,10 @@
           </span>
 
           <div class="vbar-panel-btns">
+            <button class="add-btn vbar-add-btn" [class.is-active]="showSearchPanel" (click)="onAddCardsClick()">
+              <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
+              {{ showSearchPanel ? 'Close' : commanderSearchMode ? 'Add Commander' : 'Add Cards' }}
+            </button>
             <button class="tool-btn" [class.is-active]="showSidePanel && sideTab === 'stats'" (click)="openSidePanel('stats')" title="Stats">
               <i class="bi bi-bar-chart-line"></i><span>Stats</span>
             </button>
@@ -268,7 +272,7 @@
   <div class="detail-body">
 
     <!-- Left: card groups -->
-    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" [class.is-search-drop]="isSearchDragOver && viewMode !== 'free'" *ngIf="deck$ | async as deck"
+    <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" [class.is-search-drop]="isSearchDragOver && viewMode !== 'free'" *ngIf="!swapMode && (deck$ | async) as deck"
           [style.--card-zoom]="zoomLevel"
           (mousemove)="onGroupsAreaMouseMove($event)"
           (mouseleave)="onGroupsAreaMouseLeave()"
@@ -316,6 +320,7 @@
               <button class="sort-btn" [class.is-active]="viewMode === 'list'"   (click)="setViewMode('list', deck)"   title="List view"><i class="bi bi-list"></i></button>
               <button class="sort-btn" [class.is-active]="viewMode === 'visual'" (click)="setViewMode('visual', deck)" title="Visual view"><i class="bi bi-grid"></i></button>
               <button class="sort-btn" [class.is-active]="viewMode === 'free'"   (click)="setViewMode('free', deck)"   title="Free arrange"><i class="bi bi-columns-gap"></i></button>
+              <button class="sort-btn" [class.is-active]="swapMode" (click)="toggleSwapMode()" title="Build mode — search fills the board, deck as a side list"><i class="bi bi-layout-sidebar-reverse"></i></button>
             </div>
           </div>
         </ng-container>
@@ -381,7 +386,9 @@
           <button class="sort-btn zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
         </div>
 
-        <button class="add-btn fbar-add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+        <!-- Commander decks host this in the validation bar's tools row instead -->
+        <button class="add-btn fbar-add-btn" *ngIf="deck.format !== 'commander'"
+                [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
           {{ showSearchPanel ? 'Close' : commanderSearchMode ? 'Add Commander' : 'Add Cards' }}
         </button>
@@ -424,7 +431,7 @@
                 [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
                 (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
-                (click)="openCard(card)"
+                (click)="onListRowClick(card)"
               >
                 <div
                   class="card-thumb"
@@ -466,7 +473,7 @@
                 [class.is-list-dragging]="listDragGroupKey === group.key && listDragFromIdx === i"
                 [ngClass]="cardViolationClass(card, deck)"
                 (pointerdown)="onListCardPointerDown(group.key, i, card, $event, getOrderedListCards(group.key, group.cards))"
-                (click)="openCard(card)"
+                (click)="onListRowClick(card)"
               >
                 <span class="list-qty">{{ cardCount(card) }}</span>
                 <span class="list-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
@@ -496,8 +503,9 @@
                 [class.is-gap-shifted]="stackShifted(group.key, i)"
                 [class.is-stack-dragging]="stackDragGroupKey === group.key && stackDragFromIdx === i"
                 [class.is-stack-drop-target]="stackDragGroupKey === group.key && stackDragOverIdx === i && stackDragFromIdx !== i"
+                [class.has-info]="tileInfoKey === group.key + '/' + i"
                 (pointerdown)="onStackPointerDown(group.key, i, card, $event)"
-                (click)="openCard(card)"
+                (click)="onTileClick(card, group.key + '/' + i, $event)"
               >
                 <div
                   class="visual-art"
@@ -510,6 +518,33 @@
                           [class.is-flipped]="flippedCardIds.has(group.key + '/' + i)"
                           (click)="toggleTileFlip(group.key + '/' + i, card, $event)"
                           title="Flip">↻</button>
+                  <!-- Click-toggled description overlay (double click opens the modal) -->
+                  <div class="card-info-panel" *ngIf="tileInfoKey === group.key + '/' + i">
+                    <div class="info-top">
+                      <div class="info-header">
+                        <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                        <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost"></app-mana-cost>
+                      </div>
+                      <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
+                    </div>
+                    <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">
+                      <div [innerHTML]="card.cardDetails!.oracleText | oracleSymbols"></div>
+                    </div>
+                    <div class="info-bottom">
+                      <div class="info-stats"
+                           *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
+                        <span class="info-pt" *ngIf="card.cardDetails?.power != null">
+                          {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
+                        </span>
+                        <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
+                          <i class="ms ms-loyalty-start ms-loyalty-{{ card.cardDetails!.startingLoyalty }}"></i>
+                        </span>
+                      </div>
+                      <div class="info-artist" *ngIf="card.cardDetails?.artist">
+                        Illus. {{ card.cardDetails!.artist }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="card-bottom" (click)="$event.stopPropagation()">
                   <div class="ctrl-row">
@@ -614,8 +649,9 @@
                    [style.z-index]="i + 1"
                    [class.is-selected-card]="selectedCardSlots.has(col.id + '/' + i)"
                    [class.is-dragging]="isDraggingMultiCards ? selectedCardSlots.has(col.id + '/' + i) : (dragCardId === card.id && dragSourceColId === col.id && dragSrcRenderedIdx === i)"
+                   [class.has-info]="tileInfoKey === col.id + '/' + i"
                    (pointerdown)="onFreeCardPointerDown(card, col.id, i, $event)"
-                   (click)="$event.stopPropagation(); openCard(card, col.id + '/' + i)">
+                   (click)="onTileClick(card, col.id + '/' + i, $event)">
                 <div class="visual-art"
                      [style.backgroundImage]="tileImage(card, col.id + '/' + i) ? 'url(' + tileImage(card, col.id + '/' + i) + ')' : 'none'"
                      [class.no-image]="!tileImage(card, col.id + '/' + i)">
@@ -625,6 +661,33 @@
                           [class.is-flipped]="flippedCardIds.has(col.id + '/' + i)"
                           (click)="toggleTileFlip(col.id + '/' + i, card, $event)"
                           title="Flip">↻</button>
+                  <!-- Click-toggled description overlay (double click opens the modal) -->
+                  <div class="card-info-panel" *ngIf="tileInfoKey === col.id + '/' + i">
+                    <div class="info-top">
+                      <div class="info-header">
+                        <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                        <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost"></app-mana-cost>
+                      </div>
+                      <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
+                    </div>
+                    <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">
+                      <div [innerHTML]="card.cardDetails!.oracleText | oracleSymbols"></div>
+                    </div>
+                    <div class="info-bottom">
+                      <div class="info-stats"
+                           *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
+                        <span class="info-pt" *ngIf="card.cardDetails?.power != null">
+                          {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
+                        </span>
+                        <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
+                          <i class="ms ms-loyalty-start ms-loyalty-{{ card.cardDetails!.startingLoyalty }}"></i>
+                        </span>
+                      </div>
+                      <div class="info-artist" *ngIf="card.cardDetails?.artist">
+                        Illus. {{ card.cardDetails!.artist }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="card-bottom" (click)="$event.stopPropagation()">
                   <div class="ctrl-row">
@@ -672,7 +735,7 @@
     </main>
 
     <!-- Stats / Commander drawer (overlays main content) -->
-    <aside class="side-panel" [class.is-open]="showSidePanel && !showSearchPanel">
+    <aside class="side-panel" [class.is-open]="showSidePanel && (swapMode || !showSearchPanel)">
       <div class="side-panel-header">
         <span class="side-panel-title">{{ sideTab === 'commander' ? 'Commander' : 'Stats' }}</span>
         <button class="side-panel-close" (click)="toggleSidePanel()"><i class="bi bi-x-lg"></i></button>
@@ -897,9 +960,10 @@
 
     </aside>
 
-    <!-- Search panel (shared component, slides in from right) -->
+    <!-- Search panel (shared component, slides in from right; fills the board in swap mode) -->
     <app-card-search-panel
       [isOpen]="showSearchPanel"
+      [boardMode]="swapMode"
       [ownedCards]="(deck$ | async)?.cards ?? []"
       [deckCards]="(deck$ | async)?.cards ?? []"
       [isDeckContext]="true"
@@ -909,8 +973,42 @@
       (cardAdd)="onPanelCardAdd($event)"
       (cardRemove)="removeSuggestedCard($event)"
       (fitRequested)="onFitRequested($event)"
-      (panelClose)="toggleSearchPanel()"
+      (panelClose)="onSearchPanelClose()"
     ></app-card-search-panel>
+
+    <!-- Swap mode: the deck itself as a compact side list -->
+    <ng-container *ngIf="swapMode && (deck$ | async) as deck">
+      <app-card-side-list
+        [cards]="sideListCards(deck)"
+        emptyText="No cards on this board yet"
+        (rowOpen)="openCard($event)"
+        (rowInc)="increment($event)"
+        (rowDec)="decrement($event)"
+      >
+        <div side-list-header class="side-list-header">
+          <div class="side-list-title-row">
+            <span class="side-list-title">Deck</span>
+            <button class="swap-exit-btn" (click)="toggleSwapMode()" title="Back to board view">
+              <i class="bi bi-arrow-left-right"></i> Board
+            </button>
+          </div>
+          <div class="swap-tabs">
+            <button class="swap-tab" [class.is-active]="activeBoard === 'main'"
+                    [class.is-bumped]="bumpedBoard === 'main'" (click)="activeBoard = 'main'">
+              Main Deck <span class="swap-tab-count">{{ boardCount(deck, 'main') }}</span>
+            </button>
+            <button class="swap-tab" [class.is-active]="activeBoard === 'side'"
+                    [class.is-bumped]="bumpedBoard === 'side'" (click)="activeBoard = 'side'">
+              Sideboard <span class="swap-tab-count" *ngIf="boardCount(deck, 'side') > 0">{{ boardCount(deck, 'side') }}</span>
+            </button>
+            <button class="swap-tab" [class.is-active]="activeBoard === 'maybe'"
+                    [class.is-bumped]="bumpedBoard === 'maybe'" (click)="activeBoard = 'maybe'">
+              Maybeboard <span class="swap-tab-count" *ngIf="boardCount(deck, 'maybe') > 0">{{ boardCount(deck, 'maybe') }}</span>
+            </button>
+          </div>
+        </div>
+      </app-card-side-list>
+    </ng-container>
 
     <!-- Suggestions panel -->
     <div class="suggestions-panel-wrap" [class.is-open]="showSuggestionsPanel">

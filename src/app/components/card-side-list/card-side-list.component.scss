@@ -1,0 +1,236 @@
+@use '../../../styles/add-controls' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  flex-shrink: 0;
+  min-height: 0;
+  border-left: 1px solid var(--border-dim);
+  background: var(--bg-deep);
+}
+
+.side-list-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+
+// ---- Rows: art strip behind, name over a left scrim, Arena-style ----------
+
+.side-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.side-list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-dim);
+  border-radius: 7px;
+  overflow: hidden;
+  cursor: pointer;
+  animation: side-row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 22ms), 400ms);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+
+  &:hover {
+    border-color: rgba(201, 168, 76, 0.45);
+    transform: translateX(-2px);
+
+    .row-art { opacity: 0.85; }
+    .row-mana { opacity: 0; }
+    .row-ctrls { opacity: 1; pointer-events: auto; }
+  }
+
+  &.is-pulsed {
+    animation: side-row-pulse 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    border-color: var(--gold);
+  }
+
+  &.is-expanded {
+    border-color: rgba(201, 168, 76, 0.45);
+  }
+}
+
+// Full-card preview a single click unfolds beneath the row.
+.row-card-preview {
+  @include card-corners;
+  overflow: hidden;
+  cursor: pointer;
+  animation: row-preview-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes row-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Closing mirrors the entrance; the element stays until the timer removes it.
+.row-card-preview.is-closing {
+  animation: row-preview-out 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+@keyframes row-preview-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+.row-card-img {
+  display: block;
+  width: 100%;
+  @include card-corners;
+}
+
+.row-card-placeholder {
+  @include card-surface;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+}
+
+@keyframes side-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes side-row-pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 0 rgba(201, 168, 76, 0); }
+  35%  { transform: scale(1.04); box-shadow: 0 0 18px rgba(201, 168, 76, 0.45); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(201, 168, 76, 0); }
+}
+
+.row-art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 25%;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.row-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(14, 14, 15, 0.96) 0%,
+    rgba(14, 14, 15, 0.82) 45%,
+    rgba(14, 14, 15, 0.35) 100%
+  );
+}
+
+// ---- Row content -----------------------------------------------------------
+
+.row-qty {
+  position: relative;
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-dim);
+  border-radius: 5px;
+  padding: 1px 4px;
+
+  &--foil {
+    color: #7dd3fc;
+    border-color: rgba(125, 211, 252, 0.35);
+  }
+}
+
+.row-name {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.row-mana {
+  position: relative;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+// ---- Hover controls --------------------------------------------------------
+
+.row-ctrls {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  background: rgba(10, 8, 14, 0.92);
+  border: 1px solid var(--border-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.row-btn {
+  @include tile-ctrl-btn;
+  width: 20px;
+  height: 20px;
+}
+
+.row-inc { @include tile-ctrl-btn-inc; }
+.row-dec { @include tile-ctrl-btn-dec; }
+
+.row-ctrl-sep {
+  font-size: 10px;
+  color: #7dd3fc;
+}
+
+// ---- Empty state -----------------------------------------------------------
+
+.side-list-empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+}

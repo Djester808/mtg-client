@@ -19,7 +19,8 @@
         <button class="scan-btn-header" (click)="showScanner = true" title="Scan a card with your camera">
           <i class="bi bi-camera"></i> Scan
         </button>
-        <button class="add-btn" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
+        <!-- Hidden while swapped: the search panel is the main area there and must stay open. -->
+        <button class="add-btn" *ngIf="!swapMode" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
           <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
       </div>
@@ -36,7 +37,7 @@
   <div class="detail-body">
 
     <!-- Card grid area -->
-    <main class="grid-area" [style.--card-zoom]="zoomLevel"
+    <main class="grid-area" *ngIf="!swapMode" [style.--card-zoom]="zoomLevel"
           (dragover)="onAreaDragOver($event)"
           (drop)="onAreaDrop($event)">
 
@@ -66,6 +67,14 @@
           <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
           <span class="zoom-label">{{ zoomLabel }}</span>
           <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
+        </div>
+        <!-- Display: grid vs build mode (search fills the area, collection as a side list) -->
+        <div class="zoom-group display-toggle">
+          <button class="zoom-btn disp-btn is-active" title="Grid view"><i class="bi bi-grid"></i></button>
+          <button class="zoom-btn disp-btn" (click)="toggleSwapMode()"
+                  title="Build mode — search fills the area, collection as a side list">
+            <i class="bi bi-layout-sidebar-reverse"></i>
+          </button>
         </div>
       </div>
       </ng-container>
@@ -105,7 +114,8 @@
             (mouseleave)="onCardLeave()"
           >
             <!-- Visual tile -->
-            <div class="card-tile" [class.is-foil]="card.quantityFoil > 0">
+            <div class="card-tile" [class.is-foil]="card.quantityFoil > 0"
+                 [class.has-info]="tileInfoId === card.id">
 
               <!-- Card image — click opens detail modal -->
               <div
@@ -113,7 +123,7 @@
                 [style.backgroundImage]="tileImage(card)
                   ? 'url(' + tileImage(card) + ')'
                   : 'none'"
-                (click)="openCard(card)"
+                (click)="onTileClick(card, $event)"
               >
                 <div class="art-placeholder" *ngIf="!tileImage(card)">◈</div>
                 <button class="flip-btn"
@@ -121,16 +131,13 @@
                         [class.is-flipped]="flippedCardIds.has(card.id)"
                         (click)="toggleTileFlip(card, $event)"
                         title="Flip card">⟲</button>
-                <div class="foil-badge" *ngIf="card.quantityFoil > 0">✦</div>
-                <div class="qty-badge">
-                  <ng-container *ngIf="card.quantity > 0">×{{ card.quantity }}</ng-container>
-                  <span class="qty-foil" *ngIf="card.quantityFoil > 0">
-                    <ng-container *ngIf="card.quantity > 0"> </ng-container>✦{{ card.quantityFoil }}
-                  </span>
+                <div class="tile-badges">
+                  <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
+                  <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0">✦{{ card.quantityFoil }}</span>
                 </div>
 
-                <!-- Hover info overlay — inside card-art so it only covers the image -->
-                <div class="card-info-panel" *ngIf="hoveredCard?.id === card.id">
+                <!-- Click-toggled description overlay (double click opens the modal) -->
+                <div class="card-info-panel" *ngIf="tileInfoId === card.id">
                   <!-- Top: name, mana, type -->
                   <div class="info-top">
                     <div class="info-header">
@@ -161,8 +168,8 @@
                 </div>
               </div>
 
-              <!-- Single-row bottom: set · normal qty · foil qty · flip -->
-              <div class="card-bottom">
+              <!-- Hover strip: set picker + normal/foil quantities -->
+              <div class="card-bottom" (click)="$event.stopPropagation()">
                 <app-select-menu
                   class="set-select-menu"
                   [options]="printingOptions(card)"
@@ -172,16 +179,18 @@
                   (valueChange)="onSetChange(card, $event)"
                 ></app-select-menu>
 
-                <div class="ctrl-row">
-                  <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
-                  <span class="ctrl-label"><i class="bi bi-layers"></i> {{ card.quantity }}</span>
-                  <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
-                </div>
+                <div class="ctrl-strip-row">
+                  <div class="ctrl-row">
+                    <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
+                    <span class="ctrl-label"><i class="bi bi-layers"></i> {{ card.quantity }}</span>
+                    <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
+                  </div>
 
-                <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
-                  <button class="ctrl-btn ctrl-dec" (click)="decrementFoil(card)" title="Remove foil">−</button>
-                  <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
-                  <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
+                  <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
+                    <button class="ctrl-btn ctrl-dec" (click)="decrementFoil(card)" title="Remove foil">−</button>
+                    <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
+                    <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -213,16 +222,41 @@
       </ng-container>
     </aside>
 
-    <!-- Search panel (shared component, slides in from right) -->
+    <!-- Search panel (shared component, slides in from right; fills the main area in swap mode) -->
     <app-card-search-panel
       [isOpen]="showSearchPanel"
+      [boardMode]="swapMode"
       [ownedCards]="(collection$ | async)?.cards ?? []"
       (cardAdd)="onPanelCardAdd($event)"
       (cardRemove)="onPanelCardRemove($event)"
       (cardDecrementNormal)="onPanelDecrementNormal($event)"
       (cardDecrementFoil)="onPanelDecrementFoil($event)"
-      (panelClose)="toggleSearchPanel()"
+      (panelClose)="onSearchPanelClose()"
     ></app-card-search-panel>
+
+    <!-- Swap mode: the collection itself as a compact side list -->
+    <ng-container *ngIf="swapMode && (collection$ | async) as col">
+      <app-card-side-list
+        [cards]="filteredCards(col)"
+        [foilMode]="true"
+        emptyText="No cards yet"
+        (rowOpen)="openCard($event)"
+        (rowInc)="incrementNormal($event)"
+        (rowDec)="decrementNormal($event)"
+        (rowIncFoil)="incrementFoil($event)"
+        (rowDecFoil)="decrementFoil($event)"
+      >
+        <div side-list-header class="side-list-header">
+          <div class="side-list-title-row">
+            <span class="side-list-title">Collection</span>
+            <button class="swap-exit-btn" (click)="toggleSwapMode()" title="Back to grid view">
+              <i class="bi bi-arrow-left-right"></i> Grid
+            </button>
+          </div>
+          <span class="side-list-count">{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span>
+        </div>
+      </app-card-side-list>
+    </ng-container>
   </div>
 
   <!-- Detail cover picker modal -->
@@ -252,59 +286,51 @@
     [(flipped)]="modalFlipped"
     [primaryScryfallId]="card.scryfallId ?? null"
     [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
+    [countBadge]="viewedEntry(modalCol, card)?.quantity ?? null"
+    [foilCountBadge]="viewedEntry(modalCol, card)?.quantityFoil ?? null"
+    [infoTabLabel]="viewedEntry(modalCol, card) ? 'Notes' : null"
     (closed)="closeCard()"
   >
-    <!-- Collection-specific: action buttons + notes -->
-    <div extra class="modal-extra-wrap">
-      <div class="modal-action-row">
-        <ng-container *ngIf="viewedEntry(modalCol, card) as viewed">
-          <span class="modal-deck-badge">×{{ viewed.quantity }}</span>
+    <!-- Adds ride above the art (counts sit beside the name); removes + notes below. -->
+    <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
+      <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
+        <div class="modal-btn-pair">
           <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
             <i class="bi bi-plus-lg"></i> Normal
           </button>
-          <button class="modal-action-btn modal-action-btn--remove"
-                  [disabled]="viewed.quantity <= 0"
-                  (click)="modalDecrementNormal(modalCol, card)">
-            <i class="bi bi-dash-lg"></i> Normal
-          </button>
-          <span class="modal-group-sep"></span>
-          <span class="modal-deck-badge modal-deck-badge--foil">✦ ×{{ viewed.quantityFoil }}</span>
           <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
-            <i class="bi bi-plus-lg"></i> Foil
+            <i class="bi bi-plus-lg"></i> ✦ Foil
           </button>
-          <button class="modal-action-btn modal-action-btn--remove"
-                  [disabled]="viewed.quantityFoil <= 0"
-                  (click)="modalDecrementFoil(modalCol, card)">
-            <i class="bi bi-dash-lg"></i> Foil
-          </button>
-        </ng-container>
-        <ng-container *ngIf="!viewedEntry(modalCol, card)">
-          <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
-            <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
-              <i class="bi bi-plus-lg"></i> Add Normal
-            </button>
-            <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
-              ✦ Add Foil
-            </button>
-          </ng-container>
-          <ng-template #noScryfallHint>
-            <span class="modal-qty-not-owned">Select a printing below</span>
-          </ng-template>
-        </ng-container>
-      </div>
-      <ng-container *ngIf="viewedEntry(modalCol, card) as viewed">
-        <div class="modal-notes-section">
-          <span class="modal-notes-label">Notes</span>
-          <textarea
-            class="modal-notes-input"
-            [value]="noteDraftValue(viewed)"
-            (input)="setNoteDraft(viewed.id, $any($event.target).value)"
-            (blur)="saveNotes(viewed)"
-            placeholder="Add personal notes…"
-            rows="3"
-          ></textarea>
         </div>
       </ng-container>
+      <ng-template #noScryfallHint>
+        <span class="modal-qty-not-owned">Select a printing below</span>
+      </ng-template>
+    </div>
+    <div extra class="modal-extra-wrap" *ngIf="viewedEntry(modalCol, card) as viewed">
+      <div class="modal-btn-pair">
+        <button class="modal-action-btn modal-action-btn--remove"
+                [disabled]="viewed.quantity <= 0"
+                (click)="modalDecrementNormal(modalCol, card)">
+          <i class="bi bi-dash-lg"></i> Normal
+        </button>
+        <button class="modal-action-btn modal-action-btn--remove"
+                [disabled]="viewed.quantityFoil <= 0"
+                (click)="modalDecrementFoil(modalCol, card)">
+          <i class="bi bi-dash-lg"></i> ✦ Foil
+        </button>
+      </div>
+    </div>
+    <!-- Notes live in a tab beside the card details -->
+    <div info-tab class="modal-notes-section" *ngIf="viewedEntry(modalCol, card) as viewed">
+      <textarea
+        class="modal-notes-input"
+        [value]="noteDraftValue(viewed)"
+        (input)="setNoteDraft(viewed.id, $any($event.target).value)"
+        (blur)="saveNotes(viewed)"
+        placeholder="Add personal notes…"
+        rows="6"
+      ></textarea>
     </div>
   </app-card-modal>
   </ng-container>

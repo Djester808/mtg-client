@@ -38,6 +38,12 @@ export interface SetSummaryDto {
   releasedAt: string | null;
 }
 
+/** An AI fit assessment of a card for a commander deck: 0–100 plus the reasoning. */
+export interface SynergyScore {
+  score: number;
+  reason: string;
+}
+
 export interface CardDto {
   cardId: string;
   oracleId: string;

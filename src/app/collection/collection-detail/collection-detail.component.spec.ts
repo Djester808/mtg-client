@@ -7,7 +7,7 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { CollectionDetailComponent } from './collection-detail.component';
 import { GameApiService } from '../../services/game-api.service';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import { CollectionDetailDto, CollectionCardDto } from '../../models/game.models';
 
@@ -49,8 +49,10 @@ async function setupTestBed() {
   gameApi.searchCards.and.returnValue(of([]));
   gameApi.getSets.and.returnValue(of([]));
 
-  const collectionApi = jasmine.createSpyObj('CollectionApiService', ['getPrintings']);
-  collectionApi.getPrintings.and.returnValue(of([]));
+  const printings = jasmine.createSpyObj('PrintingsService', ['cached', 'has', 'get']);
+  printings.cached.and.returnValue(null);
+  printings.has.and.returnValue(false);
+  printings.get.and.returnValue(of([]));
 
   await TestBed.configureTestingModule({
     imports: [CollectionDetailComponent, CommonModule, FormsModule],
@@ -58,13 +60,13 @@ async function setupTestBed() {
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
       { provide: GameApiService, useValue: gameApi },
-      { provide: CollectionApiService, useValue: collectionApi },
+      { provide: PrintingsService, useValue: printings },
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'col-1' } } } },
     ],
   }).compileComponents();
 
-  return { collectionApi };
+  return { printings };
 }
 
 // ── Search panel toggle ──────────────────────────────────────────────────────

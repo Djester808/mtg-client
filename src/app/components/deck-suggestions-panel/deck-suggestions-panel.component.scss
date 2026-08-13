@@ -206,10 +206,6 @@
 
 // Defined locally: @keyframes names leak across Angular's emulated encapsulation, and this
 // component previously borrowed `spin` from unrelated components' styles.
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .sugg-stage-label {
   font-weight: 600;
   color: var(--text-primary);

@@ -17,18 +17,7 @@ import {
 } from '../../components/stats-chart/stats-chart.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import {
-  Observable,
-  Subject,
-  mergeMap,
-  switchMap,
-  takeUntil,
-  of,
-  catchError,
-  map,
-  filter,
-  take,
-} from 'rxjs';
+import { Observable, Subject, switchMap, takeUntil, of, catchError, map, filter, take } from 'rxjs';
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
@@ -40,13 +29,18 @@ import {
   CardDto,
 } from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
-import { buildTypeLine } from '../../utils/card.utils';
+import {
+  buildTypeLine,
+  colorIdentityViolations as identityViolations,
+} from '../../utils/card.utils';
+import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
+import { CardSideListComponent } from '../../components/card-side-list/card-side-list.component';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
 import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/mana-suggest-panel.component';
@@ -120,11 +114,13 @@ export interface DeckStats {
     ManaCostComponent,
     CardModalComponent,
     CardSearchPanelComponent,
+    CardSideListComponent,
     CoverPickerModalComponent,
     DeckSuggestionsPanelComponent,
     ManaSuggestPanelComponent,
     StatsChartComponent,
     SelectMenuComponent,
+    OracleSymbolsPipe,
   ],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
@@ -215,6 +211,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   textStyle = false;
   zoomLevel = 1.0;
   activeBoard: 'main' | 'side' | 'maybe' = 'main';
+  /** Arena-style swap: search browser fills the board area, deck becomes a side list. */
+  swapMode = false;
   showSearchPanel = false;
   showSuggestionsPanel = false;
   showManaSuggestPanel = false;
@@ -308,22 +306,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   isSearchDragOver = false;
 
   get modalPrintings(): PrintingDto[] {
-    return this.selectedCard ? (this.printingsCache.get(this.selectedCard.oracleId) ?? []) : [];
+    return this.selectedCard ? (this.printings.cached(this.selectedCard.oracleId) ?? []) : [];
   }
 
   @ViewChild(CardSearchPanelComponent) searchPanel?: CardSearchPanelComponent;
+  @ViewChild(CardSideListComponent) sideList?: CardSideListComponent;
 
   private deckId = '';
   private _rafPending = false;
-  private printingsLoad$ = new Subject<string>();
-  printingsCache = new Map<string, PrintingDto[]>();
   private destroy$ = new Subject<void>();
 
   constructor(
     private store: Store<AppState>,
     private route: ActivatedRoute,
     private router: Router,
-    private collectionApi: CollectionApiService,
+    private printings: PrintingsService,
     private deckApi: DeckApiService,
     private cdr: ChangeDetectorRef,
     private prefs: PreferencesApiService,
@@ -352,6 +349,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       });
     const savedZoom = localStorage.getItem('deck-zoom');
     if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(3.0, parseFloat(savedZoom) || 1.0));
+
+    // Swap mode keeps the search browser as the board; the search panel must be open
+    // from the start or the restored layout would show an empty board area.
+    this.swapMode = localStorage.getItem('deck-swap-mode') === '1';
+    if (this.swapMode) this.showSearchPanel = true;
 
     if (localStorage.getItem(`deck-free-${this.deckId}`)) {
       this.viewMode = 'free';
@@ -403,29 +405,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       }
       if (deck) this.loadTokenImages(deck);
     });
-
-    this.printingsLoad$
-      .pipe(
-        mergeMap((oracleId) => {
-          if (this.printingsCache.has(oracleId))
-            return of({ oracleId, printings: this.printingsCache.get(oracleId)! });
-          return this.collectionApi.getPrintings(oracleId).pipe(
-            map((printings) => ({ oracleId, printings })),
-            catchError(() => of({ oracleId, printings: [] as PrintingDto[] })),
-          );
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ oracleId, printings }) => {
-        this.printingsCache.set(oracleId, printings);
-        if (
-          this.selectedCard?.oracleId === oracleId &&
-          !this.modalViewScryfallId &&
-          printings.length
-        )
-          this.modalViewScryfallId = printings[0].scryfallId;
-        this.cdr.markForCheck();
-      });
   }
 
   ngOnDestroy(): void {
@@ -1239,13 +1218,17 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
 
     const onUp = () => {
+      if (dragging) this.armClickSuppression();
       if (dragging && ghost) {
         this.animateGhostDrop(ghost, lastX, lastY, grabOffsetX, grabOffsetY, () => cleanup(true));
       } else {
         cleanup(true);
       }
     };
-    const onCancel = () => cleanup(false);
+    const onCancel = () => {
+      if (dragging) this.armClickSuppression();
+      cleanup(false);
+    };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
@@ -2158,6 +2141,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     const onUp = () => {
       detach();
+      if (dragging) this.armClickSuppression();
       if (!(dragging && ghost)) {
         finish(true);
         return;
@@ -2179,6 +2163,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
     const onCancel = () => {
       detach();
+      if (dragging) this.armClickSuppression();
       if (dragging && ghost) {
         const g = ghost;
         ghost = null;
@@ -2316,6 +2301,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     const onUp = () => {
       detach();
+      if (dragging) this.armClickSuppression();
       if (!(dragging && ghost)) {
         finish(true);
         return;
@@ -2653,12 +2639,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
+    // In swap mode the search panel IS the board area — leave it alone.
     const hadAny =
-      this.showSearchPanel ||
+      (!this.swapMode && this.showSearchPanel) ||
       this.showManaSuggestPanel ||
       this.showSuggestionsPanel ||
       this.showSidePanel;
-    this.showSearchPanel = false;
+    if (!this.swapMode) this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
     this.showSidePanel = false;
@@ -2676,12 +2663,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   private switchRightPanel(openFn: () => void): void {
+    // In swap mode the search panel IS the board area — leave it alone.
     const hasOpen =
-      this.showSearchPanel ||
+      (!this.swapMode && this.showSearchPanel) ||
       this.showManaSuggestPanel ||
       this.showSuggestionsPanel ||
       this.showSidePanel;
-    this.showSearchPanel = false;
+    if (!this.swapMode) this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
     this.showSidePanel = false;
@@ -2704,6 +2692,69 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.showSearchPanel = true;
       this.cdr.markForCheck();
     });
+  }
+
+  // ---- Swap mode (Arena-style) ----------------------------------
+  //
+  // Swaps the two surfaces: the search browser takes over the board area and the deck
+  // collapses into a compact side list on the right. The search panel stays open for the
+  // whole time — its close button exits swap mode instead of leaving an empty board.
+
+  toggleSwapMode(): void {
+    this.swapMode = !this.swapMode;
+    if (this.swapMode) {
+      this.showManaSuggestPanel = false;
+      this.showSuggestionsPanel = false;
+      this.showSidePanel = false;
+      this.showSearchPanel = true;
+    } else {
+      this.showSearchPanel = false;
+      this.commanderSearchMode = false;
+    }
+    localStorage.setItem('deck-swap-mode', this.swapMode ? '1' : '0');
+    this.cdr.markForCheck();
+  }
+
+  onSearchPanelClose(): void {
+    if (this.swapMode) this.toggleSwapMode();
+    else this.toggleSearchPanel();
+  }
+
+  /**
+   * The header Add Cards button. In swap mode the search panel IS the board, so
+   * "Close" there means leaving build mode, not stranding an empty board area.
+   */
+  onAddCardsClick(): void {
+    if (this.swapMode) this.toggleSwapMode();
+    else this.toggleSearchPanel();
+  }
+
+  /**
+   * The active board's cards for the side list, cheapest-first then by name. Memoized
+   * against the inputs that can change it — this component's mousemove listeners run
+   * change detection constantly, and a fresh array every pass would defeat the list's trackBy.
+   */
+  private sideListMemo: {
+    deck: DeckDetailDto;
+    board: string;
+    result: CollectionCardDto[];
+  } | null = null;
+
+  sideListCards(deck: DeckDetailDto): CollectionCardDto[] {
+    const m = this.sideListMemo;
+    if (m && m.deck === deck && m.board === this.activeBoard) return m.result;
+    let cards = deck.cards.filter((c) => this.boardOf(c) === this.activeBoard);
+    if (this.activeBoard === 'main' && deck.commanderOracleId) {
+      cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
+    }
+    const result = [...cards].sort((a, b) => {
+      const cmcA = a.cardDetails?.manaValue ?? 0;
+      const cmcB = b.cardDetails?.manaValue ?? 0;
+      if (cmcA !== cmcB) return cmcA - cmcB;
+      return (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? '');
+    });
+    this.sideListMemo = { deck, board: this.activeBoard, result };
+    return result;
   }
 
   toggleManaSuggestPanel(): void {
@@ -2736,6 +2787,48 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.showSearchPanel = true;
       this.cdr.markForCheck();
     });
+  }
+
+  // ---- Tile info overlay ---------------------------------------
+  //
+  // Single click toggles the card-description overlay on a tile; double click opens
+  // the card modal (its two leading clicks toggle the overlay on and off again, so no
+  // click-delay timer is needed). A drag arms a one-tick click suppression so the
+  // click that browsers fire after pointerup never toggles anything.
+
+  tileInfoKey: string | null = null;
+  private suppressTileClick = false;
+  private lastTileClick: { key: string; time: number } | null = null;
+
+  /** Swallow the single click the browser dispatches right after a drag's pointerup. */
+  private armClickSuppression(): void {
+    this.suppressTileClick = true;
+    // The post-drag click (if any) fires synchronously after pointerup; clear on the
+    // next macrotask so an unrelated later click is never eaten.
+    setTimeout(() => (this.suppressTileClick = false));
+  }
+
+  onTileClick(card: CollectionCardDto, slotKey: string, e: MouseEvent): void {
+    e.stopPropagation();
+    if (this.suppressTileClick) return;
+    // Double-click detection from the click stream itself: the drag handler's
+    // preventDefault on pointerdown makes the native dblclick event unreliable.
+    const now = performance.now();
+    if (this.lastTileClick?.key === slotKey && now - this.lastTileClick.time < 350) {
+      this.lastTileClick = null;
+      this.tileInfoKey = null;
+      this.openCard(card, slotKey);
+      return;
+    }
+    this.lastTileClick = { key: slotKey, time: now };
+    this.tileInfoKey = this.tileInfoKey === slotKey ? null : slotKey;
+    this.cdr.markForCheck();
+  }
+
+  /** List rows keep single-click-to-open, but never from the click a drag leaves behind. */
+  onListRowClick(card: CollectionCardDto): void {
+    if (this.suppressTileClick) return;
+    this.openCard(card);
   }
 
   /** Briefly set to the board whose tab just received a card, driving its bump animation. */
@@ -2772,8 +2865,34 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
    * itself was the motion — the tab just bumps. The tabs are hidden in free layout mode;
    * both parts quietly skip when there is nowhere to land.
    */
-  private flyIntoBoard(flight: FlightSource | undefined, board: 'main' | 'side' | 'maybe'): void {
+  private flyIntoBoard(
+    flight: FlightSource | undefined,
+    board: 'main' | 'side' | 'maybe',
+    oracleId?: string,
+  ): void {
     const idx = board === 'main' ? 0 : board === 'side' ? 1 : 2;
+    // Swap mode: land on the card's own side-list row (pulsing it), falling back to the
+    // mini board tab in the list header when the row does not exist yet.
+    if (this.swapMode) {
+      const row = oracleId
+        ? this.visibleRect(
+            this.host.nativeElement.querySelector(`.side-list-row[data-oracle-id="${oracleId}"]`),
+          )
+        : null;
+      const to =
+        row ?? this.visibleRect(this.host.nativeElement.querySelectorAll('.swap-tab')[idx]);
+      if (!to) return;
+      const land = () => {
+        if (row && oracleId) this.sideList?.pulse(oracleId);
+        else this.bumpBoardTab(board);
+      };
+      if (!flight) {
+        land();
+        return;
+      }
+      flyCardGhost({ from: flight.from, to, imageUrl: flight.imageUrl }).then(land);
+      return;
+    }
     const to = this.visibleRect(this.host.nativeElement.querySelectorAll('.board-tab')[idx]);
     if (!to) return;
     if (!flight) {
@@ -2834,7 +2953,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }): void {
     // A commander pick lands on the commander slot, not the board tab.
     if (this.commanderSearchMode && event.isCommanderEligible) this.flyToCommander(event.flight);
-    else this.flyIntoBoard(event.flight, this.activeBoard);
+    else this.flyIntoBoard(event.flight, this.activeBoard, event.oracleId);
     this.store.dispatch(
       DeckActions.addCard({
         deckId: this.deckId,
@@ -2853,15 +2972,16 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         });
       }
       this.commanderSearchMode = false;
-      this.showSearchPanel = false;
+      // In swap mode the panel is the board area; it stays open after a commander pick.
+      if (!this.swapMode) this.showSearchPanel = false;
     }
   }
 
   onFitRequested(event: { card: CardDto; commanderCard: CardDto }): void {
     const { card, commanderCard } = event;
 
-    const cmdColors = new Set((commanderCard.colorIdentity ?? []).map((c) => String(c)));
-    const isColorViolation = (card.colorIdentity ?? []).some((c) => !cmdColors.has(String(c)));
+    const isColorViolation =
+      identityViolations(card.colorIdentity, commanderCard.colorIdentity).length > 0;
 
     if (isColorViolation) {
       this.searchPanel?.setSynergyScore(card.oracleId, {
@@ -2904,7 +3024,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   addSuggestedCard(event: { oracleId: string; scryfallId: string; flight?: FlightSource }): void {
     // Suggestions always add to the main board, wherever the active tab happens to be.
-    this.flyIntoBoard(event.flight, 'main');
+    this.flyIntoBoard(event.flight, 'main', event.oracleId);
     this.store.dispatch(
       DeckActions.addCard({
         deckId: this.deckId,
@@ -2994,24 +3114,31 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ---- Card modal --------------------------------------------
 
   openStatCard(card: CollectionCardDto | null): void {
-    console.log(
-      '[openStatCard] called, card:',
-      card?.cardDetails?.name ?? card?.oracleId ?? 'null',
-    );
     if (!card) return;
     this.openCard(card);
   }
 
   openCard(card: CollectionCardDto, slotKey?: string): void {
-    console.log('[openCard] called, card:', card?.cardDetails?.name ?? card?.oracleId);
     this.selectedCard = card;
     this.modalSlotKey = slotKey ?? null;
     this._modalFlipped = slotKey ? this.flippedCardIds.has(slotKey) : false;
-    const cached = this.printingsCache.get(card.oracleId);
+    const cached = this.printings.cached(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
-    if (!cached) this.printingsLoad$.next(card.oracleId);
+    if (!cached) {
+      this.printings
+        .get(card.oracleId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((printings) => {
+          if (
+            this.selectedCard?.oracleId === card.oracleId &&
+            !this.modalViewScryfallId &&
+            printings.length
+          )
+            this.modalViewScryfallId = printings[0].scryfallId;
+          this.cdr.markForCheck();
+        });
+    }
     this.cdr.markForCheck();
-    console.log('[openCard] selectedCard set:', !!this.selectedCard);
   }
 
   closeCard(): void {
@@ -3497,8 +3624,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   colorIdViolationColors(card: CollectionCardDto, deck: DeckDetailDto): string {
     const cmdr = this.commanderCard(deck);
     if (!cmdr?.cardDetails) return '';
-    const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
-    return (card.cardDetails?.colorIdentity ?? []).filter((col) => !allowed.has(col)).join('');
+    return identityViolations(card.cardDetails?.colorIdentity, cmdr.cardDetails.colorIdentity).join(
+      '',
+    );
   }
 
   cardTypeLine(card: CollectionCardDto): string {
@@ -3535,11 +3663,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   colorIdentityViolations(deck: DeckDetailDto): CollectionCardDto[] {
     const cmdr = this.commanderCard(deck);
     if (!cmdr?.cardDetails) return [];
-    const allowed = new Set(cmdr.cardDetails.colorIdentity ?? []);
     return deck.cards.filter((c) => {
       if ((c.board ?? 'main') !== 'main') return false;
       if (c.oracleId === cmdr.oracleId) return false;
-      return (c.cardDetails?.colorIdentity ?? []).some((col) => !allowed.has(col));
+      return (
+        identityViolations(c.cardDetails?.colorIdentity, cmdr.cardDetails!.colorIdentity).length > 0
+      );
     });
   }
 

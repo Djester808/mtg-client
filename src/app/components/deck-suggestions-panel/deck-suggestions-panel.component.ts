@@ -16,6 +16,7 @@ import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { CandidateCardDto, CardDto, PrintingDto } from '../../models/game.models';
 import { GameApiService } from '../../services/game-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { DeckDetailDto } from '../../services/deck-api.service';
 import {
   DeckApiService,
@@ -147,12 +148,12 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   ];
 
   private destroy$ = new Subject<void>();
-  private printingsCache = new Map<string, PrintingDto[]>();
   private suggestionsCache = new Map<string, DeckSuggestionsDto>();
 
   constructor(
     private deckApi: DeckApiService,
     private gameApi: GameApiService,
+    private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -792,7 +793,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       return;
     }
 
-    const cached = this.printingsCache.get(oracleId);
+    const cached = this.printings.cached(oracleId);
     if (cached) {
       this.modalPrintings = cached;
       this.modalViewScryfallId = s.scryfallId ?? cached[0]?.scryfallId ?? null;
@@ -804,11 +805,10 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
     this.modalViewScryfallId = s.scryfallId ?? null;
     this.cdr.markForCheck();
 
-    this.deckApi
-      .getPrintings(oracleId)
+    this.printings
+      .get(oracleId)
       .pipe(takeUntil(this.destroy$))
       .subscribe((printings) => {
-        this.printingsCache.set(oracleId, printings);
         if (this.selectedSuggestion?.card?.oracleId === oracleId) {
           this.modalPrintings = printings;
           if (!this.modalViewScryfallId && printings.length)

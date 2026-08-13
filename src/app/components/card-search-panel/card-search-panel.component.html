@@ -165,7 +165,142 @@
   </div>
 
   <div class="results-list">
-    <div class="result-row" *ngFor="let card of results"
+    <ng-container *ngFor="let card of results; let i = index; trackBy: trackResult">
+
+    <!-- Board mode: full card tile, controls slide up on hover (same language as the deck grid) -->
+    <div class="result-tile" *ngIf="boardMode"
+         [style.--i]="i"
+         [class.has-info]="tileInfoId === card.oracleId"
+         draggable="true"
+         (dragstart)="onDragStart(card, $event)">
+      <div
+        class="tile-art"
+        [style.backgroundImage]="tileImage(card) ? 'url(' + tileImage(card) + ')' : 'none'"
+        (click)="onTileClick(card, $event)"
+      >
+        <div class="art-placeholder" *ngIf="!tileImage(card)">◈</div>
+        <!-- Click-toggled description overlay (double click opens the preview modal) -->
+        <div class="card-info-panel" *ngIf="tileInfoId === card.oracleId">
+          <div class="info-top">
+            <div class="info-header">
+              <span class="info-name">{{ card.name }}</span>
+              <app-mana-cost *ngIf="card.manaCost" [cost]="card.manaCost"></app-mana-cost>
+            </div>
+            <div class="info-type">{{ typeLine(card) }}</div>
+          </div>
+          <div class="info-oracle" *ngIf="card.oracleText">
+            <div [innerHTML]="card.oracleText | oracleSymbols"></div>
+          </div>
+          <div class="info-bottom">
+            <div class="info-stats" *ngIf="card.power != null || card.startingLoyalty != null">
+              <span class="info-pt" *ngIf="card.power != null">
+                {{ card.power }}/{{ card.toughness }}
+              </span>
+              <span class="info-loyalty" *ngIf="card.startingLoyalty != null">
+                <i class="ms ms-loyalty-start ms-loyalty-{{ card.startingLoyalty }}"></i>
+              </span>
+            </div>
+            <div class="info-artist" *ngIf="card.artist">
+              Illus. {{ card.artist }}
+            </div>
+          </div>
+        </div>
+        <button
+          *ngIf="card.imageUriNormalBack"
+          class="result-flip-btn tile-flip-btn"
+          [class.is-flipped]="flippedIds.has(card.oracleId)"
+          (click)="toggleFlip(card.oracleId, $event)"
+          title="Flip card">⟲</button>
+        <div class="tile-badges">
+          <span class="qty-pill" *ngIf="isDeckContext && !commanderFilter && deckCount(card.oracleId) as n"
+                [title]="n + ' in deck'">×{{ n }}</span>
+          <span class="qty-pill" *ngIf="!isDeckContext && ownedEntry(card.oracleId) as owned"
+                [title]="(owned.quantity + owned.quantityFoil) + ' owned'">×{{ owned.quantity + owned.quantityFoil }}</span>
+        </div>
+        <div class="tile-flags">
+          <span class="violation-badge color-violation" *ngIf="isColorViolation(card)" title="Outside commander color identity">⬡ Color</span>
+          <span class="violation-badge singleton-violation" *ngIf="isSingletonViolation(card)" title="Already in deck (singleton)">⊕ Copy</span>
+        </div>
+      </div>
+      <div class="card-bottom" (click)="$event.stopPropagation()">
+        <!-- One known printing → nothing to pick, plain text instead of a menu -->
+        <span class="set-static" *ngIf="singlePrintingLabel(card.oracleId) as single">{{ single }}</span>
+        <app-select-menu
+          *ngIf="!singlePrintingLabel(card.oracleId)"
+          class="result-set-menu"
+          [options]="printingOptions(card.oracleId)"
+          [value]="searchSelectedScryfallId.get(card.oracleId) ?? null"
+          placeholder="SET"
+          [hasError]="addErrors.has(card.oracleId)"
+          (opened)="onSelectFocus(card.oracleId)"
+          (valueChange)="onSetChange(card.oracleId, $event)"
+        ></app-select-menu>
+
+        <!-- Deck context: fit analysis + add/remove -->
+        <div class="tile-actions-row" *ngIf="isDeckContext">
+          <ng-container *ngIf="commanderCard">
+            <button class="fit-btn"
+                    *ngIf="!synergyScores.has(card.oracleId)"
+                    (click)="requestFit(card, $event)"
+                    title="Analyze fit with commander">
+              <i class="bi bi-stars"></i> Fit?
+            </button>
+            <span class="fit-loading" *ngIf="isSynergyLoading(card.oracleId)">
+              <i class="bi bi-arrow-repeat"></i>
+            </span>
+            <span class="fit-score"
+                  *ngIf="getSynergyScore(card.oracleId) as score"
+                  [class.score-high]="score.score >= 70"
+                  [class.score-mid]="score.score >= 40 && score.score < 70"
+                  [class.score-low]="score.score < 40"
+                  (click)="requestFit(card, $event)"
+                  title="Re-analyze">
+              {{ score.score }}%
+            </span>
+          </ng-container>
+          <span class="tile-actions-spacer"></span>
+          <button class="add-result-btn"
+                  [class.is-labeled]="commanderFilter"
+                  (click)="addCard(card, $event)"
+                  [title]="commanderFilter ? 'Add and set as commander' : 'Add to deck'">
+            <i class="bi bi-plus-lg"></i><span *ngIf="commanderFilter">Commander</span>
+          </button>
+          <button class="remove-deck-btn"
+                  *ngIf="!commanderFilter && isInDeck(card)"
+                  (click)="removeFromDeck(card)"
+                  title="Remove from deck">
+            <i class="bi bi-dash-lg"></i>
+          </button>
+        </div>
+
+        <!-- Collection context: the same normal/foil pairs as the collection grid -->
+        <div class="ctrl-strip-row" *ngIf="!isDeckContext">
+          <div class="ctrl-row">
+            <button class="ctrl-btn ctrl-dec"
+                    [disabled]="!(ownedEntry(card.oracleId)?.quantity)"
+                    (click)="cardDecrementNormal.emit(card.oracleId)"
+                    title="Remove regular">−</button>
+            <span class="ctrl-label"><i class="bi bi-layers"></i> {{ ownedEntry(card.oracleId)?.quantity ?? 0 }}</span>
+            <button class="ctrl-btn ctrl-inc" (click)="addCard(card, $event)" title="Add regular">+</button>
+          </div>
+          <div class="ctrl-row ctrl-row-foil" [class.has-foil]="(ownedEntry(card.oracleId)?.quantityFoil ?? 0) > 0">
+            <button class="ctrl-btn ctrl-dec"
+                    [disabled]="!(ownedEntry(card.oracleId)?.quantityFoil)"
+                    (click)="cardDecrementFoil.emit(card.oracleId)"
+                    title="Remove foil">−</button>
+            <span class="ctrl-label ctrl-label-foil">✦ {{ ownedEntry(card.oracleId)?.quantityFoil ?? 0 }}</span>
+            <button class="ctrl-btn ctrl-inc" (click)="addCard(card, $event, true)" title="Add foil">+</button>
+          </div>
+        </div>
+
+        <div class="fit-reason tile-fit-reason" *ngIf="getSynergyScore(card.oracleId) as score">
+          {{ score.reason }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer mode: compact row -->
+    <div class="result-row" *ngIf="!boardMode"
          draggable="true"
          (dragstart)="onDragStart(card, $event)">
 
@@ -200,9 +335,12 @@
         </div>
 
         <!-- Set / printing selector — custom menu; open state lives in the component,
-             so option loads and re-renders never snap it shut. -->
+             so option loads and re-renders never snap it shut. One known printing
+             needs no menu at all. -->
         <div class="result-set-wrap">
+          <span class="set-static" *ngIf="singlePrintingLabel(card.oracleId) as single">{{ single }}</span>
           <app-select-menu
+            *ngIf="!singlePrintingLabel(card.oracleId)"
             class="result-set-menu"
             [options]="printingOptions(card.oracleId)"
             [value]="searchSelectedScryfallId.get(card.oracleId) ?? null"
@@ -271,6 +409,8 @@
 
     </div>
 
+    </ng-container>
+
     <div class="load-more-row" *ngIf="hasMore || loadingMore">
       <button class="load-more-btn" (click)="loadMore()" [disabled]="loadingMore">
         {{ loadingMore ? 'Loading…' : 'Load more' }}
@@ -288,56 +428,45 @@
   [(viewedScryfallId)]="previewScryfallId"
   [(flipped)]="previewFlipped"
   [showOverlay]="false"
-  [countBadge]="isDeckContext ? deckCount(previewCard!.oracleId) : null"
+  [countBadge]="isDeckContext ? deckCount(previewCard!.oracleId) : (ownedEntry(previewCard!.oracleId)?.quantity ?? null)"
+  [foilCountBadge]="isDeckContext ? null : (ownedEntry(previewCard!.oracleId)?.quantityFoil ?? null)"
   (closed)="closePreview()"
 >
-  <!-- Deck context: Add rides above the art. -->
-  <div extra-top class="modal-extra-wrap modal-extra-wrap--deck modal-extra-wrap--top" *ngIf="isDeckContext">
-    <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
+  <!-- Adds ride above the art; counts sit beside the name; removes below. -->
+  <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
+    <button *ngIf="isDeckContext"
+            class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewCard()">
       <i class="bi bi-plus-lg"></i> {{ commanderFilter ? 'Add Commander' : deckCount(previewCard!.oracleId) ? 'Add Another' : 'Add to Deck' }}
     </button>
+    <div *ngIf="!isDeckContext" class="modal-btn-pair">
+      <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewNormal()">
+        <i class="bi bi-plus-lg"></i> Normal
+      </button>
+      <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewFoil()">
+        <i class="bi bi-plus-lg"></i> ✦ Foil
+      </button>
+    </div>
   </div>
-  <div extra class="modal-extra-wrap" [class.modal-extra-wrap--deck]="isDeckContext"
-       *ngIf="!isDeckContext || isInDeck(previewCard!)">
-    <!-- Collection context -->
-    <ng-container *ngIf="!isDeckContext">
+  <div extra class="modal-extra-wrap"
+       *ngIf="isDeckContext ? isInDeck(previewCard!) : !!ownedEntry(previewCard!.oracleId)">
+    <div class="modal-btn-pair" *ngIf="!isDeckContext">
       <ng-container *ngIf="ownedEntry(previewCard!.oracleId) as owned">
-        <span class="modal-deck-badge">×{{ owned.quantity }}</span>
-        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewNormal()">
-          <i class="bi bi-plus-lg"></i> Normal
-        </button>
         <button class="modal-action-btn modal-action-btn--remove"
                 [disabled]="owned.quantity <= 0"
                 (click)="decrementPreviewNormal()">
           <i class="bi bi-dash-lg"></i> Normal
         </button>
-        <span class="modal-group-sep"></span>
-        <span class="modal-deck-badge modal-deck-badge--foil">✦ ×{{ owned.quantityFoil }}</span>
-        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewFoil()">
-          <i class="bi bi-plus-lg"></i> Foil
-        </button>
         <button class="modal-action-btn modal-action-btn--remove"
                 [disabled]="owned.quantityFoil <= 0"
                 (click)="decrementPreviewFoil()">
-          <i class="bi bi-dash-lg"></i> Foil
+          <i class="bi bi-dash-lg"></i> ✦ Foil
         </button>
       </ng-container>
-      <ng-container *ngIf="!ownedEntry(previewCard!.oracleId)">
-        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewNormal()">
-          <i class="bi bi-plus-lg"></i> Add Normal
-        </button>
-        <button class="modal-action-btn" [disabled]="!previewScryfallId" (click)="addPreviewFoil()">
-          ✦ Add Foil
-        </button>
-      </ng-container>
-    </ng-container>
-    <!-- Deck context: Remove below the art (Add is in the extra-top slot above it). -->
-    <ng-container *ngIf="isDeckContext">
-      <button class="modal-action-btn modal-action-btn--remove"
-              *ngIf="isInDeck(previewCard!)"
-              (click)="removePreviewCard()">
-        <i class="bi bi-dash-lg"></i> Remove
-      </button>
-    </ng-container>
+    </div>
+    <button *ngIf="isDeckContext"
+            class="modal-action-btn modal-action-btn--remove"
+            (click)="removePreviewCard()">
+      <i class="bi bi-dash-lg"></i> Remove
+    </button>
   </div>
 </app-card-modal>

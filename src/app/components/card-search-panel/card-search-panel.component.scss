@@ -18,6 +18,129 @@
     max-width: 600px;
     border-color: var(--border-dim);
   }
+
+  // Swap mode: the panel IS the board area — full width, results tiled into a grid.
+  &.is-board.is-open {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  // Flex-wrap, not grid: Chrome sizes auto grid rows from the wrong width for
+  // aspect-ratio tiles (tracks collapse and cards overlap), while a wrapped flex
+  // line takes its height from the tile reliably. Fixed width keeps every card
+  // the same size, like the deck grid.
+  &.is-board .results-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 14px;
+    padding: 12px 16px;
+  }
+
+  &.is-board .load-more-row {
+    width: 100%;
+  }
+}
+
+// ---- Board-mode result tiles (full card, hover-reveal controls) --------
+
+.result-tile {
+  @include card-surface;
+  border: 1px solid var(--border-dim);
+  flex: 0 0 auto;
+  width: 220px;
+  cursor: grab;
+  animation: card-tile-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 18ms), 350ms);
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.18s,
+    box-shadow 0.18s;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201, 168, 76, 0.45);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  &:active { cursor: grabbing; }
+}
+
+.tile-art {
+  position: absolute;
+  inset: 0;
+  @include card-art-crop;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile-flip-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.tile-flags {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.result-tile .card-bottom {
+  @include tile-hover-strip;
+}
+
+.result-tile:hover .card-bottom,
+.result-tile:focus-within .card-bottom {
+  @include tile-hover-strip-visible;
+}
+
+// While the description overlay is open, the strip stays down — otherwise it covers
+// the overlay's bottom (you are necessarily hovering while reading).
+.result-tile.has-info .card-bottom {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tile-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tile-actions-spacer { flex: 1; }
+
+// One printing only: the set shown as plain text where the menu would sit.
+.set-static {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  padding: 3px 6px;
+  text-align: center;
+}
+
+// Collection-context strip: the same normal/foil quantity pairs as the collection grid.
+@include tile-ctrl-family;
+
+.tile-fit-reason {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 // ---- Panel header -------------------------------------------
@@ -590,10 +713,8 @@
 .result-art {
   width: 42px;
   height: 58px;
-  border-radius: 4px;
-  background-size: cover;
-  background-position: center center;
-  background-color: var(--bg-raised);
+  @include card-corners;
+  @include card-art-crop;
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
@@ -883,92 +1004,6 @@
 
 // ---- Preview modal extra ------------------------------------------
 
-.modal-extra-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px 8px;
-  border-top: 1px solid var(--border-dim);
-  background: var(--bg-raised);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-
-  // Deck context: full-width buttons flanking the art — Add above (green), Remove
-  // below (red) — matching the deck page's card modal. Collection context keeps its
-  // own gold row layout.
-  &--deck {
-    flex-direction: column;
-    align-items: stretch;
-
-    .modal-action-btn {
-      @include icon-action-btn;
-      @include icon-action-btn-labeled;
-      @include icon-action-btn-add-accent;
-      width: 100%;
-      justify-content: center;
-
-      &--remove {
-        @include icon-action-btn-remove;
-      }
-    }
-  }
-
-  &--top {
-    border-top: none;
-    border-bottom: 1px solid var(--border-dim);
-    padding: 8px 16px 10px;
-  }
-}
-
-.modal-deck-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.12);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 8px;
-  padding: 3px 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &--foil {
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
-    border-color: rgba(201, 168, 76, 0.3);
-  }
-}
-
-.modal-group-sep {
-  width: 1px;
-  height: 22px;
-  background: var(--border-dim);
-  flex-shrink: 0;
-  margin: 0 2px;
-}
-
-.modal-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  background: var(--gold);
-  color: #1a1a1a;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  &--remove {
-    background: rgba(248, 113, 113, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    &:hover:not(:disabled) { filter: brightness(1.2); }
-  }
-}
+// Actions flanking the art in both contexts: adds above (green), removes below (red),
+// counts beside the card name via card-modal's badges.
+@include modal-extra-chrome;

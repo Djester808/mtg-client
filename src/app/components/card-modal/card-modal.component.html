@@ -64,8 +64,12 @@
         <span class="modal-card-name">{{ displayName }}<span
             class="modal-count-badge"
             *ngIf="countBadge"
-            [title]="countBadge + ' in deck'"
-          >×{{ countBadge }}</span></span>
+            [title]="countBadge + ' owned'"
+          >×{{ countBadge }}</span><span
+            class="modal-count-badge modal-count-badge--foil"
+            *ngIf="foilCountBadge"
+            [title]="foilCountBadge + ' foil owned'"
+          >✦ ×{{ foilCountBadge }}</span></span>
         <div class="modal-cost-col">
           <app-mana-cost *ngIf="effectiveCard?.manaCost" [cost]="effectiveCard!.manaCost"></app-mana-cost>
           <span class="modal-mv" *ngIf="effectiveCard?.manaValue && !isLand">
@@ -73,6 +77,34 @@
           </span>
         </div>
       </div>
+
+      <!-- Info tabs: Details and Rulings always; hosts may add one more (e.g. Notes) -->
+      <div class="modal-info-tabs">
+        <button class="modal-info-tab" [class.is-active]="infoTab === 'details'"
+                (click)="infoTab = 'details'">Details</button>
+        <button class="modal-info-tab" [class.is-active]="infoTab === 'rulings'"
+                (click)="infoTab = 'rulings'">Rulings<ng-container *ngIf="rulings.length"> ({{ rulings.length }})</ng-container></button>
+        <button class="modal-info-tab" *ngIf="infoTabLabel" [class.is-active]="infoTab === 'extra'"
+                (click)="infoTab = 'extra'">{{ infoTabLabel }}</button>
+      </div>
+
+      <div class="modal-info-tab-body" [class.is-hidden]="infoTab !== 'extra'">
+        <ng-content select="[info-tab]"></ng-content>
+      </div>
+
+      <!-- Rulings tab -->
+      <div class="modal-rulings" *ngIf="infoTab === 'rulings'">
+        <div class="modal-rulings-loading" *ngIf="rulingsLoading">Loading…</div>
+        <div class="modal-ruling" *ngFor="let r of rulings">
+          <span class="modal-ruling-date">{{ r.publishedAt }}</span>
+          <span class="modal-ruling-text" [innerHTML]="r.comment | oracleSymbols"></span>
+        </div>
+        <div class="modal-rulings-empty" *ngIf="!rulingsLoading && rulings.length === 0">
+          No rulings for this card.
+        </div>
+      </div>
+
+      <ng-container *ngIf="infoTab === 'details'">
 
       <div class="modal-type-line" *ngIf="typeLine">{{ typeLine }}</div>
 
@@ -133,15 +165,7 @@
         </div>
       </div>
 
-      <!-- Rulings -->
-      <div class="modal-rulings" *ngIf="rulingsLoading || rulings.length > 0">
-        <div class="modal-rulings-header">Rulings</div>
-        <div class="modal-rulings-loading" *ngIf="rulingsLoading">Loading…</div>
-        <div class="modal-ruling" *ngFor="let r of rulings">
-          <span class="modal-ruling-date">{{ r.publishedAt }}</span>
-          <span class="modal-ruling-text" [innerHTML]="r.comment | oracleSymbols"></span>
-        </div>
-      </div>
+      </ng-container><!-- /details tab -->
 
     </div>
   </div>

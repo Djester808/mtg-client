@@ -145,11 +145,6 @@
   animation: pulse-text 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse-text {
-  0%, 100% { opacity: 0.4; }
-  50%       { opacity: 1; }
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -188,11 +183,6 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
   animation: fade-up 0.3s ease;
-}
-
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .deck-card {

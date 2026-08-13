@@ -1,21 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-
-const SYMBOL_CLASS: Record<string, string> = {
-  T: 'ms-tap',
-  Q: 'ms-untap',
-  E: 'ms-e',
-  S: 'ms-s',
-  W: 'ms-w',
-  U: 'ms-u',
-  B: 'ms-b',
-  R: 'ms-r',
-  G: 'ms-g',
-  C: 'ms-c',
-  X: 'ms-x',
-  Y: 'ms-y',
-  Z: 'ms-z',
-};
+import { symbolToClass } from '../utils/mana.utils';
 
 // Longest phrases first so multi-word keywords match before their components.
 const KEYWORDS = [
@@ -40,22 +25,6 @@ const KEYWORDS = [
 const _kwPattern = KEYWORDS.map((k) => k.replace(/\s+/g, '\\s+')).join('|');
 // Alternation: match either a complete HTML tag (pass through) or a keyword (linkify).
 const KW_LINK_RE = new RegExp(`(<[^>]+>)|((?<!=)\\b(?:${_kwPattern})\\b)`, 'gi');
-
-function symbolToClass(sym: string): string {
-  const up = sym.toUpperCase();
-
-  if (SYMBOL_CLASS[up]) return SYMBOL_CLASS[up];
-
-  // Generic mana: {0}–{20}
-  if (/^\d+$/.test(up)) return `ms-${up}`;
-
-  // Hybrid/phyrexian: {W/U}, {2/W}, {W/P}, etc.
-  if (up.includes('/')) {
-    return `ms-${up.replace('/', '').toLowerCase()}`;
-  }
-
-  return 'ms-c';
-}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

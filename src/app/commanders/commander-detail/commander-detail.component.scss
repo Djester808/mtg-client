@@ -11,8 +11,6 @@
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .cd-loading, .cd-error {
   display: flex;
   align-items: center;

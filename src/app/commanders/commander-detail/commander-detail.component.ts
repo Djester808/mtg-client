@@ -17,7 +17,7 @@ import { CommanderChartsComponent } from '../commander-charts/commander-charts.c
 import { ManaCostPipe } from '../../pipes/mana-cost.pipe';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
-import { CollectionApiService } from '../../services/collection-api.service';
+import { PrintingsService } from '../../services/printings.service';
 
 type TypeTab =
   | 'all'
@@ -109,7 +109,7 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private api: CommandersApiService,
-    private collectionApi: CollectionApiService,
+    private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -374,13 +374,11 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
     this.modalPrintings = [];
     this.modalFlipped = false;
     this.cdr.markForCheck();
-    this.collectionApi.getPrintings(card.oracleId).subscribe({
-      next: (p) => {
-        this.modalPrintings = p;
-        this.modalScryfallId = p[0]?.scryfallId ?? null;
-        this.cdr.markForCheck();
-      },
-      error: () => {},
+    this.printings.get(card.oracleId).subscribe((p) => {
+      if (this.modalCard?.oracleId !== card.oracleId) return;
+      this.modalPrintings = p;
+      this.modalScryfallId = p[0]?.scryfallId ?? null;
+      this.cdr.markForCheck();
     });
   }
 

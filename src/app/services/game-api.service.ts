@@ -1,13 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {
-  CandidatePoolDto,
-  CardDto,
-  PrintingDto,
-  RulingDto,
-  SetSummaryDto,
-} from '../models/game.models';
+import { CandidatePoolDto, CardDto, RulingDto, SetSummaryDto } from '../models/game.models';
 
 /**
  * Result of scanning a card photo.
@@ -90,9 +84,7 @@ export class GameApiService {
     return this.http.get<RulingDto[]>(`${this.base}/cards/${oracleId}/rulings`);
   }
 
-  getCardPrintings(oracleId: string): Observable<PrintingDto[]> {
-    return this.http.get<PrintingDto[]>(`${this.base}/cards/${oracleId}/printings`);
-  }
+  // Printings loading lives in PrintingsService — one cache, one endpoint owner.
 
   getCardByName(name: string): Observable<CardDto> {
     return this.http.get<CardDto>(`${this.base}/cards/by-name`, { params: { name } });

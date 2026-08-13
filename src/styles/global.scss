@@ -212,6 +212,26 @@ body.is-dragging-card * {
   to   { opacity: 1; transform: scale(1); }
 }
 
+// Loading-text shimmer. Previously copied into five component sheets.
+@keyframes pulse-text {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+// Content entrance. Previously defined in four sheets with three different distances —
+// keyframe names leak past Angular's emulated encapsulation, so whichever component
+// happened to inject last silently won.
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Card tile entrance (deck grid, search browser).
+@keyframes card-tile-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /*
  * Shared spinner keyframe.
  *
@@ -302,4 +322,151 @@ body.is-dragging-card * {
 .app-menu-item.is-key-active {
   background: var(--bg-raised);
   color: var(--text-primary);
+}
+
+/*
+ * Owned-count pills overlaid on card tiles (deck and collection grids) — the same
+ * green/gold language as the card modal's name badges. Components position the
+ * .tile-badges container; the pills carry the look.
+ */
+.tile-badges {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.qty-pill {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #4ade80;
+  background: rgba(8, 20, 12, 0.85);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  border-radius: 8px;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.qty-pill--foil {
+  color: var(--gold, #c9a84c);
+  background: rgba(24, 18, 6, 0.85);
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+/*
+ * Card-tile info overlay (name / type / oracle text / stats), shared by the
+ * collection grid (shown on hover) and the deck grid (toggled by click).
+ */
+.card-info-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(8, 8, 10, 0.92);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  pointer-events: none;
+  text-align: center;
+}
+
+.info-top {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+
+.info-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.info-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-type {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 6px;
+}
+
+.info-oracle {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  pointer-events: auto;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 4px 2px;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+}
+
+.info-bottom {
+  flex: 0 0 auto;
+  // Vanilla cards have no oracle section (the flexible middle), so without this
+  // the stats/artist block floats mid-panel instead of anchoring to the bottom.
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-dim);
+}
+
+.info-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.info-pt, .info-loyalty {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.info-artist {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-style: italic;
+  color: var(--text-dim);
 }

@@ -11,6 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { GameApiService } from '../../services/game-api.service';
+import { PrintingsService } from '../../services/printings.service';
 import { CardDto, PrintingDto } from '../../models/game.models';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -79,6 +80,7 @@ export class CardScannerComponent implements OnDestroy {
 
   constructor(
     private gameApi: GameApiService,
+    private printingsApi: PrintingsService,
     private cdr: ChangeDetectorRef,
     private host: ElementRef<HTMLElement>,
   ) {}
@@ -434,7 +436,7 @@ export class CardScannerComponent implements OnDestroy {
     this.printingsLoading = true;
     this.cdr.markForCheck();
     try {
-      const printings = await firstValueFrom(this.gameApi.getCardPrintings(oracleId));
+      const printings = await firstValueFrom(this.printingsApi.get(oracleId));
       this.printings = printings ?? [];
 
       // Auto-select the best matching printing
