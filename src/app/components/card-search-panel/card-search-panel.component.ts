@@ -182,12 +182,22 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
   setQuery = '';
   setDropOpen = false;
 
+  // Memoized (as in HomeComponent): read on every change-detection pass while the set
+  // dropdown is open, but the filtered list only changes with the sets or the query.
+  private filteredSetsMemo: { sets: SetSummaryDto[]; q: string; value: SetSummaryDto[] } | null =
+    null;
+
   get filteredSets(): SetSummaryDto[] {
     const q = this.setQuery.trim().toLowerCase();
-    if (!q) return this.allSets;
-    return this.allSets.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
-    );
+    const m = this.filteredSetsMemo;
+    if (m && m.sets === this.allSets && m.q === q) return m.value;
+    const value = !q
+      ? this.allSets
+      : this.allSets.filter(
+          (s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
+        );
+    this.filteredSetsMemo = { sets: this.allSets, q, value };
+    return value;
   }
 
   get activeSetName(): string {
