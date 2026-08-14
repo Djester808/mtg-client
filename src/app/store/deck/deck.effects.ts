@@ -1,7 +1,20 @@
 import { Injectable } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, map, mergeMap, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  concatMap,
+  filter,
+  map,
+  mergeMap,
+  of,
+  switchMap,
+  tap,
+  withLatestFrom,
+} from 'rxjs';
+import { AppState } from '..';
 import { DeckActions } from './deck.actions';
+import { selectActiveDeck } from './deck.selectors';
 import { DeckApiService } from '../../services/deck-api.service';
 import { ToastService } from '../../services/toast.service';
 import { describeHttpError } from '../../utils/http-error.utils';
@@ -33,13 +46,16 @@ export class DeckEffects {
   );
 
   // Same fetch as loadDeck, but the reducer never blanks the current deck — the
-  // stale view stays up until the fresh one lands.
+  // stale view stays up until the fresh one lands. Guarded so a resync for deck A that
+  // resolves after the user navigated to deck B does not overwrite B with A's cards.
   refreshDeck$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.refreshDeck),
       switchMap(({ id }) =>
         this.api.getDeck(id).pipe(
-          map((deck) => DeckActions.loadDeckSuccess({ deck })),
+          withLatestFrom(this.store.select(selectActiveDeck)),
+          filter(([deck, active]) => active?.id === deck.id),
+          map(([deck]) => DeckActions.loadDeckSuccess({ deck })),
           catchError((err) => of(DeckActions.loadDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
@@ -170,5 +186,6 @@ export class DeckEffects {
     private actions$: Actions,
     private api: DeckApiService,
     private toast: ToastService,
+    private store: Store<AppState>,
   ) {}
 }

@@ -311,6 +311,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   stackOrders = new Map<string, string[]>();
   /** What each stack actually displayed on the last render — the index space drag events live in. */
   private displayedStackOrders = new Map<string, string[]>();
+
+  // Teardown for the one in-progress pointer drag (only one can be active at a time).
+  // Set at drag start, cleared by the drag's own finish; ngOnDestroy calls it so a drag
+  // interrupted by navigation (e.g. a 401 logout redirect) doesn't leak window listeners.
+  private activeDragCleanup: (() => void) | null = null;
   stackDragGroupKey: string | null = null;
   stackDragFromIdx: number | null = null;
   stackDragOverIdx: number | null = null;
@@ -430,6 +435,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('mousemove', this.onDocMouseMove);
+    this.activeDragCleanup?.();
+    this.activeDragCleanup = null;
     this.destroy$.next();
     this.destroy$.complete();
     this.stopEdgeScroll();
@@ -783,14 +790,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
    * enters it at all.
    */
   private readonly onDocMouseMove = (event: MouseEvent): void => {
-    if (this.dragSelectListEl) {
-      this.zone.run(() => this.handleDragSelectMove(event));
-      return;
-    }
-    if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
-    const area = (event.target as HTMLElement | null)?.closest?.('.groups-area');
-    if (area) this.updateEdgeScroll(event.clientX, area as HTMLElement);
-    else this.stopEdgeScroll();
+    // Drag-select is the ONLY thing this listener drives. Edge auto-scroll during a
+    // card/column pointer-drag is handled by those drag move-handlers directly. A bare
+    // hover must never scroll the board — an earlier version scrolled on any pointer
+    // move in visual/free view, sliding cards out from under the cursor.
+    if (!this.dragSelectListEl) return;
+    this.zone.run(() => this.handleDragSelectMove(event));
   };
 
   private handleDragSelectMove(event: MouseEvent): void {
@@ -942,6 +947,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     };
     const onUp = () => {
+      this.activeDragCleanup = null;
       this.resizingColId = null;
       document.body.style.removeProperty('cursor');
       window.removeEventListener('pointermove', onMove);
@@ -950,6 +956,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    this.activeDragCleanup = onUp;
   }
 
   resetColWidth(colId: string): void {
@@ -1119,6 +1126,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const scrollEl = document.querySelector<HTMLElement>('.groups-area.is-free');
 
     const cleanup = (drop: boolean) => {
+      this.activeDragCleanup = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
@@ -1277,6 +1285,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
+    this.activeDragCleanup = () => cleanup(false);
   }
 
   private parseSearchDrag(event: DragEvent): { oracleId: string; scryfallId: string } | null {
@@ -2033,6 +2042,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
 
     const detach = () => {
+      this.activeDragCleanup = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
@@ -2221,6 +2231,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
+    this.activeDragCleanup = () => {
+      detach();
+      finish(false);
+    };
   }
 
   trackByIdx(index: number): number {
@@ -2260,6 +2274,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let grabOffsetY = 0;
 
     const detach = () => {
+      this.activeDragCleanup = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
@@ -2372,6 +2387,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
+    this.activeDragCleanup = () => {
+      detach();
+      finish(false);
+    };
   }
 
   filteredCards(deck: DeckDetailDto): CollectionCardDto[] {

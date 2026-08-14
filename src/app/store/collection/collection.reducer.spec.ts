@@ -168,27 +168,64 @@ describe('collectionReducer', () => {
 
   // ---- updateCard ----------------------------------------
 
-  it('merges the server card on updateCardSuccess but keeps local quantities', () => {
-    // Quantities are written optimistically on dispatch; a response from an older
-    // in-flight PUT must not roll a newer optimistic value back (the rapid-click race).
-    const original = makeCollectionCard({ id: 'cc-1', quantity: 5, quantityFoil: 2 });
-    const base: CollectionState = {
+  it('keeps the optimistic quantity while a newer update is still in flight', () => {
+    // Two rapid clicks: two updateCard dispatches, then the FIRST response lands. The
+    // newer update is still pending, so the earlier response must not roll the tile back.
+    const original = makeCollectionCard({ id: 'cc-1', quantity: 1, quantityFoil: 0 });
+    let state: CollectionState = {
       ...initialState(),
       activeCollection: makeCollectionDetail({ cards: [original] }),
     };
-    const fromServer = makeCollectionCard({
-      id: 'cc-1',
-      quantity: 2,
-      quantityFoil: 1,
-      notes: 'server notes',
-    });
-    const state = collectionReducer(
-      base,
-      CollectionActions.updateCardSuccess({ card: fromServer }),
+    state = collectionReducer(
+      state,
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        request: { quantity: 2, quantityFoil: 0 },
+      }),
     );
-    expect(state.activeCollection!.cards[0].quantity).toBe(5);
-    expect(state.activeCollection!.cards[0].quantityFoil).toBe(2);
-    expect(state.activeCollection!.cards[0].notes).toBe('server notes');
+    state = collectionReducer(
+      state,
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        request: { quantity: 3, quantityFoil: 0 },
+      }),
+    );
+    // Response to the first PUT (server saw quantity 2) — one update still outstanding.
+    state = collectionReducer(
+      state,
+      CollectionActions.updateCardSuccess({
+        card: makeCollectionCard({ id: 'cc-1', quantity: 2, quantityFoil: 0 }),
+      }),
+    );
+    expect(state.activeCollection!.cards[0].quantity).toBe(3);
+  });
+
+  it('applies the server quantity authoritatively when the last update settles', () => {
+    // The final response converges to the server's value — which may be clamped — so a
+    // server-side normalization is never invisible to the client.
+    const original = makeCollectionCard({ id: 'cc-1', quantity: 1, quantityFoil: 0 });
+    let state: CollectionState = {
+      ...initialState(),
+      activeCollection: makeCollectionDetail({ cards: [original] }),
+    };
+    state = collectionReducer(
+      state,
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        request: { quantity: 10000, quantityFoil: 0 },
+      }),
+    );
+    state = collectionReducer(
+      state,
+      CollectionActions.updateCardSuccess({
+        card: makeCollectionCard({ id: 'cc-1', quantity: 9999, quantityFoil: 0, notes: 'server' }),
+      }),
+    );
+    expect(state.activeCollection!.cards[0].quantity).toBe(9999);
+    expect(state.activeCollection!.cards[0].notes).toBe('server');
   });
 
   it('applies quantities optimistically on updateCard dispatch', () => {

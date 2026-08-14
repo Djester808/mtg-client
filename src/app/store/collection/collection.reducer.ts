@@ -7,6 +7,8 @@ export interface CollectionState {
   activeCollection: CollectionDetailDto | null;
   loading: boolean;
   error: string | null;
+  /** In-flight optimistic card updates, counted per card id. See updateCardSuccess. */
+  pendingCardUpdates?: Record<string, number>;
 }
 
 const initialState: CollectionState = {
@@ -14,6 +16,7 @@ const initialState: CollectionState = {
   activeCollection: null,
   loading: false,
   error: null,
+  pendingCardUpdates: {},
 };
 
 export const collectionReducer = createReducer(
@@ -43,6 +46,7 @@ export const collectionReducer = createReducer(
     ...state,
     loading: false,
     activeCollection: collection,
+    pendingCardUpdates: {},
   })),
   on(CollectionActions.loadCollectionFailure, (state, { error }) => ({
     ...state,
@@ -98,12 +102,16 @@ export const collectionReducer = createReducer(
         : state.activeCollection,
   })),
 
-  // Optimistic quantity write — see deck.reducer for the rationale. Failures
-  // resync via refreshCollection.
+  // Optimistic quantity write — see deck.reducer for the full rationale. Failures
+  // resync via refreshCollection; a per-card in-flight counter drives which success
+  // applies the server's authoritative quantity.
   on(CollectionActions.updateCard, (state, { cardId, request }) => {
     if (!state.activeCollection) return state;
+    const pending = { ...(state.pendingCardUpdates ?? {}) };
+    pending[cardId] = (pending[cardId] ?? 0) + 1;
     return {
       ...state,
+      pendingCardUpdates: pending,
       activeCollection: {
         ...state.activeCollection,
         cards: state.activeCollection.cards.map((c) =>
@@ -137,16 +145,26 @@ export const collectionReducer = createReducer(
     return { ...state, activeCollection: { ...state.activeCollection, cards } };
   }),
 
-  // Update card
+  // Update card — the last in-flight update applies the server's authoritative
+  // quantity; earlier ones keep the optimistic value (see deck.reducer).
   on(CollectionActions.updateCardSuccess, (state, { card }) => {
     if (!state.activeCollection) return state;
+    const pending = { ...(state.pendingCardUpdates ?? {}) };
+    const remaining = (pending[card.id] ?? 0) - 1;
+    const authoritative = remaining <= 0;
+    if (authoritative) delete pending[card.id];
+    else pending[card.id] = remaining;
     return {
       ...state,
+      pendingCardUpdates: pending,
       activeCollection: {
         ...state.activeCollection,
-        // Keep the local quantities — see deck.reducer for the rationale.
         cards: state.activeCollection.cards.map((c) =>
-          c.id === card.id ? { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil } : c,
+          c.id === card.id
+            ? authoritative
+              ? card
+              : { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil }
+            : c,
         ),
       },
     };

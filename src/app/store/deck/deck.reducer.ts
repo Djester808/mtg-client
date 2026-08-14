@@ -7,6 +7,8 @@ export interface DeckState {
   activeDeck: DeckDetailDto | null;
   loading: boolean;
   error: string | null;
+  /** In-flight optimistic card updates, counted per card id. See updateCardSuccess. */
+  pendingCardUpdates?: Record<string, number>;
 }
 
 const initialState: DeckState = {
@@ -14,6 +16,7 @@ const initialState: DeckState = {
   activeDeck: null,
   loading: false,
   error: null,
+  pendingCardUpdates: {},
 };
 
 export const deckReducer = createReducer(
@@ -28,6 +31,9 @@ export const deckReducer = createReducer(
     ...state,
     loading: false,
     activeDeck: deck,
+    // Fresh authoritative baseline: any still-in-flight update's success will now see a
+    // zero pending count and apply the server value, converging the two.
+    pendingCardUpdates: {},
   })),
   on(DeckActions.loadDeckFailure, (state, { error }) => ({ ...state, loading: false, error })),
 
@@ -104,10 +110,14 @@ export const deckReducer = createReducer(
   // Optimistic quantity write: the tile updates on click, and because updates are
   // dispatched in order (and the effect serialises them), the next click reads the
   // fresh value instead of racing on a stale one. Failures resync via refreshDeck.
+  // Each dispatch bumps a per-card in-flight counter (see updateCardSuccess).
   on(DeckActions.updateCard, (state, { cardId, request }) => {
     if (!state.activeDeck) return state;
+    const pending = { ...(state.pendingCardUpdates ?? {}) };
+    pending[cardId] = (pending[cardId] ?? 0) + 1;
     return {
       ...state,
+      pendingCardUpdates: pending,
       activeDeck: {
         ...state.activeDeck,
         cards: state.activeDeck.cards.map((c) =>
@@ -142,15 +152,27 @@ export const deckReducer = createReducer(
 
   on(DeckActions.updateCardSuccess, (state, { card }) => {
     if (!state.activeDeck) return state;
+    const pending = { ...(state.pendingCardUpdates ?? {}) };
+    const remaining = (pending[card.id] ?? 0) - 1;
+    // Only the LAST in-flight update for a card applies the server's authoritative
+    // quantity — which may be clamped or normalized, so trusting it fixes both the
+    // "server clamp invisible to client" bug and post-resync divergence. While newer
+    // updates are still outstanding, keep the optimistic value so the tile doesn't
+    // flicker backward through the serialized responses.
+    const authoritative = remaining <= 0;
+    if (authoritative) delete pending[card.id];
+    else pending[card.id] = remaining;
     return {
       ...state,
+      pendingCardUpdates: pending,
       activeDeck: {
         ...state.activeDeck,
-        // Keep the local quantities: updates are absolute and serialised, so the
-        // optimistic value is always at least as new as this response — letting an
-        // in-flight response overwrite it re-introduces the rapid-click race.
         cards: state.activeDeck.cards.map((c) =>
-          c.id === card.id ? { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil } : c,
+          c.id === card.id
+            ? authoritative
+              ? card
+              : { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil }
+            : c,
         ),
       },
     };

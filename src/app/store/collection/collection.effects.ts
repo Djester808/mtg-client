@@ -1,7 +1,20 @@
 import { Injectable } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, map, mergeMap, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  concatMap,
+  filter,
+  map,
+  mergeMap,
+  of,
+  switchMap,
+  tap,
+  withLatestFrom,
+} from 'rxjs';
+import { AppState } from '..';
 import { CollectionActions } from './collection.actions';
+import { selectActiveCollection } from './collection.selectors';
 import { CollectionApiService } from '../../services/collection-api.service';
 import { ToastService } from '../../services/toast.service';
 import { describeHttpError } from '../../utils/http-error.utils';
@@ -37,12 +50,16 @@ export class CollectionEffects {
   );
 
   // Same fetch as loadCollection, but the reducer never blanks the current view.
+  // Guarded so a resync for collection A that resolves after the user opened collection
+  // B does not overwrite B with A's cards.
   refreshCollection$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.refreshCollection),
       switchMap(({ id }) =>
         this.api.getCollection(id).pipe(
-          map((collection) => CollectionActions.loadCollectionSuccess({ collection })),
+          withLatestFrom(this.store.select(selectActiveCollection)),
+          filter(([collection, active]) => active?.id === collection.id),
+          map(([collection]) => CollectionActions.loadCollectionSuccess({ collection })),
           catchError((err) =>
             of(CollectionActions.loadCollectionFailure({ error: describeHttpError(err) })),
           ),
@@ -173,5 +190,6 @@ export class CollectionEffects {
     private actions$: Actions,
     private api: CollectionApiService,
     private toast: ToastService,
+    private store: Store<AppState>,
   ) {}
 }
