@@ -2025,15 +2025,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       .filter((c): c is CollectionCardDto => c != null);
   }
 
-  onStackPointerDown(
-    groupKey: string,
-    idx: number,
-    card: CollectionCardDto,
+  /**
+   * Shared pointer-drag plumbing for the stack and list reorder handlers, which were
+   * near-identical: threshold detection, ghost creation/positioning, the settle/spring
+   * animation, listener teardown and the ngOnDestroy cleanup registration. Each caller
+   * supplies only what differs via hooks — which drag-state fields to set, the per-move
+   * hit-testing, where a released ghost settles, and how to commit/reset the reorder.
+   * (The free-layout drag stays separate: it has its own inline ghost, edge-scroll and
+   * multi-card selection.)
+   */
+  private startCardReorderDrag(
+    cardEl: HTMLElement,
     event: PointerEvent,
+    hooks: {
+      threshold: number;
+      onDragStart: () => void;
+      onDragMove: (e: PointerEvent) => void;
+      settlePoint: (ghost: HTMLElement) => { x: number; y: number } | null;
+      commit: () => void;
+      reset: () => void;
+    },
   ): void {
-    if ((event.target as HTMLElement).closest('button')) return;
-    event.preventDefault();
-    const cardEl = event.currentTarget as HTMLElement;
     const startX = event.clientX;
     const startY = event.clientY;
     let lastX = startX;
@@ -2042,14 +2054,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let ghost: HTMLElement | null = null;
     let grabOffsetX = 0;
     let grabOffsetY = 0;
-    let overCommander = false;
-
-    const d = card.cardDetails;
-    const isCommanderEligible =
-      !!d &&
-      (d.supertypes?.includes('Legendary') ?? false) &&
-      ((d.cardTypes?.includes(CardType.Creature) ?? false) ||
-        (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
 
     const detach = () => {
       this.activeDragCleanup = null;
@@ -2061,143 +2065,26 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const finish = (drop: boolean) => {
       ghost?.remove();
       ghost = null;
-      if (dragging && drop) {
-        if (overCommander && isCommanderEligible) {
-          this.deck$.pipe(take(1)).subscribe((deck) => {
-            if (deck) this.setCommander(card.oracleId, deck);
-          });
-        } else {
-          const srcIdx = this.stackDragFromIdx;
-          const dstIdx = this.stackDragOverIdx;
-          if (srcIdx != null && dstIdx != null && srcIdx !== dstIdx) {
-            // Drag indices are positions in the DISPLAYED order (which may differ
-            // from the saved one when a filter hides cards). Apply the move there,
-            // then keep any hidden ids so they aren't lost when the filter clears.
-            const displayed = [
-              ...(this.displayedStackOrders.get(groupKey) ?? this.stackOrders.get(groupKey) ?? []),
-            ];
-            const [moved] = displayed.splice(srcIdx, 1);
-            displayed.splice(dstIdx, 0, moved);
-            const shown = new Map<string, number>();
-            for (const id of displayed) shown.set(id, (shown.get(id) ?? 0) + 1);
-            const hidden: string[] = [];
-            for (const id of this.stackOrders.get(groupKey) ?? []) {
-              const n = shown.get(id) ?? 0;
-              if (n > 0) shown.set(id, n - 1);
-              else hidden.push(id);
-            }
-            this.stackOrders.set(groupKey, [...displayed, ...hidden]);
-          }
-        }
-      }
+      if (dragging && drop) hooks.commit();
       document.body.style.removeProperty('cursor');
-      this.stackDragGroupKey = null;
-      this.stackDragFromIdx = null;
-      this.stackDragOverIdx = null;
-      if (this.cpSlotDragOver) {
-        this.cpSlotDragOver = false;
-      }
+      hooks.reset();
       if (dragging) this.cdr.markForCheck();
-    };
-
-    /** Where a released ghost should glide: the insertion gap, or home when there is none. */
-    const settlePoint = (): { x: number; y: number } | null => {
-      // A commander drop gets the slot's own bump; the shrink-out exit fits there.
-      if (overCommander && isCommanderEligible) return null;
-      const springBack = () => {
-        const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
-        return { x: r.left, y: r.top };
-      };
-      const dst = this.stackDragOverIdx;
-      if (dst == null) return springBack();
-      const listEl = document.querySelector<HTMLElement>(
-        `.visual-stack[data-group-key="${groupKey}"]`,
-      );
-      if (!listEl) return springBack();
-      const others = Array.from(
-        listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
-      );
-      if (others.length === 0) {
-        const r = listEl.getBoundingClientRect();
-        return { x: r.left, y: r.top };
-      }
-      if (dst < others.length) {
-        const r = others[dst].getBoundingClientRect();
-        return { x: r.left, y: r.top - 6 };
-      }
-      const r = others[others.length - 1].getBoundingClientRect();
-      return { x: r.left, y: r.bottom + 4 };
     };
 
     const onMove = (e: PointerEvent) => {
       if (!dragging) {
-        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 5) return;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < hooks.threshold) return;
         dragging = true;
-        this.stackDragGroupKey = groupKey;
-        this.stackDragFromIdx = idx;
         document.body.style.setProperty('cursor', 'grabbing', 'important');
         ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
+        hooks.onDragStart();
         this.cdr.markForCheck();
       }
-
       lastX = e.clientX;
       lastY = e.clientY;
       if (ghost)
         ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
-
-      // Check hover over commander slot (only relevant for eligible cards in commander decks)
-      if (isCommanderEligible) {
-        const cpEl = document.querySelector<HTMLElement>('.cp-portrait-wrap');
-        if (cpEl) {
-          const r = cpEl.getBoundingClientRect();
-          const nowOver =
-            e.clientX >= r.left &&
-            e.clientX <= r.right &&
-            e.clientY >= r.top &&
-            e.clientY <= r.bottom;
-          if (nowOver !== overCommander) {
-            overCommander = nowOver;
-            this.cpSlotDragOver = nowOver;
-            this.cdr.markForCheck();
-          }
-          if (nowOver) return; // don't update stack hover while over commander slot
-        }
-      }
-
-      const listEl = document.querySelector<HTMLElement>(
-        `.visual-stack[data-group-key="${groupKey}"]`,
-      );
-      if (!listEl) return;
-      const cards = Array.from(
-        listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
-      );
-      let dstIdx = cards.length;
-      if (this.groupDir === 'v') {
-        // Horizontal wrapping layout — find insert point by 2-D position
-        for (let i = 0; i < cards.length; i++) {
-          const r = cards[i].getBoundingClientRect();
-          if (e.clientY < r.top) {
-            dstIdx = i;
-            break;
-          }
-          if (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2) {
-            dstIdx = i;
-            break;
-          }
-        }
-      } else {
-        // Vertical stack layout — Y position check
-        for (let i = 0; i < cards.length; i++) {
-          if (e.clientY < cards[i].getBoundingClientRect().top + 16) {
-            dstIdx = i;
-            break;
-          }
-        }
-      }
-      if (this.stackDragOverIdx !== dstIdx) {
-        this.stackDragOverIdx = dstIdx;
-        this.rafCheck();
-      }
+      hooks.onDragMove(e);
     };
 
     const onUp = () => {
@@ -2209,7 +2096,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       }
       const g = ghost;
       ghost = null;
-      const to = settlePoint();
+      const to = hooks.settlePoint(g);
       if (to) {
         this.glideGhostTo(g, to.x, to.y, () => {
           g.remove();
@@ -2222,6 +2109,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         });
       }
     };
+
     const onCancel = () => {
       detach();
       if (dragging) this.armClickSuppression();
@@ -2245,6 +2133,151 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       detach();
       finish(false);
     };
+  }
+
+  onStackPointerDown(
+    groupKey: string,
+    idx: number,
+    card: CollectionCardDto,
+    event: PointerEvent,
+  ): void {
+    if ((event.target as HTMLElement).closest('button')) return;
+    event.preventDefault();
+    const cardEl = event.currentTarget as HTMLElement;
+    let overCommander = false;
+
+    const d = card.cardDetails;
+    const isCommanderEligible =
+      !!d &&
+      (d.supertypes?.includes('Legendary') ?? false) &&
+      ((d.cardTypes?.includes(CardType.Creature) ?? false) ||
+        (d.cardTypes?.includes(CardType.Planeswalker) ?? false));
+
+    this.startCardReorderDrag(cardEl, event, {
+      threshold: 5,
+      onDragStart: () => {
+        this.stackDragGroupKey = groupKey;
+        this.stackDragFromIdx = idx;
+      },
+      onDragMove: (e) => {
+        // Hovering the commander slot (only for eligible cards) overrides stack hover.
+        if (isCommanderEligible) {
+          const cpEl = document.querySelector<HTMLElement>('.cp-portrait-wrap');
+          if (cpEl) {
+            const r = cpEl.getBoundingClientRect();
+            const nowOver =
+              e.clientX >= r.left &&
+              e.clientX <= r.right &&
+              e.clientY >= r.top &&
+              e.clientY <= r.bottom;
+            if (nowOver !== overCommander) {
+              overCommander = nowOver;
+              this.cpSlotDragOver = nowOver;
+              this.cdr.markForCheck();
+            }
+            if (nowOver) return;
+          }
+        }
+
+        const listEl = document.querySelector<HTMLElement>(
+          `.visual-stack[data-group-key="${groupKey}"]`,
+        );
+        if (!listEl) return;
+        const cards = Array.from(
+          listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
+        );
+        let dstIdx = cards.length;
+        if (this.groupDir === 'v') {
+          // Horizontal wrapping layout — find insert point by 2-D position.
+          for (let i = 0; i < cards.length; i++) {
+            const r = cards[i].getBoundingClientRect();
+            if (e.clientY < r.top) {
+              dstIdx = i;
+              break;
+            }
+            if (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2) {
+              dstIdx = i;
+              break;
+            }
+          }
+        } else {
+          // Vertical stack layout — Y position check.
+          for (let i = 0; i < cards.length; i++) {
+            if (e.clientY < cards[i].getBoundingClientRect().top + 16) {
+              dstIdx = i;
+              break;
+            }
+          }
+        }
+        if (this.stackDragOverIdx !== dstIdx) {
+          this.stackDragOverIdx = dstIdx;
+          this.rafCheck();
+        }
+      },
+      settlePoint: () => {
+        // A commander drop uses the slot's own bump animation, so glide there — return
+        // null to fall back to the shrink-out drop instead of a settle glide.
+        if (overCommander && isCommanderEligible) return null;
+        const springBack = (): { x: number; y: number } => {
+          const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
+          return { x: r.left, y: r.top };
+        };
+        const dst = this.stackDragOverIdx;
+        if (dst == null) return springBack();
+        const listEl = document.querySelector<HTMLElement>(
+          `.visual-stack[data-group-key="${groupKey}"]`,
+        );
+        if (!listEl) return springBack();
+        const others = Array.from(
+          listEl.querySelectorAll<HTMLElement>('.visual-card:not(.is-stack-dragging)'),
+        );
+        if (others.length === 0) {
+          const r = listEl.getBoundingClientRect();
+          return { x: r.left, y: r.top };
+        }
+        if (dst < others.length) {
+          const r = others[dst].getBoundingClientRect();
+          return { x: r.left, y: r.top - 6 };
+        }
+        const r = others[others.length - 1].getBoundingClientRect();
+        return { x: r.left, y: r.bottom + 4 };
+      },
+      commit: () => {
+        if (overCommander && isCommanderEligible) {
+          this.deck$.pipe(take(1)).subscribe((deck) => {
+            if (deck) this.setCommander(card.oracleId, deck);
+          });
+          return;
+        }
+        const srcIdx = this.stackDragFromIdx;
+        const dstIdx = this.stackDragOverIdx;
+        if (srcIdx != null && dstIdx != null && srcIdx !== dstIdx) {
+          // Drag indices are positions in the DISPLAYED order (which may differ from the
+          // saved one when a filter hides cards). Apply the move to the displayed list,
+          // then re-append any hidden ids so they aren't lost when the filter clears.
+          const displayed = [
+            ...(this.displayedStackOrders.get(groupKey) ?? this.stackOrders.get(groupKey) ?? []),
+          ];
+          const [moved] = displayed.splice(srcIdx, 1);
+          displayed.splice(dstIdx, 0, moved);
+          const shown = new Map<string, number>();
+          for (const id of displayed) shown.set(id, (shown.get(id) ?? 0) + 1);
+          const hidden: string[] = [];
+          for (const id of this.stackOrders.get(groupKey) ?? []) {
+            const n = shown.get(id) ?? 0;
+            if (n > 0) shown.set(id, n - 1);
+            else hidden.push(id);
+          }
+          this.stackOrders.set(groupKey, [...displayed, ...hidden]);
+        }
+      },
+      reset: () => {
+        this.stackDragGroupKey = null;
+        this.stackDragFromIdx = null;
+        this.stackDragOverIdx = null;
+        this.cpSlotDragOver = false;
+      },
+    });
   }
 
   trackByIdx(index: number): number {
@@ -2276,24 +2309,51 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if ((event.target as HTMLElement).closest('button')) return;
     event.preventDefault();
     const cardEl = event.currentTarget as HTMLElement;
-    const startX = event.clientX;
-    const startY = event.clientY;
-    let dragging = false;
-    let ghost: HTMLElement | null = null;
-    let grabOffsetX = 0;
-    let grabOffsetY = 0;
 
-    const detach = () => {
-      this.activeDragCleanup = null;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onCancel);
-    };
-
-    const finish = (drop: boolean) => {
-      ghost?.remove();
-      ghost = null;
-      if (dragging && drop) {
+    this.startCardReorderDrag(cardEl, event, {
+      threshold: 6,
+      onDragStart: () => {
+        this.listDragGroupKey = groupKey;
+        this.listDragFromIdx = idx;
+      },
+      onDragMove: (e) => {
+        const listEl = document.querySelector<HTMLElement>(
+          `.list-drag-group[data-group-key="${groupKey}"]`,
+        );
+        if (!listEl) return;
+        const rows = Array.from(
+          listEl.querySelectorAll<HTMLElement>('.list-drag-row:not(.is-list-dragging)'),
+        );
+        let dstIdx = rows.length;
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i].getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) {
+            dstIdx = i;
+            break;
+          }
+        }
+        if (this.listDragOverIdx !== dstIdx) {
+          this.listDragOverIdx = dstIdx;
+          this.rafCheck();
+        }
+      },
+      settlePoint: (g) => {
+        // The active drop-line is the landing point; no line means spring back home.
+        const dst = this.listDragOverIdx;
+        const listEl = document.querySelector<HTMLElement>(
+          `.list-drag-group[data-group-key="${groupKey}"]`,
+        );
+        if (dst != null && listEl) {
+          const line = listEl.querySelectorAll<HTMLElement>('.drop-line')[dst];
+          if (line) {
+            const r = line.getBoundingClientRect();
+            return { x: r.left + 8, y: r.top - g.getBoundingClientRect().height / 2 };
+          }
+        }
+        const r = cardEl.getBoundingClientRect();
+        return { x: r.left, y: r.top };
+      },
+      commit: () => {
         const src = this.listDragFromIdx;
         const dst = this.listDragOverIdx;
         if (src != null && dst != null && src !== dst) {
@@ -2307,100 +2367,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           ids.splice(dst > src ? dst - 1 : dst, 0, moved);
           this.listOrders.set(groupKey, ids);
         }
-      }
-      document.body.style.removeProperty('cursor');
-      this.listDragGroupKey = null;
-      this.listDragFromIdx = null;
-      this.listDragOverIdx = null;
-      if (dragging) this.cdr.markForCheck();
-    };
-
-    /** The active drop-line is the landing point; no line means spring back home. */
-    const settlePoint = (g: HTMLElement): { x: number; y: number } => {
-      const dst = this.listDragOverIdx;
-      const listEl = document.querySelector<HTMLElement>(
-        `.list-drag-group[data-group-key="${groupKey}"]`,
-      );
-      if (dst != null && listEl) {
-        const line = listEl.querySelectorAll<HTMLElement>('.drop-line')[dst];
-        if (line) {
-          const r = line.getBoundingClientRect();
-          return { x: r.left + 8, y: r.top - g.getBoundingClientRect().height / 2 };
-        }
-      }
-      const r = cardEl.getBoundingClientRect();
-      return { x: r.left, y: r.top };
-    };
-
-    const onMove = (e: PointerEvent) => {
-      if (!dragging) {
-        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
-        dragging = true;
-        this.listDragGroupKey = groupKey;
-        this.listDragFromIdx = idx;
-        document.body.style.setProperty('cursor', 'grabbing', 'important');
-        ({ ghost, grabOffsetX, grabOffsetY } = this.createDragGhost(cardEl, startX, startY));
-        this.cdr.markForCheck();
-      }
-      if (ghost)
-        ghost.style.transform = `translate3d(${e.clientX - grabOffsetX}px,${e.clientY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
-      const listEl = document.querySelector<HTMLElement>(
-        `.list-drag-group[data-group-key="${groupKey}"]`,
-      );
-      if (!listEl) return;
-      const rows = Array.from(
-        listEl.querySelectorAll<HTMLElement>('.list-drag-row:not(.is-list-dragging)'),
-      );
-      let dstIdx = rows.length;
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i].getBoundingClientRect();
-        if (e.clientY < r.top + r.height / 2) {
-          dstIdx = i;
-          break;
-        }
-      }
-      if (this.listDragOverIdx !== dstIdx) {
-        this.listDragOverIdx = dstIdx;
-        this.rafCheck();
-      }
-    };
-
-    const onUp = () => {
-      detach();
-      if (dragging) this.armClickSuppression();
-      if (!(dragging && ghost)) {
-        finish(true);
-        return;
-      }
-      const g = ghost;
-      ghost = null;
-      const to = settlePoint(g);
-      this.glideGhostTo(g, to.x, to.y, () => {
-        g.remove();
-        finish(true);
-      });
-    };
-    const onCancel = () => {
-      detach();
-      if (dragging && ghost) {
-        const g = ghost;
-        ghost = null;
-        const r = cardEl.getBoundingClientRect();
-        this.glideGhostTo(g, r.left, r.top, () => {
-          g.remove();
-          finish(false);
-        });
-      } else {
-        finish(false);
-      }
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onCancel);
-    this.activeDragCleanup = () => {
-      detach();
-      finish(false);
-    };
+      },
+      reset: () => {
+        this.listDragGroupKey = null;
+        this.listDragFromIdx = null;
+        this.listDragOverIdx = null;
+      },
+    });
   }
 
   // Memoized on (deck, board, filter): the template reads this (and getGroups, which
