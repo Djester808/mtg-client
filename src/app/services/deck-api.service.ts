@@ -1,7 +1,10 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { AppState } from '../store';
+import { AuthActions } from '../store/auth/auth.actions';
 import {
   CollectionCardDto,
   AddCardToCollectionRequest,
@@ -157,6 +160,7 @@ export class DeckApiService {
   constructor(
     private http: HttpClient,
     private zone: NgZone,
+    private store: Store<AppState>,
   ) {}
 
   getDecks(): Observable<DeckDto[]> {
@@ -274,6 +278,11 @@ export class DeckApiService {
           });
 
           if (!resp.ok || !resp.body) {
+            // This path uses fetch, so the auth interceptor never runs — mirror its
+            // behaviour and log out on an expired session instead of a silent inline error.
+            if (resp.status === 401 && token) {
+              this.zone.run(() => this.store.dispatch(AuthActions.logout()));
+            }
             emit({ type: 'error', message: `Request failed (${resp.status})` });
             this.zone.run(() => subscriber.complete());
             return;
@@ -282,19 +291,32 @@ export class DeckApiService {
           const reader = resp.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
+          // Normalize CRLF/CR to LF: a proxy that rewrites line endings would otherwise
+          // make the \n\n frame separator never match and no event would ever be delivered.
+          const consumeFrames = (final: boolean) => {
+            buffer = buffer.replace(/\r\n?/g, '\n');
+            let sep: number;
+            while ((sep = buffer.indexOf('\n\n')) >= 0) {
+              const parsed = parseFrame(buffer.slice(0, sep));
+              buffer = buffer.slice(sep + 2);
+              if (parsed) emit(parsed);
+            }
+            // On close, flush a trailing frame the server didn't terminate with a blank
+            // line — otherwise the last event (often the `final` result) is dropped.
+            if (final && buffer.trim()) {
+              const parsed = parseFrame(buffer);
+              if (parsed) emit(parsed);
+              buffer = '';
+            }
+          };
           for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            let sep: number;
-            // SSE frames are separated by a blank line (\n\n).
-            while ((sep = buffer.indexOf('\n\n')) >= 0) {
-              const frame = buffer.slice(0, sep);
-              buffer = buffer.slice(sep + 2);
-              const parsed = parseFrame(frame);
-              if (parsed) emit(parsed);
-            }
+            consumeFrames(false);
           }
+          buffer += decoder.decode(); // flush any bytes held by the streaming decoder
+          consumeFrames(true);
           this.zone.run(() => subscriber.complete());
         } catch (err) {
           if (controller.signal.aborted) {
