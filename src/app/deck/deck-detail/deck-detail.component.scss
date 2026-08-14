@@ -138,19 +138,6 @@
 
 // ---- Sub-toolbar -----------------------------------------
 
-.detail-toolbar {
-  position: relative;
-  z-index: 9;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 28px;
-  background: rgba(8,8,8,0.45);
-  border-bottom: 1px solid var(--border-dim);
-  flex-shrink: 0;
-}
-
-.toolbar-spacer { flex: 1; }
 
 .tool-btn {
   display: flex;
@@ -1736,22 +1723,6 @@
   flex: 1;
 }
 
-.visual-name {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-dim);
-  text-align: center;
-  padding: 3px 2px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  display: none;
-}
-
-
 // ---- Suggestions panel -----------------------------------
 
 .suggestions-panel-wrap {
@@ -1991,129 +1962,6 @@
   letter-spacing: 0.04em;
   color: var(--text-dim);
   text-align: center;
-}
-
-// ---- Mana pip / production grid --------------------------
-
-.pip-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
-.pip-entry {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  .ms { font-size: 14px; }
-}
-
-.pip-count {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-// ---- Subtype rows ----------------------------------------
-
-.subtype-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-}
-
-// ---- Token / Emblem card entries -------------------------
-
-.stat-card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.stat-card-entry {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-
-  &:last-child { border-bottom: none; padding-bottom: 0; }
-
-  &.stat-card-clickable {
-    cursor: pointer;
-    &:hover .stat-card-thumb { box-shadow: 0 0 0 2px rgba(201,168,76,0.5); }
-  }
-
-  &--land {
-    align-items: center;
-
-    .stat-card-thumb {
-      width: 30px;
-      height: 42px;
-    }
-
-    .stat-card-info {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      flex: 1;
-      padding-top: 0;
-    }
-  }
-}
-
-.stat-card-thumb {
-  width: 36px;
-  height: 50px;
-  border-radius: 3px;
-  transition: box-shadow 0.2s ease;
-  background-size: 108%;
-  background-position: center top;
-  background-color: var(--bg-raised);
-  flex-shrink: 0;
-
-  &.no-image {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-.stat-card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  padding-top: 2px;
-}
-
-.stat-card-name {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stat-card-mana {
-  font-size: 10px;
-}
-
-.token-desc {
-  font-family: var(--font-body);
-  font-size: 10px;
-  color: var(--text-secondary);
-  font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 // ---- Side-panel cover image ------------------------------

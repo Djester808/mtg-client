@@ -442,10 +442,6 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  ownedEntry(collection: CollectionDetailDto, oracleId: string): CollectionCardDto | undefined {
-    return collection.cards.find((c) => c.oracleId === oracleId);
-  }
-
   // ---- Card mutations --------------------------------------------
 
   /**
@@ -638,15 +634,6 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
         }),
       );
     }
-  }
-
-  modalRemoveCard(col: CollectionDetailDto, card: CollectionCardDto): void {
-    const entry = this.viewedEntry(col, card);
-    if (!entry?.id) return;
-    this.store.dispatch(
-      CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }),
-    );
-    this.closeCard();
   }
 
   getAlsoOwnedIds(col: CollectionDetailDto): string[] {

@@ -246,7 +246,7 @@
             </div>
             <div class="vp-card-info">
               <span class="vp-card-name" (click)="openCard(c)">{{ c.cardDetails?.name ?? c.oracleId }}</span>
-              <span class="vp-card-type">{{ cardTypeLine(c) }}</span>
+              <span class="vp-card-type">{{ typeLine(c) }}</span>
               <span class="vp-card-note" *ngIf="violationPanelType === 'singleton'">
                 {{ totalOracleCount(c, deck) }} copies in deck
               </span>

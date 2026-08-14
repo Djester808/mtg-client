@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type ToastKind = 'info' | 'success' | 'warn' | 'error' | 'damage' | 'death' | 'cast';
+export type ToastKind = 'info' | 'success' | 'warn' | 'error';
 
 export interface Toast {
   id: number;
@@ -34,32 +34,12 @@ export class ToastService {
     this._toasts$.next(this._toasts$.value.filter((t) => t.id !== id));
   }
 
-  // ---- Convenience helpers --------------------------------
-  cast(cardName: string, playerName: string): void {
-    this.show(`${playerName} cast ${cardName}`, 'cast', 2500);
-  }
-
-  damage(target: string, amount: number): void {
-    this.show(`${target} takes ${amount} damage`, 'damage', 2500);
-  }
-
-  died(cardName: string): void {
-    this.show(`${cardName} died`, 'death', 3000);
-  }
-
-  gameOver(winner: string): void {
-    this.show(`${winner} wins!`, 'success', 0); // persistent
-  }
-
   private iconFor(kind: ToastKind): string {
     return {
       info: '◆',
       success: '✦',
       warn: '⚠',
       error: '✖',
-      damage: '⚔',
-      death: '☠',
-      cast: '✧',
     }[kind];
   }
 }

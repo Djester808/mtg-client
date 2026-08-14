@@ -3623,10 +3623,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  cardTypeLine(card: CollectionCardDto): string {
-    return card.cardDetails ? buildTypeLine(card.cardDetails) : '';
-  }
-
   removeViolatingCard(card: CollectionCardDto): void {
     this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
   }
@@ -3817,12 +3813,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private saveTagToHistory(tag: string): void {
     this.tagHistory = [...new Set([tag, ...this.tagHistory])].slice(0, 200);
     localStorage.setItem('mtg-tag-history', JSON.stringify(this.tagHistory));
-  }
-
-  deckCardNames(deck: DeckDetailDto): string[] {
-    return [
-      ...new Set(deck.cards.map((c) => c.cardDetails?.name).filter((n): n is string => !!n)),
-    ].sort();
   }
 
   sectionChartType: Record<string, 'bar' | 'vbar' | 'pie'> = {};

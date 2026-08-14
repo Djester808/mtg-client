@@ -3564,47 +3564,6 @@ describe('DeckDetailComponent — violation panel', () => {
   });
 });
 
-// ── deckCardNames ─────────────────────────────────────────────────────────────
-
-describe('DeckDetailComponent — deckCardNames', () => {
-  afterEach(() => TestBed.resetTestingModule());
-
-  it('returns empty array for a deck with no cards', async () => {
-    const { component } = await setup();
-    expect(component.deckCardNames(makeDeck([]))).toEqual([]);
-  });
-
-  it('returns sorted unique card names', async () => {
-    const { component } = await setup();
-    const cards = [
-      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Zebra' }) }),
-      makeDeckCard({ id: 'c2', cardDetails: makeCard({ name: 'Ant' }) }),
-      makeDeckCard({ id: 'c3', cardDetails: makeCard({ name: 'Mole' }) }),
-    ];
-    expect(component.deckCardNames(makeDeck(cards))).toEqual(['Ant', 'Mole', 'Zebra']);
-  });
-
-  it('deduplicates names when multiple cards share the same name', async () => {
-    const { component } = await setup();
-    const cards = [
-      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Forest' }) }),
-      makeDeckCard({ id: 'c2', cardDetails: makeCard({ name: 'Forest' }) }),
-    ];
-    const names = component.deckCardNames(makeDeck(cards));
-    expect(names).toEqual(['Forest']);
-  });
-
-  it('omits cards whose cardDetails is null', async () => {
-    const { component } = await setup();
-    const cards = [
-      makeDeckCard({ id: 'c1', cardDetails: makeCard({ name: 'Bolt' }) }),
-      makeDeckCard({ id: 'c2', cardDetails: null }),
-    ];
-    const names = component.deckCardNames(makeDeck(cards));
-    expect(names).toEqual(['Bolt']);
-  });
-});
-
 // ── tagHistory ────────────────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — tagHistory', () => {
