@@ -339,32 +339,6 @@ describe('DeckDetailComponent — totalCount', () => {
   });
 });
 
-// ── targetCount ──────────────────────────────────────────────────────────────
-
-describe('DeckDetailComponent — targetCount', () => {
-  afterEach(() => TestBed.resetTestingModule());
-
-  it('returns 100 for commander', async () => {
-    const { component } = await setup();
-    expect(component.targetCount({ ...makeDeck(), format: 'commander' })).toBe(100);
-  });
-
-  it('returns 60 for standard', async () => {
-    const { component } = await setup();
-    expect(component.targetCount({ ...makeDeck(), format: 'standard' })).toBe(60);
-  });
-
-  it('returns 60 for null format', async () => {
-    const { component } = await setup();
-    expect(component.targetCount(makeDeck())).toBe(60);
-  });
-
-  it('returns 60 for brawl', async () => {
-    const { component } = await setup();
-    expect(component.targetCount({ ...makeDeck(), format: 'brawl' })).toBe(60);
-  });
-});
-
 // ── singletonViolations ──────────────────────────────────────────────────────
 
 describe('DeckDetailComponent — singletonViolations', () => {
@@ -2715,29 +2689,6 @@ describe('DeckDetailComponent — totalOracleCount', () => {
   });
 });
 
-// ── targetCount ───────────────────────────────────────────────────────────────
-
-describe('DeckDetailComponent — targetCount', () => {
-  afterEach(() => TestBed.resetTestingModule());
-
-  it('returns 100 for commander format', async () => {
-    const { component } = await setup();
-    const deck = { ...makeDeck(), format: 'commander' };
-    expect(component.targetCount(deck)).toBe(100);
-  });
-
-  it('returns 60 for non-commander format', async () => {
-    const { component } = await setup();
-    expect(component.targetCount(makeDeck())).toBe(60);
-  });
-
-  it('returns 60 when format is null', async () => {
-    const { component } = await setup();
-    const deck = { ...makeDeck(), format: null };
-    expect(component.targetCount(deck)).toBe(60);
-  });
-});
-
 // ── setSortMode in free mode ──────────────────────────────────────────────────
 
 describe('DeckDetailComponent — setSortMode (free mode sort reset)', () => {
@@ -3059,20 +3010,6 @@ describe('DeckDetailComponent — bannedInCommander', () => {
     const { component } = await setup();
     const deck = makeDeck([makeDeckCard({ cardDetails: null })]);
     expect(component.bannedInCommander(deck)).toHaveSize(0);
-  });
-
-  it('bannedViolationNames joins banned card names', async () => {
-    const { component } = await setup();
-    const b1 = makeDeckCard({
-      id: 'b1',
-      cardDetails: makeCard({ name: 'Banned Card A', legalities: { commander: 'banned' } }),
-    });
-    const b2 = makeDeckCard({
-      id: 'b2',
-      cardDetails: makeCard({ name: 'Banned Card B', legalities: { commander: 'banned' } }),
-    });
-    const deck = makeDeck([b1, b2]);
-    expect(component.bannedViolationNames(deck)).toBe('Banned Card A, Banned Card B');
   });
 });
 

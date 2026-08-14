@@ -6,6 +6,8 @@ import {
   EventEmitter,
   HostListener,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  OnDestroy,
   OnInit,
   OnChanges,
   SimpleChanges,
@@ -25,12 +27,12 @@ import { cardArtWindow } from '../../shared/fly-card';
   imports: [CommonModule, ManaCostComponent, OracleSymbolsPipe],
   templateUrl: './card-modal.component.html',
   styleUrls: ['./card-modal.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   // Re-parent to <body> so the fixed overlay escapes .detail-body's stacking context and
   // paints above the app header instead of behind it.
   hostDirectives: [ToBodyDirective],
 })
-export class CardModalComponent implements OnInit, OnChanges {
+export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() card: CardDto | null = null;
   @Input() printings: PrintingDto[] = [];
 
@@ -115,6 +117,7 @@ export class CardModalComponent implements OnInit, OnChanges {
   constructor(
     private gameApi: GameApiService,
     private host: ElementRef<HTMLElement>,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   /**
@@ -150,9 +153,11 @@ export class CardModalComponent implements OnInit, OnChanges {
           this.rulingsCache.set(oracleId, r);
           this.rulings = r;
           this.rulingsLoading = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.rulingsLoading = false;
+          this.cdr.markForCheck();
         },
       });
     }
@@ -167,8 +172,15 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   // ---- Carousel -------------------------------------------------------
 
+  private carouselMemo: { printings: PrintingDto[]; start: number; value: PrintingDto[] } | null =
+    null;
+
   get carouselSlice(): PrintingDto[] {
-    return this.printings.slice(this.carouselStart, this.carouselStart + this.CAROUSEL_PAGE);
+    const m = this.carouselMemo;
+    if (m && m.printings === this.printings && m.start === this.carouselStart) return m.value;
+    const value = this.printings.slice(this.carouselStart, this.carouselStart + this.CAROUSEL_PAGE);
+    this.carouselMemo = { printings: this.printings, start: this.carouselStart, value };
+    return value;
   }
   get carouselCanPrev(): boolean {
     return this.carouselStart > 0;
@@ -188,23 +200,48 @@ export class CardModalComponent implements OnInit, OnChanges {
 
   // ---- Derived card data ----------------------------------------------
 
+  // The template reads currentPrinting/effectiveCard 20+ times per change-detection
+  // pass; without memoization each read was a linear scan plus (for effectiveCard) a
+  // fresh object whose new identity forced child bindings to re-render every pass.
+  private printingMemo: {
+    printings: PrintingDto[];
+    id: string | null;
+    value: PrintingDto | undefined;
+  } | null = null;
+
   get currentPrinting(): PrintingDto | undefined {
-    return this.printings.find((p) => p.scryfallId === this.viewedScryfallId);
+    const m = this.printingMemo;
+    if (m && m.printings === this.printings && m.id === this.viewedScryfallId) return m.value;
+    const value = this.printings.find((p) => p.scryfallId === this.viewedScryfallId);
+    this.printingMemo = { printings: this.printings, id: this.viewedScryfallId, value };
+    return value;
   }
+
+  private effectiveMemo: {
+    card: CardDto | null;
+    printing: PrintingDto | undefined;
+    value: CardDto | null;
+  } | null = null;
 
   /** Base card merged with printing-specific overrides. */
   get effectiveCard(): CardDto | null {
-    if (!this.card) return null;
     const p = this.currentPrinting;
-    if (!p) return this.card;
-    return {
-      ...this.card,
-      oracleText: p.oracleText ?? this.card.oracleText,
-      flavorText: p.flavorText ?? null,
-      artist: p.artist ?? this.card.artist,
-      manaCost: p.manaCost ?? this.card.manaCost,
-      setCode: p.setCode ?? this.card.setCode,
-    };
+    const m = this.effectiveMemo;
+    if (m && m.card === this.card && m.printing === p) return m.value;
+    let value: CardDto | null;
+    if (!this.card) value = null;
+    else if (!p) value = this.card;
+    else
+      value = {
+        ...this.card,
+        oracleText: p.oracleText ?? this.card.oracleText,
+        flavorText: p.flavorText ?? null,
+        artist: p.artist ?? this.card.artist,
+        manaCost: p.manaCost ?? this.card.manaCost,
+        setCode: p.setCode ?? this.card.setCode,
+      };
+    this.effectiveMemo = { card: this.card, printing: p, value };
+    return value;
   }
 
   get hasBack(): boolean {
@@ -269,20 +306,33 @@ export class CardModalComponent implements OnInit, OnChanges {
     return !!leg && Object.keys(leg).length > 0;
   }
 
-  get legalFormats(): { label: string; status: string }[] {
+  private formatsMemo: {
+    card: CardDto | null;
+    legal: { label: string; status: string }[];
+    illegal: { label: string; status: string }[];
+  } | null = null;
+
+  private formats(): NonNullable<typeof this.formatsMemo> {
+    if (this.formatsMemo?.card === this.card) return this.formatsMemo;
     const leg = this.card?.legalities ?? {};
-    return this.FORMAT_ORDER.map((f) => ({
+    const all = this.FORMAT_ORDER.map((f) => ({
       label: f.label,
       status: leg[f.key] ?? 'not_legal',
-    })).filter((f) => f.status !== 'not_legal');
+    }));
+    this.formatsMemo = {
+      card: this.card,
+      legal: all.filter((f) => f.status !== 'not_legal'),
+      illegal: all.filter((f) => f.status === 'not_legal'),
+    };
+    return this.formatsMemo;
+  }
+
+  get legalFormats(): { label: string; status: string }[] {
+    return this.formats().legal;
   }
 
   get illegalFormats(): { label: string; status: string }[] {
-    const leg = this.card?.legalities ?? {};
-    return this.FORMAT_ORDER.map((f) => ({
-      label: f.label,
-      status: leg[f.key] ?? 'not_legal',
-    })).filter((f) => f.status === 'not_legal');
+    return this.formats().illegal;
   }
 
   // ---- User actions ---------------------------------------------------
@@ -348,6 +398,7 @@ export class CardModalComponent implements OnInit, OnChanges {
     this.isDragging = true;
     this.dragOffsetX = e.clientX - this.modalX;
     this.dragOffsetY = e.clientY - this.modalY;
+    this.attachMoveListener();
     e.preventDefault();
   }
 
@@ -357,12 +408,15 @@ export class CardModalComponent implements OnInit, OnChanges {
     this.resizeStartY = e.clientY;
     this.resizeStartW = this.modalWidth;
     this.resizeStartH = this.modalHeight;
+    this.attachMoveListener();
     e.preventDefault();
     e.stopPropagation();
   }
 
-  @HostListener('document:mousemove', ['$event'])
-  onMouseMove(e: MouseEvent): void {
+  // The move listener exists only between mousedown and mouseup. A permanent
+  // document:mousemove host listener ran change detection for the whole app on
+  // every pointer movement while the modal was open.
+  private readonly onDocMouseMove = (e: MouseEvent): void => {
     if (this.isDragging) {
       this.modalX = Math.max(0, e.clientX - this.dragOffsetX);
       this.modalY = Math.max(0, e.clientY - this.dragOffsetY);
@@ -378,12 +432,26 @@ export class CardModalComponent implements OnInit, OnChanges {
         Math.min(Math.floor(window.innerHeight * 0.94), this.resizeStartH + d),
       );
     }
+    this.cdr.markForCheck();
+  };
+
+  private attachMoveListener(): void {
+    document.addEventListener('mousemove', this.onDocMouseMove);
+  }
+
+  private detachMoveListener(): void {
+    document.removeEventListener('mousemove', this.onDocMouseMove);
   }
 
   @HostListener('document:mouseup')
   onMouseUp(): void {
+    if (this.isDragging || this.isResizing) this.detachMoveListener();
     this.isDragging = false;
     this.isResizing = false;
+  }
+
+  ngOnDestroy(): void {
+    this.detachMoveListener();
   }
 
   @HostListener('document:keydown.escape')

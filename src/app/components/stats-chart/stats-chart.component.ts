@@ -9,11 +9,6 @@ export interface ChartEntry {
   manaSymbol?: string;
 }
 
-export interface StackedBarEntry {
-  label: string;
-  segments: { manaColor: string; value: number; label: string; color: string }[];
-}
-
 @Component({
   selector: 'app-stats-chart',
   standalone: true,
@@ -24,8 +19,7 @@ export interface StackedBarEntry {
 })
 export class StatsChartComponent {
   @Input() data: ChartEntry[] = [];
-  @Input() stackedData: StackedBarEntry[] = [];
-  @Input() type: 'bar' | 'vbar' | 'pie' | 'stacked' = 'bar';
+  @Input() type: 'bar' | 'vbar' | 'pie' = 'bar';
 
   private readonly PALETTE = [
     '#f87171',
@@ -47,12 +41,6 @@ export class StatsChartComponent {
   // invisible before, but a permanent flicker once rows carry entrance animations.
   trackEntry(_: number, d: ChartEntry): string {
     return d.label;
-  }
-  trackStacked(_: number, col: StackedBarEntry): string {
-    return col.label;
-  }
-  trackLegend(_: number, e: { manaColor: string }): string {
-    return e.manaColor;
   }
 
   get max(): number {
@@ -79,48 +67,6 @@ export class StatsChartComponent {
       value: d.value,
       color: this.color(i, d.color),
       manaSymbol: d.manaSymbol,
-    }));
-  }
-
-  // ── Stacked bar ───────────────────────────────────────
-
-  get stackedMax(): number {
-    return Math.max(
-      ...this.stackedData.map((col) => col.segments.reduce((s, seg) => s + seg.value, 0)),
-      1,
-    );
-  }
-
-  colHeightPct(col: StackedBarEntry): number {
-    const total = col.segments.reduce((s, seg) => s + seg.value, 0);
-    return (total / this.stackedMax) * 100;
-  }
-
-  get stackedLegend(): { manaColor: string; label: string; color: string; total: number }[] {
-    const COLOR_ORDER = ['w', 'u', 'b', 'r', 'g', 'm', 'c'];
-    const totals = new Map<string, { label: string; color: string; total: number }>();
-    for (const col of this.stackedData) {
-      for (const seg of col.segments) {
-        const existing = totals.get(seg.manaColor) ?? {
-          label: seg.label,
-          color: seg.color,
-          total: 0,
-        };
-        totals.set(seg.manaColor, { ...existing, total: existing.total + seg.value });
-      }
-    }
-    return COLOR_ORDER.filter((k) => totals.has(k)).map((k) => ({
-      manaColor: k,
-      ...totals.get(k)!,
-    }));
-  }
-
-  get stackedPieSlices(): PieSlice[] {
-    return this.stackedLegend.map((e) => ({
-      label: e.label,
-      value: e.total,
-      color: e.color,
-      manaSymbol: e.manaColor,
     }));
   }
 }

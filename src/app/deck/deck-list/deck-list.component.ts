@@ -22,6 +22,7 @@ import { DeckActions } from '../../store/deck/deck.actions';
 import { selectDecks, selectDeckLoading } from '../../store/deck/deck.selectors';
 import { DeckApiService, DeckDto, ImportDeckResult } from '../../services/deck-api.service';
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 @Component({
   selector: 'app-deck-list',
@@ -278,9 +279,7 @@ export class DeckListComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          const body = err?.error;
-          this.importError =
-            (typeof body === 'string' ? body : body?.message) ?? err?.message ?? 'Import failed.';
+          this.importError = describeHttpError(err, 'Import failed.');
           this.importState = 'error';
           this.cdr.markForCheck();
         },

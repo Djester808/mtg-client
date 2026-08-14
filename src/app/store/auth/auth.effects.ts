@@ -4,6 +4,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { AuthActions } from './auth.actions';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 @Injectable()
 export class AuthEffects {
@@ -13,7 +14,9 @@ export class AuthEffects {
       switchMap(({ username, password }) =>
         this.authService.login(username, password).pipe(
           map(({ token }) => AuthActions.loginSuccess({ token, username })),
-          catchError((err) => of(AuthActions.loginFailure({ error: this.extractError(err) }))),
+          catchError((err) =>
+            of(AuthActions.loginFailure({ error: describeHttpError(err, 'Login failed') })),
+          ),
         ),
       ),
     ),
@@ -25,7 +28,11 @@ export class AuthEffects {
       switchMap(({ username, email, password }) =>
         this.authService.register(username, email, password).pipe(
           map(({ token }) => AuthActions.registerSuccess({ token, username })),
-          catchError((err) => of(AuthActions.registerFailure({ error: this.extractError(err) }))),
+          catchError((err) =>
+            of(
+              AuthActions.registerFailure({ error: describeHttpError(err, 'Registration failed') }),
+            ),
+          ),
         ),
       ),
     ),
@@ -62,12 +69,4 @@ export class AuthEffects {
     private authService: AuthService,
     private router: Router,
   ) {}
-
-  private extractError(err: any): string {
-    if (err?.error) {
-      if (Array.isArray(err.error)) return err.error.join(' ');
-      if (typeof err.error === 'string') return err.error;
-    }
-    return 'Something went wrong. Please try again.';
-  }
 }

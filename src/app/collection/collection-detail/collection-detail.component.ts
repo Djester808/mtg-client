@@ -97,7 +97,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   tileImage(card: CollectionCardDto): string | null {
-    const front = card.cardDetails?.imageUriNormal ?? null;
+    const front = card.cardDetails?.imageUriNormal ?? card.cardDetails?.imageUriSmall ?? null;
     const back = card.cardDetails?.imageUriNormalBack ?? null;
     return this.flippedCardIds.has(card.id) && back ? back : front;
   }

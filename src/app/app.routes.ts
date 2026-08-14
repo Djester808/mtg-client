@@ -1,75 +1,104 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './home/home.component';
-import { KbComponent } from './kb/kb.component';
-import { CollectionListComponent } from './collection/collection-list/collection-list.component';
-import { CollectionDetailComponent } from './collection/collection-detail/collection-detail.component';
-import { DeckListComponent } from './deck/deck-list/deck-list.component';
-import { DeckDetailComponent } from './deck/deck-detail/deck-detail.component';
-import { ForumListComponent } from './forum/forum-list/forum-list.component';
-import { ForumDetailComponent } from './forum/forum-detail/forum-detail.component';
-import { CommanderListComponent } from './commanders/commander-list/commander-list.component';
-import { CommanderDetailComponent } from './commanders/commander-detail/commander-detail.component';
-import { CommunityComponent } from './community/community.component';
-import { UserProfileComponent } from './community/user-profile/user-profile.component';
-import { PlayersListComponent } from './community/players-list/players-list.component';
-import { LoginComponent } from './auth/login/login.component';
-import { RegisterComponent } from './auth/register/register.component';
 import { authGuard } from './guards/auth.guard';
 
+// Every route is lazy (loadComponent) so the initial bundle carries only the
+// shell. Home stays eager-ish in practice — the router fetches it immediately on
+// '/' — but heavyweight pages like deck-detail no longer ship to visitors who
+// never open them.
 export const routes: Routes = [
   {
     path: '',
-    component: HomeComponent,
+    loadComponent: () => import('./home/home.component').then((m) => m.HomeComponent),
     pathMatch: 'full',
   },
   {
     path: 'login',
-    component: LoginComponent,
+    loadComponent: () => import('./auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
-    component: RegisterComponent,
+    loadComponent: () =>
+      import('./auth/register/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: 'kb',
-    component: KbComponent,
+    loadComponent: () => import('./kb/kb.component').then((m) => m.KbComponent),
   },
   {
     path: 'collection',
-    component: CollectionListComponent,
+    loadComponent: () =>
+      import('./collection/collection-list/collection-list.component').then(
+        (m) => m.CollectionListComponent,
+      ),
     canActivate: [authGuard],
   },
   {
     path: 'collection/:id',
-    component: CollectionDetailComponent,
+    loadComponent: () =>
+      import('./collection/collection-detail/collection-detail.component').then(
+        (m) => m.CollectionDetailComponent,
+      ),
     canActivate: [authGuard],
   },
   {
     path: 'deck',
-    component: DeckListComponent,
+    loadComponent: () =>
+      import('./deck/deck-list/deck-list.component').then((m) => m.DeckListComponent),
     canActivate: [authGuard],
   },
   {
     path: 'deck/:id',
-    component: DeckDetailComponent,
+    loadComponent: () =>
+      import('./deck/deck-detail/deck-detail.component').then((m) => m.DeckDetailComponent),
     canActivate: [authGuard],
   },
   // Community hub: Forum + Commanders + Players tabs
   {
     path: 'community',
-    component: CommunityComponent,
+    loadComponent: () =>
+      import('./community/community.component').then((m) => m.CommunityComponent),
     children: [
       { path: '', redirectTo: 'forum', pathMatch: 'full' },
-      { path: 'forum', component: ForumListComponent },
-      { path: 'commanders', component: CommanderListComponent },
-      { path: 'players', component: PlayersListComponent },
+      {
+        path: 'forum',
+        loadComponent: () =>
+          import('./forum/forum-list/forum-list.component').then((m) => m.ForumListComponent),
+      },
+      {
+        path: 'commanders',
+        loadComponent: () =>
+          import('./commanders/commander-list/commander-list.component').then(
+            (m) => m.CommanderListComponent,
+          ),
+      },
+      {
+        path: 'players',
+        loadComponent: () =>
+          import('./community/players-list/players-list.component').then(
+            (m) => m.PlayersListComponent,
+          ),
+      },
     ],
   },
   // Legacy redirects so old direct links still work
   { path: 'forum', redirectTo: '/community/forum', pathMatch: 'full' },
   { path: 'commanders', redirectTo: '/community/commanders', pathMatch: 'full' },
   // Detail pages stay at their own top-level routes
-  { path: 'forum/:id', component: ForumDetailComponent },
-  { path: 'commanders/:oracleId', component: CommanderDetailComponent },
-  { path: 'u/:username', component: UserProfileComponent },
+  {
+    path: 'forum/:id',
+    loadComponent: () =>
+      import('./forum/forum-detail/forum-detail.component').then((m) => m.ForumDetailComponent),
+  },
+  {
+    path: 'commanders/:oracleId',
+    loadComponent: () =>
+      import('./commanders/commander-detail/commander-detail.component').then(
+        (m) => m.CommanderDetailComponent,
+      ),
+  },
+  {
+    path: 'u/:username',
+    loadComponent: () =>
+      import('./community/user-profile/user-profile.component').then((m) => m.UserProfileComponent),
+  },
 ];

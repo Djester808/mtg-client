@@ -22,7 +22,6 @@
     "ignoreDeprecations": "5.0",
     "paths": {
       "@app/*": ["src/app/*"],
-      "@env/*": ["src/environments/*"],
       "@ngrx/store/src/models": ["node_modules/@ngrx/store/src/models"]
     }
   },

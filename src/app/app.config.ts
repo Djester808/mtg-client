@@ -1,4 +1,4 @@
-import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, APP_INITIALIZER, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -25,11 +25,17 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideStore(appReducers),
     provideEffects([CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
-    provideStoreDevtools({
-      maxAge: 50,
-      logOnly: false,
-      connectInZone: true,
-    }),
+    // Dev builds only: devtools keeps 50 deep state snapshots and re-enters the
+    // zone per message — none of which belongs in production.
+    ...(isDevMode()
+      ? [
+          provideStoreDevtools({
+            maxAge: 50,
+            logOnly: false,
+            connectInZone: true,
+          }),
+        ]
+      : []),
     {
       provide: APP_INITIALIZER,
       useFactory: restoreSession,

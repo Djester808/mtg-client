@@ -38,7 +38,8 @@ type SortDir = 'asc' | 'desc';
   imports: [CommonModule, ReactiveFormsModule, FormsModule, ManaCostComponent, CardModalComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default,
+  // OnPush is safe here: every mutation path already calls cdr.markForCheck().
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit, OnDestroy {
   // ---- Search & filter state ---------------------------------
@@ -116,12 +117,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   setQuery = '';
   setDropOpen = false;
 
+  // Read multiple times per change-detection pass; memoized so the *ngFor keeps a
+  // stable array identity while nothing changed.
+  private filteredSetsMemo: { sets: SetSummaryDto[]; q: string; value: SetSummaryDto[] } | null =
+    null;
+
   get filteredSets(): SetSummaryDto[] {
     const q = this.setQuery.trim().toLowerCase();
-    if (!q) return this.allSets;
-    return this.allSets.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
-    );
+    const m = this.filteredSetsMemo;
+    if (m && m.sets === this.allSets && m.q === q) return m.value;
+    const value = !q
+      ? this.allSets
+      : this.allSets.filter(
+          (s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
+        );
+    this.filteredSetsMemo = { sets: this.allSets, q, value };
+    return value;
   }
 
   get activeSetName(): string {
@@ -377,6 +388,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   cardImage(card: CardDto): string | null {
     if (this.flippedIds.has(card.cardId) && card.imageUriNormalBack) return card.imageUriNormalBack;
     return card.imageUriNormal;
+  }
+
+  /** "Load More" appends to `results`; without trackBy every append rebuilt the whole grid. */
+  trackByCardId(_: number, card: CardDto): string {
+    return card.cardId;
   }
 
   // ---- Card detail -------------------------------------------

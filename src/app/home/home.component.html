@@ -169,7 +169,7 @@
     <div class="card-grid">
       <div
         class="card-tile"
-        *ngFor="let card of results"
+        *ngFor="let card of results; trackBy: trackByCardId"
         tabindex="0"
         (click)="openCard(card)"
         (keydown.enter)="openCard(card)"

@@ -274,8 +274,6 @@
     <!-- Left: card groups -->
     <main class="groups-area" [class.is-list]="viewMode === 'list'" [class.is-text]="textStyle" [class.is-visual]="viewMode === 'visual'" [class.is-free]="viewMode === 'free'" [class.is-search-drop]="isSearchDragOver && viewMode !== 'free'" *ngIf="!swapMode && (deck$ | async) as deck"
           [style.--card-zoom]="zoomLevel"
-          (mousemove)="onGroupsAreaMouseMove($event)"
-          (mouseleave)="onGroupsAreaMouseLeave()"
           (dragover)="onGroupsAreaDragOver($event)"
           (dragleave)="onGroupsAreaDragLeave($event)"
           (drop)="onGroupsAreaDrop($event)">
@@ -435,10 +433,10 @@
               >
                 <div
                   class="card-thumb"
-                  [style.backgroundImage]="tileImage(card, card.id) ? 'url(' + tileImage(card, card.id) + ')' : 'none'"
-                  [class.no-image]="!tileImage(card, card.id)"
+                  [style.backgroundImage]="thumbImage(card, card.id) ? 'url(' + thumbImage(card, card.id) + ')' : 'none'"
+                  [class.no-image]="!thumbImage(card, card.id)"
                 >
-                  <span class="thumb-placeholder" *ngIf="!tileImage(card, card.id)">◈</span>
+                  <span class="thumb-placeholder" *ngIf="!thumbImage(card, card.id)">◈</span>
                   <button class="thumb-flip"
                           *ngIf="tileHasBack(card)"
                           [class.is-flipped]="flippedCardIds.has(card.id)"

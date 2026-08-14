@@ -30,6 +30,7 @@ import { DeckApiService } from '../../services/deck-api.service';
 import { PrintingsService } from '../../services/printings.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 interface CardGroup {
   label: string;
@@ -330,7 +331,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.copyState = 'error';
-          this.copyError = err?.error?.message ?? 'Failed to copy deck.';
+          this.copyError = describeHttpError(err, 'Failed to copy deck.');
           this.cdr.markForCheck();
         },
       });

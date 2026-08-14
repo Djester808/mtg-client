@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   HostListener,
+  NgZone,
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -13,7 +14,6 @@ import { FormsModule } from '@angular/forms';
 import {
   StatsChartComponent,
   ChartEntry,
-  StackedBarEntry,
 } from '../../components/stats-chart/stats-chart.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -110,7 +110,6 @@ export interface DeckStats {
   manaPips: { color: string; count: number }[];
   manaProduction: { color: string; count: number }[];
   creatureSubtypes: { name: string; count: number }[];
-  colorByCmc: StackedBarEntry[];
   landSubtypes: { name: string; count: number; deckCard: CollectionCardDto | null }[];
   tokensNeeded: { tokenName: string; description: string; creatorCard: CollectionCardDto }[];
   emblemSources: {
@@ -343,6 +342,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private prefs: PreferencesApiService,
     private host: ElementRef<HTMLElement>,
+    private zone: NgZone,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
@@ -354,6 +354,9 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.zone.runOutsideAngular(() =>
+      document.addEventListener('mousemove', this.onDocMouseMove, { passive: true }),
+    );
     this.loadTagHistory();
     this.deckId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(DeckActions.loadDeck({ id: this.deckId }));
@@ -426,6 +429,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('mousemove', this.onDocMouseMove);
     this.destroy$.next();
     this.destroy$.complete();
     this.stopEdgeScroll();
@@ -771,8 +775,25 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  @HostListener('document:mousemove', ['$event'])
-  onDocumentMouseMove(event: MouseEvent): void {
+  /**
+   * The single document mousemove listener, attached OUTSIDE the Angular zone in
+   * ngOnInit. A zone-bound mousemove ran full change detection per pointer event
+   * for the lifetime of the page; now the zone is entered only while a drag-select
+   * is actually in progress, and edge auto-scroll (pure DOM scrolling) never
+   * enters it at all.
+   */
+  private readonly onDocMouseMove = (event: MouseEvent): void => {
+    if (this.dragSelectListEl) {
+      this.zone.run(() => this.handleDragSelectMove(event));
+      return;
+    }
+    if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
+    const area = (event.target as HTMLElement | null)?.closest?.('.groups-area');
+    if (area) this.updateEdgeScroll(event.clientX, area as HTMLElement);
+    else this.stopEdgeScroll();
+  };
+
+  private handleDragSelectMove(event: MouseEvent): void {
     if (!this.dragSelectListEl) return;
     const el = this.dragSelectListEl;
     const r = el.getBoundingClientRect();
@@ -1367,15 +1388,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.edgeScrollAnimId = requestAnimationFrame(() => this.runEdgeScrollLoop());
   }
 
-  onGroupsAreaMouseMove(event: MouseEvent): void {
-    if (this.viewMode !== 'free' && this.viewMode !== 'visual') return;
-    this.updateEdgeScroll(event.clientX, event.currentTarget as HTMLElement);
-  }
-
-  onGroupsAreaMouseLeave(): void {
-    this.stopEdgeScroll();
-  }
-
   onGroupsAreaDragOver(event: DragEvent): void {
     const isSearch = event.dataTransfer?.types.includes('application/x-search-card');
     if (isSearch) {
@@ -1524,16 +1536,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (draggedFlip.get(selectedSlotKeys[i])) {
         this.flippedCardIds.add(`${targetColId}/${adj + i}`);
       }
-    }
-  }
-
-  onColDragLeave(event: DragEvent): void {
-    if (this.dragColId) return;
-    const rel = event.relatedTarget as HTMLElement | null;
-    if (!rel || !(event.currentTarget as HTMLElement).contains(rel)) {
-      this.dragOverColId = null;
-      this.dragOverIndex = null;
-      this.cdr.markForCheck();
     }
   }
 
@@ -1966,10 +1968,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
       });
     return groups;
-  }
-
-  expandCards(cards: CollectionCardDto[]): CollectionCardDto[] {
-    return cards.flatMap((c) => Array(this.cardCount(c)).fill(c));
   }
 
   /**
@@ -2565,41 +2563,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         sourceCard: c,
       }));
 
-    // Color breakdown by CMC (non-land cards, buckets 1–7+)
-    const CMC_COLOR_ORDER = ['w', 'u', 'b', 'r', 'g', 'm', 'c'];
-    const CMC_COLOR_MAP: Record<string, string> = {
-      w: '#f0ead6',
-      u: '#60a5fa',
-      b: '#9ca3af',
-      r: '#f87171',
-      g: '#4ade80',
-      m: '#fbbf24',
-      c: '#d1d5db',
-    };
-    const cmcColorBuckets = new Map<number, Map<string, number>>();
-    for (let i = 1; i <= 7; i++) cmcColorBuckets.set(i, new Map());
-    for (const c of nonLandCards) {
-      const cmc = Math.min(Math.max(Math.round(c.cardDetails?.manaValue ?? 0), 1), 7);
-      const qty = this.cardCount(c);
-      const ci = (c.cardDetails?.colorIdentity ?? []).map((x: string) => x.toLowerCase());
-      const key = ci.length === 0 ? 'c' : ci.length === 1 ? ci[0] : 'm';
-      const m = cmcColorBuckets.get(cmc)!;
-      m.set(key, (m.get(key) ?? 0) + qty);
-    }
-    const colorByCmc: StackedBarEntry[] = [1, 2, 3, 4, 5, 6, 7]
-      .map((cmc) => ({
-        label: cmc === 7 ? '7+' : String(cmc),
-        segments: CMC_COLOR_ORDER.filter(
-          (col) => (cmcColorBuckets.get(cmc)?.get(col) ?? 0) > 0,
-        ).map((col) => ({
-          manaColor: col,
-          value: cmcColorBuckets.get(cmc)!.get(col) ?? 0,
-          label: col === 'm' ? 'Multi' : col.toUpperCase(),
-          color: CMC_COLOR_MAP[col],
-        })),
-      }))
-      .filter((b) => b.segments.length > 0);
-
     return {
       total,
       lands,
@@ -2613,7 +2576,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       avgCmc,
       curve,
       curveMax,
-      colorByCmc,
       manaPips,
       manaProduction,
       creatureSubtypes,
@@ -2651,22 +2613,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         });
     }
-  }
-
-  openExternalCard(card: CardDto | null): void {
-    if (!card) return;
-    const synthetic: CollectionCardDto = {
-      id: card.cardId,
-      oracleId: card.oracleId,
-      scryfallId: null,
-      quantity: 1,
-      quantityFoil: 0,
-      notes: null,
-      board: 'main',
-      addedAt: '',
-      cardDetails: card,
-    };
-    this.openCard(synthetic);
   }
 
   // ---- Side panel / Search panel ----------------------------
@@ -3167,11 +3113,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card modal --------------------------------------------
 
-  openStatCard(card: CollectionCardDto | null): void {
-    if (!card) return;
-    this.openCard(card);
-  }
-
   openCard(card: CollectionCardDto, slotKey?: string): void {
     this.selectedCard = card;
     this.modalSlotKey = slotKey ?? null;
@@ -3212,7 +3153,20 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   tileImage(card: CollectionCardDto, slotKey: string): string | null {
-    const front = card.cardDetails?.imageUriLarge ?? card.cardDetails?.imageUriNormal ?? null;
+    // Tiles render at a few hundred px — the "normal" scan is already larger than
+    // that; "large" (672px) only wastes bandwidth here.
+    const front = card.cardDetails?.imageUriNormal ?? card.cardDetails?.imageUriLarge ?? null;
+    const back = card.cardDetails?.imageUriNormalBack ?? null;
+    return this.flippedCardIds.has(slotKey) && back ? back : front;
+  }
+
+  /** ~60px list thumbnails need the small scan, not a full card image. */
+  thumbImage(card: CollectionCardDto, slotKey: string): string | null {
+    const front =
+      card.cardDetails?.imageUriSmall ??
+      card.cardDetails?.imageUriNormal ??
+      card.cardDetails?.imageUriLarge ??
+      null;
     const back = card.cardDetails?.imageUriNormalBack ?? null;
     return this.flippedCardIds.has(slotKey) && back ? back : front;
   }
@@ -3511,23 +3465,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   /** Cards that are banned in Commander. */
   bannedInCommander(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(
-      (c) =>
-        (c.board ?? 'main') === 'main' && c.cardDetails?.legalities?.['commander'] === 'banned',
-    );
-  }
-
-  bannedViolationNames(deck: DeckDetailDto): string {
-    return this.bannedInCommander(deck)
-      .map((c) => c.cardDetails?.name ?? '')
-      .join(', ');
+    return this.violations(deck).banned;
   }
 
   /** Cards on the Commander game changers list (legal but flagged as highly impactful). */
   gameChangerCards(deck: DeckDetailDto): CollectionCardDto[] {
-    return deck.cards.filter(
-      (c) => (c.board ?? 'main') === 'main' && c.cardDetails?.gameChanger === true,
-    );
+    return this.violations(deck).gameChangers;
   }
 
   gameChangerNames(deck: DeckDetailDto): string {
@@ -3593,24 +3536,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return 1;
   }
 
-  commanderBracketTooltip(deck: DeckDetailDto): string {
-    const reasons: string[] = [];
-    const gcCount = this.gameChangerCards(deck).length;
-    if (gcCount > 0)
-      reasons.push(
-        `${gcCount} Game Changer${gcCount > 1 ? 's' : ''}: ${this.gameChangerNames(deck)}`,
-      );
-    const mld = this.mldCards(deck);
-    if (mld.length > 0)
-      reasons.push(`MLD: ${mld.map((c) => c.cardDetails?.name ?? '').join(', ')}`);
-    const et = this.extraTurnCards(deck);
-    if (et.length > 0) {
-      const label = this.hasChainingExtraTurns(deck) ? 'Chaining extra turns' : 'Extra turn';
-      reasons.push(`${label}: ${et.map((c) => c.cardDetails?.name ?? '').join(', ')}`);
-    }
-    return reasons.length ? reasons.join(' | ') : 'No power-level flags detected';
-  }
-
   mldCardNames(deck: DeckDetailDto): string {
     return this.mldCards(deck)
       .map((c) => c.cardDetails?.name ?? '')
@@ -3629,10 +3554,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     this.violationPanelType = null;
     this.bracketInfoOpen = !this.bracketInfoOpen;
-  }
-
-  closeBracketInfo(): void {
-    this.bracketInfoOpen = false;
   }
 
   // ---- Violation detail panel ------------------------------------
@@ -3691,51 +3612,111 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
   }
 
-  /** Non-basic cards with more than one total copy — violates singleton.
-   *  Counts across all records sharing the same oracleId (different printings
-   *  of the same card each contribute their quantity). */
-  singletonViolations(deck: DeckDetailDto): CollectionCardDto[] {
+  /**
+   * All deck-legality derivations, computed once per deck emission and looked up
+   * from the template. The violation classes are bound on every tile and the
+   * header bar reads the arrays repeatedly, so the uncached version did O(N) deck
+   * scans per card per change-detection pass — O(N²) at pointer-event frequency.
+   * The store emits a new deck object on every mutation, so object identity is a
+   * sound cache key.
+   */
+  private violationsCache: {
+    deck: DeckDetailDto;
+    singleton: CollectionCardDto[];
+    colorId: CollectionCardDto[];
+    banned: CollectionCardDto[];
+    gameChangers: CollectionCardDto[];
+    formatViolations: CollectionCardDto[];
+    typeByCardId: Map<string, string | null>;
+    oracleCounts: Map<string, number>;
+  } | null = null;
+
+  private violations(deck: DeckDetailDto): NonNullable<typeof this.violationsCache> {
+    if (this.violationsCache?.deck === deck) return this.violationsCache;
+
+    const isCommander = deck.format === 'commander';
     const mainCards = deck.cards.filter((c) => (c.board ?? 'main') === 'main');
+
+    // Singleton: non-basic cards whose total copies (across printings) exceed one.
     const totalByOracle = new Map<string, number>();
     for (const c of mainCards) {
       if (!this.isBasicLand(c))
         totalByOracle.set(c.oracleId, (totalByOracle.get(c.oracleId) ?? 0) + this.cardCount(c));
     }
-    return mainCards.filter(
+    const singleton = mainCards.filter(
       (c) => !this.isBasicLand(c) && (totalByOracle.get(c.oracleId) ?? 0) > 1,
     );
+
+    // Color identity outside the commander's.
+    const cmdr = this.commanderCard(deck);
+    const colorId = cmdr?.cardDetails
+      ? mainCards.filter(
+          (c) =>
+            c.oracleId !== cmdr.oracleId &&
+            identityViolations(c.cardDetails?.colorIdentity, cmdr.cardDetails!.colorIdentity)
+              .length > 0,
+        )
+      : [];
+
+    const banned = mainCards.filter((c) => c.cardDetails?.legalities?.['commander'] === 'banned');
+    const gameChangers = mainCards.filter((c) => c.cardDetails?.gameChanger === true);
+
+    const fmt = deck.format;
+    const formatViolations =
+      !fmt || fmt === 'commander'
+        ? []
+        : deck.cards.filter((c) => {
+            const leg = c.cardDetails?.legalities?.[fmt];
+            return !!leg && leg !== 'legal';
+          });
+
+    const singletonIds = new Set(singleton.map((c) => c.id));
+    const colorIdIds = new Set(colorId.map((c) => c.id));
+    const typeByCardId = new Map<string, string | null>();
+    if (isCommander) {
+      for (const c of deck.cards) {
+        if (c.cardDetails?.legalities?.['commander'] === 'banned') {
+          typeByCardId.set(c.id, 'banned');
+          continue;
+        }
+        const s = singletonIds.has(c.id);
+        const ci = colorIdIds.has(c.id);
+        typeByCardId.set(c.id, s && ci ? 'both' : s ? 'singleton' : ci ? 'color-id' : null);
+      }
+    }
+
+    const oracleCounts = new Map<string, number>();
+    for (const c of deck.cards) {
+      const key = `${c.oracleId}|${c.board ?? 'main'}`;
+      oracleCounts.set(key, (oracleCounts.get(key) ?? 0) + this.cardCount(c));
+    }
+
+    this.violationsCache = {
+      deck,
+      singleton,
+      colorId,
+      banned,
+      gameChangers,
+      formatViolations,
+      typeByCardId,
+      oracleCounts,
+    };
+    return this.violationsCache;
+  }
+
+  /** Non-basic cards with more than one total copy — violates singleton. */
+  singletonViolations(deck: DeckDetailDto): CollectionCardDto[] {
+    return this.violations(deck).singleton;
   }
 
   /** Total copies of a card across all records with the same oracleId on the same board. */
   totalOracleCount(card: CollectionCardDto, deck: DeckDetailDto): number {
-    return deck.cards
-      .filter((c) => c.oracleId === card.oracleId && (c.board ?? 'main') === (card.board ?? 'main'))
-      .reduce((sum, c) => sum + this.cardCount(c), 0);
+    return this.violations(deck).oracleCounts.get(`${card.oracleId}|${card.board ?? 'main'}`) ?? 0;
   }
 
   /** Cards whose color identity falls outside the commander's. */
   colorIdentityViolations(deck: DeckDetailDto): CollectionCardDto[] {
-    const cmdr = this.commanderCard(deck);
-    if (!cmdr?.cardDetails) return [];
-    return deck.cards.filter((c) => {
-      if ((c.board ?? 'main') !== 'main') return false;
-      if (c.oracleId === cmdr.oracleId) return false;
-      return (
-        identityViolations(c.cardDetails?.colorIdentity, cmdr.cardDetails!.colorIdentity).length > 0
-      );
-    });
-  }
-
-  singletonViolationNames(deck: DeckDetailDto): string {
-    return this.singletonViolations(deck)
-      .map((c) => c.cardDetails?.name ?? '')
-      .join(', ');
-  }
-
-  colorIdentityViolationNames(deck: DeckDetailDto): string {
-    return this.colorIdentityViolations(deck)
-      .map((c) => c.cardDetails?.name ?? '')
-      .join(', ');
+    return this.violations(deck).colorId;
   }
 
   formatLabel(format: string | null): string {
@@ -3758,12 +3739,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   formatViolations(deck: DeckDetailDto): CollectionCardDto[] {
-    const fmt = deck.format;
-    if (!fmt || fmt === 'commander') return [];
-    return deck.cards.filter((c) => {
-      const leg = c.cardDetails?.legalities?.[fmt];
-      return leg && leg !== 'legal';
-    });
+    return this.violations(deck).formatViolations;
   }
 
   hasCommanderViolations(deck: DeckDetailDto): boolean {
@@ -3781,12 +3757,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   cardViolationType(card: CollectionCardDto, deck: DeckDetailDto): string | null {
     if (deck.format !== 'commander') return null;
     if (card.cardDetails?.legalities?.['commander'] === 'banned') return 'banned';
-    const isSingleton = this.singletonViolations(deck).some((c) => c.id === card.id);
-    const isColorId = this.colorIdentityViolations(deck).some((c) => c.id === card.id);
-    if (isSingleton && isColorId) return 'both';
-    if (isSingleton) return 'singleton';
-    if (isColorId) return 'color-id';
-    return null;
+    return this.violations(deck).typeByCardId.get(card.id) ?? null;
   }
 
   cardViolationClass(card: CollectionCardDto, deck: DeckDetailDto): string {
@@ -3800,17 +3771,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   private isBasicLand(card: CollectionCardDto): boolean {
     return card.cardDetails?.supertypes?.includes('Basic') ?? false;
-  }
-
-  manaColorSymbol(color: string): string {
-    const map: Record<string, string> = { W: '☀', U: '💧', B: '💀', R: '🔥', G: '🌲', C: '◇' };
-    return map[color] ?? color;
-  }
-
-  targetCount(deck: DeckDetailDto): number {
-    if (deck.format === 'commander') return 100;
-    if (deck.format === 'brawl' || deck.format === 'oathbreaker') return 60;
-    return 60;
   }
 
   // ── Stats chart ────────────────────────────────────────────────────────────
@@ -3846,13 +3806,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     ].sort();
   }
 
-  sectionChartType: Record<string, 'bar' | 'vbar' | 'pie' | 'stacked'> = {};
+  sectionChartType: Record<string, 'bar' | 'vbar' | 'pie'> = {};
 
-  getChartType(section: string): 'bar' | 'vbar' | 'pie' | 'stacked' {
+  getChartType(section: string): 'bar' | 'vbar' | 'pie' {
     return this.sectionChartType[section] ?? 'bar';
   }
 
-  setChartType(section: string, type: 'bar' | 'vbar' | 'pie' | 'stacked'): void {
+  setChartType(section: string, type: 'bar' | 'vbar' | 'pie'): void {
     this.sectionChartType[section] = type;
     this.cdr.markForCheck();
   }
@@ -3890,9 +3850,5 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   subtypeData(stats: DeckStats): ChartEntry[] {
     return stats.creatureSubtypes.map((s) => ({ label: s.name, value: s.count }));
-  }
-
-  colorByCmcData(stats: DeckStats): StackedBarEntry[] {
-    return stats.colorByCmc;
   }
 }
