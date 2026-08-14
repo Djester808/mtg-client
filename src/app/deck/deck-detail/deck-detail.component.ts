@@ -1666,7 +1666,39 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return card.cardDetails?.cardTypes?.includes(CardType.Land) ?? false;
   }
 
+  // Memoized on (deck, sortMode, board, filter). getGroups is bound in the template and
+  // rebuilds the whole group/sort/reduce chain; without this it re-ran on every
+  // change-detection pass even when nothing that affects grouping had changed.
+  private groupsMemo: {
+    deck: DeckDetailDto;
+    sortMode: SortMode;
+    board: string;
+    query: string;
+    result: CmcGroup[];
+  } | null = null;
+
   getGroups(deck: DeckDetailDto): CmcGroup[] {
+    const m = this.groupsMemo;
+    if (
+      m &&
+      m.deck === deck &&
+      m.sortMode === this.sortMode &&
+      m.board === this.activeBoard &&
+      m.query === this.filterQuery
+    )
+      return m.result;
+    const result = this.computeGroups(deck);
+    this.groupsMemo = {
+      deck,
+      sortMode: this.sortMode,
+      board: this.activeBoard,
+      query: this.filterQuery,
+      result,
+    };
+    return result;
+  }
+
+  private computeGroups(deck: DeckDetailDto): CmcGroup[] {
     const filtered = this.filteredCards(deck);
 
     if (this.sortMode === 'name') {
@@ -2371,18 +2403,32 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     };
   }
 
+  // Memoized on (deck, board, filter): the template reads this (and getGroups, which
+  // calls it) on every change-detection pass, but the result only changes when one of
+  // those three does.
+  private filteredCardsMemo: {
+    deck: DeckDetailDto;
+    board: string;
+    query: string;
+    result: CollectionCardDto[];
+  } | null = null;
+
   filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
     const board = this.activeBoard;
+    const query = this.filterQuery;
+    const m = this.filteredCardsMemo;
+    if (m && m.deck === deck && m.board === board && m.query === query) return m.result;
+
     let cards = deck.cards.filter((c) => (c.board ?? 'main') === board);
     if (board === 'main' && deck.commanderOracleId) {
       cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
     }
-
-    if (this.filterQuery.trim()) {
-      const q = this.filterQuery.toLowerCase();
+    if (query.trim()) {
+      const q = query.toLowerCase();
       cards = cards.filter((c) => c.cardDetails?.name.toLowerCase().includes(q));
     }
 
+    this.filteredCardsMemo = { deck, board, query, result: cards };
     return cards;
   }
 
