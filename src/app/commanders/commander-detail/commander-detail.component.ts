@@ -12,7 +12,7 @@ import { CommandersApiService } from '../../services/commanders-api.service';
 import { CommanderProfile, CommanderCardEntry, CommanderDeck } from '../../models/commander.models';
 import { DeckSuggestionsDto, SuggestedCardDto } from '../../services/deck-api.service';
 import { PrintingDto } from '../../models/collection.models';
-import { CardDto, CardType } from '../../models/game.models';
+import { CardDto, CardType, ManaColor } from '../../models/game.models';
 import { CommanderChartsComponent } from '../commander-charts/commander-charts.component';
 import { ManaCostPipe } from '../../pipes/mana-cost.pipe';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -355,7 +355,7 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
       imageUriNormalBack: null,
       imageUriSmall: this.profile.imageUri,
       imageUriArtCrop: this.profile.imageUriArtCrop,
-      colorIdentity: this.profile.colorIdentity as any[],
+      colorIdentity: this.profile.colorIdentity.map((c) => c as ManaColor),
       ownerId: '',
       flavorText: null,
       artist: null,

@@ -52,7 +52,7 @@
         type="submit"
         [disabled]="(loading$ | async) || form.invalid"
       >
-        <span *ngIf="!(loading$ | async)">Create Account</span>
+        <span *ngIf="(loading$ | async) === false">Create Account</span>
         <span *ngIf="loading$ | async">Creating…</span>
       </button>
     </form>

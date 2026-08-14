@@ -397,7 +397,7 @@
       <div class="loading-state" *ngIf="loading$ | async">Loading deck…</div>
 
       <!-- Empty -->
-      <div class="empty-state" *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length === 0">
+      <div class="empty-state" *ngIf="viewMode !== 'free' && (loading$ | async) === false && filteredCards(deck).length === 0">
         <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub" *ngIf="activeBoard === 'main'">Click "Add Cards" to search and add cards to your deck.</p>
@@ -407,7 +407,7 @@
       </div>
 
       <!-- CMC / Type / Name groups (list + visual + stack) -->
-      <ng-container *ngIf="viewMode !== 'free' && !(loading$ | async) && filteredCards(deck).length > 0">
+      <ng-container *ngIf="viewMode !== 'free' && (loading$ | async) === false && filteredCards(deck).length > 0">
         <div class="groups-list" [class.is-visual]="viewMode === 'visual'" [class.is-vert]="viewMode === 'visual' && groupDir === 'v'"
              [class.is-drag-live]="stackDragGroupKey !== null || listDragGroupKey !== null">
           <div class="cmc-group" *ngFor="let group of getGroups(deck); let gi = index; trackBy: trackByGroupKey"
@@ -559,7 +559,7 @@
       </ng-container>
 
       <!-- ── Free arrange mode ── -->
-      <ng-container *ngIf="viewMode === 'free' && !(loading$ | async)">
+      <ng-container *ngIf="viewMode === 'free' && (loading$ | async) === false">
         <div class="free-toolbar">
           <button class="free-save-btn" [class.is-saved]="layoutSaved" (click)="saveLayoutExplicit()">
             <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i> {{ layoutSaved ? 'Saved' : 'Save Layout' }}
@@ -875,7 +875,7 @@
         </ng-container>
 
         <!-- Stats tab -->
-        <div class="stats-section" *ngIf="sideTab === 'stats' && !(loading$ | async)">
+        <div class="stats-section" *ngIf="sideTab === 'stats' && (loading$ | async) === false">
           <ng-container *ngIf="getDeckStats(deck) as stats">
 
             <div class="stats-header">Deck Stats</div>

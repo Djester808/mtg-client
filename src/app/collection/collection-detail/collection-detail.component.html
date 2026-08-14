@@ -96,7 +96,7 @@
       <div class="loading-state" *ngIf="loading$ | async">Loading…</div>
 
       <!-- Empty collection -->
-      <div class="empty-state" *ngIf="!(loading$ | async) && (collection$ | async)?.cards?.length === 0">
+      <div class="empty-state" *ngIf="(loading$ | async) === false && (collection$ | async)?.cards?.length === 0">
         <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub">Click "Add Cards" to search and add cards to your collection.</p>

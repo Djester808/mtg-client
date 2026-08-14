@@ -92,13 +92,13 @@
         <span>Loading decks...</span>
       </div>
 
-      <div class="posts-empty" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length === 0">
+      <div class="posts-empty" *ngIf="(loading$ | async) === false && filteredPosts(allPosts).length === 0">
         <i class="bi bi-collection"></i>
         <p>No decks match your filters.</p>
       </div>
 
       <!-- Grid view -->
-      <div class="posts-grid" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length && viewMode === 'grid'">
+      <div class="posts-grid" *ngIf="(loading$ | async) === false && filteredPosts(allPosts).length && viewMode === 'grid'">
         <div class="post-card" *ngFor="let post of filteredPosts(allPosts)"
              [routerLink]="['/forum', post.id]"
              title="View deck: {{ post.deckName }}">
@@ -139,7 +139,7 @@
       </div>
 
       <!-- List view -->
-      <div class="posts-list" *ngIf="!(loading$ | async) && filteredPosts(allPosts).length && viewMode === 'list'">
+      <div class="posts-list" *ngIf="(loading$ | async) === false && filteredPosts(allPosts).length && viewMode === 'list'">
         <a class="post-row" *ngFor="let post of filteredPosts(allPosts)"
            [routerLink]="['/forum', post.id]"
            title="View deck: {{ post.deckName }}">

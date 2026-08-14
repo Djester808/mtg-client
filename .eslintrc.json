@@ -20,9 +20,18 @@
         "prettier/prettier": "error",
         "@angular-eslint/directive-selector": ["error", { "type": "attribute", "prefix": "app", "style": "camelCase" }],
         "@angular-eslint/component-selector": ["error", { "type": "element", "prefix": "app", "style": "kebab-case" }],
-        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-explicit-any": "error",
         "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-        "no-console": ["warn", { "allow": ["warn", "error"] }]
+        "no-console": ["warn", { "allow": ["warn", "error"] }],
+        "max-lines": ["warn", { "max": 500, "skipBlankLines": true, "skipComments": true }],
+        "complexity": ["warn", 20]
+      }
+    },
+    {
+      "files": ["*.spec.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "max-lines": "off"
       }
     },
     {
@@ -31,7 +40,7 @@
       "plugins": ["@angular-eslint/template"],
       "extends": ["plugin:@angular-eslint/template/recommended"],
       "rules": {
-        "@angular-eslint/template/no-negated-async": "warn",
+        "@angular-eslint/template/no-negated-async": "error",
         "@angular-eslint/template/eqeqeq": ["error", { "allowNullOrUndefined": true }]
       }
     }

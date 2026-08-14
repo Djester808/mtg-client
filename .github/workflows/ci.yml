@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (errors fail the build)
+        run: npx ng lint
+
+      - name: Build (production)
+        run: npx ng build --configuration production
+
+      # ChromeHeadlessNoSandbox launcher is defined in karma.conf.js; the sandbox
+      # must be off to run Chrome as root on the CI runner.
+      - name: Unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox

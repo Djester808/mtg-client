@@ -24,7 +24,7 @@
 
     <div class="loading-state" *ngIf="loading$ | async">Loading decks…</div>
 
-    <ng-container *ngIf="!(loading$ | async)">
+    <ng-container *ngIf="(loading$ | async) === false">
 
       <!-- Empty state -->
       <div class="empty-state" *ngIf="sortedDecks.length === 0">

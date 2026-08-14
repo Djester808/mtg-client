@@ -21,7 +21,7 @@
 
     <div class="loading-state" *ngIf="loading$ | async">Loading collections…</div>
 
-    <ng-container *ngIf="!(loading$ | async)">
+    <ng-container *ngIf="(loading$ | async) === false">
 
       <!-- Empty state -->
       <div class="empty-state" *ngIf="(collections$ | async)?.length === 0">
