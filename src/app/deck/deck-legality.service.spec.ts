@@ -18,7 +18,10 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
   };
 }
 
-function makeDeck(cards: CollectionCardDto[], overrides: Partial<DeckDetailDto> = {}): DeckDetailDto {
+function makeDeck(
+  cards: CollectionCardDto[],
+  overrides: Partial<DeckDetailDto> = {},
+): DeckDetailDto {
   return {
     id: 'deck-1',
     name: 'Test Deck',
@@ -51,7 +54,12 @@ describe('DeckLegalityService', () => {
       makeDeckCard({ id: 'a', oracleId: 'o', scryfallId: 's1', quantity: 1 }),
       makeDeckCard({ id: 'b', oracleId: 'o', scryfallId: 's2', quantity: 1 }),
     ]);
-    expect(svc.singletonViolations(deck).map((c) => c.id).sort()).toEqual(['a', 'b']);
+    expect(
+      svc
+        .singletonViolations(deck)
+        .map((c) => c.id)
+        .sort(),
+    ).toEqual(['a', 'b']);
   });
 
   it('never flags basic lands', () => {
@@ -87,7 +95,9 @@ describe('DeckLegalityService', () => {
   });
 
   it('returns none when there is no commander', () => {
-    const deck = makeDeck([makeDeckCard({ cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) })]);
+    const deck = makeDeck([
+      makeDeckCard({ cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }) }),
+    ]);
     expect(svc.colorIdentityViolations(deck)).toHaveSize(0);
   });
 
@@ -111,9 +121,15 @@ describe('DeckLegalityService', () => {
   // ---- card violation type/class -----------------------------------
 
   it('reports banned with highest priority, then both/singleton/color-id', () => {
-    const cmdr = makeDeckCard({ id: 'cmdr', oracleId: 'cmdr-o', cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }) });
+    const cmdr = makeDeckCard({
+      id: 'cmdr',
+      oracleId: 'cmdr-o',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
     const both = makeDeckCard({
-      id: 'both', oracleId: 'both-o', quantity: 2,
+      id: 'both',
+      oracleId: 'both-o',
+      quantity: 2,
       cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
     });
     const deck = makeDeck([cmdr, both], { commanderOracleId: 'cmdr-o' });
@@ -140,14 +156,21 @@ describe('DeckLegalityService', () => {
 
   it('rates a game-changer-heavy deck as bracket 4', () => {
     const cards = Array.from({ length: 4 }, (_, i) =>
-      makeDeckCard({ id: `gc${i}`, oracleId: `o${i}`, cardDetails: makeCard({ gameChanger: true }) }),
+      makeDeckCard({
+        id: `gc${i}`,
+        oracleId: `o${i}`,
+        cardDetails: makeCard({ gameChanger: true }),
+      }),
     );
     expect(svc.commanderBracket(makeDeck(cards))).toBe(4);
   });
 
   it('rates an extra-turn deck as bracket 2', () => {
     const deck = makeDeck([
-      makeDeckCard({ id: 'et', cardDetails: makeCard({ oracleText: 'Take an extra turn after this one.' }) }),
+      makeDeckCard({
+        id: 'et',
+        cardDetails: makeCard({ oracleText: 'Take an extra turn after this one.' }),
+      }),
     ]);
     expect(svc.commanderBracket(deck)).toBe(2);
   });

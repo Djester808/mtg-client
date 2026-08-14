@@ -275,7 +275,8 @@ export class DeckLegalityService {
     const classes: string[] = [];
     const type = this.cardViolationType(card, deck);
     if (type) classes.push(`violation-${type}`);
-    if (deck.format === 'commander' && card.cardDetails?.gameChanger) classes.push('is-game-changer');
+    if (deck.format === 'commander' && card.cardDetails?.gameChanger)
+      classes.push('is-game-changer');
     return classes.join(' ');
   }
 }
