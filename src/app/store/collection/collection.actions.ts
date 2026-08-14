@@ -29,6 +29,11 @@ export const CollectionActions = createActionGroup({
     // Delete
     'Delete Collection': props<{ id: string }>(),
     'Delete Collection Success': props<{ id: string }>(),
+    'Delete Collection Failure': props<{ error: string }>(),
+
+    // Re-fetch the active collection without blanking it (resync after a failed
+    // optimistic card mutation).
+    'Refresh Collection': props<{ id: string }>(),
 
     // Update meta (name / cover)
     'Update Collection Meta': props<{
@@ -43,7 +48,7 @@ export const CollectionActions = createActionGroup({
     // Add card
     'Add Card': props<{ collectionId: string; request: AddCardToCollectionRequest }>(),
     'Add Card Success': props<{ card: CollectionCardDto }>(),
-    'Add Card Failure': props<{ error: string }>(),
+    'Add Card Failure': props<{ collectionId: string; error: string }>(),
 
     // Update card
     'Update Card': props<{
@@ -52,11 +57,11 @@ export const CollectionActions = createActionGroup({
       request: UpdateCollectionCardRequest;
     }>(),
     'Update Card Success': props<{ card: CollectionCardDto }>(),
-    'Update Card Failure': props<{ error: string }>(),
+    'Update Card Failure': props<{ collectionId: string; error: string }>(),
 
     // Remove card
     'Remove Card': props<{ collectionId: string; cardId: string }>(),
     'Remove Card Success': props<{ cardId: string }>(),
-    'Remove Card Failure': props<{ error: string }>(),
+    'Remove Card Failure': props<{ collectionId: string; error: string }>(),
   },
 });

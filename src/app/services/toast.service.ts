@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type ToastKind = 'info' | 'success' | 'warn' | 'damage' | 'death' | 'cast';
+export type ToastKind = 'info' | 'success' | 'warn' | 'error' | 'damage' | 'death' | 'cast';
 
 export interface Toast {
   id: number;
@@ -22,7 +22,12 @@ export class ToastService {
     const icon = this.iconFor(kind);
     const toast: Toast = { id: nextId++, kind, message, icon, durationMs };
     this._toasts$.next([...this._toasts$.value, toast]);
-    setTimeout(() => this.dismiss(toast.id), durationMs);
+    // durationMs <= 0 means persistent — dismissed only by click.
+    if (durationMs > 0) setTimeout(() => this.dismiss(toast.id), durationMs);
+  }
+
+  error(message: string): void {
+    this.show(message, 'error', 5000);
   }
 
   dismiss(id: number): void {
@@ -51,6 +56,7 @@ export class ToastService {
       info: '◆',
       success: '✦',
       warn: '⚠',
+      error: '✖',
       damage: '⚔',
       death: '☠',
       cast: '✧',

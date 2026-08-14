@@ -40,11 +40,16 @@ export const DeckActions = createActionGroup({
     // Delete
     'Delete Deck': props<{ id: string }>(),
     'Delete Deck Success': props<{ id: string }>(),
+    'Delete Deck Failure': props<{ error: string }>(),
+
+    // Re-fetch the active deck without blanking it (used to resync after a
+    // failed optimistic card mutation).
+    'Refresh Deck': props<{ id: string }>(),
 
     // Add card
     'Add Card': props<{ deckId: string; request: AddCardToCollectionRequest }>(),
     'Add Card Success': props<{ card: CollectionCardDto }>(),
-    'Add Card Failure': props<{ error: string }>(),
+    'Add Card Failure': props<{ deckId: string; error: string }>(),
 
     // Update card
     'Update Card': props<{
@@ -53,11 +58,11 @@ export const DeckActions = createActionGroup({
       request: UpdateCollectionCardRequest;
     }>(),
     'Update Card Success': props<{ card: CollectionCardDto }>(),
-    'Update Card Failure': props<{ error: string }>(),
+    'Update Card Failure': props<{ deckId: string; error: string }>(),
 
     // Remove card
     'Remove Card': props<{ deckId: string; cardId: string }>(),
     'Remove Card Success': props<{ cardId: string }>(),
-    'Remove Card Failure': props<{ error: string }>(),
+    'Remove Card Failure': props<{ deckId: string; error: string }>(),
   },
 });

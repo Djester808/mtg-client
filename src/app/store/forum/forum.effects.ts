@@ -4,6 +4,8 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, mergeMap, of, switchMap, tap } from 'rxjs';
 import { ForumActions } from './forum.actions';
 import { ForumApiService } from '../../services/forum-api.service';
+import { ToastService } from '../../services/toast.service';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 @Injectable()
 export class ForumEffects {
@@ -58,7 +60,9 @@ export class ForumEffects {
       mergeMap(({ id }) =>
         this.api.deletePost(id).pipe(
           map(() => ForumActions.deletePostSuccess({ id })),
-          catchError(() => of(ForumActions.deletePostSuccess({ id }))),
+          catchError((err) =>
+            of(ForumActions.deletePostFailure({ error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
@@ -91,19 +95,8 @@ export class ForumEffects {
       mergeMap(({ postId, commentId, content }) =>
         this.api.updateComment(postId, commentId, content).pipe(
           map((comment) => ForumActions.updateCommentSuccess({ comment })),
-          catchError(() =>
-            of(
-              ForumActions.updateCommentSuccess({
-                comment: {
-                  id: commentId,
-                  authorId: '',
-                  authorUsername: '',
-                  content,
-                  createdAt: '',
-                  updatedAt: '',
-                },
-              }),
-            ),
+          catchError((err) =>
+            of(ForumActions.updateCommentFailure({ error: describeHttpError(err) })),
           ),
         ),
       ),
@@ -116,15 +109,33 @@ export class ForumEffects {
       mergeMap(({ postId, commentId }) =>
         this.api.deleteComment(postId, commentId).pipe(
           map(() => ForumActions.deleteCommentSuccess({ commentId })),
-          catchError(() => of(ForumActions.deleteCommentSuccess({ commentId }))),
+          catchError((err) =>
+            of(ForumActions.deleteCommentFailure({ error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
+  );
+
+  notifyFailure$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(
+          ForumActions.publishDeckFailure,
+          ForumActions.deletePostFailure,
+          ForumActions.addCommentFailure,
+          ForumActions.updateCommentFailure,
+          ForumActions.deleteCommentFailure,
+        ),
+        tap(({ error }) => this.toast.error(error)),
+      ),
+    { dispatch: false },
   );
 
   constructor(
     private actions$: Actions,
     private api: ForumApiService,
     private router: Router,
+    private toast: ToastService,
   ) {}
 }

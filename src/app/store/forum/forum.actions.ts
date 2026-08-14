@@ -18,6 +18,7 @@ export const ForumActions = createActionGroup({
 
     'Delete Post': props<{ id: string }>(),
     'Delete Post Success': props<{ id: string }>(),
+    'Delete Post Failure': props<{ error: string }>(),
 
     'Add Comment': props<{ postId: string; content: string }>(),
     'Add Comment Success': props<{ comment: ForumComment }>(),
@@ -25,8 +26,10 @@ export const ForumActions = createActionGroup({
 
     'Update Comment': props<{ postId: string; commentId: string; content: string }>(),
     'Update Comment Success': props<{ comment: ForumComment }>(),
+    'Update Comment Failure': props<{ error: string }>(),
 
     'Delete Comment': props<{ postId: string; commentId: string }>(),
     'Delete Comment Success': props<{ commentId: string }>(),
+    'Delete Comment Failure': props<{ error: string }>(),
   },
 });

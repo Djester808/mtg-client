@@ -71,6 +71,22 @@ export interface FreeColumn {
   width?: number;
 }
 
+/** Shape guard for layouts read back from localStorage. */
+function isFreeColumns(v: unknown): v is FreeColumn[] {
+  return (
+    Array.isArray(v) &&
+    v.every(
+      (col): boolean =>
+        !!col &&
+        typeof col === 'object' &&
+        typeof (col as FreeColumn).id === 'string' &&
+        typeof (col as FreeColumn).label === 'string' &&
+        Array.isArray((col as FreeColumn).cardIds) &&
+        (col as FreeColumn).cardIds.every((id) => typeof id === 'string'),
+    )
+  );
+}
+
 export interface CmcGroup {
   label: string;
   key: string;
@@ -294,6 +310,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   resizingColId: string | null = null;
 
   stackOrders = new Map<string, string[]>();
+  /** What each stack actually displayed on the last render — the index space drag events live in. */
+  private displayedStackOrders = new Map<string, string[]>();
   stackDragGroupKey: string | null = null;
   stackDragFromIdx: number | null = null;
   stackDragOverIdx: number | null = null;
@@ -452,6 +470,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.sortMode = mode;
     this.listOrders.clear();
     this.stackOrders.clear();
+    this.displayedStackOrders.clear();
     this.cdr.markForCheck();
   }
 
@@ -476,7 +495,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   setViewMode(mode: ViewMode, deck?: DeckDetailDto): void {
     const doSwitch = () => {
-      if (this.viewMode !== mode) this.stackOrders.clear();
+      if (this.viewMode !== mode) {
+        this.stackOrders.clear();
+        this.displayedStackOrders.clear();
+      }
       this.viewMode = mode;
       this.textStyle = false;
       if (mode === 'free' && deck) this.enterFreeMode(deck);
@@ -567,8 +589,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     const saved = localStorage.getItem(`deck-free-${this.deckId}`);
     if (saved) {
       try {
-        const parsed: FreeColumn[] = JSON.parse(saved);
-        if (parsed.length) {
+        // localStorage survives app versions and manual edits — well-formed JSON of
+        // the wrong shape must rebuild, not flow into freeColumns and NRE later.
+        const parsed: unknown = JSON.parse(saved);
+        if (isFreeColumns(parsed) && parsed.length) {
           this.freeColumns = parsed;
           this.freeLayoutDirty = false;
           this.syncFreeColumns(deck);
@@ -1948,32 +1972,38 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return cards.flatMap((c) => Array(this.cardCount(c)).fill(c));
   }
 
-  getStackCards(groupKey: string, cards: CollectionCardDto[]): CollectionCardDto[] {
-    if (!this.stackOrders.has(groupKey)) {
-      this.stackOrders.set(
-        groupKey,
-        [...this.expandCards(cards)].reverse().map((c) => c.id),
-      );
-    } else {
-      // Reconcile order with current quantities, preserving user-arranged positions
-      const quota = new Map<string, number>(cards.map((c) => [c.id, this.cardCount(c)]));
-      const used = new Map<string, number>();
-      const kept: string[] = [];
-      for (const id of this.stackOrders.get(groupKey)!) {
-        const u = used.get(id) ?? 0;
-        if (u < (quota.get(id) ?? 0)) {
-          kept.push(id);
-          used.set(id, u + 1);
-        }
+  /**
+   * The display order for one stack, derived from the saved arrangement and the
+   * cards currently visible. Pure with respect to `stackOrders`: the saved order is
+   * only ever written by an explicit drag. The old version wrote the reconciled
+   * order back on every change-detection pass, so filtering the deck (which shrinks
+   * `cards`) permanently deleted the hidden ids — clearing the filter dumped the
+   * user's arrangement.
+   */
+  private deriveStackOrder(groupKey: string, cards: CollectionCardDto[]): string[] {
+    const quota = new Map<string, number>(cards.map((c) => [c.id, this.cardCount(c)]));
+    const used = new Map<string, number>();
+    const kept: string[] = [];
+    for (const id of this.stackOrders.get(groupKey) ?? []) {
+      const u = used.get(id) ?? 0;
+      if (u < (quota.get(id) ?? 0)) {
+        kept.push(id);
+        used.set(id, u + 1);
       }
-      // Prepend slots for cards whose quantity increased (new copies go to visual top)
-      for (const [id, q] of quota) {
-        for (let i = used.get(id) ?? 0; i < q; i++) kept.unshift(id);
-      }
-      this.stackOrders.set(groupKey, kept);
     }
-    return this.stackOrders
-      .get(groupKey)!
+    // Slots for cards beyond the saved arrangement (new cards, raised quantities)
+    // go to the visual top.
+    for (const [id, q] of quota) {
+      for (let i = used.get(id) ?? 0; i < q; i++) kept.unshift(id);
+    }
+    return kept;
+  }
+
+  getStackCards(groupKey: string, cards: CollectionCardDto[]): CollectionCardDto[] {
+    const derived = this.deriveStackOrder(groupKey, cards);
+    // Render cache, not state: drag indices refer to what was displayed.
+    this.displayedStackOrders.set(groupKey, derived);
+    return derived
       .map((id) => cards.find((c) => c.id === id))
       .filter((c): c is CollectionCardDto => c != null);
   }
@@ -2022,10 +2052,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
           const srcIdx = this.stackDragFromIdx;
           const dstIdx = this.stackDragOverIdx;
           if (srcIdx != null && dstIdx != null && srcIdx !== dstIdx) {
-            const order = [...(this.stackOrders.get(groupKey) ?? [])];
-            const [moved] = order.splice(srcIdx, 1);
-            order.splice(dstIdx, 0, moved);
-            this.stackOrders.set(groupKey, order);
+            // Drag indices are positions in the DISPLAYED order (which may differ
+            // from the saved one when a filter hides cards). Apply the move there,
+            // then keep any hidden ids so they aren't lost when the filter clears.
+            const displayed = [
+              ...(this.displayedStackOrders.get(groupKey) ?? this.stackOrders.get(groupKey) ?? []),
+            ];
+            const [moved] = displayed.splice(srcIdx, 1);
+            displayed.splice(dstIdx, 0, moved);
+            const shown = new Map<string, number>();
+            for (const id of displayed) shown.set(id, (shown.get(id) ?? 0) + 1);
+            const hidden: string[] = [];
+            for (const id of this.stackOrders.get(groupKey) ?? []) {
+              const n = shown.get(id) ?? 0;
+              if (n > 0) shown.set(id, n - 1);
+              else hidden.push(id);
+            }
+            this.stackOrders.set(groupKey, [...displayed, ...hidden]);
           }
         }
       }
@@ -3052,35 +3095,46 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     // No flight for another copy of a card already in the deck — the ghost communicates a
     // card traveling INTO the deck; a count change inside it just gets the tab bump.
     this.bumpBoardTab(this.boardOf(card));
-    this.store.dispatch(
-      DeckActions.updateCard({
-        deckId: this.deckId,
-        cardId: card.id,
-        request: { quantity: card.quantity + 1, quantityFoil: card.quantityFoil },
-      }),
-    );
+    // Quantities come from the store at dispatch time, not the template binding:
+    // the reducer applies updates optimistically, so rapid clicks each read the
+    // value the previous click produced instead of racing on a stale snapshot.
+    this.deck$.pipe(take(1)).subscribe((deck) => {
+      const cur = deck?.cards.find((c) => c.id === card.id) ?? card;
+      this.store.dispatch(
+        DeckActions.updateCard({
+          deckId: this.deckId,
+          cardId: card.id,
+          request: { quantity: cur.quantity + 1, quantityFoil: cur.quantityFoil },
+        }),
+      );
+    });
   }
 
   decrement(card: CollectionCardDto): void {
-    if (this.cardCount(card) <= 1) {
-      this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: card.id }));
-    } else if (card.quantity > 0) {
-      this.store.dispatch(
-        DeckActions.updateCard({
-          deckId: this.deckId,
-          cardId: card.id,
-          request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
-        }),
-      );
-    } else {
-      this.store.dispatch(
-        DeckActions.updateCard({
-          deckId: this.deckId,
-          cardId: card.id,
-          request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
-        }),
-      );
-    }
+    this.deck$.pipe(take(1)).subscribe((deck) => {
+      // Fall back to the binding when the store doesn't know the card (it may not
+      // have loaded the deck yet); the store copy wins when both exist.
+      const cur = deck?.cards.find((c) => c.id === card.id) ?? card;
+      if (this.cardCount(cur) <= 1) {
+        this.store.dispatch(DeckActions.removeCard({ deckId: this.deckId, cardId: cur.id }));
+      } else if (cur.quantity > 0) {
+        this.store.dispatch(
+          DeckActions.updateCard({
+            deckId: this.deckId,
+            cardId: cur.id,
+            request: { quantity: cur.quantity - 1, quantityFoil: cur.quantityFoil },
+          }),
+        );
+      } else {
+        this.store.dispatch(
+          DeckActions.updateCard({
+            deckId: this.deckId,
+            cardId: cur.id,
+            request: { quantity: cur.quantity, quantityFoil: cur.quantityFoil - 1 },
+          }),
+        );
+      }
+    });
   }
 
   freeIncrement(card: CollectionCardDto, colId: string): void {
@@ -3774,7 +3828,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   private loadTagHistory(): void {
     try {
-      this.tagHistory = JSON.parse(localStorage.getItem('mtg-tag-history') || '[]');
+      const parsed: unknown = JSON.parse(localStorage.getItem('mtg-tag-history') || '[]');
+      this.tagHistory = Array.isArray(parsed) ? parsed.filter((t) => typeof t === 'string') : [];
     } catch {
       this.tagHistory = [];
     }

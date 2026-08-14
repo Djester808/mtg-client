@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, concatMap, map, mergeMap, of, switchMap, tap } from 'rxjs';
 import { CollectionActions } from './collection.actions';
 import { CollectionApiService } from '../../services/collection-api.service';
+import { ToastService } from '../../services/toast.service';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 @Injectable()
 export class CollectionEffects {
@@ -12,7 +14,9 @@ export class CollectionEffects {
       switchMap(() =>
         this.api.getCollections().pipe(
           map((collections) => CollectionActions.loadCollectionsSuccess({ collections })),
-          catchError((err) => of(CollectionActions.loadCollectionsFailure({ error: err.message }))),
+          catchError((err) =>
+            of(CollectionActions.loadCollectionsFailure({ error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
@@ -24,7 +28,24 @@ export class CollectionEffects {
       switchMap(({ id }) =>
         this.api.getCollection(id).pipe(
           map((collection) => CollectionActions.loadCollectionSuccess({ collection })),
-          catchError((err) => of(CollectionActions.loadCollectionFailure({ error: err.message }))),
+          catchError((err) =>
+            of(CollectionActions.loadCollectionFailure({ error: describeHttpError(err) })),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  // Same fetch as loadCollection, but the reducer never blanks the current view.
+  refreshCollection$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.refreshCollection),
+      switchMap(({ id }) =>
+        this.api.getCollection(id).pipe(
+          map((collection) => CollectionActions.loadCollectionSuccess({ collection })),
+          catchError((err) =>
+            of(CollectionActions.loadCollectionFailure({ error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
@@ -37,7 +58,7 @@ export class CollectionEffects {
         this.api.createCollection(request).pipe(
           map((collection) => CollectionActions.createCollectionSuccess({ collection })),
           catchError((err) =>
-            of(CollectionActions.createCollectionFailure({ error: err.message })),
+            of(CollectionActions.createCollectionFailure({ error: describeHttpError(err) })),
           ),
         ),
       ),
@@ -51,7 +72,7 @@ export class CollectionEffects {
         this.api.updateCollection(id, { name, description, coverUri }).pipe(
           map((collection) => CollectionActions.updateCollectionMetaSuccess({ collection })),
           catchError((err) =>
-            of(CollectionActions.updateCollectionMetaFailure({ error: err.message })),
+            of(CollectionActions.updateCollectionMetaFailure({ error: describeHttpError(err) })),
           ),
         ),
       ),
@@ -64,7 +85,9 @@ export class CollectionEffects {
       mergeMap(({ id }) =>
         this.api.deleteCollection(id).pipe(
           map(() => CollectionActions.deleteCollectionSuccess({ id })),
-          catchError(() => of(CollectionActions.deleteCollectionSuccess({ id }))),
+          catchError((err) =>
+            of(CollectionActions.deleteCollectionFailure({ error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
@@ -76,19 +99,27 @@ export class CollectionEffects {
       mergeMap(({ collectionId, request }) =>
         this.api.addCard(collectionId, request).pipe(
           map((card) => CollectionActions.addCardSuccess({ card })),
-          catchError((err) => of(CollectionActions.addCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(CollectionActions.addCardFailure({ collectionId, error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
   );
 
+  // concatMap, not mergeMap: quantity updates are absolute writes and must land
+  // in dispatch order, or rapid +/- clicks race last-write-wins.
   updateCard$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.updateCard),
-      mergeMap(({ collectionId, cardId, request }) =>
+      concatMap(({ collectionId, cardId, request }) =>
         this.api.updateCard(collectionId, cardId, request).pipe(
           map((card) => CollectionActions.updateCardSuccess({ card })),
-          catchError((err) => of(CollectionActions.updateCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(
+              CollectionActions.updateCardFailure({ collectionId, error: describeHttpError(err) }),
+            ),
+          ),
         ),
       ),
     ),
@@ -97,17 +128,50 @@ export class CollectionEffects {
   removeCard$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.removeCard),
-      mergeMap(({ collectionId, cardId }) =>
+      concatMap(({ collectionId, cardId }) =>
         this.api.removeCard(collectionId, cardId).pipe(
           map(() => CollectionActions.removeCardSuccess({ cardId })),
-          catchError((err) => of(CollectionActions.removeCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(
+              CollectionActions.removeCardFailure({ collectionId, error: describeHttpError(err) }),
+            ),
+          ),
         ),
       ),
     ),
   );
 
+  // A failed card mutation leaves the optimistic state wrong — re-fetch the truth.
+  resyncAfterCardFailure$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        CollectionActions.addCardFailure,
+        CollectionActions.updateCardFailure,
+        CollectionActions.removeCardFailure,
+      ),
+      map(({ collectionId }) => CollectionActions.refreshCollection({ id: collectionId })),
+    ),
+  );
+
+  notifyFailure$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(
+          CollectionActions.createCollectionFailure,
+          CollectionActions.updateCollectionMetaFailure,
+          CollectionActions.deleteCollectionFailure,
+          CollectionActions.addCardFailure,
+          CollectionActions.updateCardFailure,
+          CollectionActions.removeCardFailure,
+        ),
+        tap(({ error }) => this.toast.error(error)),
+      ),
+    { dispatch: false },
+  );
+
   constructor(
     private actions$: Actions,
     private api: CollectionApiService,
+    private toast: ToastService,
   ) {}
 }

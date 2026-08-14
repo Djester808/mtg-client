@@ -247,7 +247,8 @@ export class CardSearchPanelComponent implements OnInit, OnDestroy {
 
   private loadSearchHistory(): void {
     try {
-      this.searchHistory = JSON.parse(localStorage.getItem('mtg-search-history') || '[]');
+      const parsed: unknown = JSON.parse(localStorage.getItem('mtg-search-history') || '[]');
+      this.searchHistory = Array.isArray(parsed) ? parsed.filter((t) => typeof t === 'string') : [];
     } catch {
       this.searchHistory = [];
     }

@@ -168,14 +168,43 @@ describe('collectionReducer', () => {
 
   // ---- updateCard ----------------------------------------
 
-  it('replaces the card in active collection on updateCardSuccess', () => {
+  it('merges the server card on updateCardSuccess but keeps local quantities', () => {
+    // Quantities are written optimistically on dispatch; a response from an older
+    // in-flight PUT must not roll a newer optimistic value back (the rapid-click race).
+    const original = makeCollectionCard({ id: 'cc-1', quantity: 5, quantityFoil: 2 });
+    const base: CollectionState = {
+      ...initialState(),
+      activeCollection: makeCollectionDetail({ cards: [original] }),
+    };
+    const fromServer = makeCollectionCard({
+      id: 'cc-1',
+      quantity: 2,
+      quantityFoil: 1,
+      notes: 'server notes',
+    });
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCardSuccess({ card: fromServer }),
+    );
+    expect(state.activeCollection!.cards[0].quantity).toBe(5);
+    expect(state.activeCollection!.cards[0].quantityFoil).toBe(2);
+    expect(state.activeCollection!.cards[0].notes).toBe('server notes');
+  });
+
+  it('applies quantities optimistically on updateCard dispatch', () => {
     const original = makeCollectionCard({ id: 'cc-1', quantity: 1, quantityFoil: 0 });
     const base: CollectionState = {
       ...initialState(),
       activeCollection: makeCollectionDetail({ cards: [original] }),
     };
-    const updated = makeCollectionCard({ id: 'cc-1', quantity: 2, quantityFoil: 1 });
-    const state = collectionReducer(base, CollectionActions.updateCardSuccess({ card: updated }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.updateCard({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        request: { quantity: 2, quantityFoil: 1 },
+      }),
+    );
     expect(state.activeCollection!.cards[0].quantity).toBe(2);
     expect(state.activeCollection!.cards[0].quantityFoil).toBe(1);
   });
@@ -275,7 +304,7 @@ describe('collectionReducer', () => {
   it('stores error on addCardFailure', () => {
     const state = collectionReducer(
       initialState(),
-      CollectionActions.addCardFailure({ error: 'conflict' }),
+      CollectionActions.addCardFailure({ collectionId: 'col-1', error: 'conflict' }),
     );
     expect(state.error).toBe('conflict');
   });
@@ -283,7 +312,7 @@ describe('collectionReducer', () => {
   it('stores error on updateCardFailure', () => {
     const state = collectionReducer(
       initialState(),
-      CollectionActions.updateCardFailure({ error: 'not found' }),
+      CollectionActions.updateCardFailure({ collectionId: 'col-1', error: 'not found' }),
     );
     expect(state.error).toBe('not found');
   });
@@ -291,7 +320,7 @@ describe('collectionReducer', () => {
   it('stores error on removeCardFailure', () => {
     const state = collectionReducer(
       initialState(),
-      CollectionActions.removeCardFailure({ error: 'server error' }),
+      CollectionActions.removeCardFailure({ collectionId: 'col-1', error: 'server error' }),
     );
     expect(state.error).toBe('server error');
   });

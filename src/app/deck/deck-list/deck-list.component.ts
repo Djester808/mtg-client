@@ -105,7 +105,13 @@ export class DeckListComponent implements OnInit, OnDestroy {
       this.sortedDecks = [...decks];
       return;
     }
-    const order: string[] = JSON.parse(saved);
+    let order: string[];
+    try {
+      const parsed: unknown = JSON.parse(saved);
+      order = Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+    } catch {
+      order = [];
+    }
     const byId = new Map(decks.map((d) => [d.id, d]));
     const sorted = order.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
     const inOrder = new Set(order);

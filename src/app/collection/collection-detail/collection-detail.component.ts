@@ -448,54 +448,75 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card mutations --------------------------------------------
 
+  /**
+   * Quantities are read from the store at dispatch time, not the template binding:
+   * the reducer applies updates optimistically, so rapid clicks each build on the
+   * previous click's value instead of racing on a stale snapshot.
+   */
+  private withCurrent(card: CollectionCardDto, fn: (cur: CollectionCardDto) => void): void {
+    this.collection$.pipe(take(1)).subscribe((col) => {
+      // Fall back to the binding when the store doesn't know the card; the store
+      // copy wins when both exist.
+      fn(col?.cards.find((c) => c.id === card.id) ?? card);
+    });
+  }
+
   incrementNormal(card: CollectionCardDto): void {
-    this.store.dispatch(
-      CollectionActions.updateCard({
-        collectionId: this.collectionId,
-        cardId: card.id,
-        request: { quantity: card.quantity + 1, quantityFoil: card.quantityFoil },
-      }),
+    this.withCurrent(card, (cur) =>
+      this.store.dispatch(
+        CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: cur.id,
+          request: { quantity: cur.quantity + 1, quantityFoil: cur.quantityFoil },
+        }),
+      ),
     );
   }
 
   decrementNormal(card: CollectionCardDto): void {
-    if (card.quantity <= 0) return;
-    if (card.quantity === 1 && card.quantityFoil === 0) {
-      this.removeCard(card);
-      return;
-    }
-    this.store.dispatch(
-      CollectionActions.updateCard({
-        collectionId: this.collectionId,
-        cardId: card.id,
-        request: { quantity: card.quantity - 1, quantityFoil: card.quantityFoil },
-      }),
-    );
+    this.withCurrent(card, (cur) => {
+      if (cur.quantity <= 0) return;
+      if (cur.quantity === 1 && cur.quantityFoil === 0) {
+        this.removeCard(cur);
+        return;
+      }
+      this.store.dispatch(
+        CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: cur.id,
+          request: { quantity: cur.quantity - 1, quantityFoil: cur.quantityFoil },
+        }),
+      );
+    });
   }
 
   incrementFoil(card: CollectionCardDto): void {
-    this.store.dispatch(
-      CollectionActions.updateCard({
-        collectionId: this.collectionId,
-        cardId: card.id,
-        request: { quantity: card.quantity, quantityFoil: card.quantityFoil + 1 },
-      }),
+    this.withCurrent(card, (cur) =>
+      this.store.dispatch(
+        CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: cur.id,
+          request: { quantity: cur.quantity, quantityFoil: cur.quantityFoil + 1 },
+        }),
+      ),
     );
   }
 
   decrementFoil(card: CollectionCardDto): void {
-    if (card.quantityFoil <= 0) return;
-    if (card.quantityFoil === 1 && card.quantity === 0) {
-      this.removeCard(card);
-      return;
-    }
-    this.store.dispatch(
-      CollectionActions.updateCard({
-        collectionId: this.collectionId,
-        cardId: card.id,
-        request: { quantity: card.quantity, quantityFoil: card.quantityFoil - 1 },
-      }),
-    );
+    this.withCurrent(card, (cur) => {
+      if (cur.quantityFoil <= 0) return;
+      if (cur.quantityFoil === 1 && cur.quantity === 0) {
+        this.removeCard(cur);
+        return;
+      }
+      this.store.dispatch(
+        CollectionActions.updateCard({
+          collectionId: this.collectionId,
+          cardId: cur.id,
+          request: { quantity: cur.quantity, quantityFoil: cur.quantityFoil - 1 },
+        }),
+      );
+    });
   }
 
   removeCard(card: CollectionCardDto): void {

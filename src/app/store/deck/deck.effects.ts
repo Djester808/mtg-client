@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, concatMap, map, mergeMap, of, switchMap, tap } from 'rxjs';
 import { DeckActions } from './deck.actions';
 import { DeckApiService } from '../../services/deck-api.service';
+import { ToastService } from '../../services/toast.service';
+import { describeHttpError } from '../../utils/http-error.utils';
 
 @Injectable()
 export class DeckEffects {
@@ -12,7 +14,7 @@ export class DeckEffects {
       switchMap(() =>
         this.api.getDecks().pipe(
           map((decks) => DeckActions.loadDecksSuccess({ decks })),
-          catchError((err) => of(DeckActions.loadDecksFailure({ error: err.message }))),
+          catchError((err) => of(DeckActions.loadDecksFailure({ error: describeHttpError(err) }))),
         ),
       ),
     ),
@@ -24,7 +26,21 @@ export class DeckEffects {
       switchMap(({ id }) =>
         this.api.getDeck(id).pipe(
           map((deck) => DeckActions.loadDeckSuccess({ deck })),
-          catchError((err) => of(DeckActions.loadDeckFailure({ error: err.message }))),
+          catchError((err) => of(DeckActions.loadDeckFailure({ error: describeHttpError(err) }))),
+        ),
+      ),
+    ),
+  );
+
+  // Same fetch as loadDeck, but the reducer never blanks the current deck — the
+  // stale view stays up until the fresh one lands.
+  refreshDeck$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(DeckActions.refreshDeck),
+      switchMap(({ id }) =>
+        this.api.getDeck(id).pipe(
+          map((deck) => DeckActions.loadDeckSuccess({ deck })),
+          catchError((err) => of(DeckActions.loadDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
     ),
@@ -36,7 +52,7 @@ export class DeckEffects {
       switchMap(({ name, coverUri, format }) =>
         this.api.createDeck({ name, coverUri, format }).pipe(
           map((deck) => DeckActions.createDeckSuccess({ deck })),
-          catchError((err) => of(DeckActions.createDeckFailure({ error: err.message }))),
+          catchError((err) => of(DeckActions.createDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
     ),
@@ -57,7 +73,9 @@ export class DeckEffects {
           })
           .pipe(
             map((deck) => DeckActions.updateDeckMetaSuccess({ deck })),
-            catchError((err) => of(DeckActions.updateDeckMetaFailure({ error: err.message }))),
+            catchError((err) =>
+              of(DeckActions.updateDeckMetaFailure({ error: describeHttpError(err) })),
+            ),
           ),
       ),
     ),
@@ -69,7 +87,7 @@ export class DeckEffects {
       mergeMap(({ id }) =>
         this.api.deleteDeck(id).pipe(
           map(() => DeckActions.deleteDeckSuccess({ id })),
-          catchError(() => of(DeckActions.deleteDeckSuccess({ id }))),
+          catchError((err) => of(DeckActions.deleteDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
     ),
@@ -81,19 +99,25 @@ export class DeckEffects {
       mergeMap(({ deckId, request }) =>
         this.api.addCard(deckId, request).pipe(
           map((card) => DeckActions.addCardSuccess({ card })),
-          catchError((err) => of(DeckActions.addCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(DeckActions.addCardFailure({ deckId, error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
   );
 
+  // concatMap, not mergeMap: quantity updates are absolute writes, so they must
+  // reach the server in dispatch order or rapid +/- clicks race last-write-wins.
   updateCard$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.updateCard),
-      mergeMap(({ deckId, cardId, request }) =>
+      concatMap(({ deckId, cardId, request }) =>
         this.api.updateCard(deckId, cardId, request).pipe(
           map((card) => DeckActions.updateCardSuccess({ card })),
-          catchError((err) => of(DeckActions.updateCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(DeckActions.updateCardFailure({ deckId, error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
@@ -102,17 +126,49 @@ export class DeckEffects {
   removeCard$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.removeCard),
-      mergeMap(({ deckId, cardId }) =>
+      concatMap(({ deckId, cardId }) =>
         this.api.removeCard(deckId, cardId).pipe(
           map(() => DeckActions.removeCardSuccess({ cardId })),
-          catchError((err) => of(DeckActions.removeCardFailure({ error: err.message }))),
+          catchError((err) =>
+            of(DeckActions.removeCardFailure({ deckId, error: describeHttpError(err) })),
+          ),
         ),
       ),
     ),
   );
 
+  // A failed card mutation leaves the optimistic state wrong — re-fetch so the
+  // view tells the truth again.
+  resyncAfterCardFailure$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        DeckActions.addCardFailure,
+        DeckActions.updateCardFailure,
+        DeckActions.removeCardFailure,
+      ),
+      map(({ deckId }) => DeckActions.refreshDeck({ id: deckId })),
+    ),
+  );
+
+  notifyFailure$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(
+          DeckActions.createDeckFailure,
+          DeckActions.updateDeckMetaFailure,
+          DeckActions.deleteDeckFailure,
+          DeckActions.addCardFailure,
+          DeckActions.updateCardFailure,
+          DeckActions.removeCardFailure,
+        ),
+        tap(({ error }) => this.toast.error(error)),
+      ),
+    { dispatch: false },
+  );
+
   constructor(
     private actions$: Actions,
     private api: DeckApiService,
+    private toast: ToastService,
   ) {}
 }

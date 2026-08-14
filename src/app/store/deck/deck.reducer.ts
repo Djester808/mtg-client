@@ -99,6 +99,36 @@ export const deckReducer = createReducer(
     ...state,
     decks: state.decks.filter((d) => d.id !== id),
   })),
+  on(DeckActions.deleteDeckFailure, (state, { error }) => ({ ...state, error })),
+
+  // Optimistic quantity write: the tile updates on click, and because updates are
+  // dispatched in order (and the effect serialises them), the next click reads the
+  // fresh value instead of racing on a stale one. Failures resync via refreshDeck.
+  on(DeckActions.updateCard, (state, { cardId, request }) => {
+    if (!state.activeDeck) return state;
+    return {
+      ...state,
+      activeDeck: {
+        ...state.activeDeck,
+        cards: state.activeDeck.cards.map((c) =>
+          c.id === cardId
+            ? { ...c, quantity: request.quantity, quantityFoil: request.quantityFoil }
+            : c,
+        ),
+      },
+    };
+  }),
+
+  on(DeckActions.removeCard, (state, { cardId }) => {
+    if (!state.activeDeck) return state;
+    return {
+      ...state,
+      activeDeck: {
+        ...state.activeDeck,
+        cards: state.activeDeck.cards.filter((c) => c.id !== cardId),
+      },
+    };
+  }),
 
   on(DeckActions.addCardSuccess, (state, { card }) => {
     if (!state.activeDeck) return state;
@@ -116,7 +146,12 @@ export const deckReducer = createReducer(
       ...state,
       activeDeck: {
         ...state.activeDeck,
-        cards: state.activeDeck.cards.map((c) => (c.id === card.id ? card : c)),
+        // Keep the local quantities: updates are absolute and serialised, so the
+        // optimistic value is always at least as new as this response — letting an
+        // in-flight response overwrite it re-introduces the rapid-click race.
+        cards: state.activeDeck.cards.map((c) =>
+          c.id === card.id ? { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil } : c,
+        ),
       },
     };
   }),

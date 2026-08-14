@@ -72,6 +72,7 @@ export const collectionReducer = createReducer(
     ...state,
     collections: state.collections.filter((c) => c.id !== id),
   })),
+  on(CollectionActions.deleteCollectionFailure, (state, { error }) => ({ ...state, error })),
 
   // Update meta
   on(CollectionActions.updateCollectionMetaSuccess, (state, { collection }) => ({
@@ -97,6 +98,34 @@ export const collectionReducer = createReducer(
         : state.activeCollection,
   })),
 
+  // Optimistic quantity write — see deck.reducer for the rationale. Failures
+  // resync via refreshCollection.
+  on(CollectionActions.updateCard, (state, { cardId, request }) => {
+    if (!state.activeCollection) return state;
+    return {
+      ...state,
+      activeCollection: {
+        ...state.activeCollection,
+        cards: state.activeCollection.cards.map((c) =>
+          c.id === cardId
+            ? { ...c, quantity: request.quantity, quantityFoil: request.quantityFoil }
+            : c,
+        ),
+      },
+    };
+  }),
+
+  on(CollectionActions.removeCard, (state, { cardId }) => {
+    if (!state.activeCollection) return state;
+    return {
+      ...state,
+      activeCollection: {
+        ...state.activeCollection,
+        cards: state.activeCollection.cards.filter((c) => c.id !== cardId),
+      },
+    };
+  }),
+
   // Add card (upsert into activeCollection)
   on(CollectionActions.addCardSuccess, (state, { card }) => {
     if (!state.activeCollection) return state;
@@ -115,7 +144,10 @@ export const collectionReducer = createReducer(
       ...state,
       activeCollection: {
         ...state.activeCollection,
-        cards: state.activeCollection.cards.map((c) => (c.id === card.id ? card : c)),
+        // Keep the local quantities — see deck.reducer for the rationale.
+        cards: state.activeCollection.cards.map((c) =>
+          c.id === card.id ? { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil } : c,
+        ),
       },
     };
   }),
