@@ -1,7 +1,7 @@
 .cp-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.72);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -11,8 +11,12 @@
 }
 
 @keyframes cp-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .cp-modal {
@@ -22,7 +26,7 @@
   width: 680px;
   max-width: calc(100vw - 40px);
   max-height: 82vh;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.85);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -30,8 +34,14 @@
 }
 
 @keyframes cp-modal-in {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .cp-header {
@@ -62,7 +72,9 @@
   border-radius: 4px;
   color: var(--text-dim);
   transition: color 0.2s;
-  &:hover { color: var(--text-parchment); }
+  &:hover {
+    color: var(--text-parchment);
+  }
 }
 
 .cp-search-wrap {
@@ -90,8 +102,12 @@
   padding: 9px 14px 9px 36px;
   outline: none;
   transition: border-color 0.2s;
-  &::placeholder { color: var(--text-dim); }
-  &:focus { border-color: rgba(167,139,250,0.4); }
+  &::placeholder {
+    color: var(--text-dim);
+  }
+  &:focus {
+    border-color: rgba(167, 139, 250, 0.4);
+  }
 }
 
 .cp-body {
@@ -100,8 +116,13 @@
   padding: 4px 24px 24px;
   min-height: 0;
   scrollbar-width: thin;
-  &::-webkit-scrollbar { width: 5px; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+  }
 
   // Empty / loading / no-results state text
   > div:not(.cp-loading):not([style]) {
@@ -118,8 +139,13 @@
 }
 
 @keyframes cp-pulse {
-  0%, 100% { opacity: 0.4; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .cp-thumb {
@@ -128,7 +154,10 @@
   overflow: hidden;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
 
   img {
     display: block;
@@ -139,13 +168,13 @@
   }
 
   &:hover {
-    border-color: rgba(167,139,250,0.6);
+    border-color: rgba(167, 139, 250, 0.6);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   }
 
   &.is-selected {
     border-color: #a78bfa;
-    box-shadow: 0 0 0 2px rgba(167,139,250,0.4);
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.4);
   }
 }

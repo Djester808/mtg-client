@@ -10,11 +10,14 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SetIconComponent } from '../set-icon/set-icon.component';
 
 export interface SelectMenuOption {
   value: string;
   label: string;
   title?: string;
+  /** Set code to draw a set symbol beside the label (printing/set pickers). */
+  iconCode?: string | null;
 }
 
 /**
@@ -29,7 +32,7 @@ export interface SelectMenuOption {
 @Component({
   selector: 'app-select-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SetIconComponent],
   template: `
     <button
       type="button"
@@ -40,6 +43,11 @@ export interface SelectMenuOption {
       [title]="selected?.title ?? selected?.label ?? placeholder"
       (click)="toggle($event)"
     >
+      <app-set-icon
+        *ngIf="selected?.iconCode as code"
+        [setCode]="code"
+        [setName]="selected?.title"
+      ></app-set-icon>
       <span class="asm-label" [class.is-placeholder]="!selected">{{
         selected?.label ?? placeholder
       }}</span>
@@ -62,6 +70,11 @@ export interface SelectMenuOption {
         [title]="o.title ?? o.label"
         (click)="pick(o, $event)"
       >
+        <app-set-icon
+          *ngIf="o.iconCode as code"
+          [setCode]="code"
+          [setName]="o.title"
+        ></app-set-icon>
         {{ o.label }}
       </button>
       <div class="app-menu-empty" *ngIf="options.length === 0">{{ emptyLabel }}</div>
@@ -109,7 +122,10 @@ export interface SelectMenuOption {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        text-align: left;
+        /* Centred to match the plain-text label that replaces this control when there is
+           only one option — otherwise the set appears to jump sideways from tile to tile
+           depending on whether a choice exists. */
+        text-align: center;
       }
       .asm-label.is-placeholder {
         color: var(--text-dim);
@@ -124,6 +140,14 @@ export interface SelectMenuOption {
       }
       .asm-menu {
         position: fixed;
+      }
+      /* Only the items rendered by this menu — scoped, so the global .app-menu-item
+         used elsewhere keeps its own layout. Needed so a set symbol sits on the
+         text baseline instead of pushing the label onto its own line. */
+      .app-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
     `,
   ],
@@ -183,9 +207,19 @@ export class SelectMenuComponent implements OnDestroy {
     // don't overhang the viewport bottom.
     const est = Math.min(300, Math.max(1, this.options.length) * 33 + 10);
     const below = window.innerHeight - r.bottom;
+    // Viewport coordinates — correct only because the menu is lifted to <body> below.
+    // Left in the template it would be laid out against any ancestor that establishes a
+    // containing block for position: fixed (a transform or backdrop-filter is enough).
     this.menuY = below < est + 12 && r.top > below ? Math.max(8, r.top - est - 6) : r.bottom + 4;
     this.activeIdx = this.options.findIndex((o) => o.value === this.value);
     this.open = true;
+    // Render the menu now, then lift it out to <body>. position: fixed is only relative
+    // to the viewport while no ancestor establishes a containing block for it, and the
+    // collection grid's .card-bottom has a transform *and* a backdrop-filter — either is
+    // enough. Left in place there, the menu was laid out against that box and landed
+    // 161px below the bottom of the screen: open, populated, and entirely invisible.
+    this.cdr.detectChanges();
+    this.liftMenuToBody();
     SelectMenuComponent.openInstance = this;
     // Capture-phase: inner containers (scrolling lists) don't bubble scroll to window,
     // and a fixed-position menu strands wherever it was measured — close instead.
@@ -199,7 +233,30 @@ export class SelectMenuComponent implements OnDestroy {
     if (o.value !== this.value) this.valueChange.emit(o.value);
   }
 
+  /** The menu node while it is parked on <body>, and the slot to put it back into. */
+  private movedMenu: HTMLElement | null = null;
+  private menuHome: Node | null = null;
+
+  private liftMenuToBody(): void {
+    const menu = this.host.nativeElement.querySelector('.asm-menu') as HTMLElement | null;
+    if (!menu?.parentNode) return;
+    this.movedMenu = menu;
+    this.menuHome = menu.parentNode;
+    document.body.appendChild(menu);
+  }
+
+  /**
+   * Put it back before Angular's *ngIf tears it down — the view still expects to remove
+   * the node from its original parent, and leaving it on <body> orphans it there.
+   */
+  private restoreMenu(): void {
+    if (this.movedMenu && this.menuHome) this.menuHome.appendChild(this.movedMenu);
+    this.movedMenu = null;
+    this.menuHome = null;
+  }
+
   private close(): void {
+    this.restoreMenu();
     this.open = false;
     if (SelectMenuComponent.openInstance === this) SelectMenuComponent.openInstance = null;
     document.removeEventListener('scroll', this.closeOnScroll, true);
@@ -212,18 +269,27 @@ export class SelectMenuComponent implements OnDestroy {
 
   private closeOnScroll = (e: Event) => {
     // Scrolling the option list itself must not dismiss the menu.
-    if (e.target instanceof Node && this.host.nativeElement.contains(e.target)) return;
+    if (e.target instanceof Node && this.ownsNode(e.target)) return;
     if (this.open) this.closeAndRefresh();
   };
 
   ngOnDestroy(): void {
+    // Otherwise a menu open at teardown is stranded on <body> forever.
+    this.movedMenu?.remove();
+    this.movedMenu = null;
     if (SelectMenuComponent.openInstance === this) SelectMenuComponent.openInstance = null;
     document.removeEventListener('scroll', this.closeOnScroll, true);
   }
 
+  /** True for the button and for the menu, wherever the menu is currently parented. */
+  private ownsNode(n: Node | null): boolean {
+    if (!n) return false;
+    return this.host.nativeElement.contains(n) || !!this.movedMenu?.contains(n);
+  }
+
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
-    if (this.open && !this.host.nativeElement.contains(e.target as Node)) {
+    if (this.open && !this.ownsNode(e.target as Node)) {
       this.closeAndRefresh();
     }
   }

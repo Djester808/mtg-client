@@ -1,0 +1,39 @@
+@use '../../../styles/add-controls' as *;
+
+// The art surface only. The tile *frame* — border, hover lift, density modifiers, the
+// hover strip's slide — belongs to the grid that renders it and is styled there, on the
+// caller's own element, which is also this component's host.
+//
+// `.ct-flip` is deliberately absent: it is defined once at the top level of global.scss,
+// because the deck's list thumbnails carry the same button outside this component.
+
+:host {
+  display: block;
+  position: relative;
+}
+
+.ct-art {
+  width: 100%;
+  @include card-surface;
+  @include card-art-crop;
+  cursor: pointer;
+
+  // No art yet (or none published): the frame still has to read as a card.
+  &.no-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(30, 27, 75, 0.9));
+  }
+}
+
+.ct-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--text-dim);
+  opacity: 0.25;
+}

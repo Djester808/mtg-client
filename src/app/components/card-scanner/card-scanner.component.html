@@ -1,5 +1,4 @@
 <div class="scanner-overlay" (click)="close()">
-
   <div class="scanner-modal" (click)="$event.stopPropagation()">
     <div class="scanner-header">
       <h2 class="scanner-title"><i class="bi bi-camera"></i> Scan Card</h2>
@@ -23,9 +22,7 @@
         <canvas #overlayEl class="overlay-canvas"></canvas>
 
         <div class="status-badge" [class.detected]="cardDetected" [class.scanning]="analyzing">
-          <ng-container *ngIf="analyzing">
-            <i class="bi bi-cpu"></i> Analyzing…
-          </ng-container>
+          <ng-container *ngIf="analyzing"> <i class="bi bi-cpu"></i> Analyzing… </ng-container>
           <ng-container *ngIf="!analyzing && cardDetected">
             <i class="bi bi-check-circle"></i> Card detected
           </ng-container>
@@ -44,9 +41,11 @@
         <p class="scanner-hint" *ngIf="!scanHint">
           Hold card up to the camera — border appears when detected
         </p>
-        <button class="scan-btn primary scan-now-btn"
-                [disabled]="!cardDetected || analyzing"
-                (click)="scanNow()">
+        <button
+          class="scan-btn primary scan-now-btn"
+          [disabled]="!cardDetected || analyzing"
+          (click)="scanNow()"
+        >
           <i class="bi bi-camera"></i> Scan Now
         </button>
       </div>
@@ -55,12 +54,16 @@
     <!-- ── Result ── -->
     <div class="scanner-body result-body" *ngIf="state === 'result' && matchedCard">
       <div class="result-row">
-        <img class="result-img"
-             *ngIf="displayImage"
-             [src]="displayImage"
-             [alt]="matchedCard.name">
+        <img
+          class="result-img"
+          *ngIf="displayImage"
+          [src]="displayImage"
+          [alt]="matchedCard.name"
+        />
         <div class="result-info">
-          <p class="result-detected">Identified: <em>"{{ detectedName }}"</em></p>
+          <p class="result-detected">
+            Identified: <em>"{{ detectedName }}"</em>
+          </p>
           <div class="result-name-row">
             <span class="result-name">{{ matchedCard.name }}</span>
             <app-mana-cost [cost]="matchedCard.manaCost" class="result-mana"></app-mana-cost>
@@ -71,16 +74,15 @@
           </div>
           <p class="result-pt" *ngIf="ptLine">{{ ptLine }}</p>
           <p class="result-set" *ngIf="displaySetCode">
-            {{ displaySetCode | uppercase }}<span *ngIf="displaySetName"> — {{ displaySetName }}</span>
+            {{ displaySetCode | uppercase
+            }}<span *ngIf="displaySetName"> — {{ displaySetName }}</span>
           </p>
         </div>
       </div>
 
       <!-- Printing picker -->
       <div class="printing-section">
-        <p class="printing-label">
-          <i class="bi bi-layers"></i> Select your printing:
-        </p>
+        <p class="printing-label"><i class="bi bi-layers"></i> Select your printing:</p>
         <div class="printing-loading" *ngIf="printingsLoading">
           <i class="bi bi-hourglass-split"></i> Loading printings…
         </div>
@@ -90,9 +92,13 @@
             class="printing-thumb"
             [class.selected]="selectedPrinting === p"
             (click)="selectPrinting(p)"
-            [title]="(p.setName || p.setCode) + (p.collectorNumber ? ' #' + p.collectorNumber : '')">
-            <img *ngIf="p.imageUriSmall" [src]="p.imageUriSmall" [alt]="p.setCode">
-            <span class="printing-set">{{ p.setCode | uppercase }}</span>
+            [title]="(p.setName || p.setCode) + (p.collectorNumber ? ' #' + p.collectorNumber : '')"
+          >
+            <img *ngIf="p.imageUriSmall" [src]="p.imageUriSmall" [alt]="p.setCode" />
+            <span class="printing-set">
+              <app-set-icon [setCode]="p.setCode" [setName]="p.setName"></app-set-icon>
+              {{ p.setCode | uppercase }}
+            </span>
           </button>
         </div>
       </div>

@@ -1,8 +1,6 @@
 <div class="search-shell">
-
   <!-- Header: logo + search + filters + sets -->
   <div class="search-header">
-
     <div class="search-logo">
       <span class="logo-diamond">&#9670;</span>
       <span class="logo-text">MTG Engine</span>
@@ -11,8 +9,16 @@
     <!-- Search bar -->
     <div class="search-bar-wrap">
       <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
-        <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6" />
+        <line
+          x1="12.5"
+          y1="12.5"
+          x2="17"
+          y2="17"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
       </svg>
       <input
         class="search-input"
@@ -23,16 +29,38 @@
         spellcheck="false"
       />
       <div class="search-flags">
-        <button class="search-flag-btn" [class.is-active]="matchCase" (click)="toggleMatchCase()" title="Match case">Aa</button>
-        <button class="search-flag-btn" [class.is-active]="matchWord" (click)="toggleMatchWord()" title="Match whole word">\b</button>
-        <button class="search-flag-btn" [class.is-active]="useRegex"  (click)="toggleUseRegex()"  title="Use regular expression">.*</button>
+        <button
+          class="search-flag-btn"
+          [class.is-active]="matchCase"
+          (click)="toggleMatchCase()"
+          title="Match case"
+        >
+          Aa
+        </button>
+        <button
+          class="search-flag-btn"
+          [class.is-active]="matchWord"
+          (click)="toggleMatchWord()"
+          title="Match whole word"
+        >
+          \b
+        </button>
+        <button
+          class="search-flag-btn"
+          [class.is-active]="useRegex"
+          (click)="toggleUseRegex()"
+          title="Use regular expression"
+        >
+          .*
+        </button>
       </div>
-      <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')">&#10005;</span>
+      <span class="search-clear" *ngIf="searchText.value" (click)="searchText.setValue('')"
+        >&#10005;</span
+      >
     </div>
 
     <!-- Filter row -->
     <div class="filter-row">
-
       <!-- Color pips -->
       <div class="filter-group">
         <button
@@ -42,7 +70,9 @@
           [class.is-active]="selectedColors.has(c.code)"
           (click)="toggleColor(c.code)"
           [title]="c.title"
-        >{{ c.label }}</button>
+        >
+          {{ c.label }}
+        </button>
       </div>
 
       <span class="filter-divider"></span>
@@ -54,7 +84,9 @@
           *ngFor="let t of typeOptions"
           [class.is-active]="selectedTypes.has(t)"
           (click)="toggleType(t)"
-        >{{ t }}</button>
+        >
+          {{ t }}
+        </button>
       </div>
 
       <span class="filter-divider"></span>
@@ -67,7 +99,9 @@
           [ngClass]="'rarity-' + r.code"
           [class.is-active]="selectedRarities.has(r.code)"
           (click)="toggleRarity(r.code)"
-        >{{ r.label }}</button>
+        >
+          {{ r.label }}
+        </button>
       </div>
 
       <span class="filter-divider"></span>
@@ -80,7 +114,9 @@
           *ngFor="let opt of cmcOptions"
           [class.is-active]="selectedCmc === opt"
           (click)="toggleCmc(opt)"
-        >{{ opt }}</button>
+        >
+          {{ opt }}
+        </button>
       </div>
 
       <span class="filter-divider"></span>
@@ -88,9 +124,17 @@
       <!-- Sort -->
       <div class="filter-group">
         <span class="filter-label">Sort</span>
-        <button class="sort-btn" [class.is-active]="sortBy === 'name'" (click)="setSortBy('name')">Name</button>
-        <button class="sort-btn" [class.is-active]="sortBy === 'cmc'"  (click)="setSortBy('cmc')">CMC</button>
-        <button class="sort-dir-btn" (click)="toggleSortDir()" [title]="sortDir === 'asc' ? 'Ascending' : 'Descending'">
+        <button class="sort-btn" [class.is-active]="sortBy === 'name'" (click)="setSortBy('name')">
+          Name
+        </button>
+        <button class="sort-btn" [class.is-active]="sortBy === 'cmc'" (click)="setSortBy('cmc')">
+          CMC
+        </button>
+        <button
+          class="sort-dir-btn"
+          (click)="toggleSortDir()"
+          [title]="sortDir === 'asc' ? 'Ascending' : 'Descending'"
+        >
           {{ sortDir === 'asc' ? '▲' : '▼' }}
         </button>
       </div>
@@ -109,7 +153,14 @@
           </span>
           <span class="set-trigger-arrow"><i class="bi bi-chevron-down"></i></span>
         </button>
-        <button class="set-clear-btn" *ngIf="activeSet" (click)="clearSet()" title="Clear set filter"><i class="bi bi-x"></i></button>
+        <button
+          class="set-clear-btn"
+          *ngIf="activeSet"
+          (click)="clearSet()"
+          title="Clear set filter"
+        >
+          <i class="bi bi-x"></i>
+        </button>
 
         <div class="set-dropdown" *ngIf="setDropOpen">
           <div class="set-search-wrap">
@@ -133,17 +184,17 @@
               <span class="set-opt-name">{{ s.name }}</span>
               <span class="set-opt-count">{{ s.cardCount }}</span>
             </div>
-            <div class="set-no-results" *ngIf="filteredSets.length === 0">No sets match "{{ setQuery }}"</div>
+            <div class="set-no-results" *ngIf="filteredSets.length === 0">
+              No sets match "{{ setQuery }}"
+            </div>
           </div>
         </div>
       </div>
 
       <button class="clear-btn" *ngIf="hasFilters" (click)="clearFilters()">&#10005; Clear</button>
-
     </div>
 
     <p class="search-hint">Type at least 2 characters · filters combine automatically</p>
-
   </div>
 
   <!-- Loading -->
@@ -159,10 +210,10 @@
 
   <!-- Scrollable results area -->
   <div class="results-scroll" *ngIf="results.length > 0">
-
     <!-- Results count -->
     <div class="results-count">
-      {{ results.length }} result{{ results.length !== 1 ? 's' : '' }}<span *ngIf="hasMore"> so far</span>
+      {{ results.length }} result{{ results.length !== 1 ? 's' : ''
+      }}<span *ngIf="hasMore"> so far</span>
     </div>
 
     <!-- Card grid -->
@@ -196,7 +247,10 @@
           class="card-flip-btn"
           [class.is-flipped]="flippedIds.has(card.cardId)"
           (click)="toggleFlip(card, $event)"
-          title="Flip card">⟲</button>
+          title="Flip card"
+        >
+          ⟲
+        </button>
       </div>
     </div>
 
@@ -207,7 +261,6 @@
         <span *ngIf="loadingMore">Loading…</span>
       </button>
     </div>
-
   </div>
 
   <!-- Idle state -->
@@ -221,7 +274,6 @@
     </div>
     <p class="idle-text">Search across thousands of Magic: The Gathering cards</p>
   </div>
-
 </div>
 
 <!-- Card detail modal -->

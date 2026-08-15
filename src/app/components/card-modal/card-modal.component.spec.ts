@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
 import { CardModalComponent } from './card-modal.component';
-import { CardType, PrintingDto } from '../../models/game.models';
+import { CardType, CollectionCardDto, PrintingDto } from '../../models/game.models';
 import { GameApiService } from '../../services/game-api.service';
 import { makeCard } from '../../testing/test-factories';
 
@@ -29,8 +29,12 @@ describe('CardModalComponent', () => {
   let fixture: ComponentFixture<CardModalComponent>;
 
   beforeEach(async () => {
-    const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', ['getCardRulings']);
+    const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
+      'getCardRulings',
+      'getPriceHistory',
+    ]);
     gameApi.getCardRulings.and.returnValue(of([]));
+    gameApi.getPriceHistory.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [CardModalComponent],
@@ -317,6 +321,122 @@ describe('CardModalComponent', () => {
 
     expect(component.viewedScryfallId).toBe('s1');
     expect(component.viewedScryfallIdChange.emit).not.toHaveBeenCalled();
+  });
+
+  // ---- prices ----------------------------------------
+
+  const prices = (
+    usd: number | null,
+    usdFoil: number | null = null,
+    tcgplayerId: number | null = null,
+  ) => ({
+    usd,
+    usdFoil,
+    usdEtched: null,
+    eur: null,
+    eurFoil: null,
+    tix: null,
+    tcgplayerId,
+    cardmarketId: null,
+    mtgoId: null,
+  });
+
+  // ---- price movement since add ----------------------------------
+
+  const owned = (overrides: Partial<CollectionCardDto> = {}): CollectionCardDto => ({
+    id: 'entry-1',
+    oracleId: 'oracle-1',
+    scryfallId: 's1',
+    quantity: 1,
+    quantityFoil: 0,
+    notes: null,
+    addedAt: '2026-01-05T14:30:00Z',
+    priceUsdAtAdd: 2,
+    cardDetails: null,
+    ...overrides,
+  });
+
+  function withCurrentUsd(usd: number): void {
+    component.printings = [makePrinting({ scryfallId: 's1', prices: prices(usd) })];
+    component.viewedScryfallId = 's1';
+  }
+
+  it('priceDelta reports a gain when the price has risen since the card was added', () => {
+    component.ownedEntry = owned({ priceUsdAtAdd: 2 });
+    withCurrentUsd(3);
+
+    const d = component.priceDelta!;
+    expect(d.direction).toBe('up');
+    expect(d.diff).toBe(1);
+    expect(d.percent).toBe(50);
+  });
+
+  it('priceDelta reports a loss when the price has fallen', () => {
+    component.ownedEntry = owned({ priceUsdAtAdd: 4 });
+    withCurrentUsd(3);
+
+    const d = component.priceDelta!;
+    expect(d.direction).toBe('down');
+    expect(d.diff).toBe(-1);
+  });
+
+  it('priceDelta is flat when the price has not moved', () => {
+    component.ownedEntry = owned({ priceUsdAtAdd: 3 });
+    withCurrentUsd(3);
+    expect(component.priceDelta!.direction).toBe('flat');
+  });
+
+  it('priceDelta is null without an owned entry or an add-time price', () => {
+    withCurrentUsd(3);
+    component.ownedEntry = null;
+    expect(component.priceDelta).toBeNull();
+
+    component.ownedEntry = owned({ priceUsdAtAdd: null });
+    expect(component.priceDelta).toBeNull();
+  });
+
+  it('priceDelta omits a percentage when the add-time price was zero', () => {
+    component.ownedEntry = owned({ priceUsdAtAdd: 0 });
+    withCurrentUsd(3);
+
+    const d = component.priceDelta!;
+    expect(d.percent).toBeNull();
+    expect(d.direction).toBe('up');
+  });
+
+  it('currentPrices returns the viewed printing prices', () => {
+    component.card = makeCard({ prices: prices(9.99) });
+    component.printings = [makePrinting({ scryfallId: 's1', prices: prices(1.55) })];
+    component.viewedScryfallId = 's1';
+    expect(component.currentPrices?.usd).toBe(1.55);
+  });
+
+  it('currentPrices falls back to the base card when no printing is viewed', () => {
+    component.card = makeCard({ prices: prices(9.99) });
+    component.printings = [];
+    component.viewedScryfallId = null;
+    expect(component.currentPrices?.usd).toBe(9.99);
+  });
+
+  it('currentPrices is null when neither printing nor card has price data', () => {
+    component.card = makeCard();
+    component.printings = [makePrinting({ scryfallId: 's1' })];
+    component.viewedScryfallId = 's1';
+    expect(component.currentPrices).toBeNull();
+  });
+
+  it('changing card snaps the info tab back to details', () => {
+    component.infoTab = 'prices';
+    component.card = makeCard({ oracleId: 'other-oracle' });
+    component.ngOnChanges({
+      card: {
+        currentValue: component.card,
+        previousValue: null,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.infoTab).toBe('details');
   });
 
   // ---- carousel ----------------------------------------

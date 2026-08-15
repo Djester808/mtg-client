@@ -1,13 +1,27 @@
 <div class="flex items-center justify-center h-full bg-void">
-  <div class="w-full max-w-[400px] px-10 py-12 bg-surface border border-solid border-dim rounded-2xl animate-fade-up">
-    <div class="text-[28px] text-gold text-center mb-5 drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]">&#9670;</div>
-    <h1 class="font-display text-[28px] font-bold tracking-[0.1em] uppercase text-parchment text-center mb-2">Create Account</h1>
+  <div
+    class="w-full max-w-[400px] px-10 py-12 bg-surface border border-solid border-dim rounded-2xl animate-fade-up"
+  >
+    <div class="text-[28px] text-gold text-center mb-5 drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]">
+      &#9670;
+    </div>
+    <h1
+      class="font-display text-[28px] font-bold tracking-[0.1em] uppercase text-parchment text-center mb-2"
+    >
+      Create Account
+    </h1>
     <p class="text-[13px] text-parchment-muted text-center mb-8">Join MTG Engine</p>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form flex flex-col gap-5">
       <div class="flex flex-col gap-1.5">
-        <label class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted" for="username">
-          Username <span class="font-body font-normal normal-case tracking-normal text-parchment-faint">(min 3 characters)</span>
+        <label
+          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          for="username"
+        >
+          Username
+          <span class="font-body font-normal normal-case tracking-normal text-parchment-faint"
+            >(min 3 characters)</span
+          >
         </label>
         <input
           id="username"
@@ -20,7 +34,11 @@
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted" for="email">Email</label>
+        <label
+          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          for="email"
+          >Email</label
+        >
         <input
           id="email"
           class="field-input"
@@ -32,8 +50,14 @@
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted" for="password">
-          Password <span class="font-body font-normal normal-case tracking-normal text-parchment-faint">(min 6 characters)</span>
+        <label
+          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          for="password"
+        >
+          Password
+          <span class="font-body font-normal normal-case tracking-normal text-parchment-faint"
+            >(min 6 characters)</span
+          >
         </label>
         <input
           id="password"
@@ -45,7 +69,12 @@
         />
       </div>
 
-      <p class="auth-error text-[13px] text-[#e74c3c] text-center m-0" *ngIf="error$ | async as error">{{ error }}</p>
+      <p
+        class="auth-error text-[13px] text-[#e74c3c] text-center m-0"
+        *ngIf="error$ | async as error"
+      >
+        {{ error }}
+      </p>
 
       <button
         class="btn-gold submit-btn mt-1"
@@ -58,7 +87,8 @@
     </form>
 
     <p class="auth-link text-[13px] text-parchment-muted text-center mt-6">
-      Already have an account? <a routerLink="/login" class="text-gold no-underline hover:underline">Sign in</a>
+      Already have an account?
+      <a routerLink="/login" class="text-gold no-underline hover:underline">Sign in</a>
     </p>
   </div>
 </div>

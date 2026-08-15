@@ -29,7 +29,9 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  i { color: var(--gold); }
+  i {
+    color: var(--gold);
+  }
 }
 
 .sugg-close {
@@ -40,7 +42,10 @@
   padding: 4px;
   font-size: 14px;
   border-radius: 4px;
-  &:hover { color: var(--text-primary); background: var(--bg-raised); }
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-raised);
+  }
 }
 
 // ---- Commander bar ------------------------------------------------
@@ -98,8 +103,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: filter 0.15s;
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 // ---- Fine-tuning tags ---------------------------------------------
@@ -131,7 +141,9 @@
   border: 1px solid var(--border-subtle);
   color: var(--text-dim);
 
-  i { font-size: 9px; }
+  i {
+    font-size: 9px;
+  }
 
   &--focus {
     background: color-mix(in srgb, var(--gold) 12%, transparent);
@@ -150,7 +162,9 @@
   line-height: 1;
   opacity: 0.7;
   font-size: 10px;
-  &:hover { opacity: 1; }
+  &:hover {
+    opacity: 1;
+  }
 }
 
 .sugg-tag-input {
@@ -162,8 +176,12 @@
   padding: 2px 8px;
   outline: none;
   width: 60px;
-  transition: border-color 0.15s, width 0.2s;
-  &::placeholder { color: var(--text-dim); }
+  transition:
+    border-color 0.15s,
+    width 0.2s;
+  &::placeholder {
+    color: var(--text-dim);
+  }
   &:focus {
     border-color: var(--gold-dim);
     color: var(--text-primary);
@@ -236,12 +254,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.45),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
   transform: translateX(-100%);
   animation: stage-sheen 1.5s ease-in-out infinite;
 }
@@ -366,7 +379,6 @@
   }
 }
 
-
 .sugg-error {
   padding: 20px 16px;
   color: #f87171;
@@ -434,7 +446,9 @@
   z-index: 1;
   border-bottom: 1px solid var(--border-subtle);
 
-  i { font-size: 13px; }
+  i {
+    font-size: 13px;
+  }
 }
 
 // ---- "Show more" per section --------------------------------------
@@ -462,7 +476,9 @@
     border-color: var(--text-secondary);
   }
 
-  i { font-size: 15px; }
+  i {
+    font-size: 15px;
+  }
 }
 
 // The pool a "show more" opens is not settled while the lists are still being thought through,
@@ -581,7 +597,9 @@
   font-size: 13px;
   padding: 2px 4px;
 
-  &:hover { color: var(--text-primary); }
+  &:hover {
+    color: var(--text-primary);
+  }
 }
 
 // Styling lives in app-search-input; this only positions it.
@@ -596,11 +614,15 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 
-  .sugg-card { cursor: pointer; }
+  .sugg-card {
+    cursor: pointer;
+  }
 }
 
 .sugg-set-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: 6px;
   padding: 0 4px;
   border: 1px solid var(--border-subtle);
@@ -661,7 +683,9 @@
   cursor: pointer;
   white-space: nowrap;
 
-  &:hover { color: var(--text-primary); }
+  &:hover {
+    color: var(--text-primary);
+  }
 
   &.is-active {
     background: color-mix(in srgb, var(--gold, #c9a84c) 18%, transparent);
@@ -671,21 +695,30 @@
 
   // Disabled only while a reorder/filter fetch is in flight, so a second switch can't race the
   // first. The loading indicator itself lives on the panel (.sugg-more-loadbar), not here.
-  &:disabled { cursor: default; opacity: 0.7; }
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
 }
 
-.sugg-chip--cmc { min-width: 26px; }
+.sugg-chip--cmc {
+  min-width: 26px;
+}
 
 .sugg-chip--clear {
   margin-left: auto;
-  i { font-size: 10px; }
+  i {
+    font-size: 10px;
+  }
 }
 
 // Skeleton rows while the first page is in flight.
 .sugg-card--skeleton {
   pointer-events: none;
 
-  .sugg-card-body { gap: 6px; }
+  .sugg-card-body {
+    gap: 6px;
+  }
 }
 
 .sk-line {
@@ -701,9 +734,17 @@
   animation: art-shimmer 1.1s ease-in-out infinite;
 }
 
-.sk-line--title { width: 45%; }
-.sk-line--type { width: 30%; height: 7px; }
-.sk-line--text { width: 80%; height: 7px; }
+.sk-line--title {
+  width: 45%;
+}
+.sk-line--type {
+  width: 30%;
+  height: 7px;
+}
+.sk-line--text {
+  width: 80%;
+  height: 7px;
+}
 
 .sugg-cat-count {
   margin-left: auto;
@@ -778,12 +819,18 @@
   background-size: 300% 100%;
   animation: art-shimmer 1.1s ease-in-out infinite;
 
-  .sugg-card-art { opacity: 0; }
+  .sugg-card-art {
+    opacity: 0;
+  }
 }
 
 @keyframes art-shimmer {
-  from { background-position: 150% 0; }
-  to { background-position: -50% 0; }
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
 }
 
 .sugg-card-art {
@@ -814,8 +861,15 @@
 }
 
 @keyframes score-pulse {
-  0%, 100% { opacity: 0.25; transform: scale(0.8); }
-  50% { opacity: 0.8; transform: scale(1.1); }
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
 }
 
 .sugg-art-placeholder {
@@ -925,14 +979,21 @@
   font-weight: 600;
   cursor: pointer;
   transition: filter 0.15s;
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
   &--remove {
     background: rgba(248, 113, 113, 0.15);
     color: #f87171;
     border: 1px solid rgba(248, 113, 113, 0.4);
-    &:hover { filter: brightness(1.2); }
+    &:hover {
+      filter: brightness(1.2);
+    }
   }
 
   // Confirmation shown while the modal fades out after Add/Remove — settles on the same
@@ -942,7 +1003,10 @@
     color: #4ade80;
     border: 1px solid rgba(74, 222, 128, 0.5);
     animation: confirm-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    &:disabled { opacity: 1; cursor: default; }
+    &:disabled {
+      opacity: 1;
+      cursor: default;
+    }
   }
 
   &--confirm-remove {
@@ -953,6 +1017,10 @@
 }
 
 @keyframes confirm-pop {
-  from { transform: scale(0.88); }
-  to { transform: scale(1); }
+  from {
+    transform: scale(0.88);
+  }
+  to {
+    transform: scale(1);
+  }
 }

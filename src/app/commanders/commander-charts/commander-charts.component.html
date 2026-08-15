@@ -1,24 +1,32 @@
 <div class="charts-section">
-
   <div class="charts-section-header">
-    <h2 class="charts-section-title">
-      <i class="bi bi-bar-chart-line-fill"></i> Insights
-    </h2>
+    <h2 class="charts-section-title"><i class="bi bi-bar-chart-line-fill"></i> Insights</h2>
   </div>
 
   <!-- ── Row 1: Mana Curve + Type Distribution ── -->
   <div class="charts-row" *ngIf="cards.length > 0">
-
     <!-- Mana Curve -->
     <div class="chart-card">
       <div class="chart-header">
         <h3 class="chart-title"><i class="bi bi-bar-chart-fill"></i> Mana Curve</h3>
-        <span class="chart-sub">Avg MV: <strong>{{ avgManaValue() }}</strong></span>
+        <span class="chart-sub"
+          >Avg MV: <strong>{{ avgManaValue() }}</strong></span
+        >
         <div class="chart-toggles">
-          <button class="chart-toggle" [class.active]="curveMode === 'bar-v'" (click)="setCurveMode('bar-v')" title="Vertical bars">
+          <button
+            class="chart-toggle"
+            [class.active]="curveMode === 'bar-v'"
+            (click)="setCurveMode('bar-v')"
+            title="Vertical bars"
+          >
             <i class="bi bi-bar-chart-fill"></i>
           </button>
-          <button class="chart-toggle" [class.active]="curveMode === 'bar-h'" (click)="setCurveMode('bar-h')" title="Horizontal bars">
+          <button
+            class="chart-toggle"
+            [class.active]="curveMode === 'bar-h'"
+            (click)="setCurveMode('bar-h')"
+            title="Horizontal bars"
+          >
             <i class="bi bi-bar-chart-steps"></i>
           </button>
         </div>
@@ -56,10 +64,20 @@
         <h3 class="chart-title"><i class="bi bi-pie-chart-fill"></i> Card Types</h3>
         <span class="chart-sub">{{ cards.length }} cards</span>
         <div class="chart-toggles">
-          <button class="chart-toggle" [class.active]="typeMode === 'bar-h'" (click)="setTypeMode('bar-h')" title="Horizontal bars">
+          <button
+            class="chart-toggle"
+            [class.active]="typeMode === 'bar-h'"
+            (click)="setTypeMode('bar-h')"
+            title="Horizontal bars"
+          >
             <i class="bi bi-bar-chart-steps"></i>
           </button>
-          <button class="chart-toggle" [class.active]="typeMode === 'ring'" (click)="setTypeMode('ring')" title="Ring chart">
+          <button
+            class="chart-toggle"
+            [class.active]="typeMode === 'ring'"
+            (click)="setTypeMode('ring')"
+            title="Ring chart"
+          >
             <i class="bi bi-pie-chart-fill"></i>
           </button>
         </div>
@@ -70,10 +88,22 @@
         <div class="type-row" *ngFor="let d of typeDistData; let i = index">
           <div class="type-label">
             <span class="type-name">{{ d.name }}</span>
-            <span class="type-count">{{ d.value }} <span class="type-pct">({{ pct(d.value) }}%)</span></span>
+            <span class="type-count"
+              >{{ d.value }} <span class="type-pct">({{ pct(d.value) }}%)</span></span
+            >
           </div>
           <div class="type-bar-wrap">
-            <div class="type-bar-fill" [style.width]="barHeight(d.value, typeDistMax) + '%'" [style.background]="'linear-gradient(90deg, ' + typeColors[i % typeColors.length] + '55, ' + typeColors[i % typeColors.length] + ')'"></div>
+            <div
+              class="type-bar-fill"
+              [style.width]="barHeight(d.value, typeDistMax) + '%'"
+              [style.background]="
+                'linear-gradient(90deg, ' +
+                typeColors[i % typeColors.length] +
+                '55, ' +
+                typeColors[i % typeColors.length] +
+                ')'
+              "
+            ></div>
           </div>
         </div>
       </div>
@@ -90,7 +120,6 @@
         </div>
       </div>
     </div>
-
   </div>
 
   <!-- ── Popularity History ── -->
@@ -99,10 +128,20 @@
       <h3 class="chart-title"><i class="bi bi-graph-up"></i> Popularity History</h3>
       <span class="chart-sub">Decks published per month · last 12 months</span>
       <div class="chart-toggles">
-        <button class="chart-toggle" [class.active]="historyMode === 'bar-v'" (click)="setHistoryMode('bar-v')" title="Bar chart">
+        <button
+          class="chart-toggle"
+          [class.active]="historyMode === 'bar-v'"
+          (click)="setHistoryMode('bar-v')"
+          title="Bar chart"
+        >
           <i class="bi bi-bar-chart-fill"></i>
         </button>
-        <button class="chart-toggle" [class.active]="historyMode === 'area'" (click)="setHistoryMode('area')" title="Area chart">
+        <button
+          class="chart-toggle"
+          [class.active]="historyMode === 'area'"
+          (click)="setHistoryMode('area')"
+          title="Area chart"
+        >
           <i class="bi bi-graph-up-arrow"></i>
         </button>
       </div>
@@ -112,7 +151,11 @@
     <div class="history-chart" *ngIf="historyMode === 'bar-v'">
       <div class="history-bar-wrap" *ngFor="let p of history">
         <div class="history-bar-col">
-          <div class="history-bar-fill" [style.height]="barHeight(p.deckCount, historyMax) + '%'" [title]="p.month + ': ' + p.deckCount"></div>
+          <div
+            class="history-bar-fill"
+            [style.height]="barHeight(p.deckCount, historyMax) + '%'"
+            [title]="p.month + ': ' + p.deckCount"
+          ></div>
         </div>
         <div class="history-label">{{ shortMonth(p.month) }}</div>
       </div>
@@ -123,12 +166,18 @@
       <svg viewBox="0 0 100 84" preserveAspectRatio="none" class="area-svg">
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.35"/>
-            <stop offset="100%" stop-color="#c9a84c" stop-opacity="0.02"/>
+            <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.35" />
+            <stop offset="100%" stop-color="#c9a84c" stop-opacity="0.02" />
           </linearGradient>
         </defs>
         <path [attr.d]="historyAreaPath" fill="url(#areaGrad)" />
-        <path [attr.d]="historyLinePath" fill="none" stroke="#c9a84c" stroke-width="0.8" stroke-linejoin="round" />
+        <path
+          [attr.d]="historyLinePath"
+          fill="none"
+          stroke="#c9a84c"
+          stroke-width="0.8"
+          stroke-linejoin="round"
+        />
       </svg>
       <div class="area-labels">
         <span *ngFor="let p of history" class="area-label">{{ shortMonth(p.month) }}</span>
@@ -148,9 +197,19 @@
       <span class="chart-sub">Most shared cards with community decks</span>
     </div>
     <div class="similar-grid">
-      <a class="similar-card" *ngFor="let cmd of similar" [routerLink]="['/commanders', cmd.oracleId]">
+      <a
+        class="similar-card"
+        *ngFor="let cmd of similar"
+        [routerLink]="['/commanders', cmd.oracleId]"
+      >
         <div class="similar-img-wrap">
-          <img *ngIf="cmd.imageUri" [src]="cmd.imageUri" [alt]="cmd.name" class="similar-img" loading="lazy" />
+          <img
+            *ngIf="cmd.imageUri"
+            [src]="cmd.imageUri"
+            [alt]="cmd.name"
+            class="similar-img"
+            loading="lazy"
+          />
           <div class="similar-img-placeholder" *ngIf="!cmd.imageUri">{{ cmd.name[0] }}</div>
         </div>
         <div class="similar-info">
@@ -158,8 +217,11 @@
           <div class="similar-meta">
             <span class="similar-shared">{{ cmd.sharedCards }} shared</span>
             <div class="similar-pips">
-              <i class="ms ms-cost ms-shadow" *ngFor="let c of cmd.colorIdentity"
-                 [ngClass]="'ms-' + c.toLowerCase()"></i>
+              <i
+                class="ms ms-cost ms-shadow"
+                *ngFor="let c of cmd.colorIdentity"
+                [ngClass]="'ms-' + c.toLowerCase()"
+              ></i>
             </div>
           </div>
         </div>
@@ -171,5 +233,4 @@
     <div class="spinner"></div>
     <span>Finding similar commanders…</span>
   </div>
-
 </div>

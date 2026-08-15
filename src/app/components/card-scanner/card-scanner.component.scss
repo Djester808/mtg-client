@@ -51,9 +51,14 @@
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
-  &:hover { color: #e8e0ce; border-color: rgba(255, 255, 255, 0.25); }
+  &:hover {
+    color: #e8e0ce;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
 }
 
 // ── Body ──────────────────────────────────────────────────────────────────────
@@ -92,8 +97,12 @@
 
 .state-icon {
   font-size: 40px;
-  &.warn  { color: #c9a84c; }
-  &.error { color: #e05252; }
+  &.warn {
+    color: #c9a84c;
+  }
+  &.error {
+    color: #e05252;
+  }
 }
 
 // ── Video ─────────────────────────────────────────────────────────────────────
@@ -146,7 +155,9 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 
   &.detected {
     color: #7db87d;
@@ -157,7 +168,9 @@
     color: #c9a84c;
     border-color: rgba(201, 168, 76, 0.4);
 
-    i { animation: spin 1s linear infinite; }
+    i {
+      animation: spin 1s linear infinite;
+    }
   }
 }
 
@@ -179,7 +192,10 @@
   padding: 7px 14px;
   font-size: 12px;
 
-  &:disabled { opacity: 0.5; cursor: default; }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 }
 
 .scan-counter {
@@ -204,15 +220,22 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s, box-shadow 0.15s;
+  transition:
+    opacity 0.15s,
+    box-shadow 0.15s;
 
   &.primary {
     background: linear-gradient(135deg, #c9a84c, #a8862e);
     color: #1a1208;
     border: none;
 
-    &:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(201,168,76,0.4); }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &:hover:not(:disabled) {
+      box-shadow: 0 4px 16px rgba(201, 168, 76, 0.4);
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   &.secondary {
@@ -220,7 +243,10 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #a09070;
 
-    &:hover { border-color: rgba(255,255,255,0.3); color: #e8e0ce; }
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #e8e0ce;
+    }
   }
 }
 
@@ -230,7 +256,7 @@
   max-height: 80vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(200,160,80,0.3) transparent;
+  scrollbar-color: rgba(200, 160, 80, 0.3) transparent;
 }
 
 .result-row {
@@ -244,7 +270,7 @@
   width: 140px;
   border-radius: 8px;
   flex-shrink: 0;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .result-info {
@@ -258,7 +284,10 @@
   color: #6b6050;
   margin: 0 0 8px;
 
-  em { font-style: normal; color: #a09070; }
+  em {
+    font-style: normal;
+    color: #a09070;
+  }
 }
 
 .result-name-row {
@@ -295,12 +324,17 @@
   max-height: 120px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(200,160,80,0.3) transparent;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  scrollbar-color: rgba(200, 160, 80, 0.3) transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding: 6px 0;
 
-  p { margin: 0 0 4px; &:last-child { margin: 0; } }
+  p {
+    margin: 0 0 4px;
+    &:last-child {
+      margin: 0;
+    }
+  }
 }
 
 .result-pt {
@@ -347,7 +381,7 @@
   overflow-x: auto;
   padding-bottom: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(200,160,80,0.3) transparent;
+  scrollbar-color: rgba(200, 160, 80, 0.3) transparent;
 }
 
 .printing-thumb {
@@ -356,12 +390,14 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   padding: 3px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 
   img {
     width: 46px;
@@ -373,16 +409,19 @@
 
   &.selected {
     border-color: #c8a050;
-    background: rgba(200,160,80,0.12);
+    background: rgba(200, 160, 80, 0.12);
   }
 
   &:hover:not(.selected) {
-    border-color: rgba(200,160,80,0.5);
-    background: rgba(255,255,255,0.07);
+    border-color: rgba(200, 160, 80, 0.5);
+    background: rgba(255, 255, 255, 0.07);
   }
 }
 
 .printing-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 9px;
   color: #8a7860;
   letter-spacing: 0.05em;
@@ -394,5 +433,5 @@
   justify-content: flex-end;
   width: 100%;
   padding-top: 4px;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }

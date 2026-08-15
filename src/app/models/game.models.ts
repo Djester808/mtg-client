@@ -3,6 +3,7 @@ export * from './enums';
 export * from './collection.models';
 
 import { ManaColor, CardType } from './enums';
+import { CardPricesDto } from './collection.models';
 
 export interface RulingDto {
   source: string;
@@ -71,4 +72,6 @@ export interface CardDto {
   rarity: string | null;
   legalities: Record<string, string>;
   gameChanger: boolean;
+  /** Prices of the printing this card object reflects; optional for pre-prices literals. */
+  prices?: CardPricesDto | null;
 }

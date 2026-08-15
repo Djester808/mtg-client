@@ -45,7 +45,7 @@ describe('Deck card reorder (stack + list drag)', () => {
       const s = [...document.querySelectorAll('.visual-stack')]
         .sort((a,b) => b.querySelectorAll('.visual-card').length - a.querySelectorAll('.visual-card').length)[0];
       return s ? [...s.querySelectorAll('.visual-card')].map(c => {
-        const a = c.querySelector('.visual-art');
+        const a = c.querySelector('.ct-art');
         return (a ? getComputedStyle(a).backgroundImage : '').slice(30, 52);
       }) : [];
     `);

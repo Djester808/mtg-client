@@ -1,0 +1,160 @@
+// The chart renders on the modal's raised surface (#1c1c20) — the surface the two
+// series colours were validated against.
+:host {
+  display: block;
+  position: relative;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  // Matches the viewBox (620x220) so nothing is stretched: with a fixed height the
+  // container's aspect diverged from the viewBox and squashed the axis text.
+  aspect-ratio: 620 / 220;
+  max-height: 190px;
+  overflow: visible;
+  touch-action: none;
+  transition: opacity 0.15s;
+
+  // Refetch keeps the frame: the previous render stays put, dimmed.
+  &.is-loading {
+    opacity: 0.45;
+  }
+}
+
+.chart-grid line {
+  stroke: var(--border-dim);
+  stroke-width: 1;
+}
+
+.chart-axis-text text {
+  fill: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-crosshair {
+  stroke: var(--border-lit);
+  stroke-width: 1;
+}
+
+// 2px ring in the surface colour keeps a marker legible where it crosses a line.
+.chart-marker {
+  stroke: var(--bg-raised);
+  stroke-width: 2;
+}
+
+.chart-end-label text {
+  fill: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 5px 8px;
+  min-width: 96px;
+  z-index: 2;
+}
+
+.tooltip-date {
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tooltip-value {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.chart-note {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.chart-empty {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-dim);
+  padding: 10px 0;
+}
+
+.chart-table-wrap {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-raised);
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 3px 6px;
+  }
+
+  td {
+    padding: 3px 6px;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-dim);
+  }
+}

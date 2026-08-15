@@ -21,23 +21,26 @@ import { Observable, Subject, switchMap, takeUntil, of, catchError, map, filter,
 import { AppState } from '../../store';
 import { DeckActions } from '../../store/deck/deck.actions';
 import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selectors';
-import {
-  CollectionCardDto,
-  PrintingDto,
-  CardType,
-  ManaColor,
-  CardDto,
-} from '../../models/game.models';
+import { CollectionCardDto, PrintingDto, CardType, CardDto } from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
+import {
+  CardGridFilterService,
+  CardGroupMode,
+  CardSection,
+} from '../../services/card-grid-filter.service';
 import { DeckLegalityService } from '../deck-legality.service';
 import { DeckStatsService, DeckStats } from '../deck-stats.service';
 import { PrintingsService } from '../../services/printings.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
+import { CollectionApiService } from '../../services/collection-api.service';
 import {
   buildTypeLine,
   colorIdentityViolations as identityViolations,
 } from '../../utils/card.utils';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
+import { CardFilters } from '../../models/card-filters';
+import { CardGridFiltersComponent } from '../../components/card-grid-filters/card-grid-filters.component';
+import { CardTileComponent } from '../../components/card-tile/card-tile.component';
 import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
@@ -53,17 +56,6 @@ import {
 import { ForumActions } from '../../store/forum/forum.actions';
 import { selectForumPublishLoading } from '../../store/forum/forum.selectors';
 
-export type SortMode =
-  | 'cmc'
-  | 'name'
-  | 'type'
-  | 'subtype'
-  | 'color'
-  | 'color-identity'
-  | 'rarity'
-  | 'artist'
-  | 'set'
-  | 'creature-split';
 export type ViewMode = 'list' | 'visual' | 'free';
 
 export interface FreeColumn {
@@ -89,13 +81,6 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
   );
 }
 
-export interface CmcGroup {
-  label: string;
-  key: string;
-  cards: CollectionCardDto[];
-  totalCount: number;
-}
-
 @Component({
   selector: 'app-deck-detail',
   standalone: true,
@@ -111,6 +96,8 @@ export interface CmcGroup {
     ManaSuggestPanelComponent,
     StatsChartComponent,
     SelectMenuComponent,
+    CardGridFiltersComponent,
+    CardTileComponent,
     OracleSymbolsPipe,
   ],
   templateUrl: './deck-detail.component.html',
@@ -122,10 +109,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   loading$: Observable<boolean>;
   commanderCardDetails$: Observable<CardDto | null>;
 
-  filterQuery = '';
+  /**
+   * The filter vocabulary, shared with the collection grid and the search panel — see
+   * models/card-filters.ts. This grid only offers the name box; the facet chips are the
+   * same object's fields, unused here rather than absent.
+   */
+  readonly filters = new CardFilters();
   filterCardNames: string[] = [];
-  filterSuggOpen = false;
-  sortMode: SortMode = 'cmc';
+  sortMode: CardGroupMode = 'cmc';
 
   readonly sortModeOptions: SelectMenuOption[] = [
     { value: 'cmc', label: 'CMC' },
@@ -140,35 +131,27 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     { value: 'set', label: 'Set' },
   ];
 
-  /** Card-name suggestions for the filter box, narrowed by the current query. */
+  private suggMemo: { pool: string[]; query: string; value: string[] } | null = null;
+
+  /**
+   * Card-name suggestions for the filter box, narrowed by the current query. Memoized:
+   * the bar binds it, so it runs on every change-detection pass.
+   */
   get filterSuggestions(): string[] {
-    const q = this.filterQuery.trim().toLowerCase();
-    const pool = q
-      ? this.filterCardNames.filter((n) => n.toLowerCase().includes(q))
-      : this.filterCardNames;
-    return pool.slice(0, 8);
+    const pool = this.filterCardNames;
+    const query = this.filters.query;
+    const m = this.suggMemo;
+    if (m && m.pool === pool && m.query === query) return m.value;
+
+    const q = query.trim().toLowerCase();
+    const value = (q ? pool.filter((n) => n.toLowerCase().includes(q)) : pool).slice(0, 8);
+    this.suggMemo = { pool, query, value };
+    return value;
   }
 
-  selectFilterSuggestion(name: string): void {
-    this.filterQuery = name;
-    this.filterSuggOpen = false;
+  /** The bar mutated `filters` in place — OnPush needs the explicit mark. */
+  onFiltersChanged(): void {
     this.cdr.markForCheck();
-  }
-
-  pickFirstFilterSuggestion(): void {
-    if (this.filterSuggOpen && this.filterSuggestions.length > 0 && this.filterQuery.trim()) {
-      this.selectFilterSuggestion(this.filterSuggestions[0]);
-    } else {
-      this.filterSuggOpen = false;
-    }
-  }
-
-  /** Delayed so a mousedown on a suggestion wins the race against the input's blur. */
-  closeFilterSuggSoon(): void {
-    setTimeout(() => {
-      this.filterSuggOpen = false;
-      this.cdr.markForCheck();
-    }, 120);
   }
 
   // ---- Tag input suggestions -----------------------------------
@@ -279,7 +262,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   private edgeScrollSpeed = 0;
 
   private pendingNavigation: (() => void) | null = null;
-  private pendingSortMode: SortMode | null = null;
+  private pendingSortMode: CardGroupMode | null = null;
   private pendingSortDeck: DeckDetailDto | null = null;
 
   resizingColId: string | null = null;
@@ -326,6 +309,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     private zone: NgZone,
     private legality: DeckLegalityService,
     private stats: DeckStatsService,
+    private gridFilter: CardGridFilterService,
+    private collectionApi: CollectionApiService,
   ) {
     this.deck$ = this.store.select(selectActiveDeck);
     this.loading$ = this.store.select(selectDeckLoading);
@@ -353,6 +338,21 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       });
     const savedZoom = localStorage.getItem('deck-zoom');
     if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(3.0, parseFloat(savedZoom) || 1.0));
+
+    // Which of these cards you actually have. One call for the whole page: the answer is
+    // a set of ids, not per-card lookups, and it does not change while you edit a deck.
+    this.collectionApi
+      .getOwnedOracleIds()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (ids) => {
+          this.ownedOracleIds = new Set(ids);
+          this.cdr.markForCheck();
+        },
+        // Ownership is decoration: if it cannot be fetched, every card simply reads as
+        // owned rather than the page failing.
+        error: () => undefined,
+      });
 
     // Swap mode keeps the search browser as the board; the search panel must be open
     // from the start or the restored layout would show an empty board area.
@@ -448,7 +448,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   // ---- Sort & filter ----------------------------------------
 
-  setSortMode(mode: SortMode, deck?: DeckDetailDto): void {
+  setSortMode(mode: CardGroupMode, deck?: DeckDetailDto): void {
     if (this.viewMode === 'free' && deck && mode !== this.sortMode) {
       this.pendingSortMode = mode;
       this.pendingSortDeck = deck;
@@ -563,14 +563,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   // ---- Free mode layout ------------------------------------
 
   private rebuildFreeColumns(deck: DeckDetailDto): void {
-    const prevFilter = this.filterQuery;
-    this.filterQuery = '';
+    const prevFilter = this.filters.query;
+    this.filters.query = '';
     this.freeColumns = this.getGroups(deck).map((g) => ({
       id: crypto.randomUUID(),
       label: g.label,
       cardIds: g.cards.flatMap((c) => Array(this.cardCount(c)).fill(c.id)),
     }));
-    this.filterQuery = prevFilter;
+    this.filters.query = prevFilter;
   }
 
   private enterFreeMode(deck: DeckDetailDto): void {
@@ -1025,7 +1025,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     startX: number,
     startY: number,
   ): { ghost: HTMLElement; grabOffsetX: number; grabOffsetY: number } {
-    const artEl = cardEl.querySelector<HTMLElement>('.visual-art, .card-thumb');
+    const artEl = cardEl.querySelector<HTMLElement>('.ct-art, .card-thumb');
     const ghost = document.createElement('div');
     ghost.style.position = 'fixed';
     ghost.style.left = '0';
@@ -1176,7 +1176,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         const r = cardEl.getBoundingClientRect();
         grabOffsetX = startX - r.left;
         grabOffsetY = startY - r.top;
-        const visualArt = cardEl.querySelector<HTMLElement>('.visual-art');
+        const visualArt = cardEl.querySelector<HTMLElement>('.ct-art');
         const bgImg = visualArt?.style.backgroundImage || '';
         ghost = document.createElement('div');
         ghost.style.position = 'fixed';
@@ -1662,331 +1662,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     return card.quantity + card.quantityFoil;
   }
 
-  private isLand(card: CollectionCardDto): boolean {
-    return card.cardDetails?.cardTypes?.includes(CardType.Land) ?? false;
+  /**
+   * Oracle ids the user owns a copy of, from their collections. Empty until the call
+   * lands (and if it fails), which reads as "everything owned" — the safe default for a
+   * decoration: it never accuses you of missing a card you have.
+   */
+  private ownedOracleIds = new Set<string>();
+
+  /** True for a card in this deck that no collection of yours holds a copy of. */
+  isUnowned(card: CollectionCardDto): boolean {
+    return this.ownedOracleIds.size > 0 && !this.ownedOracleIds.has(card.oracleId);
   }
 
-  // Memoized on (deck, sortMode, board, filter). getGroups is bound in the template and
-  // rebuilds the whole group/sort/reduce chain; without this it re-ran on every
-  // change-detection pass even when nothing that affects grouping had changed.
-  private groupsMemo: {
-    deck: DeckDetailDto;
-    sortMode: SortMode;
-    board: string;
-    query: string;
-    result: CmcGroup[];
-  } | null = null;
-
-  getGroups(deck: DeckDetailDto): CmcGroup[] {
-    const m = this.groupsMemo;
-    if (
-      m &&
-      m.deck === deck &&
-      m.sortMode === this.sortMode &&
-      m.board === this.activeBoard &&
-      m.query === this.filterQuery
-    )
-      return m.result;
-    const result = this.computeGroups(deck);
-    this.groupsMemo = {
-      deck,
-      sortMode: this.sortMode,
-      board: this.activeBoard,
-      query: this.filterQuery,
-      result,
-    };
-    return result;
-  }
-
-  private computeGroups(deck: DeckDetailDto): CmcGroup[] {
-    const filtered = this.filteredCards(deck);
-
-    if (this.sortMode === 'name') {
-      const sorted = [...filtered].sort((a, b) =>
-        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-      );
-      return [
-        {
-          label: 'All Cards',
-          key: 'all',
-          cards: sorted,
-          totalCount: sorted.reduce((s, c) => s + this.cardCount(c), 0),
-        },
-      ];
-    }
-
-    if (this.sortMode === 'type') {
-      const order: CardType[] = [
-        CardType.Creature,
-        CardType.Planeswalker,
-        CardType.Instant,
-        CardType.Sorcery,
-        CardType.Enchantment,
-        CardType.Artifact,
-        CardType.Land,
-      ];
-      const groups: CmcGroup[] = [];
-      for (const type of order) {
-        const cards = filtered
-          .filter((c) => c.cardDetails?.cardTypes?.includes(type))
-          .sort(
-            (a, b) =>
-              (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
-              (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-          );
-        if (cards.length)
-          groups.push({
-            label: CardType[type] + 's',
-            key: `type-${type}`,
-            cards,
-            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-          });
-      }
-      const typed = new Set(groups.flatMap((g) => g.cards.map((c) => c.id)));
-      const rest = filtered.filter((c) => !typed.has(c.id));
-      if (rest.length)
-        groups.push({
-          label: 'Other',
-          key: 'type-other',
-          cards: rest,
-          totalCount: rest.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      return groups;
-    }
-
-    if (this.sortMode === 'subtype') {
-      const bySubtype = new Map<string, CollectionCardDto[]>();
-      for (const c of filtered) {
-        const key = c.cardDetails?.subtypes?.[0] ?? 'Other';
-        if (!bySubtype.has(key)) bySubtype.set(key, []);
-        bySubtype.get(key)!.push(c);
-      }
-      const keys = [...bySubtype.keys()].sort((a, b) =>
-        a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b),
-      );
-      return keys.map((key) => {
-        const cards = bySubtype.get(key)!;
-        return {
-          label: key,
-          key: `subtype-${key}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        };
-      });
-    }
-
-    if (this.sortMode === 'color') {
-      const colorOrder = ['White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor', 'Colorless'];
-      const byColor = new Map<string, CollectionCardDto[]>();
-      for (const label of colorOrder) byColor.set(label, []);
-      for (const c of filtered) {
-        const mc = c.cardDetails?.manaCost ?? '';
-        const colors = new Set([...mc].filter((ch) => 'WUBRG'.includes(ch)));
-        const label =
-          colors.size === 0
-            ? 'Colorless'
-            : colors.size > 1
-              ? 'Multicolor'
-              : colors.has('W')
-                ? 'White'
-                : colors.has('U')
-                  ? 'Blue'
-                  : colors.has('B')
-                    ? 'Black'
-                    : colors.has('R')
-                      ? 'Red'
-                      : 'Green';
-        byColor.get(label)!.push(c);
-      }
-      return colorOrder
-        .filter((label) => (byColor.get(label)?.length ?? 0) > 0)
-        .map((label) => {
-          const cards = byColor.get(label)!;
-          return {
-            label,
-            key: `color-${label}`,
-            cards,
-            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-          };
-        });
-    }
-
-    if (this.sortMode === 'color-identity') {
-      const colorOrder = ['White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor', 'Colorless'];
-      const ciLabel = (ci: ManaColor[]): string => {
-        if (ci.length === 0) return 'Colorless';
-        if (ci.length > 1) return 'Multicolor';
-        const map: Partial<Record<ManaColor, string>> = {
-          [ManaColor.White]: 'White',
-          [ManaColor.Blue]: 'Blue',
-          [ManaColor.Black]: 'Black',
-          [ManaColor.Red]: 'Red',
-          [ManaColor.Green]: 'Green',
-        };
-        return map[ci[0]] ?? 'Colorless';
-      };
-      const byColor = new Map<string, CollectionCardDto[]>();
-      for (const label of colorOrder) byColor.set(label, []);
-      for (const c of filtered) {
-        const label = ciLabel(c.cardDetails?.colorIdentity ?? []);
-        byColor.get(label)!.push(c);
-      }
-      return colorOrder
-        .filter((label) => (byColor.get(label)?.length ?? 0) > 0)
-        .map((label) => {
-          const cards = byColor.get(label)!;
-          return {
-            label,
-            key: `ci-${label}`,
-            cards,
-            totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-          };
-        });
-    }
-
-    if (this.sortMode === 'rarity') {
-      const rarityOrder = ['mythic', 'rare', 'uncommon', 'common', 'special', 'bonus'];
-      const rarityLabel: Record<string, string> = {
-        mythic: 'Mythic Rare',
-        rare: 'Rare',
-        uncommon: 'Uncommon',
-        common: 'Common',
-        special: 'Special',
-        bonus: 'Bonus',
-      };
-      const byRarity = new Map<string, CollectionCardDto[]>();
-      for (const c of filtered) {
-        const r = c.cardDetails?.rarity ?? 'unknown';
-        if (!byRarity.has(r)) byRarity.set(r, []);
-        byRarity.get(r)!.push(c);
-      }
-      const known = rarityOrder.filter((r) => byRarity.has(r));
-      const other = [...byRarity.keys()].filter((r) => !rarityOrder.includes(r)).sort();
-      return [...known, ...other].map((r) => {
-        const cards = byRarity.get(r)!;
-        return {
-          label: rarityLabel[r] ?? r,
-          key: `rarity-${r}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        };
-      });
-    }
-
-    if (this.sortMode === 'artist') {
-      const byArtist = new Map<string, CollectionCardDto[]>();
-      for (const c of filtered) {
-        const artist = c.cardDetails?.artist ?? 'Unknown';
-        if (!byArtist.has(artist)) byArtist.set(artist, []);
-        byArtist.get(artist)!.push(c);
-      }
-      const keys = [...byArtist.keys()].sort((a, b) => a.localeCompare(b));
-      return keys.map((artist) => {
-        const cards = byArtist.get(artist)!;
-        return {
-          label: artist,
-          key: `artist-${artist}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        };
-      });
-    }
-
-    if (this.sortMode === 'set') {
-      const bySet = new Map<string, CollectionCardDto[]>();
-      for (const c of filtered) {
-        const set = (c.cardDetails?.setCode ?? 'unknown').toUpperCase();
-        if (!bySet.has(set)) bySet.set(set, []);
-        bySet.get(set)!.push(c);
-      }
-      const keys = [...bySet.keys()].sort((a, b) => a.localeCompare(b));
-      return keys.map((set) => {
-        const cards = bySet.get(set)!;
-        return {
-          label: set,
-          key: `set-${set}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        };
-      });
-    }
-
-    if (this.sortMode === 'creature-split') {
-      const cmcSort = (a: CollectionCardDto, b: CollectionCardDto) =>
-        (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
-        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? '');
-      const creatures = filtered
-        .filter((c) => c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c))
-        .sort(cmcSort);
-      const nonCreatures = filtered
-        .filter((c) => !c.cardDetails?.cardTypes?.includes(CardType.Creature) && !this.isLand(c))
-        .sort(cmcSort);
-      const lands = filtered
-        .filter((c) => this.isLand(c))
-        .sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-      const groups: CmcGroup[] = [];
-      if (creatures.length)
-        groups.push({
-          label: 'Creatures',
-          key: 'split-creatures',
-          cards: creatures,
-          totalCount: creatures.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      if (nonCreatures.length)
-        groups.push({
-          label: 'Non-Creatures',
-          key: 'split-noncreatures',
-          cards: nonCreatures,
-          totalCount: nonCreatures.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      if (lands.length)
-        groups.push({
-          label: 'Lands',
-          key: 'split-lands',
-          cards: lands,
-          totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      return groups;
-    }
-
-    // CMC
-    const nonLands = filtered
-      .filter((c) => !this.isLand(c))
-      .sort(
-        (a, b) =>
-          (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
-          (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-      );
-    const lands = filtered
-      .filter((c) => this.isLand(c))
-      .sort((a, b) => (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''));
-
-    const groups: CmcGroup[] = [];
-    const buckets = new Map<string, CollectionCardDto[]>();
-    for (const c of nonLands) {
-      const key =
-        (c.cardDetails?.manaValue ?? 0) >= 6 ? '6+' : String(c.cardDetails?.manaValue ?? 0);
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key)!.push(c);
-    }
-    for (const key of ['0', '1', '2', '3', '4', '5', '6+']) {
-      const cards = buckets.get(key);
-      if (cards?.length)
-        groups.push({
-          label: key === '6+' ? 'CMC 6+' : `CMC ${key}`,
-          key: `cmc-${key}`,
-          cards,
-          totalCount: cards.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-    }
-    if (lands.length)
-      groups.push({
-        label: 'Lands',
-        key: 'lands',
-        cards: lands,
-        totalCount: lands.reduce((s, c) => s + this.cardCount(c), 0),
-      });
-    return groups;
+  // The deck grid renders labelled sections (CMC bands, types, colours…); which cards
+  // land where is CardGridFilterService.sections, shared with the collection grid. Both
+  // halves memoize, so a change-detection pass that changed neither the deck, the board,
+  // the filter nor the sort mode re-cuts nothing.
+  getGroups(deck: DeckDetailDto): CardSection[] {
+    return this.gridFilter.sections(this.filteredCards(deck), this.sortMode);
   }
 
   /**
@@ -2116,7 +1809,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       if (dragging && ghost) {
         const g = ghost;
         ghost = null;
-        const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
+        const r = (cardEl.querySelector('.ct-art') ?? cardEl).getBoundingClientRect();
         this.glideGhostTo(g, r.left, r.top, () => {
           g.remove();
           finish(false);
@@ -2219,7 +1912,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         // null to fall back to the shrink-out drop instead of a settle glide.
         if (overCommander && isCommanderEligible) return null;
         const springBack = (): { x: number; y: number } => {
-          const r = (cardEl.querySelector('.visual-art') ?? cardEl).getBoundingClientRect();
+          const r = (cardEl.querySelector('.ct-art') ?? cardEl).getBoundingClientRect();
           return { x: r.left, y: r.top };
         };
         const dst = this.stackDragOverIdx;
@@ -2283,7 +1976,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   trackByIdx(index: number): number {
     return index;
   }
-  trackByGroupKey(_index: number, group: CmcGroup): string {
+  trackByGroupKey(_index: number, group: CardSection): string {
     return group.key;
   }
 
@@ -2376,33 +2069,46 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Memoized on (deck, board, filter): the template reads this (and getGroups, which
-  // calls it) on every change-detection pass, but the result only changes when one of
-  // those three does.
-  private filteredCardsMemo: {
+  // Memoized on (deck, board): which cards are on this board at all. Split from the
+  // filter pass below so the array handed to CardGridFilterService keeps its identity —
+  // that identity is what its own memo keys on, and rebuilding it per call would defeat
+  // both.
+  private boardCardsMemo: {
     deck: DeckDetailDto;
     board: string;
-    query: string;
     result: CollectionCardDto[];
   } | null = null;
 
-  filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
+  private boardCards(deck: DeckDetailDto): CollectionCardDto[] {
     const board = this.activeBoard;
-    const query = this.filterQuery;
-    const m = this.filteredCardsMemo;
-    if (m && m.deck === deck && m.board === board && m.query === query) return m.result;
+    const m = this.boardCardsMemo;
+    if (m && m.deck === deck && m.board === board) return m.result;
 
     let cards = deck.cards.filter((c) => (c.board ?? 'main') === board);
+    // The commander has its own panel; leaving it in the grid double-counts it.
     if (board === 'main' && deck.commanderOracleId) {
       cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
     }
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      cards = cards.filter((c) => c.cardDetails?.name.toLowerCase().includes(q));
-    }
 
-    this.filteredCardsMemo = { deck, board, query, result: cards };
+    this.boardCardsMemo = { deck, board, result: cards };
     return cards;
+  }
+
+  /**
+   * The cards this grid shows: the active board, narrowed by the filter bar. The rules
+   * are CardGridFilterService's, the same ones the collection grid applies — so a colour
+   * chip means the same thing on both screens.
+   *
+   * Sorting is left to `sections()`, which orders within each heading: this grid's order
+   * comes from Group By, not from the sort chips (which it therefore does not show).
+   */
+  filteredCards(deck: DeckDetailDto): CollectionCardDto[] {
+    return this.gridFilter.apply(this.boardCards(deck), this.filters.toState());
+  }
+
+  /** Sets represented on this board, for the bar's Set picker. */
+  setFilterOptions(deck: DeckDetailDto): SelectMenuOption[] {
+    return this.gridFilter.setOptions(deck.cards);
   }
 
   boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {

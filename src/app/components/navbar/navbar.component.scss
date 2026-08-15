@@ -1,8 +1,12 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
 nav {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   height: 52px;
   display: flex;
@@ -39,10 +43,17 @@ nav {
   color: var(--text-secondary);
   text-decoration: none;
   border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 
-  &:hover { color: var(--text-primary); background: var(--bg-raised); }
-  &.active { color: var(--gold); }
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-raised);
+  }
+  &.active {
+    color: var(--gold);
+  }
 }
 
 .account-menu {
@@ -62,9 +73,14 @@ nav {
   border: 1px solid var(--border-dim);
   border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 
-  &:hover { border-color: var(--border-subtle); background: var(--bg-hover); }
+  &:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-hover);
+  }
 }
 
 .account-name {
@@ -83,7 +99,9 @@ nav {
   font-size: 8px;
   color: var(--text-dim);
   transition: transform 0.2s;
-  &.open { transform: rotate(180deg); }
+  &.open {
+    transform: rotate(180deg);
+  }
 }
 
 .account-dropdown {
@@ -110,10 +128,20 @@ nav {
   border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 
-  &:hover { background: var(--bg-raised); color: var(--text-primary); }
-  &.danger { color: #e74c3c; &:hover { background: rgba(231, 76, 60, 0.1); } }
+  &:hover {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+  }
+  &.danger {
+    color: #e74c3c;
+    &:hover {
+      background: rgba(231, 76, 60, 0.1);
+    }
+  }
 }
 
 .nav-btn {
@@ -127,7 +155,9 @@ nav {
   text-transform: uppercase;
   color: #0e0c08;
   text-decoration: none;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
 
   &:hover {
     background: #dbb954;

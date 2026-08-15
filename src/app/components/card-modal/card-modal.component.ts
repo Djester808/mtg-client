@@ -13,7 +13,16 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardDto, CardType, PrintingDto, RulingDto } from '../../models/game.models';
+import {
+  CardDto,
+  CardPricesDto,
+  CardType,
+  CollectionCardDto,
+  PrintingDto,
+  RulingDto,
+} from '../../models/game.models';
+import { CardPricesPanelComponent } from '../card-prices-panel/card-prices-panel.component';
+import { SetIconComponent } from '../set-icon/set-icon.component';
 import { buildTypeLine } from '../../utils/card.utils';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -21,10 +30,26 @@ import { GameApiService } from '../../services/game-api.service';
 import { ToBodyDirective } from '../../shared/to-body.directive';
 import { cardArtWindow } from '../../shared/fly-card';
 
+/** Today's price measured against what a copy cost when it was added. */
+export interface PriceDelta {
+  then: number;
+  now: number;
+  diff: number;
+  /** Null when the add-time price was zero — a percentage change would be meaningless. */
+  percent: number | null;
+  direction: 'up' | 'down' | 'flat';
+}
+
 @Component({
   selector: 'app-card-modal',
   standalone: true,
-  imports: [CommonModule, ManaCostComponent, OracleSymbolsPipe],
+  imports: [
+    CommonModule,
+    ManaCostComponent,
+    OracleSymbolsPipe,
+    CardPricesPanelComponent,
+    SetIconComponent,
+  ],
   templateUrl: './card-modal.component.html',
   styleUrls: ['./card-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +79,12 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   /** Optional: copies of this card the viewer owns (deck or collection) — shown beside the name. */
   @Input() countBadge: number | null = null;
 
+  /**
+   * Optional: the collection/deck entry this card was opened from. Supplies when it was
+   * added and what it cost then, which the Details tab compares against today's price.
+   */
+  @Input() ownedEntry: CollectionCardDto | null = null;
+
   /** Optional: foil copies owned — a gold companion badge to countBadge (collections). */
   @Input() foilCountBadge: number | null = null;
 
@@ -64,7 +95,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() infoTabLabel: string | null = null;
 
   /** Which info tab is showing; snaps back to details when the card changes. */
-  infoTab: 'details' | 'rulings' | 'extra' = 'details';
+  infoTab: 'details' | 'rulings' | 'prices' | 'extra' = 'details';
 
   @Input() isGameChanger = false;
   /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
@@ -241,6 +272,66 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
         setCode: p.setCode ?? this.card.setCode,
       };
     this.effectiveMemo = { card: this.card, printing: p, value };
+    return value;
+  }
+
+  /** Prices for the printing being viewed; falls back to the base card's printing. */
+  get currentPrices(): CardPricesDto | null {
+    return this.currentPrinting?.prices ?? this.card?.prices ?? null;
+  }
+
+  // ---- Price movement since the card was added -------------------------
+
+  private deltaMemo: {
+    entry: CollectionCardDto | null;
+    prices: CardPricesDto | null;
+    value: PriceDelta | null;
+  } | null = null;
+
+  /**
+   * Today's price against the price when this copy was added. Null when the card was
+   * not opened from a collection, the entry predates price tracking, or the printing
+   * has no current price — all cases where a comparison would be invented.
+   */
+  get priceDelta(): PriceDelta | null {
+    const entry = this.ownedEntry;
+    const prices = this.currentPrices;
+    const m = this.deltaMemo;
+    if (m && m.entry === entry && m.prices === prices) return m.value;
+
+    let value: PriceDelta | null = null;
+    const then = entry?.priceUsdAtAdd ?? null;
+    const now = prices?.usd ?? null;
+    if (then != null && now != null) {
+      const diff = now - then;
+      value = {
+        then,
+        now,
+        diff,
+        // A card added at zero (unpriced then, priced now) has no meaningful percentage.
+        percent: then > 0 ? (diff / then) * 100 : null,
+        direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat',
+      };
+    }
+    this.deltaMemo = { entry, prices, value };
+    return value;
+  }
+
+  /** Sort key: cheapest available finish, nonfoil preferred; unpriced sorts last. */
+  private static effectiveUsd(p: PrintingDto): number {
+    return p.prices?.usd ?? p.prices?.usdFoil ?? p.prices?.usdEtched ?? Number.POSITIVE_INFINITY;
+  }
+
+  private pricedMemo: { printings: PrintingDto[]; value: PrintingDto[] } | null = null;
+
+  /** Printings that have any price data, cheapest first, for the Prices tab list. */
+  get pricedPrintings(): PrintingDto[] {
+    const m = this.pricedMemo;
+    if (m && m.printings === this.printings) return m.value;
+    const value = this.printings
+      .filter((p) => p.prices)
+      .sort((a, b) => CardModalComponent.effectiveUsd(a) - CardModalComponent.effectiveUsd(b));
+    this.pricedMemo = { printings: this.printings, value };
     return value;
   }
 

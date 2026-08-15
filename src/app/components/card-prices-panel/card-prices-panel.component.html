@@ -1,0 +1,149 @@
+<ng-container *ngIf="currentPrices as pr">
+  <div class="prices-header">
+    This printing<ng-container *ngIf="viewedSetLabel as label"> — {{ label }}</ng-container>
+  </div>
+  <!-- Each cell links to the listing on the marketplace the price came from. -->
+  <div class="price-grid">
+    <a
+      class="price-cell"
+      *ngIf="pr.usd != null"
+      [href]="tcgplayerLink"
+      target="_blank"
+      rel="noopener"
+      title="View listing on TCGplayer"
+    >
+      <span class="price-cell-label">TCGplayer <i class="bi bi-box-arrow-up-right"></i></span>
+      <span class="price-cell-value">{{ pr.usd | currency: 'USD' }}</span>
+    </a>
+    <a
+      class="price-cell"
+      *ngIf="pr.usdFoil != null"
+      [href]="tcgplayerLink"
+      target="_blank"
+      rel="noopener"
+      title="View listing on TCGplayer"
+    >
+      <span class="price-cell-label"
+        >TCGplayer · Foil <i class="bi bi-box-arrow-up-right"></i
+      ></span>
+      <span class="price-cell-value">{{ pr.usdFoil | currency: 'USD' }}</span>
+    </a>
+    <a
+      class="price-cell"
+      *ngIf="pr.usdEtched != null"
+      [href]="tcgplayerLink"
+      target="_blank"
+      rel="noopener"
+      title="View listing on TCGplayer"
+    >
+      <span class="price-cell-label"
+        >TCGplayer · Etched <i class="bi bi-box-arrow-up-right"></i
+      ></span>
+      <span class="price-cell-value">{{ pr.usdEtched | currency: 'USD' }}</span>
+    </a>
+    <a
+      class="price-cell"
+      *ngIf="pr.eur != null"
+      [href]="cardmarketLink"
+      target="_blank"
+      rel="noopener"
+      title="Search on Cardmarket"
+    >
+      <span class="price-cell-label">Cardmarket <i class="bi bi-box-arrow-up-right"></i></span>
+      <span class="price-cell-value">{{ pr.eur | currency: 'EUR' }}</span>
+    </a>
+    <a
+      class="price-cell"
+      *ngIf="pr.eurFoil != null"
+      [href]="cardmarketLink"
+      target="_blank"
+      rel="noopener"
+      title="Search on Cardmarket"
+    >
+      <span class="price-cell-label"
+        >Cardmarket · Foil <i class="bi bi-box-arrow-up-right"></i
+      ></span>
+      <span class="price-cell-value">{{ pr.eurFoil | currency: 'EUR' }}</span>
+    </a>
+    <a
+      class="price-cell"
+      *ngIf="pr.tix != null"
+      [href]="cardhoarderLink"
+      target="_blank"
+      rel="noopener"
+      title="View listing on Cardhoarder (MTGO)"
+    >
+      <span class="price-cell-label">Cardhoarder <i class="bi bi-box-arrow-up-right"></i></span>
+      <span class="price-cell-value">{{ pr.tix | number: '1.2-2' }} tix</span>
+    </a>
+  </div>
+</ng-container>
+
+<!-- History: filters in one row above the chart they scope. -->
+<div class="prices-header">Price history</div>
+<div class="range-row">
+  <button
+    class="range-btn"
+    *ngFor="let r of PRICE_RANGES"
+    [class.is-active]="rangeDays === r.days"
+    (click)="selectRange(r.days)"
+  >
+    {{ r.label }}
+  </button>
+  <span class="range-fill"></span>
+  <button
+    class="range-btn view-btn"
+    [class.is-active]="view === 'table'"
+    (click)="toggleView()"
+    [title]="view === 'chart' ? 'Show as table' : 'Show as chart'"
+  >
+    <i class="bi" [class.bi-table]="view === 'chart'" [class.bi-graph-up]="view === 'table'"></i>
+  </button>
+</div>
+<app-price-history-chart
+  [points]="history"
+  [loading]="historyLoading"
+  [view]="view"
+></app-price-history-chart>
+
+<ng-container *ngIf="pricedPrintings.length">
+  <div class="prices-header">All printings — cheapest first</div>
+  <div class="price-rows">
+    <!-- A div, not a button: the trailing marketplace link nests an <a>, and an
+         interactive element inside a button is invalid HTML. -->
+    <div
+      class="price-row"
+      *ngFor="let p of pricedPrintings"
+      [class.is-viewed]="p.scryfallId === viewedScryfallId"
+      (click)="select(p)"
+      [title]="p.setName + (p.collectorNumber ? ' #' + p.collectorNumber : '')"
+    >
+      <app-set-icon [setCode]="p.setCode" [setName]="p.setName"></app-set-icon>
+      <span class="price-row-set">{{ p.setCode.toUpperCase() }}</span>
+      <span class="price-row-num" *ngIf="p.collectorNumber">#{{ p.collectorNumber }}</span>
+      <span class="price-row-fill"></span>
+      <span class="price-row-usd">{{ (p.prices?.usd | currency: 'USD') || '—' }}</span>
+      <span class="price-row-foil" *ngIf="p.prices?.usdFoil != null">
+        ✦ {{ p.prices?.usdFoil | currency: 'USD' }}
+      </span>
+      <a
+        class="price-row-link"
+        [href]="printingMarketLink(p)"
+        target="_blank"
+        rel="noopener"
+        (click)="$event.stopPropagation()"
+        title="View this printing on TCGplayer"
+      >
+        <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+    </div>
+  </div>
+</ng-container>
+
+<div class="prices-empty" *ngIf="!currentPrices && !pricedPrintings.length">
+  No price data for this card.
+</div>
+<div class="prices-source">
+  Prices update daily via Scryfall — USD from TCGplayer, EUR from Cardmarket, tix from Cardhoarder
+  (MTGO). Click a price to open the listing.
+</div>

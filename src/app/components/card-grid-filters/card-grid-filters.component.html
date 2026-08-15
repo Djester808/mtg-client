@@ -1,0 +1,148 @@
+<div class="cgf-row">
+  <!-- Below the bar's breakpoint every control folds in here and the bar keeps one line:
+       this button and the name box. Hidden at full width by CSS alone. -->
+  <button
+    class="cgf-menu-btn"
+    type="button"
+    [class.is-open]="menuOpen"
+    [class.has-filters]="facets && filters.hasAny"
+    [attr.aria-expanded]="menuOpen"
+    (click)="menuOpen = !menuOpen; $event.stopPropagation()"
+    title="Grid controls and filters"
+  >
+    <i class="bi bi-sliders"></i>
+  </button>
+
+  <!-- `display: contents` at full width, so everything inside is laid out by the bar's
+       own grid; a dropping panel below the button once the bar is narrow. -->
+  <div class="cgf-clusters" [class.is-open]="menuOpen">
+    <!-- Page-specific controls at the left: the deck's Group By / Layout pickers. -->
+    <div class="cgf-left">
+      <ng-content select="[cgfLeft]"></ng-content>
+
+      <div class="cgf-group" *ngIf="facets && setOptions">
+        <span class="cgf-label">Set</span>
+        <app-select-menu
+          class="set-filter-menu"
+          [options]="setOptions"
+          [value]="filters.set ?? '__all'"
+          (valueChange)="onSet($event)"
+        ></app-select-menu>
+      </div>
+
+      <div class="cgf-group" *ngIf="facets && sortControls">
+        <span class="cgf-label">Sort</span>
+        <div class="cgf-sort-chips">
+          <app-filter-chips
+            [chips]="sortChips"
+            [active]="activeSort"
+            (toggled)="onSort($any($event))"
+          ></app-filter-chips>
+          <app-filter-chips
+            [narrow]="true"
+            [chips]="sortDirChips"
+            [active]="none"
+            (toggled)="onSortDir()"
+          ></app-filter-chips>
+        </div>
+      </div>
+
+      <!-- Reserved rather than removed — caption and all: dropping it narrows the row and
+           slides the centred box sideways the moment a filter goes on, and a caption with
+           nothing under it reads as a control that failed to render. -->
+      <div class="cgf-group" *ngIf="facets" [class.is-reserved]="!filters.hasAny">
+        <span class="cgf-label">Filters</span>
+        <app-filter-chips
+          [chips]="clearChips"
+          [active]="none"
+          (toggled)="onClear()"
+        ></app-filter-chips>
+      </div>
+    </div>
+
+    <!-- Page-specific controls at the right, then the zoom stepper both pages carry. -->
+    <div class="cgf-right">
+      <ng-content select="[cgfRight]"></ng-content>
+      <div class="cgf-group cgf-zoom">
+        <span class="cgf-label">Zoom</span>
+        <div class="zoom-group">
+          <button
+            class="zoom-btn"
+            (click)="zoomOut.emit()"
+            [disabled]="!canZoomOut"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <span class="zoom-label">{{ zoomLabel }}</span>
+          <button class="zoom-btn" (click)="zoomIn.emit()" [disabled]="!canZoomIn" title="Zoom in">
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The facet chips: their own full-width band under the bar at full width, and part
+         of the menu once it takes over. -->
+    <div class="cgf-facets" *ngIf="facets">
+      <app-filter-chips
+        [chips]="typeChips"
+        [active]="filters.types"
+        (toggled)="onToggleType($event)"
+      ></app-filter-chips>
+
+      <div class="cgf-chips">
+        <app-filter-chips
+          [chips]="colorChips"
+          [active]="filters.colors"
+          (toggled)="onToggleColor($event)"
+        ></app-filter-chips>
+        <app-filter-chips
+          [chips]="rarityChips"
+          [active]="filters.rarities"
+          (toggled)="onToggleRarity($event)"
+        ></app-filter-chips>
+        <app-filter-chips
+          label="CMC"
+          [narrow]="true"
+          [chips]="cmcChips"
+          [active]="activeCmc"
+          (toggled)="onToggleCmc($event)"
+        ></app-filter-chips>
+      </div>
+    </div>
+  </div>
+
+  <div class="cgf-center" *ngIf="showQuery">
+    <!-- Clicks stop here: the deck page closes its format/commander popups on a
+         shell-level click, and typing a filter must not count as clicking away. -->
+    <div class="cgf-group cgf-group--filter" (click)="$event.stopPropagation()">
+      <span class="cgf-label">Filter Cards</span>
+      <div class="filter-wrap">
+        <span class="filter-icon"><i class="bi bi-search"></i></span>
+        <input
+          class="filter-input"
+          type="text"
+          [ngModel]="filters.query"
+          (ngModelChange)="onQuery($event)"
+          autocomplete="off"
+          [placeholder]="placeholder"
+          (focus)="suggOpen = true"
+          (blur)="closeSuggSoon()"
+          (keydown.escape)="suggOpen = false"
+          (keydown.enter)="pickFirst()"
+        />
+        <!-- Custom menu: the native datalist popup cannot be styled. -->
+        <div class="app-menu filter-sugg-menu" *ngIf="suggOpen && suggestions.length > 0">
+          <button
+            class="app-menu-item"
+            *ngFor="let n of suggestions"
+            (mousedown)="pick(n); $event.preventDefault()"
+          >
+            {{ n }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

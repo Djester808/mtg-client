@@ -11,21 +11,34 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, takeUntil, take } from 'rxjs';
+import { Observable, Subject, takeUntil, take, map } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import {
   selectActiveCollection,
   selectCollectionLoading,
+  selectCollections,
 } from '../../store/collection/collection.selectors';
 import {
   CollectionDetailDto,
   CollectionCardDto,
+  CollectionDto,
   PrintingDto,
   CardDto,
 } from '../../models/game.models';
+import { CollectionPickerDialogComponent } from '../../components/collection-picker-dialog/collection-picker-dialog.component';
+import { SetIconComponent } from '../../components/set-icon/set-icon.component';
+import { CardGridFiltersComponent } from '../../components/card-grid-filters/card-grid-filters.component';
+import { CardTileComponent } from '../../components/card-tile/card-tile.component';
 import { buildTypeLine } from '../../utils/card.utils';
 import { PrintingsService } from '../../services/printings.service';
+import { CardGridFilterService } from '../../services/card-grid-filter.service';
+import { CardFilters } from '../../models/card-filters';
+import {
+  printingOption,
+  printingOptions as buildPrintingOptions,
+  setCodeOption,
+} from '../../utils/printing-options';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
@@ -53,6 +66,10 @@ import {
     CoverPickerModalComponent,
     CardScannerComponent,
     SelectMenuComponent,
+    CollectionPickerDialogComponent,
+    SetIconComponent,
+    CardGridFiltersComponent,
+    CardTileComponent,
   ],
   templateUrl: './collection-detail.component.html',
   styleUrls: ['./collection-detail.component.scss'],
@@ -61,8 +78,19 @@ import {
 export class CollectionDetailComponent implements OnInit, OnDestroy {
   collection$: Observable<CollectionDetailDto | null>;
   loading$: Observable<boolean>;
+  /** Every other collection — where a card from this one can be moved. */
+  moveTargets$!: Observable<CollectionDto[]>;
 
-  filterQuery = '';
+  /** The entry being moved, or null when the move dialog is closed. */
+  moveCard: CollectionCardDto | null = null;
+  moveTargetId: string | null = null;
+
+  /** Multi-select: tiles become checkable and the bulk bar appears. */
+  selectMode = false;
+  selectedIds = new Set<string>();
+  /** True while the bulk dialog is open, so it can share the picker with single moves. */
+  bulkMoveOpen = false;
+
   /** Arena-style swap: search browser fills the grid area, collection becomes a side list. */
   swapMode = false;
   showSearchPanel = false;
@@ -118,9 +146,176 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
     private host: ElementRef<HTMLElement>,
+    private filterRules: CardGridFilterService,
   ) {
     this.collection$ = this.store.select(selectActiveCollection);
     this.loading$ = this.store.select(selectCollectionLoading);
+  }
+
+  // ---- Moving a card to another collection ----------------------
+
+  trackByCollectionId = (_: number, col: CollectionDto): string => col.id;
+  /** Stable tile identity so a moved card's tile leaves without re-rendering the rest. */
+  trackByCardId = (_: number, card: CollectionCardDto): string => card.id;
+
+  openMove(entry: CollectionCardDto): void {
+    this.moveCard = entry;
+    this.moveTargetId = null;
+    this.cdr.markForCheck();
+  }
+
+  closeMove(): void {
+    this.moveCard = null;
+    this.moveTargetId = null;
+    this.cdr.markForCheck();
+  }
+
+  /** The dialog's explanatory line, naming the card and how many copies travel. */
+  moveLead(entry: CollectionCardDto): string {
+    const name = entry.cardDetails?.name ?? 'this card';
+    const copies =
+      entry.quantity + entry.quantityFoil > 1
+        ? ` (${entry.quantity} normal${entry.quantityFoil ? `, ${entry.quantityFoil} foil` : ''})`
+        : '';
+    return `Move ${name}${copies} to another collection. It keeps when you added it and what it cost then.`;
+  }
+
+  /**
+   * Moves the whole row. The copies land in a collection that isn't on screen, so the
+   * ghost flies to the Collection nav link — the way back to where they went — and the
+   * toast names the destination.
+   */
+  confirmMove(entry: CollectionCardDto, targetId: string): void {
+    this.moveTargets$.pipe(take(1)).subscribe((targets) => {
+      const target = targets.find((t) => t.id === targetId);
+      if (!target) return;
+
+      const from = this.tileArtRect(entry.id);
+      this.store.dispatch(
+        CollectionActions.moveCard({
+          collectionId: this.collectionId,
+          cardId: entry.id,
+          request: { targetCollectionId: target.id },
+          targetName: target.name,
+        }),
+      );
+      this.closeMove();
+      this.closeCard();
+
+      const to = this.visibleRect(
+        document.querySelector('.nav-link[href="/collection"], .nav-link'),
+      );
+      if (!from || !to) return;
+      void flyCardGhost({
+        from,
+        to,
+        imageUrl:
+          entry.cardDetails?.imageUriArtCrop ??
+          entry.cardDetails?.imageUriSmall ??
+          entry.cardDetails?.imageUriNormal ??
+          null,
+      });
+    });
+  }
+
+  // ---- Multi-select ---------------------------------------------
+
+  toggleSelectMode(): void {
+    this.selectMode = !this.selectMode;
+    if (!this.selectMode) this.selectedIds.clear();
+    this.cdr.markForCheck();
+  }
+
+  toggleSelected(card: CollectionCardDto, event: Event): void {
+    event.stopPropagation();
+    if (this.selectedIds.has(card.id)) this.selectedIds.delete(card.id);
+    else this.selectedIds.add(card.id);
+    // A Set mutates in place, so OnPush needs telling explicitly.
+    this.cdr.markForCheck();
+  }
+
+  isSelected(card: CollectionCardDto): boolean {
+    return this.selectedIds.has(card.id);
+  }
+
+  selectAll(col: CollectionDetailDto): void {
+    // Only what is on screen — selecting cards hidden by the filter would move things
+    // the user cannot see.
+    for (const c of this.filteredCards(col)) this.selectedIds.add(c.id);
+    this.cdr.markForCheck();
+  }
+
+  clearSelection(): void {
+    this.selectedIds.clear();
+    this.cdr.markForCheck();
+  }
+
+  openBulkMove(): void {
+    if (this.selectedIds.size === 0) return;
+    this.bulkMoveOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeBulkMove(): void {
+    this.bulkMoveOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  get bulkMoveLead(): string {
+    const n = this.selectedIds.size;
+    return `Move ${n} selected ${n === 1 ? 'card' : 'cards'} to another collection. Each keeps when you added it and what it cost then.`;
+  }
+
+  confirmBulkMove(targetId: string): void {
+    const ids = [...this.selectedIds];
+    if (ids.length === 0) return;
+
+    this.moveTargets$.pipe(take(1)).subscribe((targets) => {
+      const target = targets.find((t) => t.id === targetId);
+      if (!target) return;
+
+      // Capture every rect before the rows leave the DOM.
+      const flights = ids
+        .map((id) => ({ from: this.tileArtRect(id), img: this.tileImageFor(id) }))
+        .filter((f): f is { from: DOMRect; img: string | null } => f.from !== null);
+
+      this.store.dispatch(
+        CollectionActions.moveCards({
+          collectionId: this.collectionId,
+          cardIds: ids,
+          targetCollectionId: target.id,
+          targetName: target.name,
+        }),
+      );
+      this.closeBulkMove();
+      this.selectMode = false;
+      this.selectedIds.clear();
+
+      const to = this.visibleRect(
+        document.querySelector('.nav-link[href="/collection"], .nav-link'),
+      );
+      if (!to) return;
+      // Stagger so the batch reads as several cards travelling, not one blur.
+      flights.slice(0, 12).forEach((f, i) => {
+        setTimeout(() => void flyCardGhost({ from: f.from, to, imageUrl: f.img }), i * 70);
+      });
+    });
+  }
+
+  private tileImageFor(cardId: string): string | null {
+    const el = this.host.nativeElement.querySelector<HTMLElement>(
+      `.card-wrap[data-card-id="${cardId}"] .ct-art`,
+    );
+    const bg = el?.style.backgroundImage ?? '';
+    const match = /url\(["']?(.*?)["']?\)/.exec(bg);
+    return match ? match[1] : null;
+  }
+
+  /** The art rect of a card's tile in the grid, for the flight's starting point. */
+  private tileArtRect(cardId: string): DOMRect | null {
+    return this.visibleRect(
+      this.host.nativeElement.querySelector(`.card-wrap[data-card-id="${cardId}"] .ct-art`),
+    );
   }
 
   /**
@@ -146,6 +341,12 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.collectionId = this.route.snapshot.paramMap.get('id')!;
     this.store.dispatch(CollectionActions.loadCollection({ id: this.collectionId }));
+    // The list is needed for the move dialog's destinations; it also keeps the counts
+    // fresh after a move lands.
+    this.store.dispatch(CollectionActions.loadCollections());
+    this.moveTargets$ = this.store
+      .select(selectCollections)
+      .pipe(map((cols) => cols.filter((c) => c.id !== this.collectionId)));
     const savedZoom = localStorage.getItem('collection-zoom');
     if (savedZoom) this.zoomLevel = Math.max(0.5, Math.min(2.0, parseFloat(savedZoom) || 1.0));
 
@@ -355,6 +556,14 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   onSetChange(card: CollectionCardDto, scryfallId: string): void {
+    // Grouped: picking a set only changes which of your copies the tile shows (the value
+    // is a row id, not a printing). Re-pinning the row here would silently rewrite what
+    // set you own, which is not what was asked.
+    if (this.usesGroupedPicker(card.oracleId)) {
+      this.groupChoice.set(card.oracleId, scryfallId);
+      this.cdr.markForCheck();
+      return;
+    }
     const printing = this.printings.cached(card.oracleId)?.find((p) => p.scryfallId === scryfallId);
     if (printing) this.selectPrinting(card, printing);
   }
@@ -381,49 +590,94 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   >();
 
   printingOptions(card: CollectionCardDto): SelectMenuOption[] {
+    // Grouped: the choice is which owned printing to show, so only those are offered.
+    if (this.usesGroupedPicker(card.oracleId)) return this.groupPrintingOptions(card.oracleId);
+
+    // Ungrouped, a tile *is* one row — one printing you own — so the same rule applies as
+    // when grouped: the picker offers what you own, not the whole catalogue. One option
+    // means singlePrintingLabel renders it as static text. Listing every printing in
+    // existence here made a card you own in one set look like a five-way choice.
+    return this.ownedPrintingOption(card);
+  }
+
+  private ownedOptionCache = new Map<
+    string,
+    { row: CollectionCardDto; printings: PrintingDto[] | null; opts: SelectMenuOption[] }
+  >();
+
+  private ownedPrintingOption(card: CollectionCardDto): SelectMenuOption[] {
+    const cached = this.printings.cached(card.oracleId);
+    const hit = this.ownedOptionCache.get(card.id);
+    if (hit && hit.row === card && hit.printings === cached) return hit.opts;
+
+    const p = card.scryfallId ? cached?.find((x) => x.scryfallId === card.scryfallId) : undefined;
+    const value = card.scryfallId ?? card.id;
+    const opts: SelectMenuOption[] = p
+      ? [printingOption(p, { value })]
+      : card.cardDetails?.setCode
+        ? [setCodeOption(value, card.cardDetails.setCode)]
+        : [];
+    this.ownedOptionCache.set(card.id, { row: card, printings: cached, opts });
+    return opts;
+  }
+
+  private allPrintingOptions(card: CollectionCardDto): SelectMenuOption[] {
     const printings = this.printings.cached(card.oracleId);
     if (!printings) {
-      // Not loaded yet — show the owned printing so the button has a label.
-      return [
-        {
-          value: card.scryfallId ?? '',
-          label: card.cardDetails?.setCode?.toUpperCase() ?? '···',
-        },
-      ];
+      // Not loaded yet. Return nothing rather than a stand-in for the owned printing:
+      // a one-entry menu is indistinguishable from "this card has one printing", so a
+      // card with several looked like it had only the one you already own. The empty
+      // list makes the menu show its loading label instead, and the button keeps its
+      // placeholder (the owned set code).
+      return [];
     }
     const hit = this.printingOptionsCache.get(card.oracleId);
     if (hit && hit.src === printings) return hit.opts;
-    const opts = printings.map((p) => ({
-      value: p.scryfallId,
-      label: `${p.setCode.toUpperCase()} #${p.collectorNumber}`,
-      title: p.setName,
-    }));
+    const opts = buildPrintingOptions(printings);
     this.printingOptionsCache.set(card.oracleId, { src: printings, opts });
     return opts;
   }
 
+  /**
+   * The label for a card with exactly one printing, or null when a picker is warranted.
+   * Only reports once the printings have actually loaded — the placeholder list built
+   * above is a single entry too, and treating that as "only one printing" would freeze
+   * the picker away before the real list arrived. Mirrors the search panel's helper.
+   */
+  /**
+   * The label for a card with nothing to choose between, or null when a picker is
+   * warranted. One rule for both modes, read off the option list the picker would be
+   * given: exactly one option is plain text, anything else is a menu. Deriving it from
+   * the options rather than from a second, parallel condition is what stops the two
+   * from disagreeing — which is how a grouped card with two printings ended up rendering
+   * as static text with no way to reach the other one.
+   *
+   * Zero options is a menu on purpose: that is the not-yet-loaded state, and freezing it
+   * to text would strand the card on whatever printing happened to be showing.
+   */
+  singlePrintingLabel(card: CollectionCardDto): string | null {
+    const opts = this.printingOptions(card);
+    return opts.length === 1 ? opts[0].label : null;
+  }
+
   // ---- Filter suggestions --------------------------------------------
 
-  filterSuggOpen = false;
+  private nameMemo: { cards: CollectionCardDto[]; query: string; value: string[] } | null = null;
 
+  /**
+   * Names offered under the filter box. Memoized: the bar binds this, so it runs on every
+   * change-detection pass and used to re-map and re-sort the whole collection each time.
+   */
   filterSuggestions(collection: CollectionDetailDto): string[] {
-    const q = this.filterQuery.trim().toLowerCase();
+    const query = this.filters.query;
+    const m = this.nameMemo;
+    if (m && m.cards === collection.cards && m.query === query) return m.value;
+
+    const q = query.trim().toLowerCase();
     const pool = this.collectionCardNames(collection);
-    return (q ? pool.filter((n) => n.toLowerCase().includes(q)) : pool).slice(0, 8);
-  }
-
-  selectFilterSuggestion(name: string): void {
-    this.filterQuery = name;
-    this.filterSuggOpen = false;
-    this.cdr.markForCheck();
-  }
-
-  /** Delayed so a mousedown on a suggestion wins the race against the input's blur. */
-  closeFilterSuggSoon(): void {
-    setTimeout(() => {
-      this.filterSuggOpen = false;
-      this.cdr.markForCheck();
-    }, 120);
+    const value = (q ? pool.filter((n) => n.toLowerCase().includes(q)) : pool).slice(0, 8);
+    this.nameMemo = { cards: collection.cards, query, value };
+    return value;
   }
 
   // ---- Card list helpers -----------------------------------------
@@ -434,11 +688,123 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     ].sort();
   }
 
+  // One shared vocabulary with the card search panel — see models/card-filters.ts. The
+  // *controls* are app-card-grid-filters and the *rules* (what matches, how it sorts, how
+  // copies group) are CardGridFilterService; this component owns neither, only the state.
+  readonly filters = new CardFilters();
+
+  /** The bar mutated `filters` in place — OnPush needs the explicit mark. */
+  onFiltersChanged(): void {
+    this.cdr.markForCheck();
+  }
+
+  /** Sets represented in this collection — the deck grid asks the same question. */
+  setFilterOptions(col: CollectionDetailDto): SelectMenuOption[] {
+    return this.filterRules.setOptions(col.cards);
+  }
+
   filteredCards(collection: CollectionDetailDto): CollectionCardDto[] {
-    if (!this.filterQuery.trim()) return collection.cards;
-    const q = this.filterQuery.toLowerCase();
-    return collection.cards.filter(
-      (c) => c.cardDetails?.name.toLowerCase().includes(q) || c.oracleId.toLowerCase().includes(q),
+    const matching = this.filterRules.apply(collection.cards, this.filters.toState());
+    if (!this.groupSameCard) return matching;
+    const { rows, members } = this.filterRules.group(matching, this.groupChoice);
+    this.groupMembers = members;
+    return rows;
+  }
+
+  // ---- Grouping the same card across sets --------------------------
+  //
+  // Off, one entry per printing: two sets of the same card are two tiles. On, they
+  // collapse into one tile whose count is every copy you own, and the set picker
+  // chooses which of those printings the tile shows. That choice is display-only —
+  // it never rewrites which printing a row is pinned to.
+
+  /** Whether copies of one card from different sets share a single tile. */
+  groupSameCard = false;
+
+  /** Grouped mode only: the printing the user picked to represent a card. */
+  private groupChoice = new Map<string, string>();
+  /** Every owned row per card, keyed by oracleId — the rows behind a grouped tile. */
+  private groupMembers = new Map<string, CollectionCardDto[]>();
+
+  toggleGroupSameCard(): void {
+    this.groupSameCard = !this.groupSameCard;
+    // Stale group state would otherwise survive a round-trip through ungrouped mode
+    // and resurrect a display choice for a printing that has since been moved away.
+    this.groupMembers = new Map();
+    this.cdr.markForCheck();
+  }
+
+  /** True when this card actually has copies in more than one set. */
+  isGrouped(oracleId: string): boolean {
+    return this.groupSameCard && (this.groupMembers.get(oracleId)?.length ?? 0) > 1;
+  }
+
+  /**
+   * Whether the tile's picker is offering owned rows rather than every printing. True
+   * for any card the grouping pass has seen, including one owned in a single set — the
+   * picker must not silently switch meaning between "your copies" and "all printings"
+   * depending on how many you happen to own.
+   */
+  private usesGroupedPicker(oracleId: string): boolean {
+    return this.groupSameCard && this.groupMembers.has(oracleId);
+  }
+
+  private groupOptionsCache = new Map<
+    string,
+    { rows: CollectionCardDto[]; printings: PrintingDto[] | null; opts: SelectMenuOption[] }
+  >();
+
+  /**
+   * The owned printings of a grouped card. Unlike the ungrouped picker — which lists
+   * every printing in existence so you can re-pin a row — this lists only what you own,
+   * because the choice here is "which of mine do I want to look at".
+   *
+   * Keyed by row id, not printing id: a row that pins no printing still represents copies
+   * you own, and keying on the printing dropped those rows out of the list entirely.
+   */
+  private groupPrintingOptions(oracleId: string): SelectMenuOption[] {
+    const rows = this.groupMembers.get(oracleId) ?? [];
+    const cached = this.printings.cached(oracleId);
+    const hit = this.groupOptionsCache.get(oracleId);
+    // Keyed on the printings too. Keying on the rows alone meant options built before the
+    // printings finished loading were never rebuilt, so they kept the degraded label
+    // ("DBL" with no collector number) for the life of the page.
+    if (hit && hit.rows === rows && hit.printings === cached) return hit.opts;
+
+    const opts = rows.map((r) => {
+      const p = r.scryfallId ? cached?.find((x) => x.scryfallId === r.scryfallId) : undefined;
+      // The copy count only earns its place when there is more than one row to compare.
+      const suffix = rows.length > 1 ? ` ×${r.quantity + r.quantityFoil}` : '';
+      return p
+        ? printingOption(p, { value: r.id, suffix })
+        : setCodeOption(r.id, r.cardDetails?.setCode, suffix);
+    });
+    this.groupOptionsCache.set(oracleId, { rows, printings: cached, opts });
+    return opts;
+  }
+
+  /** What the tile's picker is currently set to — the row when grouped, else the printing. */
+  pickerValue(card: CollectionCardDto): string | null {
+    return this.groupSameCard ? card.id : card.scryfallId;
+  }
+
+  /** Combined copies behind a grouped tile, or null when the card isn't grouped. */
+  groupedTotals(oracleId: string): { quantity: number; quantityFoil: number } | null {
+    return this.groupSameCard ? this.filterRules.totals(this.groupMembers, oracleId) : null;
+  }
+
+  /** Copies to show beside the name in the modal — the group total when grouped. */
+  modalCount(col: CollectionDetailDto, card: CollectionCardDto): number | null {
+    return (
+      this.groupedTotals(card.oracleId)?.quantity ?? this.viewedEntry(col, card)?.quantity ?? null
+    );
+  }
+
+  modalFoilCount(col: CollectionDetailDto, card: CollectionCardDto): number | null {
+    return (
+      this.groupedTotals(card.oracleId)?.quantityFoil ??
+      this.viewedEntry(col, card)?.quantityFoil ??
+      null
     );
   }
 
@@ -648,13 +1014,56 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       .map((c) => c.scryfallId!);
   }
 
+  private viewedEntryMemo: {
+    cards: CollectionCardDto[];
+    oracleId: string;
+    scryfallId: string | null;
+    value: CollectionCardDto | null;
+  } | null = null;
+
+  /**
+   * The owned row behind the open modal: the one pinning the printing on screen, else
+   * the collection's *unpinned* row for the card.
+   *
+   * That fallback is the point. An unpinned row means "owned, printing unspecified", but
+   * the modal always views a concrete printing — `openCard` substitutes the newest one
+   * when a row pins nothing. Matching on printing alone therefore found no row for an
+   * unpinned entry, so a card the grid showed as owned opened with no count badge, no
+   * ownership box and no −/+ buttons.
+   *
+   * Memoized per CLAUDE.md: the template reads this ~6 times per change-detection pass
+   * and each read scans the collection.
+   */
   viewedEntry(col: CollectionDetailDto, card: CollectionCardDto): CollectionCardDto | null {
-    if (!this.modalViewScryfallId) return null;
-    return (
-      col.cards.find(
-        (c) => c.oracleId === card.oracleId && c.scryfallId === this.modalViewScryfallId,
-      ) ?? null
-    );
+    const m = this.viewedEntryMemo;
+    if (
+      m &&
+      m.cards === col.cards &&
+      m.oracleId === card.oracleId &&
+      m.scryfallId === this.modalViewScryfallId
+    ) {
+      return m.value;
+    }
+
+    const sameCard = (c: CollectionCardDto): boolean => c.oracleId === card.oracleId;
+    const rows = col.cards.filter(sameCard);
+    const pinned = this.modalViewScryfallId
+      ? rows.find((c) => c.scryfallId === this.modalViewScryfallId)
+      : undefined;
+
+    // The unpinned row stands in only when *nothing* is pinned. Falling back to it
+    // whenever the viewed printing wasn't owned meant switching printings in the modal
+    // and pressing + incremented the row you already had instead of adding the printing
+    // you were looking at.
+    const value = pinned ?? (rows.some((c) => c.scryfallId) ? null : (rows[0] ?? null));
+
+    this.viewedEntryMemo = {
+      cards: col.cards,
+      oracleId: card.oracleId,
+      scryfallId: this.modalViewScryfallId,
+      value,
+    };
+    return value;
   }
 
   // ---- Modal notes -----------------------------------------------

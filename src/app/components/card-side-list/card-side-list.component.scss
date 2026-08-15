@@ -51,9 +51,16 @@
     border-color: rgba(201, 168, 76, 0.45);
     transform: translateX(-2px);
 
-    .row-art { opacity: 0.85; }
-    .row-mana { opacity: 0; }
-    .row-ctrls { opacity: 1; pointer-events: auto; }
+    .row-art {
+      opacity: 0.85;
+    }
+    .row-mana {
+      opacity: 0;
+    }
+    .row-ctrls {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   &.is-pulsed {
@@ -127,9 +134,18 @@
 }
 
 @keyframes side-row-pulse {
-  0%   { transform: scale(1); box-shadow: 0 0 0 rgba(201, 168, 76, 0); }
-  35%  { transform: scale(1.04); box-shadow: 0 0 18px rgba(201, 168, 76, 0.45); }
-  100% { transform: scale(1); box-shadow: 0 0 0 rgba(201, 168, 76, 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(201, 168, 76, 0);
+  }
+  35% {
+    transform: scale(1.04);
+    box-shadow: 0 0 18px rgba(201, 168, 76, 0.45);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(201, 168, 76, 0);
+  }
 }
 
 .row-art {
@@ -218,8 +234,12 @@
   height: 20px;
 }
 
-.row-inc { @include tile-ctrl-btn-inc; }
-.row-dec { @include tile-ctrl-btn-dec; }
+.row-inc {
+  @include tile-ctrl-btn-inc;
+}
+.row-dec {
+  @include tile-ctrl-btn-dec;
+}
 
 .row-ctrl-sep {
   font-size: 10px;

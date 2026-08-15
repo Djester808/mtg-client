@@ -14,6 +14,7 @@ import { GameApiService } from '../../services/game-api.service';
 import { PrintingsService } from '../../services/printings.service';
 import { CardDto, PrintingDto } from '../../models/game.models';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
+import { SetIconComponent } from '../set-icon/set-icon.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { buildTypeLine, normalizeCollectorNumber } from '../../utils/card.utils';
 import { describeHttpError } from '../../utils/http-error.utils';
@@ -38,7 +39,7 @@ const ALPHA = 0.25; // smoothing factor for bounding box
 @Component({
   selector: 'app-card-scanner',
   standalone: true,
-  imports: [CommonModule, ManaCostComponent, OracleSymbolsPipe],
+  imports: [CommonModule, ManaCostComponent, OracleSymbolsPipe, SetIconComponent],
   templateUrl: './card-scanner.component.html',
   styleUrls: ['./card-scanner.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

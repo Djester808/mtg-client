@@ -26,9 +26,13 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
-  i { font-size: 0.85rem; }
+  i {
+    font-size: 0.85rem;
+  }
 
   &:hover {
     color: rgba(230, 220, 195, 0.8);

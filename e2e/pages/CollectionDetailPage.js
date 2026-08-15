@@ -101,7 +101,7 @@ class CollectionDetailPage extends BasePage {
   }
 
   async openCardModal(index = 0) {
-    const arts = await this.driver.findElements(By.css('.card-art'));
+    const arts = await this.driver.findElements(By.css('.ct-art'));
     if (arts.length <= index) throw new Error(`No card art at index ${index}`);
     await arts[index].click();
     await this.waitForElement(this.cardModal, 5000);

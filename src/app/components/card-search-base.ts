@@ -1,8 +1,17 @@
 import { FormControl } from '@angular/forms';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { CardDto, SetSummaryDto } from '../models/game.models';
+import { CardFilters } from '../models/card-filters';
+import {
+  CMC_CHIPS,
+  CMC_VALUES,
+  SEARCH_CARD_TYPES,
+  SEARCH_TYPE_CHIPS,
+  SORT_CHIPS,
+} from './filter-chips/filter-chip-sets';
 
-export type RarityCode = 'common' | 'uncommon' | 'rare' | 'mythic';
+export type { RarityCode } from './filter-chips/filter-chip-sets';
+import type { RarityCode } from './filter-chips/filter-chip-sets';
 export type CmcOption = '0' | '1' | '2' | '3' | '4' | '5' | '6+';
 export type SortBy = 'name' | 'cmc';
 export type SortDir = 'asc' | 'desc';
@@ -22,13 +31,47 @@ export abstract class CardSearchBase {
   // ---- Search & filter state ----
   searchText = new FormControl('');
 
-  selectedColors = new Set<string>();
-  selectedTypes = new Set<string>();
-  selectedRarities = new Set<RarityCode>();
-  selectedCmc: CmcOption | null = null;
-  activeSet: string | null = null;
-  sortBy: SortBy = 'name';
-  sortDir: SortDir = 'asc';
+  /**
+   * One shared vocabulary with the collection grid (models/card-filters.ts). The public
+   * names below are unchanged and forward onto it, so this class's subclasses and their
+   * templates are untouched — the point is that there is now a single definition of what
+   * a colour chip or a sort direction *is*, not two that drift.
+   */
+  readonly filters = new CardFilters();
+
+  get selectedColors(): Set<string> {
+    return this.filters.colors;
+  }
+  get selectedTypes(): Set<string> {
+    return this.filters.types;
+  }
+  get selectedRarities(): Set<string> {
+    return this.filters.rarities;
+  }
+  get selectedCmc(): CmcOption | null {
+    return this.filters.cmc as CmcOption | null;
+  }
+  set selectedCmc(v: CmcOption | null) {
+    this.filters.cmc = v;
+  }
+  get activeSet(): string | null {
+    return this.filters.set;
+  }
+  set activeSet(v: string | null) {
+    this.filters.set = v;
+  }
+  get sortBy(): SortBy {
+    return this.filters.sort as SortBy;
+  }
+  set sortBy(v: SortBy) {
+    this.filters.sort = v;
+  }
+  get sortDir(): SortDir {
+    return this.filters.sortDir;
+  }
+  set sortDir(v: SortDir) {
+    this.filters.sortDir = v;
+  }
   matchCase = false;
   matchWord = false;
   useRegex = false;
@@ -49,18 +92,29 @@ export abstract class CardSearchBase {
   setDropOpen = false;
 
   // ---- Filter option lists shared verbatim (colorOptions/rarityOptions differ per view) ----
-  readonly typeOptions = [
-    'Creature',
-    'Instant',
-    'Sorcery',
-    'Enchantment',
-    'Artifact',
-    'Land',
-    'Planeswalker',
-    'Token',
-    'Other',
-  ];
-  readonly cmcOptions: CmcOption[] = ['0', '1', '2', '3', '4', '5', '6+'];
+  // Derived from the shared vocabulary rather than re-listed — see filter-chip-sets.ts.
+  readonly typeOptions = SEARCH_CARD_TYPES;
+  readonly cmcOptions = CMC_VALUES as readonly CmcOption[];
+
+  // The same chip rows the card grids render — see components/filter-chips.
+  readonly typeChips = SEARCH_TYPE_CHIPS;
+  readonly cmcChips = CMC_CHIPS;
+  readonly sortChips = SORT_CHIPS;
+  /** Chips that act as buttons rather than toggles never read as active. */
+  readonly noneActive: ReadonlySet<string> = new Set<string>();
+
+  get sortDirChips() {
+    return [{ code: 'dir', label: this.sortDir === 'asc' ? '▲' : '▼' }];
+  }
+
+  /** Single-select facets read as one-entry sets, which is what a chip row expects. */
+  get activeCmc(): ReadonlySet<string> {
+    return this.filters.activeAsSet(this.filters.cmc);
+  }
+
+  get activeSort(): ReadonlySet<string> {
+    return this.filters.activeAsSet(this.filters.sort);
+  }
 
   // A new filter emits here; the subclass pipeline re-runs the search. BehaviorSubject so
   // the pipeline fires an initial load on subscribe.

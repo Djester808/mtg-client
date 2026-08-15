@@ -1,5 +1,4 @@
 <div class="relative flex flex-col h-full bg-void overflow-hidden">
-
   <div class="absolute inset-0 pointer-events-none -z-[1]">
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
@@ -7,9 +6,15 @@
   </div>
 
   <!-- Top bar -->
-  <header class="relative z-[1] flex items-center gap-4 px-6 py-3.5 border-b border-solid border-dim bg-[rgba(8,8,8,0.7)] backdrop-blur-[8px] shrink-0">
-    <button class="back-btn bg-transparent border border-solid border-subtle rounded-[7px] text-parchment-muted font-display text-[10px] tracking-[0.1em] px-3 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-[180ms] hover:border-gold hover:text-gold"
-            (click)="back()">← Back</button>
+  <header
+    class="relative z-[1] flex items-center gap-4 px-6 py-3.5 border-b border-solid border-dim bg-[rgba(8,8,8,0.7)] backdrop-blur-[8px] shrink-0"
+  >
+    <button
+      class="back-btn bg-transparent border border-solid border-subtle rounded-[7px] text-parchment-muted font-display text-[10px] tracking-[0.1em] px-3 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-[180ms] hover:border-gold hover:text-gold"
+      (click)="back()"
+    >
+      ← Back
+    </button>
     <div class="flex items-center gap-2.5">
       <span class="text-gold text-[18px] drop-shadow-[0_0_8px_rgba(201,168,76,0.5)]">✦</span>
       <span class="font-display text-[13px] tracking-[0.12em] uppercase text-parchment-muted">
@@ -20,14 +25,23 @@
   </header>
 
   <!-- Body: sidebar + detail -->
-  <div class="relative z-[1] grid flex-1 min-h-0" style="grid-template-columns: 240px 1fr" *ngIf="kb; else loading">
-
+  <div
+    class="relative z-[1] grid flex-1 min-h-0"
+    style="grid-template-columns: 240px 1fr"
+    *ngIf="kb; else loading"
+  >
     <!-- Sidebar -->
-    <aside class="kb-sidebar border-r border-solid border-dim flex flex-col overflow-y-auto overflow-x-hidden bg-[rgba(14,14,15,0.6)] py-4 pb-6" style="scrollbar-width:thin">
-
+    <aside
+      class="kb-sidebar border-r border-solid border-dim flex flex-col overflow-y-auto overflow-x-hidden bg-[rgba(14,14,15,0.6)] py-4 pb-6"
+      style="scrollbar-width: thin"
+    >
       <!-- Search -->
-      <div class="relative flex items-center mx-3 mb-4 bg-raised border border-solid border-subtle rounded-lg px-2.5 py-0 transition-[border-color] duration-[180ms] focus-within:border-gold">
-        <span class="text-parchment-faint text-[16px] mr-1.5 shrink-0"><i class="bi bi-search"></i></span>
+      <div
+        class="relative flex items-center mx-3 mb-4 bg-raised border border-solid border-subtle rounded-lg px-2.5 py-0 transition-[border-color] duration-[180ms] focus-within:border-gold"
+      >
+        <span class="text-parchment-faint text-[16px] mr-1.5 shrink-0"
+          ><i class="bi bi-search"></i
+        ></span>
         <input
           class="search-input flex-1 bg-transparent border-none outline-none text-parchment font-body text-[13px] py-2 min-w-0 placeholder:text-parchment-faint"
           type="text"
@@ -35,35 +49,68 @@
           [(ngModel)]="searchQuery"
           autocomplete="off"
         />
-        <button class="search-clear bg-transparent border-none text-parchment-faint text-[11px] cursor-pointer p-1 shrink-0 transition-colors duration-150 hover:text-parchment-muted"
-                *ngIf="searchQuery" (click)="clearSearch()"><i class="bi bi-x"></i></button>
+        <button
+          class="search-clear bg-transparent border-none text-parchment-faint text-[11px] cursor-pointer p-1 shrink-0 transition-colors duration-150 hover:text-parchment-muted"
+          *ngIf="searchQuery"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
       </div>
 
-      <div class="no-results font-body text-[12px] text-parchment-faint italic px-4 py-2" *ngIf="searchQuery && totalFiltered === 0">
+      <div
+        class="no-results font-body text-[12px] text-parchment-faint italic px-4 py-2"
+        *ngIf="searchQuery && totalFiltered === 0"
+      >
         No matches for "{{ searchQuery }}"
       </div>
 
       <!-- Keywords group -->
       <div class="mb-2" *ngIf="filteredKeywords.length">
-        <div class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1">Keywords</div>
-        <button class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-                *ngFor="let e of filteredKeywords"
-                [class.active]="isSelected(e)"
-                (click)="select(e)">
-          <span class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ labelOf(e) }}</span>
-          <span class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0" [ngClass]="$any(e.data).status">{{ $any(e.data).status[0] }}</span>
+        <div
+          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
+        >
+          Keywords
+        </div>
+        <button
+          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
+          *ngFor="let e of filteredKeywords"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span
+            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >{{ labelOf(e) }}</span
+          >
+          <span
+            class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0"
+            [ngClass]="$any(e.data).status"
+            >{{ $any(e.data).status[0] }}</span
+          >
         </button>
       </div>
 
       <!-- Mechanics group -->
       <div class="mb-2" *ngIf="filteredMechanics.length">
-        <div class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1">Mechanics</div>
-        <button class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-                *ngFor="let e of filteredMechanics"
-                [class.active]="isSelected(e)"
-                (click)="select(e)">
-          <span class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ labelOf(e) }}</span>
-          <span class="font-display text-[8px] tracking-[0.08em] uppercase text-parchment-faint shrink-0" *ngIf="$any(e.data).steps?.length">
+        <div
+          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
+        >
+          Mechanics
+        </div>
+        <button
+          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
+          *ngFor="let e of filteredMechanics"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span
+            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >{{ labelOf(e) }}</span
+          >
+          <span
+            class="font-display text-[8px] tracking-[0.08em] uppercase text-parchment-faint shrink-0"
+            *ngIf="$any(e.data).steps?.length"
+          >
             {{ $any(e.data).steps.length }} steps
           </span>
         </button>
@@ -71,22 +118,36 @@
 
       <!-- SBA group -->
       <div class="mb-2" *ngIf="filteredSba.length">
-        <div class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1">State-Based Actions</div>
-        <button class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-                *ngFor="let e of filteredSba"
-                [class.active]="isSelected(e)"
-                (click)="select(e)">
-          <span class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ labelOf(e) }}</span>
-          <span class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0" [ngClass]="$any(e.data).status">{{ $any(e.data).status[0] }}</span>
+        <div
+          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
+        >
+          State-Based Actions
+        </div>
+        <button
+          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
+          *ngFor="let e of filteredSba"
+          [class.active]="isSelected(e)"
+          (click)="select(e)"
+        >
+          <span
+            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >{{ labelOf(e) }}</span
+          >
+          <span
+            class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0"
+            [ngClass]="$any(e.data).status"
+            >{{ $any(e.data).status[0] }}</span
+          >
         </button>
       </div>
-
     </aside>
 
     <!-- Detail panel -->
-    <main class="kb-detail overflow-y-auto px-12 py-9" style="scrollbar-width:thin">
-
-      <div class="detail-empty flex flex-col items-center justify-center h-full gap-3 text-parchment-faint font-body text-[14px] italic" *ngIf="!selected">
+    <main class="kb-detail overflow-y-auto px-12 py-9" style="scrollbar-width: thin">
+      <div
+        class="detail-empty flex flex-col items-center justify-center h-full gap-3 text-parchment-faint font-body text-[14px] italic"
+        *ngIf="!selected"
+      >
         <span class="text-[32px] text-gold-dim opacity-40">✦</span>
         <p>Select an entry from the sidebar</p>
       </div>
@@ -94,19 +155,40 @@
       <!-- Keyword detail -->
       <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'keyword'">
         <div class="flex items-center gap-3.5 mb-5">
-          <h2 class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment" style="font-size: clamp(20px, 3vw, 30px)">{{ $any(selected!.data).name }}</h2>
-          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{ $any(selected!.data).status }}</span>
+          <h2
+            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
+            style="font-size: clamp(20px, 3vw, 30px)"
+          >
+            {{ $any(selected!.data).name }}
+          </h2>
+          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{
+            $any(selected!.data).status
+          }}</span>
         </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">{{ $any(selected!.data).description }}</p>
+        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
+          {{ $any(selected!.data).description }}
+        </p>
         <div class="flex items-center gap-3 mb-5">
-          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint">Rules Reference</span>
-          <span class="font-display text-[11px] tracking-[0.1em] text-gold">{{ $any(selected!.data).rulesRef }}</span>
+          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint"
+            >Rules Reference</span
+          >
+          <span class="font-display text-[11px] tracking-[0.1em] text-gold">{{
+            $any(selected!.data).rulesRef
+          }}</span>
         </div>
         <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
           <ng-container [ngSwitch]="$any(selected!.data).status">
-            <span *ngSwitchCase="'implemented'">Fully enforced in the rules engine — attacker/blocker validation, damage assignment, and SBAs all respect this keyword.</span>
-            <span *ngSwitchCase="'partial'">Validation skeleton exists but full enforcement is not yet complete.</span>
-            <span *ngSwitchCase="'stub'">Defined in the KeywordAbility enum. Logic not yet enforced in targeting or combat.</span>
+            <span *ngSwitchCase="'implemented'"
+              >Fully enforced in the rules engine — attacker/blocker validation, damage assignment,
+              and SBAs all respect this keyword.</span
+            >
+            <span *ngSwitchCase="'partial'"
+              >Validation skeleton exists but full enforcement is not yet complete.</span
+            >
+            <span *ngSwitchCase="'stub'"
+              >Defined in the KeywordAbility enum. Logic not yet enforced in targeting or
+              combat.</span
+            >
           </ng-container>
         </div>
       </div>
@@ -114,15 +196,34 @@
       <!-- Mechanic detail -->
       <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'mechanic'">
         <div class="flex items-center gap-3.5 mb-5">
-          <h2 class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment" style="font-size: clamp(20px, 3vw, 30px)">{{ $any(selected!.data).name }}</h2>
+          <h2
+            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
+            style="font-size: clamp(20px, 3vw, 30px)"
+          >
+            {{ $any(selected!.data).name }}
+          </h2>
         </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">{{ $any(selected!.data).description }}</p>
-        <div class="flex flex-col gap-3 border-l-2 border-solid border-dim pl-5 mt-2" *ngIf="$any(selected!.data).steps?.length">
-          <div class="step-row flex gap-3.5 items-start" *ngFor="let s of $any(selected!.data).steps; let i = index">
-            <span class="font-display text-[10px] text-gold-dim min-w-[18px] pt-[3px] text-right">{{ i + 1 }}</span>
+        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
+          {{ $any(selected!.data).description }}
+        </p>
+        <div
+          class="flex flex-col gap-3 border-l-2 border-solid border-dim pl-5 mt-2"
+          *ngIf="$any(selected!.data).steps?.length"
+        >
+          <div
+            class="step-row flex gap-3.5 items-start"
+            *ngFor="let s of $any(selected!.data).steps; let i = index"
+          >
+            <span class="font-display text-[10px] text-gold-dim min-w-[18px] pt-[3px] text-right">{{
+              i + 1
+            }}</span>
             <div class="flex flex-col gap-[3px]">
-              <span class="font-display text-[11px] tracking-[0.08em] text-parchment">{{ s.name }}</span>
-              <span class="font-body text-[13px] text-parchment-muted leading-[1.55]">{{ s.description }}</span>
+              <span class="font-display text-[11px] tracking-[0.08em] text-parchment">{{
+                s.name
+              }}</span>
+              <span class="font-body text-[13px] text-parchment-muted leading-[1.55]">{{
+                s.description
+              }}</span>
             </div>
           </div>
         </div>
@@ -131,30 +232,49 @@
       <!-- SBA detail -->
       <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'sba'">
         <div class="flex items-center gap-3.5 mb-5">
-          <h2 class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment" style="font-size: clamp(20px, 3vw, 30px)">{{ $any(selected!.data).rulesRef }}</h2>
-          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{ $any(selected!.data).status }}</span>
+          <h2
+            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
+            style="font-size: clamp(20px, 3vw, 30px)"
+          >
+            {{ $any(selected!.data).rulesRef }}
+          </h2>
+          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{
+            $any(selected!.data).status
+          }}</span>
         </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">{{ $any(selected!.data).description }}</p>
+        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
+          {{ $any(selected!.data).description }}
+        </p>
         <div class="flex items-center gap-3 mb-5">
-          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint">Category</span>
-          <span class="font-display text-[11px] tracking-[0.1em] text-gold">State-Based Action (CR 704)</span>
+          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint"
+            >Category</span
+          >
+          <span class="font-display text-[11px] tracking-[0.1em] text-gold"
+            >State-Based Action (CR 704)</span
+          >
         </div>
         <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
           <ng-container [ngSwitch]="$any(selected!.data).status">
-            <span *ngSwitchCase="'implemented'">Checked in <code>StateBasedActions.Apply()</code> after every game action. Loops until stable.</span>
-            <span *ngSwitchCase="'stub'">Skeleton only — the check is defined but the resolution effect is not yet applied.</span>
+            <span *ngSwitchCase="'implemented'"
+              >Checked in <code>StateBasedActions.Apply()</code> after every game action. Loops
+              until stable.</span
+            >
+            <span *ngSwitchCase="'stub'"
+              >Skeleton only — the check is defined but the resolution effect is not yet
+              applied.</span
+            >
           </ng-container>
         </div>
       </div>
-
     </main>
   </div>
 
   <ng-template #loading>
-    <div class="relative z-[1] flex flex-col items-center justify-center flex-1 gap-4 text-parchment-faint font-display text-[11px] tracking-[0.14em] uppercase">
+    <div
+      class="relative z-[1] flex flex-col items-center justify-center flex-1 gap-4 text-parchment-faint font-display text-[11px] tracking-[0.14em] uppercase"
+    >
       <div class="text-[28px] text-gold animate-pulse-gold">✦</div>
       <span>Loading rules…</span>
     </div>
   </ng-template>
-
 </div>

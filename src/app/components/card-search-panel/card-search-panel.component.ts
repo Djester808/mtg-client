@@ -41,8 +41,12 @@ import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-menu.component';
+import { SetIconComponent } from '../set-icon/set-icon.component';
+import { FilterChipsComponent } from '../filter-chips/filter-chips.component';
+import { printingOptions as buildPrintingOptions } from '../../utils/printing-options';
 import { FlightSource } from '../../shared/fly-card';
-import { CardSearchBase, RarityCode } from '../card-search-base';
+import { CardSearchBase } from '../card-search-base';
+import { COLOR_CHIPS, RARITY_CHIPS } from '../filter-chips/filter-chip-sets';
 
 @Component({
   selector: 'app-card-search-panel',
@@ -54,6 +58,8 @@ import { CardSearchBase, RarityCode } from '../card-search-base';
     ManaCostComponent,
     CardModalComponent,
     SelectMenuComponent,
+    SetIconComponent,
+    FilterChipsComponent,
     OracleSymbolsPipe,
   ],
   templateUrl: './card-search-panel.component.html',
@@ -149,22 +155,9 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
 
   // ---- Filter option lists (colorOptions/rarityOptions differ per view) -------------
 
-  readonly colorOptions = [
-    { code: 'W', symbol: 'w', title: 'White' },
-    { code: 'U', symbol: 'u', title: 'Blue' },
-    { code: 'B', symbol: 'b', title: 'Black' },
-    { code: 'R', symbol: 'r', title: 'Red' },
-    { code: 'G', symbol: 'g', title: 'Green' },
-    { code: 'C', symbol: 'c', title: 'Colorless' },
-    { code: 'M', symbol: 'multicolor', title: 'Multicolor' },
-  ];
+  readonly colorOptions = COLOR_CHIPS;
 
-  readonly rarityOptions: { code: RarityCode; label: string; title: string }[] = [
-    { code: 'common', label: 'C', title: 'Common' },
-    { code: 'uncommon', label: 'U', title: 'Uncommon' },
-    { code: 'rare', label: 'R', title: 'Rare' },
-    { code: 'mythic', label: 'M', title: 'Mythic' },
-  ];
+  readonly rarityOptions = RARITY_CHIPS;
 
   // ---- Search history -----------------------------------------------
 
@@ -360,17 +353,34 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     this.cdr.markForCheck();
   }
 
+  /**
+   * The printing chosen in a result's set picker, if any. Search results carry the
+   * default printing's art, so without this the picture stayed on that printing no
+   * matter which set you picked — the art has to follow the choice you just made.
+   */
+  private selectedPrinting(oracleId: string): PrintingDto | null {
+    const id = this.searchSelectedScryfallId.get(oracleId);
+    if (!id) return null;
+    return this.printings.cached(oracleId)?.find((p) => p.scryfallId === id) ?? null;
+  }
+
   cardImage(card: CardDto): string | null {
-    if (this.flippedIds.has(card.oracleId) && card.imageUriNormalBack)
-      return card.imageUriNormalBack;
-    return card.imageUriSmall;
+    const p = this.selectedPrinting(card.oracleId);
+    if (this.flippedIds.has(card.oracleId)) {
+      const back = p?.imageUriNormalBack ?? card.imageUriNormalBack;
+      if (back) return back;
+    }
+    return p?.imageUriSmall ?? card.imageUriSmall;
   }
 
   /** Full-resolution art for the board-mode tiles; the small image is thumbnail-only. */
   tileImage(card: CardDto): string | null {
-    if (this.flippedIds.has(card.oracleId) && card.imageUriNormalBack)
-      return card.imageUriNormalBack;
-    return card.imageUriNormal ?? card.imageUriSmall;
+    const p = this.selectedPrinting(card.oracleId);
+    if (this.flippedIds.has(card.oracleId)) {
+      const back = p?.imageUriNormalBack ?? card.imageUriNormalBack;
+      if (back) return back;
+    }
+    return p?.imageUriNormal ?? p?.imageUriSmall ?? card.imageUriNormal ?? card.imageUriSmall;
   }
 
   /** Stable identity so appended pages never replay the earlier tiles' entrances. */
@@ -431,11 +441,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     const printings = this.printings.cached(oracleId) ?? [];
     const hit = this.printingOptionsCache.get(oracleId);
     if (hit && hit.src === printings) return hit.opts;
-    const opts = printings.map((p) => ({
-      value: p.scryfallId,
-      label: `${p.setCode.toUpperCase()} #${p.collectorNumber}`,
-      title: p.setName,
-    }));
+    const opts = buildPrintingOptions(printings);
     this.printingOptionsCache.set(oracleId, { src: printings, opts });
     return opts;
   }
@@ -465,6 +471,8 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
   onSetChange(oracleId: string, scryfallId: string): void {
     this.searchSelectedScryfallId.set(oracleId, scryfallId);
     this.addErrors.delete(oracleId);
+    // The art is derived from this selection, so the view has to be repainted.
+    this.cdr.markForCheck();
   }
 
   ownedEntry(oracleId: string): CollectionCardDto | undefined {
@@ -535,8 +543,13 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
 
   /** With a single known printing there is nothing to choose — show it as plain text. */
   singlePrintingLabel(oracleId: string): string | null {
+    return this.singlePrintingOption(oracleId)?.label ?? null;
+  }
+
+  /** The same lone printing, as the option, so the text can carry its set symbol too. */
+  singlePrintingOption(oracleId: string): SelectMenuOption | null {
     const opts = this.printingOptions(oracleId);
-    return opts.length === 1 ? opts[0].label : null;
+    return opts.length === 1 ? opts[0] : null;
   }
 
   onDragStart(card: CardDto, event: DragEvent): void {
