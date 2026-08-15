@@ -14,7 +14,8 @@
 
     <!-- Filter bar -->
     <div class="pl-filters">
-      <app-search-input class="pf-search-wrap"
+      <app-search-input
+        class="pf-search-wrap"
         [value]="searchQuery"
         [debounceMs]="0"
         (valueChange)="searchQuery = $event; cdr.markForCheck()"
@@ -26,12 +27,30 @@
 
       <span class="pf-label">Sort</span>
       <div class="pf-sort-group">
-        <button class="pf-sort-btn" [class.is-active]="sortBy === 'decks'"
-                title="Sort by most decks published" (click)="setSortBy('decks')">Decks</button>
-        <button class="pf-sort-btn" [class.is-active]="sortBy === 'comments'"
-                title="Sort by most comments posted" (click)="setSortBy('comments')">Comments</button>
-        <button class="pf-sort-btn" [class.is-active]="sortBy === 'name'"
-                title="Sort alphabetically by username" (click)="setSortBy('name')">A–Z</button>
+        <button
+          class="pf-sort-btn"
+          [class.is-active]="sortBy === 'decks'"
+          title="Sort by most decks published"
+          (click)="setSortBy('decks')"
+        >
+          Decks
+        </button>
+        <button
+          class="pf-sort-btn"
+          [class.is-active]="sortBy === 'comments'"
+          title="Sort by most comments posted"
+          (click)="setSortBy('comments')"
+        >
+          Comments
+        </button>
+        <button
+          class="pf-sort-btn"
+          [class.is-active]="sortBy === 'name'"
+          title="Sort alphabetically by username"
+          (click)="setSortBy('name')"
+        >
+          A–Z
+        </button>
       </div>
     </div>
 
@@ -49,9 +68,12 @@
 
     <!-- Grid -->
     <div class="pl-grid" *ngIf="!loading && filteredPlayers.length > 0">
-      <a class="pl-card" *ngFor="let p of filteredPlayers"
-         [routerLink]="['/u', p.username]"
-         [title]="'View ' + p.username + '\'s profile'">
+      <a
+        class="pl-card"
+        *ngFor="let p of filteredPlayers"
+        [routerLink]="['/u', p.username]"
+        [title]="'View ' + p.username + '\'s profile'"
+      >
         <div class="pl-avatar" [style.background]="avatarColor(p.username)">
           {{ p.username[0].toUpperCase() }}
         </div>

@@ -11,30 +11,60 @@
   border-radius: 50%;
   filter: blur(120px);
 }
-.orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(201,168,76,0.07), transparent 70%); top: -200px; left: -100px; }
-.orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(74,144,217,0.05), transparent 70%); bottom: -80px; right: -80px; }
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(201, 168, 76, 0.07), transparent 70%);
+  top: -200px;
+  left: -100px;
+}
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(74, 144, 217, 0.05), transparent 70%);
+  bottom: -80px;
+  right: -80px;
+}
 .bg-grid {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
 // ---- Sidebar active states (compound selectors) ---------------
-.kb-sidebar { scrollbar-color: var(--border-dim) transparent; }
+.kb-sidebar {
+  scrollbar-color: var(--border-dim) transparent;
+}
 
 .sidebar-item.active {
-  background: rgba(201,168,76,0.08);
+  background: rgba(201, 168, 76, 0.08);
   border-right: 2px solid var(--gold);
 }
 
-.item-label { .active & { color: var(--gold); } }
+.item-label {
+  .active & {
+    color: var(--gold);
+  }
+}
 
 // ---- Status badges (compound selectors) -----------------------
 .item-badge {
-  &.implemented { background: rgba(39,174,96,0.15); color: #27ae60; }
-  &.partial      { background: rgba(201,168,76,0.12); color: var(--gold); }
-  &.stub         { background: rgba(255,255,255,0.04); color: var(--text-dim); }
+  &.implemented {
+    background: rgba(39, 174, 96, 0.15);
+    color: #27ae60;
+  }
+  &.partial {
+    background: rgba(201, 168, 76, 0.12);
+    color: var(--gold);
+  }
+  &.stub {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-dim);
+  }
 }
 
 .badge.lg {
@@ -46,9 +76,21 @@
   padding: 4px 10px;
   border-radius: 5px;
 
-  &.implemented { background: rgba(39,174,96,0.15);  color: #27ae60; border: 1px solid rgba(39,174,96,0.3); }
-  &.partial      { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
-  &.stub         { background: rgba(255,255,255,0.04); color: var(--text-dim); border: 1px solid var(--border-dim); }
+  &.implemented {
+    background: rgba(39, 174, 96, 0.15);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+  }
+  &.partial {
+    background: rgba(201, 168, 76, 0.12);
+    color: var(--gold);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+  }
+  &.stub {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-dim);
+    border: 1px solid var(--border-dim);
+  }
 }
 
 .detail-status-note {
@@ -59,9 +101,27 @@
   border-radius: 8px;
   margin-top: 8px;
 
-  code { font-family: 'Courier New', monospace; font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; }
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
 
-  &.implemented { background: rgba(39,174,96,0.07);  color: #5dbf8a; border-left: 3px solid rgba(39,174,96,0.4); }
-  &.partial      { background: rgba(201,168,76,0.07); color: #c9a84c; border-left: 3px solid rgba(201,168,76,0.4); }
-  &.stub         { background: rgba(255,255,255,0.03); color: var(--text-dim); border-left: 3px solid var(--border-dim); }
+  &.implemented {
+    background: rgba(39, 174, 96, 0.07);
+    color: #5dbf8a;
+    border-left: 3px solid rgba(39, 174, 96, 0.4);
+  }
+  &.partial {
+    background: rgba(201, 168, 76, 0.07);
+    color: #c9a84c;
+    border-left: 3px solid rgba(201, 168, 76, 0.4);
+  }
+  &.stub {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-dim);
+    border-left: 3px solid var(--border-dim);
+  }
 }

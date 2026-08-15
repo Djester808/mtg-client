@@ -26,7 +26,8 @@ import { GameApiService } from '../services/game-api.service';
 import { PrintingsService } from '../services/printings.service';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../components/card-modal/card-modal.component';
-import { CardSearchBase, RarityCode } from '../components/card-search-base';
+import { CardSearchBase } from '../components/card-search-base';
+import { COLOR_CHIPS, RARITY_CHIPS } from '../components/filter-chips/filter-chip-sets';
 
 @Component({
   selector: 'app-home',
@@ -51,22 +52,9 @@ export class HomeComponent extends CardSearchBase implements OnInit, OnDestroy {
 
   // ---- Filter options ----------------------------------------
 
-  readonly colorOptions = [
-    { code: 'W', label: 'W', title: 'White' },
-    { code: 'U', label: 'U', title: 'Blue' },
-    { code: 'B', label: 'B', title: 'Black' },
-    { code: 'R', label: 'R', title: 'Red' },
-    { code: 'G', label: 'G', title: 'Green' },
-    { code: 'C', label: 'C', title: 'Colorless' },
-    { code: 'M', label: 'M', title: 'Multicolor' },
-  ];
+  readonly colorOptions = COLOR_CHIPS;
 
-  readonly rarityOptions: { code: RarityCode; label: string }[] = [
-    { code: 'common', label: 'Common' },
-    { code: 'uncommon', label: 'Uncommon' },
-    { code: 'rare', label: 'Rare' },
-    { code: 'mythic', label: 'Mythic' },
-  ];
+  readonly rarityOptions = RARITY_CHIPS;
 
   // ---- Internals ---------------------------------------------
 

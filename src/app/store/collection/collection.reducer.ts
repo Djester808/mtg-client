@@ -134,6 +134,47 @@ export const collectionReducer = createReducer(
     };
   }),
 
+  // Move — applied on success rather than optimistically: the server decides whether the
+  // row emptied and left, or kept a remainder, and guessing wrong shows a phantom count.
+  on(CollectionActions.moveCardSuccess, (state, { collectionId, cardId, result }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
+    const cards = result.sourceRemainder
+      ? state.activeCollection.cards.map((c) => (c.id === cardId ? result.sourceRemainder! : c))
+      : state.activeCollection.cards.filter((c) => c.id !== cardId);
+    return { ...state, activeCollection: { ...state.activeCollection, cards } };
+  }),
+
+  // Bulk move — the server reports exactly which rows left, so drop those.
+  on(CollectionActions.moveCardsSuccess, (state, { collectionId, result }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
+    const removed = new Set(result.removedCardIds);
+    return {
+      ...state,
+      activeCollection: {
+        ...state.activeCollection,
+        cards: state.activeCollection.cards.filter((c) => !removed.has(c.id)),
+      },
+    };
+  }),
+
+  // Merge — the server returns the merged target, so adopt it wholesale when we are
+  // looking at it, and drop the source from the list if it was deleted.
+  on(CollectionActions.mergeCollectionsSuccess, (state, { sourceCollectionId, result }) => {
+    const collections = result.sourceDeleted
+      ? state.collections.filter((c) => c.id !== sourceCollectionId)
+      : state.collections;
+    const viewingSource = state.activeCollection?.id === sourceCollectionId;
+    const activeCollection =
+      state.activeCollection?.id === result.target.id
+        ? result.target
+        : viewingSource && result.sourceDeleted
+          ? null
+          : viewingSource
+            ? { ...state.activeCollection!, cards: [] }
+            : state.activeCollection;
+    return { ...state, collections, activeCollection };
+  }),
+
   // Add card (upsert into activeCollection)
   on(CollectionActions.addCardSuccess, (state, { card }) => {
     if (!state.activeCollection) return state;

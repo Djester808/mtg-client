@@ -36,8 +36,13 @@
   font-size: 14px;
   line-height: 1;
   color: var(--text-dim);
-  transition: color 0.15s, background 0.15s;
-  &:hover { color: var(--text-primary); background: var(--bg-raised); }
+  transition:
+    color 0.15s,
+    background 0.15s;
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-raised);
+  }
 }
 
 .mana-body {
@@ -45,18 +50,29 @@
   overflow-y: auto;
   padding: 4px 0 16px;
   scrollbar-color: var(--border-subtle) transparent;
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 2px;
+  }
 }
 
 .mana-section {
   padding: 14px 16px 12px;
   border-bottom: 1px solid var(--border-subtle);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 
   // First child = section label div (no class name)
-  > div:first-child:not(.mana-land-row):not(.mana-color-row):not(.mana-tip):not(.mana-meta-row):not(.mana-land-delta) {
+  > div:first-child:not(.mana-land-row):not(.mana-color-row):not(.mana-tip):not(.mana-meta-row):not(
+      .mana-land-delta
+    ) {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -91,7 +107,9 @@
   line-height: 1;
 }
 
-.mana-land-num--target { color: #60a5fa; }
+.mana-land-num--target {
+  color: #60a5fa;
+}
 
 .mana-land-reason {
   margin-top: 8px;
@@ -112,9 +130,18 @@
   width: fit-content;
   margin: 0 auto;
 
-  &.delta--ok   { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
-  &.delta--low  { background: rgba(251, 146, 60, 0.12);  color: #fb923c; }
-  &.delta--high { background: rgba(96, 165, 250, 0.12);  color: #60a5fa; }
+  &.delta--ok {
+    background: rgba(74, 222, 128, 0.12);
+    color: #4ade80;
+  }
+  &.delta--low {
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
+  }
+  &.delta--high {
+    background: rgba(96, 165, 250, 0.12);
+    color: #60a5fa;
+  }
 }
 
 // ── Color sources ────────────────────────────────────────────
@@ -125,7 +152,8 @@
   gap: 8px;
   margin-bottom: 9px;
 
-  > div {  // bar track
+  > div {
+    // bar track
     flex: 1;
     height: 8px;
     background: var(--bg-raised);
@@ -138,11 +166,21 @@
   height: 100%;
   border-radius: 4px;
   transition: width 350ms ease-out;
-  &--w { background: #e8dfc4; }
-  &--u { background: #3b82f6; }
-  &--b { background: #a855f7; }
-  &--r { background: #ef4444; }
-  &--g { background: #22c55e; }
+  &--w {
+    background: #e8dfc4;
+  }
+  &--u {
+    background: #3b82f6;
+  }
+  &--b {
+    background: #a855f7;
+  }
+  &--r {
+    background: #ef4444;
+  }
+  &--g {
+    background: #22c55e;
+  }
 }
 
 .mana-color-pct {
@@ -178,7 +216,9 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--text-secondary);
-  &:last-child { margin-bottom: 0; }
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 // ── Avg CMC ──────────────────────────────────────────────────
@@ -189,8 +229,15 @@
   align-items: center;
 }
 
-.mana-meta-label { font-size: 12px; color: var(--text-dim); }
-.mana-meta-val   { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.mana-meta-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.mana-meta-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
 
 // ── AI Insight (auto) ────────────────────────────────────────
 
@@ -212,8 +259,12 @@
 }
 
 @keyframes mana-rotate {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mana-skeleton {
@@ -226,8 +277,13 @@
 }
 
 @keyframes mana-pulse {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .mana-ai-error {
@@ -256,7 +312,9 @@
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 10px;
-  &:last-child { margin-bottom: 0; }
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .mana-land-art {

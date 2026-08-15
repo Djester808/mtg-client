@@ -1,191 +1,22 @@
 @use '../../../styles/add-controls' as *;
 @use '../../../styles/detail-page' as *;
 
-:host { display: block; height: 100%; overflow: hidden; }
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
 
 // Page chrome shared with the deck page — see styles/_detail-page.scss.
 
-.detail-shell { @include detail-shell; }
+.detail-shell {
+  @include detail-shell;
+}
 
 @include detail-bg(rgba(201, 168, 76, 0.08));
 
-.detail-header { @include detail-header; }
-
-.back-btn { @include back-btn(var(--gold)); }
-
-.header-center { flex: 1; min-width: 0; }
-
-.header-name { @include header-name; }
-
-.header-desc {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-dim);
-  margin: 3px 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.header-count { @include header-count; }
-
-.scan-btn-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  background: transparent;
-  border: 1px solid rgba(201, 168, 76, 0.35);
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #c9a84c;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: rgba(201, 168, 76, 0.6);
-  }
-}
-
-.add-btn {
-  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgba(201, 168, 76, 0.3));
-}
-
-// ---- Body layout -----------------------------------------
-
-.detail-body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-// ---- Grid area -------------------------------------------
-
-.grid-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px 32px 64px;
-
-  &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
-}
-
-// Filter bar
-.filter-bar {
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-@include zoom-control;
-
-@include filter-field(var(--gold-dim));
-
-// Legend bar
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-.legend-dot { color: var(--text-secondary); }
-.legend-item-foil .legend-dot { color: var(--gold); }
-.legend-sep { color: var(--border-dim); font-size: 11px; line-height: 1; }
-
-.legend-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 900;
-  line-height: 1;
-}
-.legend-badge-gold { background: var(--gold); color: #0e0c08; }
-.legend-badge-blue { background: #5b8dd9; color: #fff; }
-
-.legend-item-hint {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-style: italic;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-dim);
-}
-
-// Loading / empty
-.loading-state { @include loading-state; }
-
-.empty-state { @include empty-state(var(--gold-dim)); }
-
-// ---- Swap mode (Arena-style: search fills the grid area, collection as a side list) ----
-
-.disp-btn {
-  font-size: 12px;
-
-  &.is-active {
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.1);
-  }
-}
-
-@include side-list-header-chrome;
-
-.side-list-count {
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.add-btn-primary {
-  padding: 11px 28px;
-  background: var(--gold);
-  border: none;
-  border-radius: 10px;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #0e0c08;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover { background: #dbb954; box-shadow: 0 4px 20px rgba(201,168,76,0.3); }
+.detail-header {
+  @include detail-header;
 }
 
 // ---- Card grid -------------------------------------------
@@ -222,7 +53,9 @@
   border: 1px solid var(--border-dim);
   overflow: hidden;
   @include card-corners;
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s;
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.18s;
 
   &:hover {
     transform: translateY(-3px);
@@ -230,50 +63,13 @@
   }
 
   &.is-foil {
-    border-color: rgba(201,168,76,0.22);
-    box-shadow: 0 0 10px rgba(201,168,76,0.06);
+    border-color: rgba(201, 168, 76, 0.22);
+    box-shadow: 0 0 10px rgba(201, 168, 76, 0.06);
   }
 }
 
-.card-art {
-  width: 100%;
-  @include card-surface;
-  @include card-art-crop;
-  cursor: pointer;
-}
-
-.flip-btn {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.78);
-  border: 1.5px solid var(--border-lit);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1;
-  padding: 5px 7px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  z-index: 300;
-
-  &.is-flipped { color: var(--gold); border-color: var(--gold); }
-  &:hover { border-color: var(--gold); color: var(--gold); }
-}
-
-.art-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: var(--text-dim);
-  opacity: 0.25;
-
-  &.sm { font-size: 16px; }
-}
-
+// The art surface, its placeholder and the flip button belong to app-card-tile now —
+// .ct-art in that component's sheet, .ct-flip at the top level of global.scss.
 // Count pills come from the global .tile-badges / .qty-pill styles.
 
 // ---- Set selector dropdown ------------------------------
@@ -316,19 +112,187 @@
   }
 }
 
-// Filter suggestions under the collection filter box (global .app-menu chrome).
-.filter-sugg-menu {
+// Projected into the card modal's title bar, beside the close button.
+.modal-title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+}
+
+// ---- Multi-select --------------------------------------------
+
+.tile-select {
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  top: 6px;
+  left: 6px;
+  z-index: 4;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 8, 0.8);
+  border: 1px solid var(--border-lit);
+  border-radius: 5px;
+  color: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+
+  &.is-checked {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #12100a;
+  }
+}
+
+.card-tile.is-selectable {
+  cursor: pointer;
+}
+
+.card-tile.is-selected {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+  box-shadow: 0 0 18px rgba(201, 168, 76, 0.35);
+}
+
+.select-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  min-width: 420px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-lit);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+  animation: cd-select-bar-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cd-select-bar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.select-count {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.select-fill {
+  flex: 1;
+}
+
+.select-link {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 2px 4px;
+  transition: color 0.12s;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.select-move-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold);
+  border: none;
+  border-radius: 6px;
+  color: #12100a;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  transition: filter 0.12s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// A card with exactly one printing shows the set as a label, not a picker. Matches the
+// dropdown's metrics so the strip does not shift when one collapses into the other.
+.set-single-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-dim);
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // Card-tile info overlay styles live in global.scss (shared with the deck grid).
-
-
-
-
 
 // ============================================================
 // Modal quantity controls
@@ -369,7 +333,9 @@
   min-height: 56px;
   transition: border-color 0.15s;
 
-  &::placeholder { color: var(--text-dim); }
+  &::placeholder {
+    color: var(--text-dim);
+  }
 
   &:focus {
     outline: none;
@@ -392,7 +358,9 @@
   position: relative;
   overflow: hidden;
 
-  &:hover .cover-edit-overlay { opacity: 1; }
+  &:hover .cover-edit-overlay {
+    opacity: 1;
+  }
 }
 
 .cover-art {
@@ -404,7 +372,7 @@
   position: relative;
 
   &.no-cover-art {
-    background: linear-gradient(135deg, rgba(201,168,76,0.18) 0%, rgba(30,27,15,0.85) 100%);
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.18) 0%, rgba(30, 27, 15, 0.85) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -413,13 +381,13 @@
 
 .cover-art-placeholder {
   font-size: 40px;
-  color: rgba(201,168,76,0.25);
+  color: rgba(201, 168, 76, 0.25);
 }
 
 .cover-edit-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -429,7 +397,10 @@
   transition: opacity 0.2s;
 }
 
-.cover-edit-icon { font-size: 22px; color: #fff; }
+.cover-edit-icon {
+  font-size: 22px;
+  color: #fff;
+}
 
 .cover-edit-label {
   font-family: var(--font-display);
@@ -437,6 +408,22 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
+// ---- Grid filter bar ------------------------------------------
+//
+// The bar itself is app-card-grid-filters and brings its own layout; this only places
+// it on the page. Its internals are that component's business now — rules here could
+// not reach them anyway, since a child component's DOM carries its own encapsulation.
+
+.grid-filters {
+  display: block;
+  // Full width of the grid area, controls still inset by its gutter: negative margins
+  // widen the box, the matching padding puts them back. A bar only as wide as the content
+  // box leaves a strip of gutter at each end that reads as a gap beside it.
+  margin-inline: -32px;
+  // Breathing room before the grid: the chip rows were butting straight into the cards.
+  padding: 10px 32px 6px;
+  margin-bottom: 22px;
+}

@@ -2,6 +2,8 @@
 // MTG ENGINE — Global Styles
 // ============================================================
 
+@use 'add-controls' as *;
+@use 'detail-page' as *;
 @tailwind components;
 @tailwind utilities;
 
@@ -10,63 +12,66 @@
 // ---- Design Tokens ----------------------------------------
 :root {
   // Backgrounds
-  --bg-void:        #080808;
-  --bg-deep:        #0e0e0f;
-  --bg-surface:     #141416;
-  --bg-raised:      #1c1c20;
-  --bg-hover:       #242428;
+  --bg-void: #080808;
+  --bg-deep: #0e0e0f;
+  --bg-surface: #141416;
+  --bg-raised: #1c1c20;
+  --bg-hover: #242428;
 
   // Borders
-  --border-dim:     rgba(255, 255, 255, 0.06);
-  --border-subtle:  rgba(255, 255, 255, 0.10);
-  --border-lit:     rgba(255, 255, 255, 0.18);
+  --border-dim: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-lit: rgba(255, 255, 255, 0.18);
 
   // Accent colors
-  --gold:           #c9a84c;
-  --gold-dim:       #8a6f2e;
-  --gold-glow:      rgba(201, 168, 76, 0.15);
-  --red-accent:     #c0392b;
-  --red-glow:       rgba(192, 57, 43, 0.2);
+  --gold: #c9a84c;
+  --gold-dim: #8a6f2e;
+  --gold-glow: rgba(201, 168, 76, 0.15);
+  --red-accent: #c0392b;
+  --red-glow: rgba(192, 57, 43, 0.2);
 
   // Mana colors
-  --mana-W:         #f0e6c8;
-  --mana-U:         #4a90d9;
-  --mana-B:         #9b59b6;
-  --mana-R:         #e74c3c;
-  --mana-G:         #27ae60;
-  --mana-C:         #95a5a6;
+  --mana-W: #f0e6c8;
+  --mana-U: #4a90d9;
+  --mana-B: #9b59b6;
+  --mana-R: #e74c3c;
+  --mana-G: #27ae60;
+  --mana-C: #95a5a6;
 
   // Text
-  --text-primary:   #f0e8d8;
+  --text-primary: #f0e8d8;
   --text-secondary: #c4b8a8;
-  --text-dim:       #8a8070;
+  --text-dim: #8a8070;
 
   // Card dimensions — scale with viewport so the board always fits
-  --card-w:         clamp(60px, 8.5vmin, 100px);
-  --card-h:         clamp(84px, 12vmin, 140px);
-  --card-w-hand:    clamp(53px, 7.5vmin, 88px);
-  --card-h-hand:    clamp(74px, 10.5vmin, 123px);
-  --card-radius:    clamp(12px, 1.8vmin, 20px);
+  --card-w: clamp(60px, 8.5vmin, 100px);
+  --card-h: clamp(84px, 12vmin, 140px);
+  --card-w-hand: clamp(53px, 7.5vmin, 88px);
+  --card-h-hand: clamp(74px, 10.5vmin, 123px);
+  --card-radius: clamp(12px, 1.8vmin, 20px);
 
   // Glow effects
-  --glow-priority:  0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
-  --glow-attack:    0 0 0 2px #e74c3c, 0 0 18px rgba(231, 76, 60, 0.45);
-  --glow-select:    0 0 0 2px #c9a84c, 0 0 16px rgba(201, 168, 76, 0.35);
-  --glow-castable:  0 0 0 1px rgba(39, 174, 96, 0.5), 0 0 12px rgba(39, 174, 96, 0.2);
+  --glow-priority: 0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
+  --glow-attack: 0 0 0 2px #e74c3c, 0 0 18px rgba(231, 76, 60, 0.45);
+  --glow-select: 0 0 0 2px #c9a84c, 0 0 16px rgba(201, 168, 76, 0.35);
+  --glow-castable: 0 0 0 1px rgba(39, 174, 96, 0.5), 0 0 12px rgba(39, 174, 96, 0.2);
 
   // Typography
-  --font-display:   'Cinzel', serif;
-  --font-body:      system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Cinzel', serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 // ---- Reset ------------------------------------------------
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -95,18 +100,37 @@ body::before {
 }
 
 // ---- Scrollbars -------------------------------------------
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 2px;
+}
 
 // ---- Utilities --------------------------------------------
-.font-display { font-family: var(--font-display); }
-.font-body    { font-family: var(--font-body); }
+.font-display {
+  font-family: var(--font-display);
+}
+.font-body {
+  font-family: var(--font-body);
+}
 
-.text-primary   { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-dim       { color: var(--text-dim); }
-.text-gold      { color: var(--gold); }
+.text-primary {
+  color: var(--text-primary);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-dim {
+  color: var(--text-dim);
+}
+.text-gold {
+  color: var(--gold);
+}
 
 // ---- Card image standard corners (applies globally across all views) ----------
 .card-img {
@@ -119,7 +143,10 @@ a.kw-link {
   text-decoration: none;
   cursor: pointer;
 
-  &:hover { text-decoration: underline; color: #a8d4f5; }
+  &:hover {
+    text-decoration: underline;
+    color: #a8d4f5;
+  }
 }
 
 .loyalty-cost {
@@ -136,9 +163,18 @@ a.kw-link {
   margin-right: 4px;
   vertical-align: middle;
 
-  &.loyalty-up   { background: var(--gold); color: #0e0c08; }
-  &.loyalty-down { background: #5b8dd9; color: #fff; }
-  &.loyalty-zero { background: #555; color: #fff; }
+  &.loyalty-up {
+    background: var(--gold);
+    color: #0e0c08;
+  }
+  &.loyalty-down {
+    background: #5b8dd9;
+    color: #fff;
+  }
+  &.loyalty-zero {
+    background: #555;
+    color: #fff;
+  }
 }
 
 // ---- Card drag cursor (set via class during HTML5 dragstart/dragend) ----------
@@ -171,7 +207,10 @@ body.is-dragging-card * {
       transform: translateY(-1px);
     }
 
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   .field-input {
@@ -186,50 +225,96 @@ body.is-dragging-card * {
     outline: none;
     transition: border-color 0.2s;
 
-    &::placeholder { color: var(--text-dim); }
-    &:focus { border-color: var(--gold); }
+    &::placeholder {
+      color: var(--text-dim);
+    }
+    &:focus {
+      border-color: var(--gold);
+    }
   }
 }
 
 // ---- Animations -------------------------------------------
 @keyframes pulse-gold {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.6; transform: scale(0.85); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.94); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 // Loading-text shimmer. Previously copied into five component sheets.
 @keyframes pulse-text {
-  0%, 100% { opacity: 0.4; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 // Content entrance. Previously defined in four sheets with three different distances —
 // keyframe names leak past Angular's emulated encapsulation, so whichever component
 // happened to inject last silently won.
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 // Card tile entrance (deck grid, search browser).
 @keyframes card-tile-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /*
@@ -301,7 +386,9 @@ body.is-dragging-card * {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .app-menu-item:hover {
@@ -331,23 +418,27 @@ body.is-dragging-card * {
  */
 .tile-badges {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  // Sits below the printed mana cost, which occupies the card's top-right corner — at
+  // 6px the pills covered it.
+  // Scaled by the grid zoom so the pills keep their place relative to the art.
+  top: calc(30px * var(--card-zoom, 1));
+  right: calc(6px * var(--card-zoom, 1));
   z-index: 4;
   display: flex;
-  gap: 4px;
+  gap: calc(4px * var(--card-zoom, 1));
   pointer-events: none;
 }
 
 .qty-pill {
-  font-size: 11px;
+  // Zoom-scaled: at 175% a fixed 11px pill reads as a speck against the card art.
+  font-size: calc(11px * var(--card-zoom, 1));
   font-weight: 700;
   line-height: 1;
   color: #4ade80;
   background: rgba(8, 20, 12, 0.85);
   border: 1px solid rgba(74, 222, 128, 0.45);
-  border-radius: 8px;
-  padding: 4px 7px;
+  border-radius: calc(8px * var(--card-zoom, 1));
+  padding: calc(4px * var(--card-zoom, 1)) calc(7px * var(--card-zoom, 1));
   white-space: nowrap;
 }
 
@@ -429,9 +520,16 @@ body.is-dragging-card * {
 
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 2px;
+  }
 }
 
 .info-bottom {
@@ -452,7 +550,8 @@ body.is-dragging-card * {
   gap: 12px;
 }
 
-.info-pt, .info-loyalty {
+.info-pt,
+.info-loyalty {
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
@@ -470,3 +569,5476 @@ body.is-dragging-card * {
   font-style: italic;
   color: var(--text-dim);
 }
+
+// ---- Collection filter block ---------------------------------
+//
+// Global rather than component-scoped: these are plain, distinctive class names and the
+// collection component's stylesheet was over its 16 kB budget. Budgets count *emitted*
+// CSS, so sharing via a mixin does not help — the rules have to leave the component.
+@include cover-block('cbar', rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.15));
+
+// The collection's cover, leading the page header ahead of the back button. Same block
+// as the one the mixin draws, sized down to the header's height.
+@include cover-block('header', rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.15));
+
+.header-cover {
+  width: 62px;
+  height: 40px;
+  margin-right: 4px;
+}
+
+.back-btn {
+  @include back-btn(var(--gold));
+}
+
+.header-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-name {
+  @include header-name;
+}
+
+.header-desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 3px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.header-count {
+  @include header-count;
+}
+
+.scan-btn-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: rgba(201, 168, 76, 0.6);
+  }
+}
+
+.add-btn {
+  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgba(201, 168, 76, 0.3));
+}
+
+// ---- Body layout -----------------------------------------
+
+.detail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+// ---- Grid area -------------------------------------------
+
+.grid-area {
+  flex: 1;
+  overflow-y: auto;
+  // No top padding: it would sit above the sticky filter bar, which then pins 24px low
+  // and leaves a strip of scrolling card art above it. The bar carries that space as its
+  // own top padding instead, so its background covers it once stuck.
+  padding: 0 32px 64px;
+
+  // With the search panel open beside it, that right-hand gutter reads as a gap between
+  // the cards and the panel rather than as breathing room at the edge of the page. Only
+  // the *grid* gives it up: taking it off the area itself stripped the filter bar's
+  // padding too, which left the bar's controls jammed against the panel.
+  &.is-panel-open .card-grid {
+    margin-right: -32px;
+  }
+
+  // And the last 6px of that strip is the scrollbar, which sits outside the scrollport
+  // and so cannot be reached by any margin. Against the panel it reads as a gap rather
+  // than as a scrollbar, so it goes overlay while the panel is open.
+  &.is-panel-open {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    // The cards give up the right gutter, so the bar above them drops its inset on that
+    // side too rather than stopping short of the panel.
+    .grid-filters {
+      padding-right: 0;
+    }
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+  }
+}
+
+// Filter bar
+.filter-bar {
+  // Sticky inside .grid-area, which is the scrolling element (confirmed by walking the
+  // DOM: .grid-area is overflow-y:auto, everything above it is overflow:hidden).
+  // Opaque, not translucent — a semi-transparent bar let card art read through it.
+  // Spacing below is padding, not margin: a margin sits outside the background and
+  // cards scroll up through the transparent strip it leaves.
+  position: sticky;
+  top: 0;
+  // Above the tiles' flip buttons (z 300), which otherwise punch through the bar as the
+  // cards scroll under it. Still below the select menu popup (z 400).
+  z-index: 350;
+  margin-bottom: 0;
+  padding: 24px 0 12px;
+  background: var(--bg-base, #0a0a0a);
+  display: flex;
+  align-items: center;
+  // Wraps instead of overflowing: as a single nowrap row the controls at the right end
+  // (zoom, display) were pushed past the edge and clipped on narrower windows.
+  flex-wrap: wrap;
+  row-gap: 8px;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+// Cover stays pinned left; the auto margins on it and the trailing spacer centre
+// everything between them.
+.filter-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 350;
+  background: var(--bg-base, #0a0a0a);
+  padding-top: 20px;
+}
+
+.filter-block-rows {
+  flex: 1;
+  min-width: 0;
+}
+
+.cbar-cover-group {
+  // Its own column at the left of the control row, with room so the Set control beside
+  // it is not jammed against the thumbnail.
+  margin-right: 22px;
+}
+
+// Zoom / select / group / display cluster at the right edge; with the cover's auto
+// margin this leaves the search centred between them.
+.fbar-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-left: auto;
+}
+
+// Labelled control columns, matching the deck page's filter bar.
+.cbar-labeled-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  // Centred, and children keep their natural width — a column stretches its children by
+  // default, so a wide label dragged its single button out to match it.
+  align-items: center;
+}
+
+// The search keeps the width it had before it gained a label; stacking it in a column
+// otherwise shrank it to its content.
+.cbar-group--filter {
+  flex: 0 0 420px;
+  max-width: 100%;
+
+  .filter-wrap {
+    width: 100%;
+  }
+}
+
+.cbar-label {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+@include zoom-control;
+
+@include filter-field(var(--gold-dim));
+
+// Loading / empty
+.loading-state {
+  @include loading-state;
+}
+
+.empty-state {
+  @include empty-state(var(--gold-dim));
+}
+
+// ---- Swap mode (Arena-style: search fills the grid area, collection as a side list) ----
+
+.disp-btn {
+  font-size: 12px;
+
+  &.is-active {
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.1);
+  }
+}
+
+@include side-list-header-chrome;
+
+.side-list-count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.add-btn-primary {
+  padding: 11px 28px;
+  background: var(--gold);
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0e0c08;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #dbb954;
+    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.3);
+  }
+}
+
+// ---- app-card-search-panel (lifted out of the component sheet) ----
+//
+// Scoped by the host element, so behaviour is unchanged; it simply no longer
+// counts against that component's CSS budget, which it was well over.
+app-card-search-panel {
+  // ---- Host (the panel itself) ------------------------------------
+
+  & {
+    display: flex;
+    flex-direction: column;
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    // Zero-width when closed: a transparent 1px border still occupies a column beside
+    // the board, which reads as a seam of dead space rather than as nothing.
+    border-left: 0 solid transparent;
+    background: var(--bg-deep);
+
+    &.is-open {
+      width: 38%;
+      // The floor is only a floor while there is room for it: on a narrow window a flat
+      // 340px left the grid beside it 90px wide, too little for even one card.
+      min-width: min(340px, 55vw);
+      max-width: 600px;
+      border-left: 1px solid var(--border-dim);
+    }
+
+    // Swap mode: the panel IS the board area — full width, results tiled into a grid.
+    &.is-board.is-open {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+    }
+
+    // Flex-wrap, not grid: Chrome sizes auto grid rows from the wrong width for
+    // aspect-ratio tiles (tracks collapse and cards overlap), while a wrapped flex
+    // line takes its height from the tile reliably. Fixed width keeps every card
+    // the same size, like the deck grid.
+    &.is-board .results-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 14px;
+      padding: 12px 16px;
+    }
+
+    &.is-board .load-more-row {
+      width: 100%;
+    }
+  }
+
+  // ---- Board-mode result tiles (full card, hover-reveal controls) --------
+
+  .result-tile {
+    @include card-surface;
+    border: 1px solid var(--border-dim);
+    flex: 0 0 auto;
+    width: 220px;
+    cursor: grab;
+    animation: card-tile-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: min(calc(var(--i, 0) * 18ms), 350ms);
+    transition:
+      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.18s,
+      box-shadow 0.18s;
+
+    &:hover {
+      transform: translateY(-3px);
+      border-color: rgba(201, 168, 76, 0.45);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .tile-art {
+    position: absolute;
+    inset: 0;
+    @include card-art-crop;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tile-flip-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+  }
+
+  .tile-flags {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .result-tile .card-bottom {
+    @include tile-hover-strip;
+  }
+
+  .result-tile:hover .card-bottom,
+  .result-tile:focus-within .card-bottom {
+    @include tile-hover-strip-visible;
+  }
+
+  // While the description overlay is open, the strip stays down — otherwise it covers
+  // the overlay's bottom (you are necessarily hovering while reading).
+  .result-tile.has-info .card-bottom {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .tile-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tile-actions-spacer {
+    flex: 1;
+  }
+
+  // One printing only: the set shown as plain text where the menu would sit.
+  .set-static {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    padding: 3px 6px;
+  }
+
+  // Collection-context strip: the same normal/foil quantity pairs as the collection grid.
+  @include tile-ctrl-family;
+
+  .tile-fit-reason {
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--text-dim);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  // ---- Panel header -------------------------------------------
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .panel-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .panel-cmdr-badge {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #a78bfa;
+    background: rgba(167, 139, 250, 0.12);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  .panel-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  // ---- Search input -------------------------------------------
+
+  .search-wrap {
+    padding: 12px 16px 8px;
+    flex-shrink: 0;
+  }
+
+  .search-input-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon-inner {
+    position: absolute;
+    left: 11px;
+    width: 15px;
+    height: 15px;
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 8px 74px 8px 30px;
+    outline: none;
+    transition: border-color 0.2s;
+    &::placeholder {
+      color: var(--text-dim);
+    }
+    &:focus {
+      border-color: var(--gold-dim);
+    }
+  }
+
+  .search-flags {
+    position: absolute;
+    right: 26px;
+    display: flex;
+    gap: 3px;
+  }
+
+  .search-flag-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3px 5px;
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      background 0.15s;
+    &:hover {
+      color: var(--text-secondary);
+      border-color: var(--border-subtle);
+    }
+    &.is-active {
+      color: var(--gold);
+      border-color: var(--gold-dim);
+      background: rgba(201, 168, 76, 0.08);
+    }
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 8px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    transition: color 0.15s;
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  // ---- Filter section -----------------------------------------
+
+  .panel-filters {
+    padding: 6px 16px 8px;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  // Each row is one band of chips (or the set picker), centred in the panel — including
+  // the line a row wraps onto, which app-filter-chips centres internally, so a
+  // left-aligned row and its own centred overflow read as two different layouts.
+  .filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+
+    // Cost, order and set on one line. The set picker takes what the chips leave, down
+    // to a width its trigger text still fits in, and drops to its own line below that.
+    &.filter-row-set {
+      align-items: center;
+
+      .filter-group-set {
+        flex: 1 1 150px;
+      }
+    }
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .filter-group-set {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .filter-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  // Set filter dropdown
+  .set-dropdown-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .set-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    max-width: 200px;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+
+    &:hover {
+      border-color: var(--border-subtle);
+      background: var(--bg-raised);
+    }
+    &.is-active {
+      border-color: rgba(201, 168, 76, 0.6);
+      background: rgba(201, 168, 76, 0.08);
+    }
+  }
+
+  .set-trigger-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+  }
+
+  .set-trigger-code {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .set-trigger-name {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .set-trigger-placeholder {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+
+  .set-trigger-arrow {
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .set-clear-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px;
+    border-radius: 3px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  .set-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    min-width: 240px;
+    max-width: 320px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    overflow: hidden;
+  }
+
+  .set-search-wrap {
+    padding: 8px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .set-search-input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+    box-sizing: border-box;
+    &::placeholder {
+      color: var(--text-dim);
+    }
+    &:focus {
+      border-color: var(--gold-dim);
+    }
+  }
+
+  .set-list {
+    max-height: 220px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 2px;
+    }
+  }
+
+  .set-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+    &:hover {
+      background: var(--bg-surface);
+    }
+    &.is-active {
+      background: rgba(201, 168, 76, 0.08);
+    }
+  }
+
+  .set-opt-code {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-dim);
+    flex-shrink: 0;
+    width: 32px;
+  }
+
+  .set-opt-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .set-opt-count {
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .set-no-results {
+    padding: 12px;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  // Clear filters button
+  .clear-btn {
+    padding: 3px 10px;
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &:hover {
+      color: #e74c3c;
+      border-color: rgba(231, 76, 60, 0.4);
+    }
+  }
+
+  // ---- Panel body (results) -----------------------------------
+
+  .panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .search-hint,
+  .search-spinner,
+  .search-empty {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 24px 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .search-spinner {
+    animation: panel-pulse 1.2s ease-in-out infinite;
+  }
+
+  .results-count {
+    flex-shrink: 0;
+    padding: 6px 16px 2px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .results-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 2px;
+    }
+  }
+
+  .result-row {
+    display: flex;
+    flex-direction: column;
+    padding: 7px 14px;
+    transition: background 0.15s;
+    cursor: grab;
+    &:hover {
+      background: var(--bg-raised);
+    }
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .result-row-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    // When the fixed-width controls outgrow the panel (narrow panel, long button labels),
+    // they wrap below the name instead of crushing it down to a single character.
+    flex-wrap: wrap;
+  }
+
+  .result-art {
+    width: 42px;
+    height: 58px;
+    @include card-corners;
+    @include card-art-crop;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .result-art-clickable {
+    cursor: pointer;
+    transition:
+      opacity 0.15s,
+      box-shadow 0.15s;
+    &:hover {
+      opacity: 0.85;
+      box-shadow: 0 0 0 2px var(--gold-dim);
+    }
+  }
+
+  .result-flip-btn {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.78);
+    border: 1px solid var(--border-lit);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 3px;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+    z-index: 2;
+    &.is-flipped {
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+    &:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+  }
+
+  .art-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-dim);
+    opacity: 0.25;
+  }
+
+  .result-info {
+    flex: 1;
+    // The name keeps at least this much room; anything that cannot fit beside it wraps to
+    // the next line (see .result-row-main) rather than ellipsizing the name into nothing.
+    min-width: 110px;
+  }
+
+  .result-name {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+
+    mark.hl {
+      background: none;
+      color: var(--gold);
+      font-weight: 800;
+    }
+  }
+
+  .result-set-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    flex-shrink: 0;
+    width: 108px;
+  }
+
+  // Printing picker (app-select-menu) — sized to the row's set column.
+  .result-set-menu {
+    width: 100%;
+
+    .asm-btn {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+    }
+  }
+
+  // History suggestions under the main search box.
+  .search-hist-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+  }
+
+  .result-set-error {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: rgba(231, 76, 60, 0.85);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .result-fit {
+    flex-shrink: 0;
+    width: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fit-btn {
+    background: rgba(129, 140, 248, 0.1);
+    border: 1px solid rgba(129, 140, 248, 0.25);
+    border-radius: 5px;
+    color: #818cf8;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 6px;
+    line-height: 1;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      background: rgba(129, 140, 248, 0.22);
+      border-color: rgba(129, 140, 248, 0.5);
+    }
+  }
+
+  .fit-loading {
+    color: var(--text-secondary);
+    font-size: 13px;
+    i {
+      display: inline-block;
+      animation: fit-spin 0.8s linear infinite;
+    }
+  }
+
+  .fit-score {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s;
+
+    &:hover {
+      filter: brightness(1.2);
+    }
+
+    &.score-high {
+      color: #4ade80;
+      border-color: rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.08);
+    }
+    &.score-mid {
+      color: var(--gold);
+      border-color: rgba(201, 168, 76, 0.3);
+      background: rgba(201, 168, 76, 0.08);
+    }
+    &.score-low {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.08);
+    }
+  }
+
+  .fit-reason {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    padding: 4px 0 2px 46px;
+    white-space: normal;
+  }
+
+  .result-action {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    // Keeps the cluster on the right edge when the row wraps it to its own line
+    // (in-deck rows carry the most controls), instead of stranding it bottom-left.
+    margin-left: auto;
+  }
+
+  .owned-qty {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.12);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 8px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  // Same button family as the suggestion rows, so every add control reads the same.
+  .add-result-btn {
+    @include icon-action-btn;
+    @include icon-action-btn-add;
+
+    // Commander mode carries a label — the action sets the commander, not just an add.
+    &.is-labeled {
+      width: auto;
+      gap: 5px;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+
+  .load-more-row {
+    display: flex;
+    justify-content: center;
+    padding: 10px 16px 6px;
+  }
+
+  .load-more-btn {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover:not(:disabled) {
+      color: var(--gold);
+      border-color: var(--gold-dim);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+
+  .deck-qty-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .remove-deck-btn {
+    @include icon-action-btn;
+    @include icon-action-btn-remove;
+  }
+
+  .violation-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+
+    &.color-violation {
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      color: #fbbf24;
+    }
+
+    &.singleton-violation {
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #f87171;
+    }
+  }
+
+  .modal-foil-toggle {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &.is-foil {
+      background: rgba(201, 168, 76, 0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    &:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+    }
+  }
+
+  // ---- Preview modal extra ------------------------------------------
+
+  // Actions flanking the art in both contexts: adds above (green), removes below (red),
+  // counts beside the card name via card-modal's badges.
+  @include modal-extra-chrome;
+}
+
+@keyframes panel-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---- app-deck-detail (lifted out of the component sheet) ----
+//
+// Scoped by the host element, so behaviour is unchanged; it simply no longer
+// counts against that component's CSS budget, which it was well over.
+app-deck-detail {
+  & {
+    display: block;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  // Page chrome shared with the collection page — see styles/_detail-page.scss.
+
+  .detail-shell {
+    @include detail-shell;
+  }
+
+  @include detail-bg(rgba(100, 60, 180, 0.08));
+
+  .detail-header {
+    @include detail-header;
+    // Denser than the collection header: this one also hosts tags and the format menu.
+    gap: 16px;
+    padding: 14px 28px;
+  }
+
+  .header-spacer {
+    flex: 1;
+  }
+
+  .header-labeled-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .header-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .back-btn {
+    @include back-btn(var(--gold));
+  }
+
+  .header-name-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-name {
+    @include header-name;
+    cursor: default;
+  }
+
+  .rename-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition:
+      opacity 0.15s,
+      color 0.15s;
+    flex-shrink: 0;
+
+    .header-name-wrap:hover & {
+      opacity: 1;
+    }
+    &:hover {
+      color: #a78bfa;
+    }
+  }
+
+  .rename-input {
+    flex: 1;
+    background: var(--bg-raised);
+    border: 1px solid rgba(167, 139, 250, 0.5);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    padding: 6px 12px;
+    outline: none;
+  }
+
+  .header-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  // ---- Deck tags -------------------------------------------------------
+
+  .deck-tags-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 0 0 8px;
+  }
+
+  .deck-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px 2px 10px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--gold) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .deck-tag-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.6;
+    font-size: 10px;
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .deck-tag-input {
+    background: transparent;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 2px 10px;
+    outline: none;
+    width: 72px;
+    transition:
+      border-color 0.15s,
+      width 0.2s;
+    &::placeholder {
+      color: var(--text-dim);
+    }
+    &:focus {
+      border-color: var(--gold-dim);
+      color: var(--text-primary);
+      width: 110px;
+    }
+  }
+
+  // ---- Sub-toolbar -----------------------------------------
+
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      background 0.15s;
+    white-space: nowrap;
+
+    i {
+      font-size: 13px;
+    }
+
+    &:hover {
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
+      background: var(--bg-raised);
+    }
+
+    &.is-active {
+      color: #a78bfa;
+      border-color: rgba(167, 139, 250, 0.3);
+      background: rgba(167, 139, 250, 0.1);
+    }
+
+    &.tool-btn--mana {
+      &.is-active {
+        color: #60a5fa;
+        border-color: rgba(96, 165, 250, 0.3);
+        background: rgba(96, 165, 250, 0.1);
+      }
+      &:hover:not(.is-active) {
+        color: #60a5fa;
+      }
+    }
+
+    &.tool-btn--suggest {
+      &.is-active {
+        color: var(--gold);
+        border-color: rgba(201, 168, 76, 0.3);
+        background: rgba(201, 168, 76, 0.1);
+      }
+      &:hover:not(.is-active) {
+        color: var(--gold);
+      }
+    }
+  }
+
+  .sort-group {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .sort-btn {
+    background: none;
+    border: none;
+    border-radius: 5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    transition: all 0.15s;
+
+    &:hover {
+      color: var(--gold);
+    }
+    &.is-active {
+      background: rgba(167, 139, 250, 0.15);
+      color: #a78bfa;
+    }
+  }
+
+  // Group-by picker (app-select-menu) — blends its button into the .sort-group pill.
+  .sort-select-menu {
+    min-width: 96px;
+
+    .asm-btn {
+      background: none;
+      border: none;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      &:hover:not(:disabled),
+      &.is-open {
+        color: var(--gold);
+        border: none;
+      }
+    }
+  }
+
+  .header-count {
+    @include header-count;
+  }
+
+  .add-btn {
+    @include page-add-btn(#7c3aed, #6d28d9, #fff, rgba(124, 58, 237, 0.4));
+  }
+
+  .publish-btn {
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c9a84c;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      background: rgba(201, 168, 76, 0.1);
+      border-color: rgba(201, 168, 76, 0.7);
+      box-shadow: 0 2px 12px rgba(201, 168, 76, 0.15);
+    }
+
+    &.is-published {
+      text-decoration: none;
+      color: rgba(120, 200, 120, 0.8);
+      border-color: rgba(120, 200, 120, 0.35);
+      cursor: default;
+      pointer-events: auto;
+
+      &:hover {
+        background: rgba(120, 200, 120, 0.08);
+        border-color: rgba(120, 200, 120, 0.6);
+        box-shadow: none;
+      }
+    }
+  }
+
+  .publish-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .publish-modal {
+    background: #141210;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 14px;
+    padding: 28px;
+    width: 440px;
+    max-width: calc(100vw - 40px);
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
+  }
+
+  .publish-modal-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #c9a84c;
+    margin: 0 0 6px;
+  }
+
+  .publish-modal-hint {
+    font-size: 12px;
+    color: #7a6e5e;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  .publish-modal-textarea {
+    width: 100%;
+    background: #1a1816;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e8e0ce;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 10px 12px;
+    resize: vertical;
+    line-height: 1.5;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(201, 168, 76, 0.4);
+    }
+
+    &::placeholder {
+      color: #5a5048;
+    }
+  }
+
+  .publish-modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .publish-modal-submit {
+    padding: 9px 20px;
+    background: #c9a84c;
+    border: none;
+    border-radius: 8px;
+    color: #0e0c08;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover:not(:disabled) {
+      background: #dbb954;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .publish-modal-cancel {
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #7a6e5e;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #e8e0ce;
+    }
+  }
+
+  // ---- Body layout -----------------------------------------
+
+  .detail-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    z-index: 3;
+  }
+
+  // ---- Groups area (left) ----------------------------------
+
+  .groups-area {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    // No top padding: it sits above the sticky filter bar and sticky pins to the content
+    // box, so the bar would hold 20px low and card art would scroll through the strip.
+    // The board tabs carry that space instead (see .board-tabs).
+    padding: 0 24px 64px;
+
+    // With the search panel open beside it, that right-hand gutter is the strip of empty
+    // board people read as a gap between the deck and the panel. Only the card groups
+    // give it up: taking it off the area itself stripped the filter bar's padding too,
+    // which left the bar's controls jammed against the panel.
+    &.is-panel-open .groups-list {
+      margin-right: -24px;
+    }
+
+    // The last 6px of that strip is the scrollbar, which sits *outside* the scrollport
+    // and so cannot be reached by any margin — measured: cards end at the client edge,
+    // the scrollbar runs from there to the panel. Against the page edge it reads as a
+    // scrollbar; against the panel it reads as a gap, so it goes overlay while the panel
+    // is open. The board still scrolls; it just stops reserving a column to say so.
+    &.is-panel-open {
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+      }
+
+      // With the panel open the cards give up the right gutter entirely, so the bands
+      // above them drop their inset on that side too — otherwise their controls stop
+      // 24px short of the panel while the cards run to it.
+      .board-row,
+      .filter-bar {
+        padding-right: 0;
+      }
+    }
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 3px;
+    }
+
+    &.is-list {
+      padding-inline: 0;
+
+      .filter-bar {
+        padding-inline: 24px;
+      }
+      .group-header {
+        padding-inline: 24px;
+      }
+      .empty-state {
+        padding-inline: 24px;
+      }
+      .loading-state {
+        padding-inline: 24px;
+      }
+    }
+
+    &.is-search-drop {
+      outline: 2px dashed rgba(201, 168, 76, 0.45);
+      outline-offset: -4px;
+      border-radius: 8px;
+    }
+  }
+
+  // ---- Board tabs ------------------------------------------
+
+  .board-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    flex: 1;
+    min-width: 0;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 0;
+  }
+
+  .board-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 14px 8px;
+    margin-bottom: -1px;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover:not(.is-active) {
+      color: var(--text-secondary);
+      border-bottom-color: var(--border-subtle);
+    }
+
+    // Landing bump: a fly-to-deck ghost just arrived on this tab — answer with a quick
+    // scale-and-glow so the add reads as received by the board.
+    &.is-bumped {
+      animation: add-target-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    &.is-active {
+      color: #a78bfa;
+      border-bottom-color: #a78bfa;
+    }
+  }
+
+  .tool-btn--cmdr.is-bumped,
+  .cp-portrait-wrap.is-bumped {
+    animation: add-target-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .board-tab-count {
+    background: var(--bg-raised);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+    padding: 2px 6px;
+
+    .board-tab.is-active & {
+      background: rgba(167, 139, 250, 0.15);
+      color: #a78bfa;
+    }
+  }
+
+  .filter-bar {
+    // Sticky inside .groups-area, the scrolling element. Opaque — a translucent bar lets
+    // card art read through it — and the spacing below is padding so nothing scrolls up
+    // through a transparent margin.
+    position: sticky;
+    // Measured height of the sticky .board-row above it, so the two stack rather than
+    // overlap.
+    top: 63px;
+    // Above the tiles' flip buttons (z 300), which otherwise punch through the bar as the
+    // cards scroll under it. Still below the select menu popup (z 400).
+    z-index: 350;
+    margin-bottom: 0;
+    // Full board width, controls inset by the gutter — see .board-row above.
+    margin-inline: -24px;
+    padding: 10px 24px 12px;
+    background: var(--bg-base, #0a0a0a);
+    display: flex;
+    align-items: center;
+    // Wraps instead of overflowing: as a single nowrap row the controls at the right end
+    // (zoom, display) were pushed past the edge and clipped on narrower windows.
+    flex-wrap: wrap;
+    row-gap: 8px;
+    gap: 12px;
+  }
+
+  .filter-bar .zoom-group,
+  .filter-bar .display-toggle {
+    flex-shrink: 0;
+  }
+
+  .filter-bar-spacer {
+    flex: 1;
+  }
+
+  // The Add Cards button lives at the filter bar's right edge; it must never be squeezed.
+  .fbar-add-btn {
+    flex-shrink: 0;
+  }
+
+  // ---- Swap mode (Arena-style: search fills the board, deck as a side list) ----
+
+  @include side-list-header-chrome;
+
+  .swap-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .swap-tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 5px 6px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.15s;
+
+    &:hover {
+      color: var(--text-secondary);
+    }
+
+    &.is-active {
+      color: #a78bfa;
+      border-bottom-color: #a78bfa;
+    }
+
+    &.is-bumped {
+      animation: add-target-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+
+  .swap-tab-count {
+    background: var(--bg-raised);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    padding: 1px 6px;
+
+    .swap-tab.is-active & {
+      background: rgba(167, 139, 250, 0.15);
+      color: #a78bfa;
+    }
+  }
+
+  .fbar-labeled-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    // Label centred over its control, and children keep their natural width — a column
+    // stretches its children by default, so a wide label drags a lone button out with it.
+    align-items: center;
+
+    &.fbar-filter {
+      min-width: 380px;
+
+      .filter-wrap {
+        width: 100%;
+      }
+    }
+  }
+
+  .fbar-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding-left: 2px;
+  }
+
+  .fbar-display-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Shared filter field (purple focus); the wrap flexes into the deck's crowded bar.
+  @include filter-field(rgba(167, 139, 250, 0.4));
+
+  .filter-wrap {
+    flex: 1;
+    width: auto;
+    max-width: 320px;
+  }
+
+  // Suggestion menus replacing native datalist popups — chrome comes from the global
+  // .app-menu classes; these rules only anchor each menu to its input.
+  .filter-sugg-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+  }
+
+  .tag-input-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tag-sugg-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 160px;
+  }
+
+  .density-picker {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .density-sep {
+    width: 1px;
+    background: var(--border-subtle);
+    margin: 3px 2px;
+    flex-shrink: 0;
+  }
+
+  .density-btn {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 4px 8px;
+    transition: all 0.15s;
+
+    &:hover {
+      color: var(--gold);
+    }
+    &.is-active {
+      background: rgba(201, 168, 76, 0.15);
+      color: var(--gold);
+    }
+  }
+
+  .loading-state {
+    @include loading-state;
+  }
+
+  .empty-state {
+    @include empty-state(#7c3aed);
+  }
+
+  .add-btn-primary {
+    padding: 10px 24px;
+    background: #7c3aed;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+      background: #6d28d9;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+    }
+  }
+
+  // ---- Groups list -----------------------------------------
+
+  .groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fade-up 0.25s ease;
+    padding-bottom: 20px;
+  }
+
+  .cmc-group {
+    animation: grid-group-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: min(calc(var(--g, 0) * 60ms), 480ms);
+  }
+
+  // While a drag is live, resting cards hold still: hover lifts pause so nothing
+  // jiggles under the ghost. Gap-shifted cards keep their opening translate.
+  .groups-list.is-drag-live {
+    .visual-card:hover:not(.is-gap-shifted) {
+      transform: none;
+      box-shadow: none;
+    }
+    .card-row:hover {
+      transform: none;
+    }
+  }
+
+  // Peek: hovering a stacked card — or opening its description overlay — lifts it above
+  // the cards stacked over it, so a buried card can be read without clicking. !important
+  // beats the per-index inline z-index; paused while a drag is live so the ghost's
+  // neighbors hold still.
+  .groups-list:not(.is-drag-live) .visual-card:hover,
+  .groups-list .visual-card.has-info {
+    z-index: 300 !important;
+  }
+
+  .groups-list.is-free .free-card:not(.is-dragging):hover,
+  .groups-list.is-free .free-card.has-info {
+    z-index: 300 !important;
+  }
+
+  .groups-area.is-text.is-visual .cmc-group {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: unset;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 5px;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+    margin-bottom: 6px;
+    background: linear-gradient(to right, rgba(201, 168, 76, 0.07), transparent);
+    border-radius: 4px 4px 0 0;
+  }
+
+  .group-label {
+    font-family: var(--font-display);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.85;
+  }
+
+  .group-count {
+    font-family: var(--font-display);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.12);
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    opacity: 0.85;
+    margin-left: auto;
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  // ---- Card row --------------------------------------------
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 24px;
+    border-radius: 0;
+    transition:
+      background 0.15s,
+      opacity 0.12s,
+      transform 0.15s;
+    cursor: pointer;
+    animation: card-tile-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: min(calc(var(--g, 0) * 60ms + var(--i, 0) * 30ms), 600ms);
+
+    &:hover {
+      background: var(--bg-surface);
+      transform: translateX(3px);
+    }
+  }
+
+  .list-drag-row {
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
+    &.is-list-dragging {
+      opacity: 0.2;
+    }
+  }
+
+  .card-row {
+    &.violation-banned {
+      background: rgba(180, 0, 0, 0.45);
+      animation: banned-pulse 2s ease-in-out infinite;
+    }
+    &.violation-singleton {
+      background: rgba(230, 120, 0, 0.3);
+      outline: 2px solid #f97316;
+      outline-offset: -1px;
+    }
+    &.violation-color-id {
+      background: rgba(129, 140, 248, 0.2);
+      outline: 2px solid #818cf8;
+      outline-offset: -1px;
+    }
+    &.violation-both {
+      background: rgba(140, 0, 200, 0.3);
+      outline: 2px solid #a855f7;
+      outline-offset: -1px;
+    }
+    &.is-game-changer {
+      background: rgba(201, 168, 76, 0.07);
+      animation: gc-pulse 2s ease-in-out infinite;
+    }
+  }
+
+  // ---- List-view text rows ---------------------------------
+
+  .list-row {
+    min-width: max-content;
+    box-sizing: border-box;
+    padding: calc(2px * var(--card-zoom, 1)) calc(8px * var(--card-zoom, 1));
+    gap: calc(6px * var(--card-zoom, 1));
+    min-height: calc(24px * var(--card-zoom, 1));
+
+    &:hover .list-actions {
+      opacity: 1;
+    }
+  }
+
+  .list-qty {
+    font-family: var(--font-display);
+    font-size: calc(10px * var(--card-zoom, 1));
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: calc(14px * var(--card-zoom, 1));
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .list-name {
+    font-family: var(--font-body);
+    font-size: calc(11px * var(--card-zoom, 1));
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .list-mana {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .list-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+
+  .list-btn {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+
+    &:hover {
+      border-color: var(--border-lit);
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+  }
+
+  .list-dec:hover {
+    color: var(--mana-R, #e74c3c) !important;
+  }
+
+  .list-inc:hover {
+    color: var(--mana-G, #27ae60) !important;
+  }
+
+  // -------------------------------------------------------
+
+  .card-thumb {
+    width: calc(40px * var(--card-zoom, 1));
+    height: calc(56px * var(--card-zoom, 1));
+    @include card-corners;
+    @include card-art-crop;
+    background-position: center top;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
+
+    &:hover {
+      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.5);
+    }
+
+    &.no-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .thumb-placeholder {
+    font-size: 16px;
+    color: var(--text-dim);
+    opacity: 0.3;
+  }
+
+  .card-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .card-name {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-type {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-mana {
+    margin-top: 2px;
+  }
+
+  // ---- Card actions ----------------------------------------
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .qty-btn {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: var(--border-lit);
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+  }
+
+  .qty-dec:hover {
+    color: var(--mana-R, #e74c3c) !important;
+  }
+
+  .qty-inc:hover {
+    color: var(--mana-G, #27ae60) !important;
+  }
+
+  .qty-num {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 22px;
+    text-align: center;
+    letter-spacing: 0;
+  }
+
+  // ---- Free mode -------------------------------------------
+
+  .groups-area.is-free {
+    overflow-x: auto;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 3px;
+    }
+  }
+
+  .free-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .free-save-btn {
+    background: rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 6px;
+    color: var(--gold);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(201, 168, 76, 0.18);
+      border-color: var(--gold);
+    }
+
+    &.is-saved {
+      background: rgba(74, 222, 128, 0.12);
+      border-color: rgba(74, 222, 128, 0.4);
+      color: #4ade80;
+      cursor: default;
+    }
+  }
+
+  .free-reset-btn {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    transition: all 0.15s;
+    &:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+    }
+  }
+
+  .groups-list.is-free {
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-height: 100%;
+    padding-bottom: 24px;
+    position: relative;
+  }
+
+  .selection-box {
+    position: absolute;
+    border: 1px solid rgba(201, 168, 76, 0.6);
+    background: rgba(201, 168, 76, 0.07);
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .col-insert-line {
+    width: 2px;
+    align-self: stretch;
+    border-radius: 1px;
+    background: transparent;
+    flex-shrink: 0;
+    margin: 0 1px;
+
+    &.active {
+      background: rgba(201, 168, 76, 0.9);
+      box-shadow: 0 0 10px rgba(201, 168, 76, 0.6);
+    }
+  }
+
+  .free-col {
+    flex: 0 0 calc(260px * var(--card-zoom, 1));
+    min-width: calc(80px * var(--card-zoom, 1));
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-radius: 8px;
+
+    &.has-fixed-width {
+      flex: 0 0 auto;
+    }
+    &.is-text-style {
+      flex: 0 0 auto;
+      width: max-content;
+      min-width: unset;
+    }
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-dim);
+    padding: 8px;
+    min-height: 120px;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      border-color 0.1s,
+      box-shadow 0.1s,
+      background 0.1s;
+    will-change: border-color;
+
+    &:not(.is-dragging-col):hover:not(:has(.free-card:hover)) {
+      border-color: rgba(201, 168, 76, 0.4);
+      box-shadow:
+        0 0 0 1px rgba(201, 168, 76, 0.1),
+        0 4px 20px rgba(201, 168, 76, 0.12);
+      background: rgba(201, 168, 76, 0.02);
+    }
+
+    &.is-drag-over {
+      border-color: rgba(201, 168, 76, 0.7);
+      box-shadow:
+        0 0 0 2px rgba(201, 168, 76, 0.25),
+        0 4px 24px rgba(201, 168, 76, 0.2);
+      background: rgba(201, 168, 76, 0.05);
+    }
+
+    &.is-dragging-col {
+      opacity: 0.25;
+      transform: scale(0.98);
+    }
+
+    &.is-selected-col {
+      border-color: rgba(201, 168, 76, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(201, 168, 76, 0.2),
+        0 4px 20px rgba(201, 168, 76, 0.1);
+      background: rgba(201, 168, 76, 0.03);
+    }
+  }
+
+  .col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 20;
+    border-radius: 3px;
+    transition: background 0.15s;
+
+    &:hover,
+    &.is-resizing {
+      background: rgba(201, 168, 76, 0.35);
+    }
+  }
+
+  .free-col-header {
+    border-bottom: 1px solid var(--border-dim);
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    padding-right: 14px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .free-col-label {
+    cursor: default;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.15);
+    padding-bottom: 1px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .col-edit-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0;
+    cursor: pointer;
+    transition:
+      opacity 0.15s,
+      color 0.15s;
+    flex-shrink: 0;
+    padding: 0 1px;
+    line-height: 1;
+
+    .free-col-header:hover & {
+      opacity: 1;
+    }
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  .col-drag-handle {
+    cursor: grab;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 0 2px;
+    margin-right: 2px;
+    opacity: 0.3;
+    transition:
+      opacity 0.15s,
+      color 0.15s;
+    flex-shrink: 0;
+    user-select: none;
+
+    .free-col-header:hover & {
+      opacity: 1;
+    }
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  .col-remove-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 2px;
+    line-height: 1;
+    opacity: 0;
+    transition:
+      opacity 0.15s,
+      color 0.15s;
+
+    .free-col-header:hover & {
+      opacity: 1;
+    }
+    &:hover {
+      color: #f87171;
+    }
+  }
+
+  .col-label-input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid rgba(167, 139, 250, 0.5);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 6px;
+    outline: none;
+  }
+
+  .drop-line {
+    height: 0;
+    border-radius: 3px;
+    background: transparent;
+    margin: 0;
+    flex-shrink: 0;
+    position: relative;
+    pointer-events: none;
+    transition:
+      background 0.08s ease,
+      box-shadow 0.08s ease,
+      height 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      margin 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.active {
+      height: 6px;
+      margin: 2px 0;
+      background: rgba(201, 168, 76, 1);
+      box-shadow:
+        0 0 0 1px rgba(201, 168, 76, 0.4),
+        0 0 14px rgba(201, 168, 76, 0.8),
+        0 0 28px rgba(201, 168, 76, 0.4);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(201, 168, 76, 1);
+        box-shadow: 0 0 8px rgba(201, 168, 76, 0.9);
+      }
+    }
+  }
+
+  .free-card {
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+    transition:
+      box-shadow 0.15s ease,
+      transform 0.15s ease,
+      opacity 0.12s;
+    will-change: transform, opacity;
+
+    &:active {
+      cursor: grabbing;
+    }
+    &.is-dragging {
+      opacity: 0.15;
+      transform: scale(0.95);
+      box-shadow: none;
+      outline: 2px dashed rgba(201, 168, 76, 0.3);
+      outline-offset: -2px;
+    }
+    &.violation-banned {
+      outline: 2px solid #dc2626;
+      outline-offset: -1px;
+      animation: banned-pulse 2s ease-in-out infinite;
+      &::before {
+        font-family: 'bootstrap-icons';
+        content: '\f566';
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 120px;
+        line-height: 1;
+        color: rgba(220, 38, 38, 0.5);
+        animation: banned-icon-pulse 2s ease-in-out infinite;
+        z-index: 20;
+        pointer-events: none;
+      }
+    }
+    &.violation-singleton {
+      outline: 2px solid #f97316;
+      outline-offset: -1px;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(230, 120, 0, 0.4);
+        pointer-events: none;
+        z-index: 10;
+      }
+    }
+    &.violation-color-id {
+      outline: 2px solid #818cf8;
+      outline-offset: -1px;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(129, 140, 248, 0.3);
+        pointer-events: none;
+        z-index: 10;
+      }
+    }
+    &.violation-both {
+      outline: 2px solid #a855f7;
+      outline-offset: -1px;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(140, 0, 200, 0.4);
+        pointer-events: none;
+        z-index: 10;
+      }
+    }
+    &.is-game-changer {
+      animation: gc-pulse 2s ease-in-out infinite;
+    }
+    &.is-game-changer::before {
+      font-family: 'bootstrap-icons';
+      content: '\f7f6';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+      line-height: 1;
+      color: rgba(240, 192, 64, 0.25);
+      text-shadow:
+        0 0 20px rgba(255, 210, 80, 1),
+        0 0 50px rgba(240, 192, 64, 0.9),
+        0 0 90px rgba(220, 160, 40, 0.6);
+      animation: gc-icon-pulse 2s ease-in-out infinite;
+      z-index: 20;
+      pointer-events: none;
+    }
+    &.is-selected-card {
+      outline: 2px solid rgba(201, 168, 76, 0.75);
+      outline-offset: 1px;
+      box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
+      z-index: 999 !important;
+    }
+    &:hover {
+      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.5);
+      z-index: 999 !important;
+    }
+
+    .ct-art {
+      width: 100%;
+      @include card-surface;
+    }
+
+    // ---- Stacked densities ----
+    &.density-half,
+    &.density-name {
+      overflow: visible;
+      &:hover {
+        box-shadow: none;
+        z-index: 999 !important;
+      }
+      &:hover .ct-art {
+        box-shadow:
+          0 0 0 2px rgba(201, 168, 76, 0.5),
+          0 4px 20px rgba(0, 0, 0, 0.7);
+      }
+    }
+  }
+
+  // Negative margin on the TOP of subsequent stacked cards so the last card's
+  // full height is always included in the column's boundary (margin-bottom on
+  // the last card is ignored when a drop-line sibling follows it).
+  .free-card.density-half ~ .free-card.density-half {
+    margin-top: calc(70% - 140%);
+  }
+
+  .free-card.density-name ~ .free-card.density-name {
+    margin-top: calc(32px - 140%);
+  }
+
+  .free-empty {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 20px 8px;
+    opacity: 0.4;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 6px;
+    margin-top: 4px;
+  }
+
+  .add-col-wrap {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 30px;
+    flex-shrink: 0;
+  }
+
+  .add-col-btn {
+    background: none;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    white-space: nowrap;
+    transition: all 0.15s;
+    &:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+    }
+  }
+
+  // ---- View toggle -----------------------------------------
+
+  .view-toggle .sort-btn {
+    font-size: 14px;
+    padding: 4px 9px;
+  }
+
+  // ---- Zoom controls ---------------------------------------
+
+  .zoom-group {
+    align-items: center;
+  }
+
+  .fbar-zoom-fixed {
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: flex-end;
+  }
+
+  .zoom-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 400;
+    padding: 0 8px;
+    height: 26px;
+
+    &:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+  }
+
+  .zoom-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    min-width: 34px;
+    height: 26px;
+    text-align: center;
+    user-select: none;
+  }
+
+  // ---- Visual mode -----------------------------------------
+
+  .groups-area.is-visual {
+    overflow-x: auto;
+    overflow-y: auto;
+    // No scroll snapping here. Snapping the first column to the scrollport start pulled
+    // the board 24px left of its own padding on load, clipping that column against the
+    // edge. The columns grow to fill the width instead, which is what stops a card being
+    // sliced in half at the far end.
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 3px;
+    }
+  }
+
+  .groups-list.is-visual {
+    flex-direction: row;
+    align-items: flex-start;
+    // Never centre this row. It is the content of a horizontal scroller, and centring an
+    // overflowing flex line pushes the overflow out of *both* ends — the left one being
+    // unreachable, because scrollLeft cannot go below zero. The columns grow instead
+    // (see .cmc-group below), which fills the width without moving the start of the row.
+    justify-content: flex-start;
+    gap: 12px;
+    padding-bottom: 24px;
+
+    // Grow, never shrink. Growing shares out whatever width is left so the columns meet
+    // the right-hand edge instead of stopping short of it — the strip of empty board
+    // beside an open search panel was that leftover. Shrinking is off so a deck with more
+    // columns than fit still scrolls at full card size rather than squeezing them.
+    // The cap keeps a two-column board from stretching cards to absurd widths.
+    .cmc-group {
+      flex: 1 0 calc(140px * var(--card-zoom, 1));
+      max-width: calc(260px * var(--card-zoom, 1));
+    }
+
+    .group-header {
+      margin-bottom: 8px;
+    }
+  }
+
+  .groups-list.is-visual.is-vert {
+    flex-direction: column;
+    align-items: stretch;
+
+    .cmc-group {
+      flex: none;
+      min-width: unset;
+      width: 100%;
+    }
+
+    .visual-stack {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .visual-card {
+      flex: 0 0 auto;
+      width: calc(140px * var(--card-zoom, 1));
+      margin-bottom: 0;
+    }
+  }
+
+  .visual-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 6px;
+    outline: 1px solid transparent;
+    transition:
+      outline-color 0.15s,
+      box-shadow 0.15s;
+
+    &.is-drag-active {
+      outline-color: rgba(201, 168, 76, 0.5);
+      box-shadow:
+        0 0 0 3px rgba(201, 168, 76, 0.08),
+        0 0 20px rgba(201, 168, 76, 0.12);
+    }
+  }
+
+  // Base: full density — no overlap, cards fully visible
+  .visual-card {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition:
+      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.18s;
+    animation: card-tile-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: min(calc(var(--g, 0) * 60ms + var(--i, 0) * 35ms), 600ms);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:hover {
+      z-index: 999 !important;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    // Cards below the insertion point slide down to open the landing gap while a stack
+    // drag is live; the transform transition makes the gap follow the cursor smoothly.
+    // Declared after :hover so a shifted card stays shifted even under the pointer.
+    &.is-gap-shifted {
+      transform: translateY(14px);
+    }
+
+    &.violation-singleton .ct-art::after,
+    &.violation-color-id .ct-art::after,
+    &.violation-both .ct-art::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+    &.violation-banned {
+      outline: 2px solid #dc2626;
+      &::before {
+        font-family: 'bootstrap-icons';
+        content: '\f566';
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 120px;
+        line-height: 1;
+        color: rgba(220, 38, 38, 0.25);
+        text-shadow:
+          0 0 20px rgba(255, 80, 80, 1),
+          0 0 50px rgba(220, 38, 38, 0.9),
+          0 0 90px rgba(180, 20, 20, 0.6);
+        z-index: 20;
+        pointer-events: none;
+      }
+    }
+    &.violation-singleton {
+      outline: 2px solid #f97316;
+      .ct-art::after {
+        background: rgba(230, 120, 0, 0.4);
+      }
+    }
+    &.violation-color-id {
+      outline: 2px solid #818cf8;
+      .ct-art::after {
+        background: rgba(129, 140, 248, 0.3);
+      }
+    }
+    &.violation-both {
+      outline: 2px solid #a855f7;
+      .ct-art::after {
+        background: rgba(140, 0, 200, 0.4);
+      }
+    }
+    &.is-game-changer {
+      animation: gc-pulse 2s ease-in-out infinite;
+    }
+    &.is-game-changer::before {
+      font-family: 'bootstrap-icons';
+      content: '\f7f6';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+      line-height: 1;
+      color: rgba(240, 192, 64, 0.25);
+      text-shadow:
+        0 0 20px rgba(255, 210, 80, 1),
+        0 0 50px rgba(240, 192, 64, 0.9),
+        0 0 90px rgba(220, 160, 40, 0.6);
+      animation: gc-icon-pulse 2s ease-in-out infinite;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    // Drag indicators apply at all densities
+    &.is-stack-dragging {
+      opacity: 0.7;
+    }
+
+    &.is-stack-drop-target::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 1px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    // ---- Shared stacked behaviour (half + name) ----
+    &.density-half,
+    &.density-name {
+      cursor: grab;
+      user-select: none;
+      &:active {
+        cursor: grabbing;
+      }
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      &:hover {
+        z-index: 999 !important;
+        .ct-art {
+          box-shadow:
+            0 0 0 2px rgba(201, 168, 76, 0.5),
+            0 4px 20px rgba(0, 0, 0, 0.7);
+        }
+      }
+
+      &.is-stack-dragging {
+        .ct-art {
+          box-shadow:
+            0 0 0 2px var(--gold),
+            0 0 12px rgba(201, 168, 76, 0.5);
+        }
+      }
+    }
+
+    // ---- Half: show top 70% of column width per card ----
+    &.density-half {
+      margin-bottom: calc(70% - 140%);
+    }
+
+    &.density-name {
+      margin-bottom: calc(32px - 140%);
+    }
+  }
+
+  .ct-art {
+    width: 100%;
+    @include card-surface;
+    @include card-art-crop;
+    transition: box-shadow 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+
+    .visual-card:hover & {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+    }
+
+    &.no-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(30, 27, 75, 0.9));
+    }
+  }
+
+  // ---- Cards you do not own ------------------------------------
+  //
+  // A deck may list cards you have not got; those read as greyed out so the list you can
+  // actually build is obvious at a glance. Decoration only — the card still works.
+  // Hovering restores it, so a card is never unreadable because of this.
+  .is-unowned {
+    .ct-art,
+    .card-thumb {
+      filter: grayscale(0.85) brightness(0.68);
+      transition: filter 0.15s;
+    }
+
+    .card-name,
+    .list-name {
+      color: var(--text-dim);
+    }
+
+    &:hover .ct-art,
+    &:hover .card-thumb {
+      filter: none;
+    }
+  }
+
+  // The tile control strip: hidden at rest (tiles are pure card art with count pills),
+  // sliding up over the art's bottom when the tile is hovered or keyboard-focused.
+  .card-bottom {
+    @include tile-hover-strip;
+  }
+
+  .visual-card:hover .card-bottom,
+  .visual-card:focus-within .card-bottom,
+  .free-card:hover .card-bottom,
+  .free-card:focus-within .card-bottom {
+    @include tile-hover-strip-visible;
+  }
+
+  // While a tile's description overlay is open, its strip stays down — otherwise the
+  // strip (you are necessarily hovering while reading) covers the overlay's bottom.
+  .visual-card.has-info .card-bottom,
+  .free-card.has-info .card-bottom {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  // Quantity control family — shared mixin; the deck strip has a single row, so it
+  // stretches to the strip's width.
+  @include tile-ctrl-family;
+
+  .ctrl-row {
+    flex: 1;
+  }
+
+  // ---- Suggestions panel -----------------------------------
+
+  .suggestions-panel-wrap {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    transition:
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s;
+    // Zero-width when closed: a transparent 1px border still occupies a column, and
+    // three closed drawers side by side read as a broken seam beside the board.
+    border-left: 0 solid transparent;
+
+    &.is-open {
+      width: 380px;
+      border-left: 1px solid var(--border-dim);
+      overflow-y: hidden;
+    }
+
+    app-deck-suggestions-panel {
+      width: 380px;
+      height: 100%;
+    }
+  }
+
+  // ---- Mana suggestions panel ------------------------------
+
+  .mana-panel-wrap {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    transition:
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s;
+    // Zero-width when closed: a transparent 1px border still occupies a column, and
+    // three closed drawers side by side read as a broken seam beside the board.
+    border-left: 0 solid transparent;
+
+    &.is-open {
+      width: 320px;
+      border-left: 1px solid var(--border-dim);
+      overflow-y: hidden;
+    }
+
+    app-mana-suggest-panel {
+      width: 320px;
+      height: 100%;
+    }
+  }
+
+  // ---- Side panel (collapsible column) ---------------------
+
+  .side-panel {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg-deep);
+    display: flex;
+    flex-direction: column;
+    transition:
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s;
+    // Zero-width when closed: a transparent 1px border still occupies a column, and
+    // three closed drawers side by side read as a broken seam beside the board.
+    border-left: 0 solid transparent;
+
+    &.is-open {
+      width: 300px;
+      border-left: 1px solid var(--border-dim);
+      overflow-y: auto;
+    }
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 2px;
+    }
+  }
+
+  .side-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .side-panel-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .side-panel-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition:
+      color 0.15s,
+      background 0.15s;
+
+    &:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  // ---- Deck Stats ------------------------------------------
+
+  .stats-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .chart-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chart-type-toggle {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .ctt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+    &:hover {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+    }
+    &.is-active {
+      background: var(--bg-raised);
+      color: var(--gold);
+    }
+  }
+
+  .stats-header,
+  .curve-header {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .curve-header {
+    margin-top: 16px;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .stat-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .stat-val {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+
+    &.over-limit {
+      color: #e74c3c;
+    }
+  }
+
+  // ---- Mana curve chart ------------------------------------
+
+  .curve-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .curve-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 70px;
+  }
+
+  .curve-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+  }
+
+  .curve-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .curve-count {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .curve-bar {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(167, 139, 250, 0.25);
+    transition: height 0.3s ease;
+
+    &.has-count {
+      background: linear-gradient(to top, #7c3aed, #a78bfa);
+    }
+  }
+
+  .curve-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  // ---- Side-panel cover image ------------------------------
+
+  .cover-section {
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+
+    &:hover .cover-edit-overlay {
+      opacity: 1;
+    }
+  }
+
+  .cover-art {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background-size: cover;
+    background-position: center top;
+    background-color: var(--bg-raised);
+    position: relative;
+
+    &.no-cover-art {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(30, 27, 75, 0.85) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .cover-art-placeholder {
+    font-size: 40px;
+    color: rgba(167, 139, 250, 0.25);
+  }
+
+  .cover-edit-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cover-edit-icon {
+    font-size: 22px;
+    color: #fff;
+  }
+
+  .cover-edit-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  // ---- Unsaved layout modal --------------------------------
+
+  .unsaved-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .unsaved-modal {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-lit);
+    border-radius: 12px;
+    padding: 28px 32px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  }
+
+  .unsaved-modal-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .unsaved-modal-body {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .unsaved-modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .unsaved-btn {
+    flex: 1;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    transition: all 0.15s;
+
+    &.is-save {
+      background: rgba(201, 168, 76, 0.18);
+      border: 1px solid rgba(201, 168, 76, 0.4);
+      color: var(--gold);
+      &:hover {
+        background: rgba(201, 168, 76, 0.28);
+      }
+    }
+
+    &.is-discard {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: #f87171;
+      &:hover {
+        background: rgba(248, 113, 113, 0.2);
+      }
+    }
+
+    &.is-cancel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-dim);
+      &:hover {
+        color: var(--text-secondary);
+        border-color: var(--border-lit);
+      }
+    }
+  }
+
+  // ============================================================
+  // Modal quantity controls
+  // ============================================================
+
+  // Deck actions flanking the art: Add Another rides above the image (extra-top slot),
+  // Remove sits below it. The in-deck count lives beside the card name (countBadge).
+  @include modal-extra-chrome;
+
+  // ---- Format selector (header) ----------------------------
+
+  .format-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .format-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 5px 9px;
+    transition: all 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: var(--border-lit);
+      color: var(--text-secondary);
+    }
+
+    &.has-format {
+      border-color: rgba(167, 139, 250, 0.5);
+      color: #a78bfa;
+      background: rgba(167, 139, 250, 0.08);
+    }
+
+    &.has-violations {
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.08);
+    }
+  }
+
+  .format-caret {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+
+  .format-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-lit);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    min-width: 150px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 200;
+    animation: menu-in 0.1s ease;
+  }
+
+  .format-menu-sep {
+    height: 1px;
+    background: var(--border-dim);
+    margin: 2px 0;
+  }
+
+  .format-menu-item {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 9px 14px;
+    text-align: left;
+    transition:
+      background 0.1s,
+      color 0.1s;
+
+    &:hover {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+    }
+    &.is-active {
+      color: #a78bfa;
+    }
+  }
+
+  // ---- Header count colours --------------------------------
+
+  .header-count.count-ok {
+    color: #4ade80;
+  }
+
+  .header-count.count-bad {
+    color: #f87171;
+  }
+
+  // ---- Validation bar (top strip, commander format only) ---
+
+  .validation-bar {
+    position: relative;
+    z-index: 50;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 92px;
+    background: rgba(8, 8, 8, 0.75);
+    border-bottom: 1px solid var(--border-dim);
+    backdrop-filter: blur(8px);
+  }
+
+  .vbar-cover-group {
+    display: flex;
+    flex-direction: column;
+    // Label centred over the thumbnail rather than left-aligned against it.
+    align-items: center;
+    flex-shrink: 0;
+    align-self: stretch;
+    padding-right: 16px;
+    margin-left: 24px;
+
+    .vbar-cover {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  .vbar-cover {
+    flex-shrink: 0;
+    width: 110px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    // Rounded + fully bordered, matching the collection page's cover thumbnail. It used
+    // to carry only a right border, which read as a panel divider rather than a card.
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+
+    &:hover .vbar-cover-overlay {
+      opacity: 1;
+    }
+  }
+
+  .vbar-cover-art {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.no-cover {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(30, 27, 75, 0.8));
+    }
+  }
+
+  .vbar-cover-placeholder {
+    font-size: 20px;
+    color: rgba(167, 139, 250, 0.2);
+  }
+
+  .vbar-cover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--text-secondary);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .vbar-section-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 5px 0 4px 2px;
+    display: block;
+  }
+
+  .vbar-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 0 16px 8px 20px;
+  }
+
+  .vbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .vbar-legend-row {
+    gap: 12px;
+  }
+
+  // Shares the board-tabs line, pushed to the right edge.
+  // Sticky header block: the board tabs pin first, the filter bar pins directly beneath
+  // them (see --deck-head-h). Both are things you reach for while scrolling a long deck.
+  // The sticky bands span the board's full width with their contents still inset by the
+  // gutter: negative margins widen the box, the matching padding puts the controls back.
+  // They sit over a *horizontal* scroller, so a band only as wide as the content box
+  // leaves a strip of gutter at each end for scrolled card art to show through beside it.
+  // The filter bar carries the same pair inside its own rule below — a class selector
+  // there outranks an element one here, and its `padding` shorthand would win.
+  .board-row {
+    margin-inline: -24px;
+    padding-inline: 24px;
+  }
+
+  .board-row {
+    position: sticky;
+    top: 0;
+    z-index: 360;
+    background: var(--bg-base, #0a0a0a);
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    padding-top: 20px;
+  }
+
+  .vbar-panel-btns {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  // Sits at the right edge of the validation chips row.
+  .vbar-add-btn {
+    padding: 7px 14px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  // ---- Deck cover (in sidebar, below commander) ------------
+
+  .cp-cover-section {
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+
+    &:hover .cover-edit-overlay {
+      opacity: 1;
+    }
+  }
+
+  .cp-cover-art {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background-size: cover;
+    background-position: center top;
+    background-color: var(--bg-raised);
+    position: relative;
+
+    &.no-cover {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(30, 27, 75, 0.85));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 70px;
+    }
+  }
+
+  .cp-cover-placeholder {
+    font-size: 36px;
+    color: rgba(167, 139, 250, 0.2);
+  }
+
+  // ---- Commander panel (in sidebar) ------------------------
+
+  .cp-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .cp-portrait-wrap {
+    position: relative;
+    border-radius: 4.75% / 3.4%;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+
+    &.is-cmdr-drop-target .cp-portrait {
+      outline: 3px solid rgba(167, 139, 250, 0.9);
+      box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+    }
+  }
+
+  .cp-portrait {
+    width: 100%;
+    @include card-surface;
+    @include card-art-crop;
+    background-position: center top;
+    cursor: pointer;
+    display: block;
+    transition: box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    &.no-art {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(30, 27, 75, 0.9));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+  }
+
+  .cp-portrait-actions {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 0;
+    padding: 12px;
+
+    .cp-portrait-wrap:hover & {
+      opacity: 1;
+    }
+  }
+
+  .cp-cmdr-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-align: center;
+    padding: 10px 14px 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cp-add-cmdr-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px 0;
+    background: rgba(167, 139, 250, 0.1);
+    border: 1px solid rgba(167, 139, 250, 0.4);
+    border-radius: 8px;
+    color: #a78bfa;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      background: rgba(124, 58, 237, 0.25);
+      border-color: rgba(167, 139, 250, 0.7);
+    }
+  }
+
+  .cp-search-btn {
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(167, 139, 250, 0.5);
+    border-radius: 6px;
+    color: #a78bfa;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+    backdrop-filter: blur(6px);
+    width: 100%;
+    text-align: center;
+
+    &:hover {
+      background: rgba(124, 58, 237, 0.4);
+      border-color: rgba(167, 139, 250, 0.8);
+    }
+  }
+
+  .cp-detail-btn-overlay {
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+    backdrop-filter: blur(6px);
+    width: 100%;
+    text-align: center;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-lit);
+      color: var(--text-primary);
+    }
+  }
+
+  .cp-clear-btn-overlay {
+    background: rgba(185, 28, 28, 0.3);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    border-radius: 6px;
+    color: #fca5a5;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+    backdrop-filter: blur(6px);
+    width: 100%;
+    text-align: center;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.5);
+      border-color: #f87171;
+      color: #fff;
+    }
+  }
+
+  .cp-no-cmdr {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  .cp-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cp-type {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: -4px;
+  }
+
+  .cp-identity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .cp-identity {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .cp-detail-btn {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+
+    &:hover {
+      border-color: rgba(167, 139, 250, 0.5);
+      color: #a78bfa;
+    }
+  }
+
+  .cp-clear-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    align-self: flex-start;
+    transition: all 0.15s;
+    opacity: 0.6;
+
+    &:hover {
+      border-color: rgba(248, 113, 113, 0.4);
+      color: #f87171;
+      opacity: 1;
+    }
+  }
+
+  .cp-color {
+    font-size: 14px;
+    opacity: 0.9;
+
+    &[data-color='W'] {
+      color: #f9fafb;
+    }
+    &[data-color='U'] {
+      color: #60a5fa;
+    }
+    &[data-color='B'] {
+      color: #c084fc;
+    }
+    &[data-color='R'] {
+      color: #f87171;
+    }
+    &[data-color='G'] {
+      color: #4ade80;
+    }
+    &[data-color='C'] {
+      color: #9ca3af;
+    }
+  }
+
+  .cp-divider {
+    height: 1px;
+    background: var(--border-dim);
+    margin: 2px 0;
+  }
+
+  // Commander picker dropdown
+  .cp-picker {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-lit);
+    border-radius: 10px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    min-width: 260px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 300;
+    animation: menu-in 0.12s ease;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 2px;
+    }
+  }
+
+  .cp-picker-header {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 10px 14px 6px;
+  }
+
+  .cp-picker-empty {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 8px 14px 12px;
+    font-style: italic;
+  }
+
+  .cp-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 6px 14px;
+    text-align: left;
+    transition:
+      background 0.1s,
+      color 0.1s;
+
+    &:hover {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+    }
+    &.is-active {
+      color: #a78bfa;
+    }
+  }
+
+  .cppi-art {
+    width: 32px;
+    height: 24px;
+    border-radius: 3px;
+    background-size: cover;
+    background-position: center top;
+    background-color: rgba(167, 139, 250, 0.1);
+    flex-shrink: 0;
+  }
+
+  .cp-picker-divider {
+    height: 1px;
+    background: var(--border-dim);
+    margin: 4px 0;
+  }
+
+  .cp-picker-clear {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: #f87171;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 12px;
+    padding: 7px 14px 10px;
+    text-align: left;
+    transition: background 0.1s;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.08);
+    }
+  }
+
+  // Violation legend
+  .cp-legend {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cp-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .cp-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &.dot-singleton {
+      background: #f97316;
+    }
+    &.dot-color-id {
+      background: #818cf8;
+    }
+    &.dot-both {
+      background: #a855f7;
+    }
+    &.dot-banned {
+      background: #dc2626;
+    }
+  }
+
+  // Validation pills
+  .cp-checks {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .cp-check {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+
+    &.ok {
+      color: #4ade80;
+      border-color: rgba(74, 222, 128, 0.25);
+      background: rgba(74, 222, 128, 0.06);
+    }
+    &.bad {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.06);
+    }
+    &.bad-singleton {
+      color: #f97316;
+      border-color: rgba(249, 115, 22, 0.35);
+      background: rgba(249, 115, 22, 0.08);
+      cursor: help;
+    }
+    &.bad-color-id {
+      color: #818cf8;
+      border-color: rgba(129, 140, 248, 0.3);
+      background: rgba(129, 140, 248, 0.06);
+      cursor: help;
+    }
+    &.bad-banned {
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, 0.4);
+      background: rgba(220, 38, 38, 0.1);
+      cursor: help;
+      font-weight: 700;
+    }
+    &.info-gc {
+      color: var(--gold);
+      border-color: rgba(201, 168, 76, 0.3);
+      background: rgba(201, 168, 76, 0.08);
+      cursor: help;
+    }
+  }
+
+  .cp-check-icon {
+    font-size: 9px;
+  }
+
+  .cp-ai-build {
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cp-ai-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cp-ai-option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cp-ai-label {
+    font-size: 10px;
+    font-family: var(--font-display);
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    width: 46px;
+    flex-shrink: 0;
+  }
+
+  .cp-ai-select {
+    flex: 1;
+    font-size: 11px;
+    font-family: var(--font-display);
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 3px 6px;
+    cursor: pointer;
+
+    option {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    &:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+  }
+
+  .cp-ai-checks {
+    gap: 8px;
+  }
+
+  .cp-ai-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-family: var(--font-display);
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    i {
+      font-size: 14px;
+    }
+
+    &.is-active {
+      color: var(--gold);
+      border-color: rgba(201, 168, 76, 0.4);
+      background: rgba(201, 168, 76, 0.08);
+    }
+
+    &:hover:not(:disabled):not(.is-active) {
+      color: var(--text-secondary);
+      border-color: var(--border-subtle);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .cp-ai-build-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.12) 0%, rgba(201, 168, 76, 0.06) 100%);
+    color: var(--gold);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(
+        135deg,
+        rgba(201, 168, 76, 0.22) 0%,
+        rgba(201, 168, 76, 0.12) 100%
+      );
+      border-color: rgba(201, 168, 76, 0.7);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .cp-ai-build-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cp-ai-spin {
+    display: inline-block;
+    animation: cp-spin 0.9s linear infinite;
+  }
+
+  .cp-ai-result {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #4ade80;
+    font-family: var(--font-display);
+    letter-spacing: 0.05em;
+  }
+
+  .cp-ai-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #f87171;
+    font-family: var(--font-display);
+  }
+
+  .cp-notes {
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--border-dim);
+  }
+
+  .cp-notes-label {
+    display: block;
+    font-size: 10px;
+    font-family: var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .cp-notes-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: var(--font-body);
+    line-height: 1.5;
+    padding: 8px 10px;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    &::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+  }
+
+  .cp-bracket-wrapper {
+    position: relative;
+    padding: 8px 16px 12px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .cp-bracket {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.15s;
+
+    &:hover,
+    &.is-open {
+      filter: brightness(1.25);
+    }
+
+    &.bracket-1 {
+      color: #4ade80;
+      border-color: rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.07);
+    }
+    &.bracket-2 {
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(56, 189, 248, 0.07);
+    }
+    &.bracket-3 {
+      color: var(--gold);
+      border-color: rgba(201, 168, 76, 0.35);
+      background: rgba(201, 168, 76, 0.09);
+    }
+    &.bracket-4 {
+      color: #fb923c;
+      border-color: rgba(251, 146, 60, 0.4);
+      background: rgba(251, 146, 60, 0.09);
+    }
+  }
+
+  .bracket-info-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+  }
+
+  // ---- Violation detail panel ------------------------------------
+
+  .violation-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  .violation-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 10, 18, 0.97);
+    border-bottom: 1px solid var(--border-dim);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    padding: 12px 20px 14px;
+
+    &.vp-banned {
+      border-top: 2px solid rgba(220, 38, 38, 0.6);
+    }
+    &.vp-singleton {
+      border-top: 2px solid rgba(249, 115, 22, 0.6);
+    }
+    &.vp-color-id {
+      border-top: 2px solid rgba(129, 140, 248, 0.6);
+    }
+  }
+
+  .vp-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .vp-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .vp-hint {
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  .vp-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-left: auto;
+    &:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  .vp-cards {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+  }
+
+  .vp-card-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    width: 84px;
+  }
+
+  .vp-thumb {
+    width: 84px;
+    height: 116px;
+    @include card-corners;
+    @include card-art-crop;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-dim);
+    transition:
+      border-color 0.15s,
+      transform 0.1s;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: scale(1.03);
+    }
+
+    .vp-banned & {
+      border-color: rgba(220, 38, 38, 0.35);
+    }
+    .vp-singleton & {
+      border-color: rgba(249, 115, 22, 0.35);
+    }
+    .vp-color-id & {
+      border-color: rgba(129, 140, 248, 0.45);
+    }
+  }
+
+  .vp-thumb-placeholder {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.12);
+  }
+
+  .vp-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .vp-card-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    &:hover {
+      color: var(--accent);
+    }
+  }
+
+  .vp-card-type {
+    font-size: 9px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vp-card-note {
+    font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .vp-banned & {
+      color: rgba(248, 113, 113, 0.9);
+    }
+    .vp-singleton & {
+      color: rgba(249, 115, 22, 0.9);
+    }
+    .vp-color-id & {
+      color: rgba(129, 140, 248, 0.9);
+    }
+  }
+
+  .vp-remove-btn {
+    background: rgba(220, 38, 38, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    color: #f87171;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.25);
+      border-color: rgba(220, 38, 38, 0.5);
+    }
+  }
+
+  .cp-check.clickable {
+    cursor: pointer;
+  }
+
+  .cp-check.clickable:hover {
+    filter: brightness(1.2);
+  }
+
+  .cp-check.is-open {
+    filter: brightness(1.3);
+  }
+
+  .bracket-info-panel {
+    margin-top: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .bip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .bip-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .bip-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    &:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  .bip-note {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .bip-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 12px;
+  }
+
+  .bip-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: background 0.1s;
+
+    &.is-current {
+      &.bip-row-1 {
+        background: rgba(74, 222, 128, 0.08);
+        border-color: rgba(74, 222, 128, 0.25);
+      }
+      &.bip-row-2 {
+        background: rgba(56, 189, 248, 0.08);
+        border-color: rgba(56, 189, 248, 0.25);
+      }
+      &.bip-row-3 {
+        background: rgba(201, 168, 76, 0.09);
+        border-color: rgba(201, 168, 76, 0.3);
+      }
+      &.bip-row-4 {
+        background: rgba(251, 146, 60, 0.08);
+        border-color: rgba(251, 146, 60, 0.3);
+      }
+      &.bip-row-5 {
+        background: rgba(248, 113, 113, 0.08);
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+    }
+
+    &.bip-manual {
+      opacity: 0.55;
+    }
+  }
+
+  .bip-num {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.2;
+
+    .bip-row-1 & {
+      color: #4ade80;
+    }
+    .bip-row-2 & {
+      color: #38bdf8;
+    }
+    .bip-row-3 & {
+      color: var(--gold);
+    }
+    .bip-row-4 & {
+      color: #fb923c;
+    }
+    .bip-row-5 & {
+      color: #f87171;
+    }
+  }
+
+  .bip-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .bip-name {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .bip-criteria {
+    font-size: 10px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .bip-flags-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .bip-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .bip-flag {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 5px 8px;
+    border-radius: 5px;
+
+    i {
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    span {
+      color: var(--text-secondary);
+    }
+    strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    &.bip-flag-gc {
+      background: rgba(201, 168, 76, 0.07);
+      i {
+        color: var(--gold);
+      }
+    }
+    &.bip-flag-mld {
+      background: rgba(220, 38, 38, 0.07);
+      i {
+        color: #f87171;
+      }
+    }
+    &.bip-flag-chain {
+      background: rgba(251, 146, 60, 0.07);
+      i {
+        color: #fb923c;
+      }
+    }
+    &.bip-flag-et {
+      background: rgba(56, 189, 248, 0.07);
+      i {
+        color: #38bdf8;
+      }
+    }
+  }
+
+  .card-name,
+  .card-type {
+    span {
+      display: inline-block;
+    }
+
+    &:hover {
+      text-overflow: clip;
+      span {
+        animation: marquee-text 3s 0.4s ease-in-out alternate infinite;
+      }
+    }
+  }
+
+  .cp-name,
+  .cp-type {
+    span {
+      display: inline-block;
+    }
+
+    &:hover {
+      text-overflow: clip;
+      span {
+        animation: marquee-text 3s 0.4s ease-in-out alternate infinite;
+      }
+    }
+  }
+}
+
+// Shared landing pulse for anything that receives a card: board tabs, the commander
+// portrait, and the header Commander button.
+@keyframes add-target-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+    color: var(--gold);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes banned-icon-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes banned-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(220, 38, 38, 0.2),
+      0 0 6px rgba(220, 38, 38, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(220, 38, 38, 1),
+      0 0 28px rgba(220, 38, 38, 0.8),
+      0 0 50px rgba(220, 38, 38, 0.35);
+  }
+}
+
+@keyframes gc-icon-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes gc-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(201, 168, 76, 0.2),
+      0 0 6px rgba(201, 168, 76, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(201, 168, 76, 1),
+      0 0 28px rgba(201, 168, 76, 0.8),
+      0 0 50px rgba(201, 168, 76, 0.35);
+  }
+}
+
+// ---- Deck grid entrance -------------------------------------------
+//
+// Columns cascade in left to right, and the cards inside each column follow top to
+// bottom — the same staggered reveal and shared ease the rest of the app uses. Delays
+// are capped so a huge deck never waits long for its last card. Groups are tracked by
+// key and cards by identity/index, so change-detection churn (mouse movement) never
+// recreates the elements and the animation only plays on a real (re)mount: opening the
+// deck, switching view mode, or regrouping.
+
+@keyframes grid-group-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---- Marquee animation for overflowing text --------------
+
+@keyframes marquee-text {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-40%);
+  }
+}
+
+// ---- Rarity badges --------------------------------------------
+//
+// Shared by the search panel and the card grid's filter bar: the same four badges in the
+// same colours, so a rarity means one thing everywhere. Top level, not nested under a
+// component, because two screens render them.
+.rarity-badge {
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  opacity: 0.55;
+
+  &:hover {
+    opacity: 0.85;
+  }
+  &.is-active {
+    opacity: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  &.rarity-common {
+    background: #3a3a3a;
+    color: #b0b0b0;
+    &.is-active {
+      border-color: #888;
+    }
+  }
+  &.rarity-uncommon {
+    background: #2a3a4a;
+    color: #8ab0d0;
+    &.is-active {
+      border-color: #8ab0d0;
+    }
+  }
+  &.rarity-rare {
+    background: #3a3010;
+    color: #d4a830;
+    &.is-active {
+      border-color: #d4a830;
+    }
+  }
+  &.rarity-mythic {
+    background: #3a1800;
+    color: #e07030;
+    &.is-active {
+      border-color: #e07030;
+    }
+  }
+}
+
+// ---- Card flip button -----------------------------------------
+//
+// One definition for every flip button in the app. The collection grid called it
+// `.flip-btn` and the deck called it `.thumb-flip`, with rules that had already drifted
+// (a fixed corner radius against a zoom-scaled one). Top level rather than inside
+// app-card-tile because the deck's list thumbnails carry the same button outside it.
+.ct-flip {
+  position: absolute;
+  // Zoom-scaled with the art, like the count pills.
+  bottom: calc(6px * var(--card-zoom, 1));
+  right: calc(6px * var(--card-zoom, 1));
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.78);
+  border: 1.5px solid var(--border-lit);
+  border-radius: calc(6px * var(--card-zoom, 1));
+  color: var(--text-primary);
+  font-size: calc(14px * var(--card-zoom, 1));
+  line-height: 1;
+  padding: calc(5px * var(--card-zoom, 1)) calc(7px * var(--card-zoom, 1));
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &.is-flipped {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+}
+
+// A control that only appears once a filter is active still has to occupy its width the
+// rest of the time — showing it with *ngIf widened the row and shoved the centred search
+// sideways the moment you clicked a chip.
+.is-reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+// ---- Deck's card-modal controls -------------------------------
+//
+// Projected into <app-card-modal>, which ToBodyDirective re-parents to <body> — so these
+// nodes are NOT descendants of app-deck-detail and must not be nested under it.
+
+// ---- Deck's card-modal controls (top level, deliberately) -----
+//
+// These are projected into <app-card-modal>, which ToBodyDirective re-parents to <body>.
+// The projected nodes are therefore NOT descendants of app-deck-detail, so nesting them
+// under it — as the rest of that component's styles are — silently drops them.
+
+// ---- Card-modal projected chrome ------------------------------
+//
+// The add/remove controls the deck and search panels project into <app-card-modal> land
+// inside a modal that ToBodyDirective re-parents to <body> — so they are not descendants
+// of the projecting component, and a host-scoped @include never matches them. Emitted
+// once at top level, where the projected nodes actually live.
+@include modal-extra-chrome;

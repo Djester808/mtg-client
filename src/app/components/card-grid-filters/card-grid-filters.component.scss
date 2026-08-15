@@ -1,0 +1,300 @@
+// The filter bar above a card grid.
+//
+// Two layouts, chosen by the bar's *own* width — not the window's, because the search
+// panel takes 600px out of the bar without the window changing at all:
+//
+//   narrow — one line: a controls button and the name box. Everything else lives in the
+//            menu that button opens, so nothing wraps and nothing is cut off.
+//   wide   — controls left, box centred, view controls right, facet chips beneath.
+//
+// The box is centred by a symmetric grid in *both*: the outer columns are equal, so the
+// middle one sits on the bar's centre line however much the sides weigh. Anything that
+// sizes the middle instead only ever centres it in the gap the sides leave, which is off
+// by half their difference.
+//
+// Everything the bar renders that is page chrome — .filter-wrap, .filter-input,
+// .zoom-group — is styled by the global `filter-field` / `zoom-control` mixins (and, on
+// the deck page, by that page's overrides under app-deck-detail), so those keep working.
+//
+// Projected content keeps the *projecting* page's encapsulation, so nothing here can
+// reach it. That is the point: the layout buttons and the density pickers stay each
+// page's business.
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// Narrow: one column holding the box, with the button floated over the left end. The
+// button is out of flow and the box carries an equal inset on both sides, so the box
+// stays centred on the bar and the two never meet however narrow the bar gets.
+.cgf-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'center';
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 14px;
+  position: relative;
+}
+
+// ---- The controls button and its menu (narrow only) -----------------
+
+.cgf-menu-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 10px 13px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover,
+  &.is-open {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+  }
+
+  // A filter left on inside a closed menu is otherwise invisible.
+  &.has-filters {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+}
+
+// Closed. Absolute, so opening it never moves the grid below.
+.cgf-clusters {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 360;
+  display: none;
+  flex-direction: column;
+  // Centred throughout: the chip rows centre themselves, so left-aligned control rows
+  // above them read as two different layouts stacked in one panel.
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  max-width: min(92vw, 460px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
+
+  &.is-open {
+    display: flex;
+  }
+
+  // Inside the menu the clusters are rows of controls, centred like everything else,
+  // and free to wrap: there is no line to hold here.
+  .cgf-left,
+  .cgf-right {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 12px;
+  }
+}
+
+// ---- Clusters -------------------------------------------------------
+
+// Never wrapped. A cluster that wraps drops one of its controls onto a second line and
+// leaves the bar lopsided — the whole point of the menu below is that controls which do
+// not fit go *there*, not onto a line of their own.
+.cgf-left,
+.cgf-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cgf-left {
+  justify-content: flex-start;
+}
+
+.cgf-right {
+  justify-content: flex-end;
+}
+
+.cgf-center {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  // Room for the floating button, mirrored on the right so the box stays centred.
+  padding: 0 52px;
+}
+
+// ---- Labelled control column ----------------------------------------
+//
+// Caption above the control, children at their natural width — a column stretches its
+// children by default, so a wide caption drags a lone button out with it.
+.cgf-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
+.cgf-label {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+// ---- The name box ---------------------------------------------------
+
+.cgf-group--filter {
+  width: 100%;
+  min-width: 0;
+
+  // No caption in menu mode: the bar is one line there, and a caption stacked above the
+  // box makes the cell taller than the box, so the controls button — centred on the cell
+  // — sits above the box's centre line instead of level with it.
+  .cgf-label {
+    display: none;
+  }
+
+  // Fluid up to a comfortable line length, never fixed: a fixed width here is what made
+  // the box overflow a narrow bar and sit on top of the controls beside it.
+  .filter-wrap {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  .filter-input {
+    font-size: 15px;
+    padding: 11px 16px 11px 38px;
+    // Ellipsis rather than a hard cut once the box is narrower than its placeholder.
+    text-overflow: ellipsis;
+  }
+
+  .filter-icon {
+    font-size: 18px;
+  }
+}
+
+// ---- Facet chips ----------------------------------------------------
+
+.cgf-facets {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cgf-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+// Sort field, direction and Clear read as one control: wrapping them stacks three chips
+// under a single caption, which looks like three separate rows of buttons.
+.cgf-sort-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
+.set-filter-menu {
+  min-width: 108px;
+}
+
+// Anchored to the box; the chrome itself comes from the global .app-menu classes.
+.filter-sugg-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+}
+
+// ---- Wide: the controls come out onto the bar ------------------------
+//
+// `display: contents` hands the menu's children straight to the bar's grid, so they are
+// laid out here without being rendered twice.
+// 1340px, and the number is derived rather than guessed. The two side columns are equal,
+// so the binding constraint is the *wider* cluster fitting in one of them:
+//
+//     width >= 2 x widest-cluster + box + gaps  =  2 x 420 + 460 + 28  =  1328
+//
+// (420px is the deck's Group By + Layout.) Anything lower and wide mode engaged before
+// there was room: the cluster overflowed its column and sat on top of the box.
+@container (min-width: 1340px) {
+  .cgf-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas:
+      'left center right'
+      'facets facets facets';
+    row-gap: 10px;
+  }
+
+  .cgf-menu-btn {
+    display: none;
+  }
+
+  .cgf-clusters {
+    display: contents;
+  }
+
+  .cgf-left {
+    grid-area: left;
+  }
+
+  .cgf-right {
+    grid-area: right;
+  }
+
+  .cgf-facets {
+    grid-area: facets;
+    width: 100%;
+  }
+
+  // A stated width, so the middle column does not resize with what is typed into it and
+  // slide the two clusters about as it goes. No inset: the button it made room for is
+  // not rendered at this width.
+  .cgf-center {
+    width: auto;
+    min-width: 460px;
+    padding: 0;
+  }
+
+  .cgf-group--filter .cgf-label {
+    display: block;
+  }
+}
+
+// ---- Faceted layout (the collection grid) ---------------------------
+:host(.is-faceted) {
+  // This grid reads zoom first, then the view toggles; the deck reads them the other way
+  // round. Ordering, rather than a second projection slot, because a component may only
+  // fill a given ng-content once.
+  .cgf-zoom {
+    order: -1;
+  }
+}

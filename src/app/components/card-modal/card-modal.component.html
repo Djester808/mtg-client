@@ -14,19 +14,32 @@
   <!-- Drag handle / title bar -->
   <div class="modal-drag" (mousedown)="onDragStart($event)">
     <span class="modal-drag-name">{{ displayName }}</span>
-    <button class="modal-close-btn" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    <!-- When this copy entered the collection. Lives in the title bar because it is a fact
+         about the copy, not about the card — the Details tab is card data only. -->
+    <span class="modal-added-chip" *ngIf="ownedEntry?.addedAt as added">
+      <i class="bi bi-calendar3"></i>
+      <span class="modal-added-label">Added</span>
+      {{ added | date: 'MMM d, y · h:mm a' }}
+    </span>
+    <!-- Host-provided title-bar actions (e.g. Move to…). stopPropagation on mousedown so
+         pressing one does not start dragging the window. -->
+    <div class="modal-title-actions" (mousedown)="$event.stopPropagation()">
+      <ng-content select="[title-action]"></ng-content>
+      <button class="modal-close-btn" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
   </div>
 
   <!-- Two-column body -->
   <div class="modal-body">
-
     <!-- Left: card art + optional host-page controls above and below it -->
     <div class="modal-art-col">
       <ng-content select="[extra-top]"></ng-content>
-      <div class="modal-art"
-           [class.is-game-changer]="isGameChanger"
-           [class.is-banned]="isBanned"
-           (mouseleave)="onImageMouseLeave()">
+      <div
+        class="modal-art"
+        [class.is-game-changer]="isGameChanger"
+        [class.is-banned]="isBanned"
+        (mouseleave)="onImageMouseLeave()"
+      >
         <img
           class="modal-card-img"
           *ngIf="modalImage"
@@ -51,7 +64,9 @@
           [class.is-flipped]="flipped"
           (click)="toggleFlip()"
           title="Flip card"
-        >⟲</button>
+        >
+          ⟲
+        </button>
       </div>
       <!-- Collection-specific controls (quantity badge) projected here -->
       <ng-content select="[extra]"></ng-content>
@@ -59,19 +74,23 @@
 
     <!-- Right: card info -->
     <div class="modal-info-col">
-
       <div class="modal-name-row">
-        <span class="modal-card-name">{{ displayName }}<span
-            class="modal-count-badge"
-            *ngIf="countBadge"
-            [title]="countBadge + ' owned'"
-          >×{{ countBadge }}</span><span
+        <span class="modal-card-name"
+          >{{ displayName
+          }}<span class="modal-count-badge" *ngIf="countBadge" [title]="countBadge + ' owned'"
+            >×{{ countBadge }}</span
+          ><span
             class="modal-count-badge modal-count-badge--foil"
             *ngIf="foilCountBadge"
             [title]="foilCountBadge + ' foil owned'"
-          >✦ ×{{ foilCountBadge }}</span></span>
+            >✦ ×{{ foilCountBadge }}</span
+          ></span
+        >
         <div class="modal-cost-col">
-          <app-mana-cost *ngIf="effectiveCard?.manaCost" [cost]="effectiveCard!.manaCost"></app-mana-cost>
+          <app-mana-cost
+            *ngIf="effectiveCard?.manaCost"
+            [cost]="effectiveCard!.manaCost"
+          ></app-mana-cost>
           <span class="modal-mv" *ngIf="effectiveCard?.manaValue && !isLand">
             <span class="modal-mv-label">CMC</span>{{ effectiveCard!.manaValue }}
           </span>
@@ -80,12 +99,35 @@
 
       <!-- Info tabs: Details and Rulings always; hosts may add one more (e.g. Notes) -->
       <div class="modal-info-tabs">
-        <button class="modal-info-tab" [class.is-active]="infoTab === 'details'"
-                (click)="infoTab = 'details'">Details</button>
-        <button class="modal-info-tab" [class.is-active]="infoTab === 'rulings'"
-                (click)="infoTab = 'rulings'">Rulings<ng-container *ngIf="rulings.length"> ({{ rulings.length }})</ng-container></button>
-        <button class="modal-info-tab" *ngIf="infoTabLabel" [class.is-active]="infoTab === 'extra'"
-                (click)="infoTab = 'extra'">{{ infoTabLabel }}</button>
+        <button
+          class="modal-info-tab"
+          [class.is-active]="infoTab === 'details'"
+          (click)="infoTab = 'details'"
+        >
+          Details
+        </button>
+        <button
+          class="modal-info-tab"
+          [class.is-active]="infoTab === 'rulings'"
+          (click)="infoTab = 'rulings'"
+        >
+          Rulings<ng-container *ngIf="rulings.length"> ({{ rulings.length }})</ng-container>
+        </button>
+        <button
+          class="modal-info-tab"
+          [class.is-active]="infoTab === 'prices'"
+          (click)="infoTab = 'prices'"
+        >
+          Prices
+        </button>
+        <button
+          class="modal-info-tab"
+          *ngIf="infoTabLabel"
+          [class.is-active]="infoTab === 'extra'"
+          (click)="infoTab = 'extra'"
+        >
+          {{ infoTabLabel }}
+        </button>
       </div>
 
       <div class="modal-info-tab-body" [class.is-hidden]="infoTab !== 'extra'">
@@ -104,69 +146,119 @@
         </div>
       </div>
 
-      <ng-container *ngIf="infoTab === 'details'">
-
-      <div class="modal-type-line" *ngIf="typeLine">{{ typeLine }}</div>
-
-      <div class="modal-set-line" *ngIf="currentPrinting as p">
-        <span class="modal-set-code">{{ p.setCode.toUpperCase() }}</span>
-        <span class="modal-set-name">{{ p.setName }}</span>
-        <ng-container *ngIf="p.collectorNumber">
-          <span class="modal-set-sep">·</span>
-          <span class="modal-set-num">#{{ p.collectorNumber }}</span>
-        </ng-container>
-      </div>
-      <div class="modal-set-line" *ngIf="!currentPrinting && effectiveCard?.setCode">
-        <span class="modal-set-code">{{ effectiveCard!.setCode!.toUpperCase() }}</span>
-      </div>
-
-      <div class="modal-oracle" *ngIf="displayOracleText"
-           [innerHTML]="displayOracleText | oracleSymbols"></div>
-
-      <div class="modal-flavor" *ngIf="effectiveCard?.flavorText">{{ effectiveCard!.flavorText }}</div>
-
-      <div class="modal-keywords" *ngIf="effectiveCard?.keywords?.length">
-        <span class="modal-kw-chip" *ngFor="let kw of effectiveCard!.keywords">{{ kw }}</span>
-      </div>
-
-      <div class="modal-stats-row">
-        <span class="modal-pt" *ngIf="effectiveCard?.power != null">
-          {{ effectiveCard!.power }}/{{ effectiveCard!.toughness }}
-        </span>
-        <span class="modal-loyalty" *ngIf="effectiveCard?.startingLoyalty != null">
-          {{ effectiveCard!.startingLoyalty }}
-        </span>
-        <span class="modal-artist"
-              *ngIf="(currentPrinting?.artist ?? effectiveCard?.artist) as artist">
-          Illus. {{ artist }}
-        </span>
-      </div>
-
-      <!-- Legalities -->
-      <div class="modal-legalities" *ngIf="hasLegalities">
-        <div class="modal-legalities-header">Format Legality</div>
-        <div class="modal-legalities-grid">
-          <div
-            class="legal-chip"
-            *ngFor="let f of legalFormats"
-            [class.is-legal]="f.status === 'legal'"
-            [class.is-restricted]="f.status === 'restricted'"
-          >
-            <span class="legal-chip-status">{{ f.status === 'restricted' ? 'R' : '' }}<i *ngIf="f.status !== 'restricted'" class="bi bi-check-lg"></i></span>
-            <span class="legal-chip-label">{{ f.label }}</span>
+      <!-- Prices tab: what this copy cost when it was added versus today, then prices,
+           history chart and printing list (their own component). -->
+      <ng-container *ngIf="infoTab === 'prices'">
+        <div class="modal-owned-box" *ngIf="ownedEntry as owned">
+          <div class="owned-row" *ngIf="owned.priceUsdAtAdd != null">
+            <span class="owned-label">Price when added</span>
+            <span class="owned-value">{{ owned.priceUsdAtAdd | currency: 'USD' }}</span>
           </div>
           <div
-            class="legal-chip is-not-legal"
-            *ngFor="let f of illegalFormats"
+            class="owned-row owned-row--delta"
+            *ngIf="priceDelta as d"
+            [class.is-up]="d.direction === 'up'"
+            [class.is-down]="d.direction === 'down'"
           >
-            <span class="legal-chip-status"><i class="bi bi-x-lg"></i></span>
-            <span class="legal-chip-label">{{ f.label }}</span>
+            <span class="owned-label">Price now</span>
+            <span class="owned-value owned-now">
+              {{ d.now | currency: 'USD' }}
+              <span class="owned-change" *ngIf="d.direction !== 'flat'">
+                <i
+                  class="bi"
+                  [class.bi-caret-up-fill]="d.direction === 'up'"
+                  [class.bi-caret-down-fill]="d.direction === 'down'"
+                ></i>
+                {{ d.diff > 0 ? '+' : '' }}{{ d.diff | currency: 'USD' }}
+                <ng-container *ngIf="d.percent != null">
+                  ({{ d.diff > 0 ? '+' : '' }}{{ d.percent | number: '1.0-1' }}%)
+                </ng-container>
+              </span>
+              <span class="owned-change" *ngIf="d.direction === 'flat'">unchanged</span>
+            </span>
+          </div>
+          <div class="owned-note" *ngIf="owned.priceUsdAtAdd == null">
+            No price was recorded when this copy was added.
           </div>
         </div>
-      </div>
 
-      </ng-container><!-- /details tab -->
+        <app-card-prices-panel
+          [card]="card"
+          [printings]="printings"
+          [viewedScryfallId]="viewedScryfallId"
+          (printingSelect)="selectPrinting($event)"
+        ></app-card-prices-panel>
+      </ng-container>
 
+      <ng-container *ngIf="infoTab === 'details'">
+        <div class="modal-type-line" *ngIf="typeLine">{{ typeLine }}</div>
+
+        <div class="modal-set-line" *ngIf="currentPrinting as p">
+          <app-set-icon [setCode]="p.setCode" [setName]="p.setName"></app-set-icon>
+          <span class="modal-set-code">{{ p.setCode.toUpperCase() }}</span>
+          <span class="modal-set-name">{{ p.setName }}</span>
+          <ng-container *ngIf="p.collectorNumber">
+            <span class="modal-set-sep">·</span>
+            <span class="modal-set-num">#{{ p.collectorNumber }}</span>
+          </ng-container>
+        </div>
+        <div class="modal-set-line" *ngIf="!currentPrinting && effectiveCard?.setCode">
+          <app-set-icon [setCode]="effectiveCard!.setCode"></app-set-icon>
+          <span class="modal-set-code">{{ effectiveCard!.setCode!.toUpperCase() }}</span>
+        </div>
+
+        <div
+          class="modal-oracle"
+          *ngIf="displayOracleText"
+          [innerHTML]="displayOracleText | oracleSymbols"
+        ></div>
+
+        <div class="modal-flavor" *ngIf="effectiveCard?.flavorText">
+          {{ effectiveCard!.flavorText }}
+        </div>
+
+        <div class="modal-keywords" *ngIf="effectiveCard?.keywords?.length">
+          <span class="modal-kw-chip" *ngFor="let kw of effectiveCard!.keywords">{{ kw }}</span>
+        </div>
+
+        <div class="modal-stats-row">
+          <span class="modal-pt" *ngIf="effectiveCard?.power != null">
+            {{ effectiveCard!.power }}/{{ effectiveCard!.toughness }}
+          </span>
+          <span class="modal-loyalty" *ngIf="effectiveCard?.startingLoyalty != null">
+            {{ effectiveCard!.startingLoyalty }}
+          </span>
+          <span
+            class="modal-artist"
+            *ngIf="currentPrinting?.artist ?? effectiveCard?.artist as artist"
+          >
+            Illus. {{ artist }}
+          </span>
+        </div>
+
+        <!-- Legalities -->
+        <div class="modal-legalities" *ngIf="hasLegalities">
+          <div class="modal-legalities-header">Format Legality</div>
+          <div class="modal-legalities-grid">
+            <div
+              class="legal-chip"
+              *ngFor="let f of legalFormats"
+              [class.is-legal]="f.status === 'legal'"
+              [class.is-restricted]="f.status === 'restricted'"
+            >
+              <span class="legal-chip-status"
+                >{{ f.status === 'restricted' ? 'R' : ''
+                }}<i *ngIf="f.status !== 'restricted'" class="bi bi-check-lg"></i
+              ></span>
+              <span class="legal-chip-label">{{ f.label }}</span>
+            </div>
+            <div class="legal-chip is-not-legal" *ngFor="let f of illegalFormats">
+              <span class="legal-chip-status"><i class="bi bi-x-lg"></i></span>
+              <span class="legal-chip-label">{{ f.label }}</span>
+            </div>
+          </div>
+        </div> </ng-container
+      ><!-- /details tab -->
     </div>
   </div>
 
@@ -187,7 +279,9 @@
         [disabled]="!carouselCanPrev"
         (click)="carouselPrev()"
         title="Previous"
-      >‹</button>
+      >
+        ‹
+      </button>
 
       <div class="modal-printings-grid">
         <div
@@ -201,23 +295,36 @@
         >
           <div
             class="chip-thumb"
-            [style.backgroundImage]="(flipped && p.scryfallId === viewedScryfallId && p.imageUriNormalBack)
-              ? 'url(' + p.imageUriNormalBack + ')'
-              : p.imageUriSmall ? 'url(' + p.imageUriSmall + ')' : 'none'"
+            [style.backgroundImage]="
+              flipped && p.scryfallId === viewedScryfallId && p.imageUriNormalBack
+                ? 'url(' + p.imageUriNormalBack + ')'
+                : p.imageUriSmall
+                  ? 'url(' + p.imageUriSmall + ')'
+                  : 'none'
+            "
           >
             <div class="chip-placeholder" *ngIf="!p.imageUriSmall">◈</div>
             <div class="chip-viewing-banner" *ngIf="p.scryfallId === viewedScryfallId">Viewing</div>
-            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId"><i class="bi bi-check-lg"></i> Owned</div>
-            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)"><i class="bi bi-check-lg"></i> Owned</div>
+            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId">
+              <i class="bi bi-check-lg"></i> Owned
+            </div>
+            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)">
+              <i class="bi bi-check-lg"></i> Owned
+            </div>
             <button
               class="chip-dfc-badge"
               *ngIf="p.imageUriNormalBack"
               [class.is-flipped]="flipped && p.scryfallId === viewedScryfallId"
               (click)="flipToPrintingBack(p, $event)"
               title="Flip card"
-            >⟲</button>
+            >
+              ⟲
+            </button>
           </div>
-          <span class="chip-code">{{ p.setCode.toUpperCase() }}</span>
+          <span class="chip-code">
+            <app-set-icon [setCode]="p.setCode" [setName]="p.setName"></app-set-icon>
+            {{ p.setCode.toUpperCase() }}
+          </span>
           <span class="chip-num" *ngIf="p.collectorNumber">#{{ p.collectorNumber }}</span>
         </div>
       </div>
@@ -227,11 +334,12 @@
         [disabled]="!carouselCanNext"
         (click)="carouselNext()"
         title="Next"
-      >›</button>
+      >
+        ›
+      </button>
     </div>
   </div>
 
   <!-- Resize handle -->
   <div class="modal-resize-handle" (mousedown)="onResizeStart($event)"></div>
-
 </div>

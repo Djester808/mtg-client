@@ -361,4 +361,134 @@ describe('collectionReducer', () => {
     );
     expect(state.error).toBe('server error');
   });
+
+  // ---- moveCard -----------------------------------------------
+
+  it('drops a fully moved card from the source view', () => {
+    const card = makeCollectionCard({ id: 'cc-1' });
+    const state = collectionReducer(
+      {
+        ...initialState(),
+        activeCollection: makeCollectionDetail({
+          cards: [card, makeCollectionCard({ id: 'cc-2' })],
+        }),
+      },
+      CollectionActions.moveCardSuccess({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        result: { target: makeCollectionCard({ id: 'cc-9' }), sourceRemainder: null },
+        targetName: 'Other',
+      }),
+    );
+    expect(state.activeCollection!.cards.map((c) => c.id)).toEqual(['cc-2']);
+  });
+
+  it('keeps a partially moved card at its remaining quantity', () => {
+    const card = makeCollectionCard({ id: 'cc-1', quantity: 4 });
+    const state = collectionReducer(
+      { ...initialState(), activeCollection: makeCollectionDetail({ cards: [card] }) },
+      CollectionActions.moveCardSuccess({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        result: {
+          target: makeCollectionCard({ id: 'cc-9', quantity: 1 }),
+          sourceRemainder: makeCollectionCard({ id: 'cc-1', quantity: 3 }),
+        },
+        targetName: 'Other',
+      }),
+    );
+    expect(state.activeCollection!.cards.length).toBe(1);
+    expect(state.activeCollection!.cards[0].quantity).toBe(3);
+  });
+
+  it('ignores a move that landed in a collection we are not viewing', () => {
+    const active = makeCollectionDetail({ id: 'col-2', cards: [makeCollectionCard()] });
+    const state = collectionReducer(
+      { ...initialState(), activeCollection: active },
+      CollectionActions.moveCardSuccess({
+        collectionId: 'col-1',
+        cardId: 'cc-1',
+        result: { target: makeCollectionCard(), sourceRemainder: null },
+        targetName: 'Other',
+      }),
+    );
+    expect(state.activeCollection).toBe(active);
+  });
+
+  // ---- mergeCollections ---------------------------------------
+
+  function mergeResult(overrides: Record<string, unknown> = {}) {
+    return {
+      cardsMoved: 1,
+      cardsFolded: 0,
+      copiesTransferred: 1,
+      sourceDeleted: false,
+      target: makeCollectionDetail({ id: 'col-target', cards: [makeCollectionCard()] }),
+      ...overrides,
+    };
+  }
+
+  it('adopts the merged target when it is the collection on screen', () => {
+    const state = collectionReducer(
+      {
+        ...initialState(),
+        activeCollection: makeCollectionDetail({ id: 'col-target', cards: [] }),
+      },
+      CollectionActions.mergeCollectionsSuccess({
+        sourceCollectionId: 'col-src',
+        result: mergeResult(),
+        targetName: 'Target',
+      }),
+    );
+    expect(state.activeCollection!.cards.length).toBe(1);
+  });
+
+  it('removes a deleted source from the list', () => {
+    const state = collectionReducer(
+      {
+        ...initialState(),
+        collections: [
+          makeCollectionDto({ id: 'col-src' }),
+          makeCollectionDto({ id: 'col-target' }),
+        ],
+      },
+      CollectionActions.mergeCollectionsSuccess({
+        sourceCollectionId: 'col-src',
+        result: mergeResult({ sourceDeleted: true }),
+        targetName: 'Target',
+      }),
+    );
+    expect(state.collections.map((c) => c.id)).toEqual(['col-target']);
+  });
+
+  it('empties the source view when it survives the merge', () => {
+    const state = collectionReducer(
+      {
+        ...initialState(),
+        activeCollection: makeCollectionDetail({ id: 'col-src', cards: [makeCollectionCard()] }),
+      },
+      CollectionActions.mergeCollectionsSuccess({
+        sourceCollectionId: 'col-src',
+        result: mergeResult(),
+        targetName: 'Target',
+      }),
+    );
+    expect(state.activeCollection!.id).toBe('col-src');
+    expect(state.activeCollection!.cards).toEqual([]);
+  });
+
+  it('clears the view when the source we were looking at was deleted', () => {
+    const state = collectionReducer(
+      {
+        ...initialState(),
+        activeCollection: makeCollectionDetail({ id: 'col-src', cards: [makeCollectionCard()] }),
+      },
+      CollectionActions.mergeCollectionsSuccess({
+        sourceCollectionId: 'col-src',
+        result: mergeResult({ sourceDeleted: true }),
+        targetName: 'Target',
+      }),
+    );
+    expect(state.activeCollection).toBeNull();
+  });
 });

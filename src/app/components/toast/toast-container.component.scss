@@ -13,18 +13,35 @@
 .toast {
   @apply flex items-center gap-2 py-2 px-3.5 rounded-lg border border-solid border-subtle bg-raised shadow-[0_4px_20px_rgba(0,0,0,0.5)] cursor-pointer pointer-events-auto whitespace-nowrap max-w-[280px];
 
-  &.success { border-color: rgba(39,174,96,0.4);  background: rgba(39,174,96,0.06); }
-  &.warn    { border-color: rgba(230,126,34,0.4); background: rgba(230,126,34,0.06); }
-  &.error   { border-color: rgba(231,76,60,0.5);  background: rgba(231,76,60,0.08); }
+  &.success {
+    border-color: rgba(39, 174, 96, 0.4);
+    background: rgba(39, 174, 96, 0.06);
+  }
+  &.warn {
+    border-color: rgba(230, 126, 34, 0.4);
+    background: rgba(230, 126, 34, 0.06);
+  }
+  &.error {
+    border-color: rgba(231, 76, 60, 0.5);
+    background: rgba(231, 76, 60, 0.08);
+  }
 }
 
 .toast-icon {
   @apply text-[11px] shrink-0;
 
-  .info    & { color: var(--text-secondary); }
-  .success & { color: var(--mana-G); }
-  .warn    & { color: #e67e22; }
-  .error   & { color: var(--mana-R); }
+  .info & {
+    color: var(--text-secondary);
+  }
+  .success & {
+    color: var(--mana-G);
+  }
+  .warn & {
+    color: #e67e22;
+  }
+  .error & {
+    color: var(--mana-R);
+  }
 }
 
 .toast-msg {

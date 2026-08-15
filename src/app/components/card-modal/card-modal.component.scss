@@ -1,13 +1,15 @@
 @use '../../../styles/add-controls' as *;
 
-:host { display: contents; }
+:host {
+  display: contents;
+}
 
 // ---- Overlay -----------------------------------------------
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(3px);
   z-index: 300;
   animation: modal-overlay-in 0.28s ease-out both;
@@ -29,7 +31,9 @@
   background: var(--bg-deep);
   border: 1px solid var(--border-dim);
   border-radius: 14px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -51,47 +55,79 @@
   }
 
   &.is-resizing,
-  &.is-resizing * { cursor: nwse-resize !important; }
+  &.is-resizing * {
+    cursor: nwse-resize !important;
+  }
 
-  &.is-dragging .modal-drag { cursor: grabbing; }
-  &.is-dragging * { cursor: grabbing !important; }
+  &.is-dragging .modal-drag {
+    cursor: grabbing;
+  }
+  &.is-dragging * {
+    cursor: grabbing !important;
+  }
 }
 
 @keyframes modal-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modal-overlay-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes modal-pop-in {
-  from { opacity: 0; transform: scale(0.95) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes modal-pop-out {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.96) translateY(8px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
 }
 
 .modal-resize-handle {
   position: absolute;
-  bottom: 0; right: 0;
-  width: 20px; height: 20px;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
   cursor: nwse-resize;
   z-index: 10;
   background: repeating-linear-gradient(
     -45deg,
-    transparent, transparent 3px,
-    rgba(255,255,255,0.12) 3px, rgba(255,255,255,0.12) 4px
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.12) 3px,
+    rgba(255, 255, 255, 0.12) 4px
   );
   border-radius: 0 0 14px 0;
   opacity: 0.5;
   transition: opacity 0.15s;
-  &:hover { opacity: 1; }
+  &:hover {
+    opacity: 1;
+  }
 }
 
 // ---- Drag handle -------------------------------------------
@@ -109,6 +145,8 @@
 }
 
 .modal-drag-name {
+  flex: 1 1 0;
+  min-width: 0;
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
@@ -118,6 +156,48 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Centred in the title bar: the name and the actions each claim an equal share of the
+   remaining width (see .modal-drag-name / .modal-title-actions), so the chip sits in
+   the middle rather than drifting with the length of the card's name. */
+.modal-added-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px;
+  padding: 3px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  .bi {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+}
+
+.modal-added-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.modal-title-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .modal-close-btn {
@@ -130,8 +210,13 @@
   border-radius: 4px;
   flex-shrink: 0;
   margin-left: 12px;
-  transition: color 0.15s, background 0.15s;
-  &:hover { color: var(--text-primary); background: var(--bg-surface); }
+  transition:
+    color 0.15s,
+    background 0.15s;
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface);
+  }
 }
 
 // ---- Body layout -------------------------------------------
@@ -155,20 +240,50 @@
 }
 
 @keyframes modal-gc-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.2), 0 0 6px rgba(201, 168, 76, 0.1); }
-  50%       { box-shadow: 0 0 0 3px rgba(201, 168, 76, 1.0), 0 0 28px rgba(201, 168, 76, 0.8), 0 0 50px rgba(201, 168, 76, 0.35); }
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(201, 168, 76, 0.2),
+      0 0 6px rgba(201, 168, 76, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(201, 168, 76, 1),
+      0 0 28px rgba(201, 168, 76, 0.8),
+      0 0 50px rgba(201, 168, 76, 0.35);
+  }
 }
 @keyframes modal-gc-icon-pulse {
-  0%, 100% { opacity: 0; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 @keyframes modal-banned-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2), 0 0 6px rgba(220, 38, 38, 0.1); }
-  50%       { box-shadow: 0 0 0 3px rgba(220, 38, 38, 1.0), 0 0 28px rgba(220, 38, 38, 0.8), 0 0 50px rgba(220, 38, 38, 0.35); }
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(220, 38, 38, 0.2),
+      0 0 6px rgba(220, 38, 38, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(220, 38, 38, 1),
+      0 0 28px rgba(220, 38, 38, 0.8),
+      0 0 50px rgba(220, 38, 38, 0.35);
+  }
 }
 @keyframes modal-banned-icon-pulse {
-  0%, 100% { opacity: 0; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .modal-art {
@@ -197,7 +312,10 @@
     font-size: 160px;
     line-height: 1;
     color: rgba(240, 192, 64, 0.25);
-    text-shadow: 0 0 20px rgba(255, 210, 80, 1.0), 0 0 50px rgba(240, 192, 64, 0.9), 0 0 90px rgba(220, 160, 40, 0.6);
+    text-shadow:
+      0 0 20px rgba(255, 210, 80, 1),
+      0 0 50px rgba(240, 192, 64, 0.9),
+      0 0 90px rgba(220, 160, 40, 0.6);
     animation: modal-gc-icon-pulse 2s ease-in-out infinite;
     pointer-events: none;
     z-index: 5;
@@ -231,11 +349,13 @@
   width: min(100cqw, calc(100cqh * 488 / 680));
   aspect-ratio: 488 / 680;
   display: block;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   @include card-corners;
 }
 
-.modal-card-img:hover { cursor: crosshair; }
+.modal-card-img:hover {
+  cursor: crosshair;
+}
 
 .img-magnifier-lens {
   position: absolute;
@@ -245,7 +365,9 @@
   border: 2px solid rgba(255, 255, 255, 0.65);
   background-repeat: no-repeat;
   pointer-events: none;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(255,255,255,0.1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   z-index: 6;
 }
 
@@ -264,7 +386,7 @@
   position: absolute;
   bottom: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.78);
+  background: rgba(0, 0, 0, 0.78);
   border: 1.5px solid var(--border-lit);
   border-radius: 10px;
   color: var(--text-primary);
@@ -272,11 +394,19 @@
   line-height: 1;
   padding: 10px 12px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   z-index: 5;
 
-  &.is-flipped { color: var(--gold); border-color: var(--gold); }
-  &:hover { border-color: var(--gold); color: var(--gold); }
+  &.is-flipped {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
 }
 
 // Right: info column
@@ -290,8 +420,13 @@
   flex-direction: column;
   gap: 10px;
 
-  &::-webkit-scrollbar { width: 5px; }
-  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+  }
 }
 
 .modal-name-row {
@@ -381,7 +516,9 @@
   text-transform: uppercase;
   padding: 5px 12px 7px;
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
   &:hover:not(.is-active) {
     color: var(--text-secondary);
@@ -431,9 +568,15 @@
   color: var(--text-secondary);
 }
 
-.modal-set-name { color: var(--text-secondary); }
-.modal-set-sep  { color: var(--border-dim); }
-.modal-set-num  { color: var(--text-dim); }
+.modal-set-name {
+  color: var(--text-secondary);
+}
+.modal-set-sep {
+  color: var(--border-dim);
+}
+.modal-set-num {
+  color: var(--text-dim);
+}
 
 .modal-oracle {
   font-family: var(--font-body);
@@ -473,8 +616,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: rgba(201,168,76,0.1);
-  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.25);
   color: var(--gold);
   border-radius: 4px;
   padding: 3px 7px;
@@ -490,7 +633,8 @@
   margin-top: auto;
 }
 
-.modal-pt, .modal-loyalty {
+.modal-pt,
+.modal-loyalty {
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
@@ -557,11 +701,13 @@
   }
 
   &.is-not-legal {
-    background: rgba(255,255,255,0.03);
+    background: rgba(255, 255, 255, 0.03);
     border-color: var(--border-dim);
     color: var(--text-dim);
 
-    .legal-chip-status { opacity: 0.4; }
+    .legal-chip-status {
+      opacity: 0.4;
+    }
   }
 }
 
@@ -623,6 +769,82 @@
   color: var(--text-secondary);
 }
 
+// ---- Ownership (Details tab) -------------------------------
+
+.modal-owned-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-raised);
+  border-radius: 6px;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.owned-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+// Small caps key for the ownership and price rows.
+.owned-label,
+.price-cell-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.owned-label {
+  min-width: 68px;
+}
+
+.owned-value {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.owned-now {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+// Green when the card has gained value since it was added, red when it has lost.
+.owned-change {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 600;
+
+  i {
+    font-size: 8px;
+  }
+}
+
+.owned-row--delta.is-up .owned-change {
+  color: #4ec27a;
+}
+
+.owned-row--delta.is-down .owned-change {
+  color: #e2565a;
+}
+
+.owned-row--delta:not(.is-up):not(.is-down) .owned-change {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.owned-note,
+.modal-prices-empty {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
 // ---- Printings carousel ------------------------------------
 
 .modal-printings-section {
@@ -645,7 +867,10 @@
   gap: 6px;
 }
 
-.modal-printings-count { color: var(--text-dim); font-weight: 400; }
+.modal-printings-count {
+  color: var(--text-dim);
+  font-weight: 400;
+}
 
 .modal-printings-loading {
   font-style: italic;
@@ -679,10 +904,18 @@
   line-height: 1;
   padding: 4px 14px;
   flex-shrink: 0;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
-  &:hover:not(:disabled) { color: var(--text-primary); border-color: var(--gold); }
-  &:disabled { opacity: 0.25; cursor: default; }
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--gold);
+  }
+  &:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
 }
 
 .modal-printings-grid {
@@ -703,36 +936,48 @@
   border-radius: 6px;
   padding: 5px;
   border: 2px solid transparent;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 
-  &:hover { background: var(--bg-surface); border-color: var(--border-subtle); }
+  &:hover {
+    background: var(--bg-surface);
+    border-color: var(--border-subtle);
+  }
 
   &.is-viewed {
-    border-color: rgba(255,255,255,0.55);
+    border-color: rgba(255, 255, 255, 0.55);
     background: var(--bg-surface);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 4px 14px rgba(0,0,0,0.45);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.18),
+      0 4px 14px rgba(0, 0, 0, 0.45);
   }
 
   &.is-owned {
     border-color: var(--gold);
-    background: rgba(201,168,76,0.08);
-    box-shadow: 0 0 0 1px rgba(201,168,76,0.3);
+    background: rgba(201, 168, 76, 0.08);
+    box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.3);
   }
 
   &.is-also-owned {
     border-color: #5b8dd9;
-    background: rgba(91,141,217,0.1);
-    box-shadow: 0 0 0 1px rgba(91,141,217,0.3);
+    background: rgba(91, 141, 217, 0.1);
+    box-shadow: 0 0 0 1px rgba(91, 141, 217, 0.3);
   }
 
   &.is-viewed.is-owned {
     border-color: var(--gold);
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.4), 0 0 0 3px var(--gold);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.4),
+      0 0 0 3px var(--gold);
   }
 
   &.is-viewed.is-also-owned {
     border-color: #5b8dd9;
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.4), 0 0 0 3px #5b8dd9;
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.4),
+      0 0 0 3px #5b8dd9;
   }
 }
 
@@ -762,11 +1007,12 @@
 .chip-owned-banner,
 .chip-also-owned-banner {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   font-family: var(--font-display);
   font-size: 8px;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   text-align: center;
   padding: 3px 2px;
@@ -775,27 +1021,28 @@
 
 .chip-viewing-banner {
   top: 0;
-  background: rgba(230,230,230,0.88);
+  background: rgba(230, 230, 230, 0.88);
   color: #0a0a0a;
   backdrop-filter: blur(2px);
 }
 
 .chip-owned-banner {
   bottom: 0;
-  background: rgba(201,168,76,0.92);
+  background: rgba(201, 168, 76, 0.92);
   color: #0e0c08;
 }
 
 .chip-also-owned-banner {
   bottom: 0;
-  background: rgba(91,141,217,0.92);
+  background: rgba(91, 141, 217, 0.92);
   color: #fff;
 }
 
 .chip-dfc-badge {
   position: absolute;
-  bottom: 4px; right: 4px;
-  background: rgba(0,0,0,0.78);
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.78);
   border: 1px solid var(--border-lit);
   border-radius: 4px;
   color: var(--text-primary);
@@ -804,10 +1051,18 @@
   padding: 2px 3px;
   cursor: pointer;
   z-index: 5;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 
-  &.is-flipped { color: var(--gold); border-color: var(--gold); }
-  &:hover { border-color: var(--gold); color: var(--gold); }
+  &.is-flipped {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  &:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
 }
 
 .chip-code {

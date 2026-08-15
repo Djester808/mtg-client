@@ -1,0 +1,57 @@
+<div
+  class="ct-art"
+  [class.no-image]="!image"
+  [style.backgroundImage]="image ? 'url(' + image + ')' : 'none'"
+  (click)="artClick.emit($event)"
+>
+  <span class="ct-placeholder" *ngIf="!image">◈</span>
+
+  <button
+    class="ct-flip"
+    *ngIf="hasBack"
+    [class.is-flipped]="flipped"
+    (click)="onFlip($event)"
+    title="Flip card"
+  >
+    ⟲
+  </button>
+
+  <ng-content select="[tileBadges]"></ng-content>
+
+  <!-- Click-toggled description overlay (double click opens the modal) -->
+  <div class="card-info-panel" *ngIf="showInfo">
+    <div class="info-top">
+      <div class="info-header">
+        <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+        <app-mana-cost
+          *ngIf="card.cardDetails?.manaCost"
+          [cost]="card.cardDetails!.manaCost"
+        ></app-mana-cost>
+      </div>
+      <div class="info-type" *ngIf="card.cardDetails">{{ typeLine }}</div>
+    </div>
+
+    <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">
+      <div [innerHTML]="card.cardDetails!.oracleText | oracleSymbols"></div>
+    </div>
+
+    <div class="info-bottom">
+      <div
+        class="info-stats"
+        *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null"
+      >
+        <span class="info-pt" *ngIf="card.cardDetails?.power != null">
+          {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
+        </span>
+        <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
+          <i class="ms ms-loyalty-start ms-loyalty-{{ card.cardDetails!.startingLoyalty }}"></i>
+        </span>
+      </div>
+      <div class="info-artist" *ngIf="card.cardDetails?.artist">
+        Illus. {{ card.cardDetails!.artist }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-content select="[tileBottom]"></ng-content>

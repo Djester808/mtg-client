@@ -1,0 +1,205 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.prices-header {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+// ---- Current prices ----------------------------------------
+
+// Top-down, lineless: one marketplace per row, label and value in shared columns
+// (subgrid keeps them aligned across rows) with no rules, boxes or dividers. Hover is a
+// soft wash rather than a border, so nothing draws a line.
+.price-grid {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  align-items: baseline;
+  row-gap: 1px;
+  column-gap: 20px;
+}
+
+.price-cell {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: 3px 6px;
+  margin: 0 -6px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--bg-raised);
+  }
+}
+
+.price-cell-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+
+  i {
+    font-size: 8px;
+    opacity: 0.55;
+  }
+}
+
+.price-cell-value {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  justify-self: end;
+}
+
+// ---- Range filters -----------------------------------------
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.range-btn {
+  background: none;
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+
+  &:hover:not(.is-active) {
+    color: var(--text-secondary);
+    border-color: var(--border-subtle);
+  }
+
+  &.is-active {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+}
+
+.range-fill {
+  flex: 1;
+}
+
+.view-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+// ---- All printings -----------------------------------------
+
+.price-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--bg-raised);
+  border-radius: 5px;
+  border-left: 2px solid var(--border-subtle);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  &.is-viewed {
+    border-left-color: var(--gold);
+
+    .price-row-set {
+      color: var(--gold);
+    }
+  }
+}
+
+.price-row-set {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.price-row-num,
+.price-row-foil {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.price-row-fill {
+  flex: 1;
+}
+
+.price-row-usd {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.price-row-foil {
+  color: var(--gold-dim);
+  white-space: nowrap;
+}
+
+.price-row-link {
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: color 0.12s;
+
+  &:hover {
+    color: var(--gold);
+  }
+}
+
+// ---- Footnotes ---------------------------------------------
+
+.prices-empty {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.prices-source {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+}

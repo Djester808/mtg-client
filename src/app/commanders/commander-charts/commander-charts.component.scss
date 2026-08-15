@@ -21,7 +21,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  i { color: #c9a84c; }
+  i {
+    color: #c9a84c;
+  }
 }
 
 .charts-row {
@@ -30,7 +32,9 @@
   gap: 20px;
   margin-bottom: 20px;
 
-  @media (max-width: 720px) { grid-template-columns: 1fr; }
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-card {
@@ -39,7 +43,9 @@
   border-radius: 14px;
   padding: 20px 24px;
 
-  &.chart-wide { margin-bottom: 20px; }
+  &.chart-wide {
+    margin-bottom: 20px;
+  }
 }
 
 .chart-header {
@@ -68,10 +74,20 @@
   color: rgba(230, 220, 195, 0.4);
   font-size: 0.7rem;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 
-  &:hover { color: rgba(230, 220, 195, 0.8); border-color: rgba(255,255,255,0.16); }
-  &.active { background: rgba(201,168,76,0.15); border-color: rgba(201,168,76,0.4); color: #c9a84c; }
+  &:hover {
+    color: rgba(230, 220, 195, 0.8);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+  &.active {
+    background: rgba(201, 168, 76, 0.15);
+    border-color: rgba(201, 168, 76, 0.4);
+    color: #c9a84c;
+  }
 }
 
 .chart-title {
@@ -82,18 +98,24 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  i { color: #c9a84c; }
+  i {
+    color: #c9a84c;
+  }
 }
 
 .chart-sub {
   font-size: 0.73rem;
   color: rgba(230, 220, 195, 0.4);
-  strong { color: rgba(230, 220, 195, 0.7); }
+  strong {
+    color: rgba(230, 220, 195, 0.7);
+  }
 }
 
 // ── Mana Curve (vertical bar chart) ───────────────────────────────────────
 
-.bar-chart { width: 100%; }
+.bar-chart {
+  width: 100%;
+}
 
 .bar-chart-bars {
   display: flex;
@@ -344,7 +366,9 @@
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 10px;
   text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 
   &:hover {
     background: rgba(255, 255, 255, 0.07);
@@ -379,7 +403,12 @@
   color: rgba(201, 168, 76, 0.4);
 }
 
-.similar-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.similar-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .similar-name {
   font-size: 0.78rem;
@@ -390,11 +419,21 @@
   text-overflow: ellipsis;
 }
 
-.similar-meta { display: flex; align-items: center; gap: 8px; }
+.similar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-.similar-shared { font-size: 0.68rem; color: #c9a84c; }
+.similar-shared {
+  font-size: 0.68rem;
+  color: #c9a84c;
+}
 
-.similar-pips { display: flex; gap: 2px; }
+.similar-pips {
+  display: flex;
+  gap: 2px;
+}
 
 .pip {
   width: 10px;
@@ -403,10 +442,23 @@
   border: 1px solid rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
 
-  &.pip-w { background: #f9faf4; }
-  &.pip-u { background: #0e68ab; }
-  &.pip-b { background: #150b00; border-color: rgba(255,255,255,0.25); }
-  &.pip-r { background: #d3202a; }
-  &.pip-g { background: #00733e; }
-  &.pip-c { background: #c0b8b0; }
+  &.pip-w {
+    background: #f9faf4;
+  }
+  &.pip-u {
+    background: #0e68ab;
+  }
+  &.pip-b {
+    background: #150b00;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  &.pip-r {
+    background: #d3202a;
+  }
+  &.pip-g {
+    background: #00733e;
+  }
+  &.pip-c {
+    background: #c0b8b0;
+  }
 }

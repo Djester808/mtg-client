@@ -1,4 +1,6 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
 // ── Entrance animation ────────────────────────────────
 //
@@ -7,9 +9,22 @@
 // (opening the panel, switching bar/vbar/pie); the width/height transitions below
 // still handle in-place data edits. `--i` is the row/column index set by the template.
 
-@keyframes sc-grow-x { from { transform: scaleX(0); } }
-@keyframes sc-grow-y { from { transform: scaleY(0); } }
-@keyframes sc-fade-up { from { opacity: 0; transform: translateY(4px); } }
+@keyframes sc-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes sc-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes sc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
 
 $sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
 $sc-stagger: 45ms;

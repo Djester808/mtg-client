@@ -26,7 +26,9 @@ describe('SelectMenuComponent', () => {
   }
 
   function menuItems(): HTMLButtonElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('.app-menu-item'));
+    // The open menu is re-parented to <body> so a transformed ancestor cannot capture
+    // its position: fixed, so it is no longer inside the fixture's host element.
+    return Array.from(document.querySelectorAll('.app-menu-item'));
   }
 
   it('shows the placeholder until a value is selected', () => {
@@ -58,9 +60,9 @@ describe('SelectMenuComponent', () => {
     button().click();
     fixture.detectChanges();
 
-    const active = fixture.nativeElement.querySelectorAll('.app-menu-item.is-active');
+    const active = document.querySelectorAll('.app-menu-item.is-active');
     expect(active.length).toBe(1);
-    expect(active[0].textContent.trim()).toBe('Gamma');
+    expect(active[0].textContent!.trim()).toBe('Gamma');
   });
 
   it('picking an option emits valueChange and closes the menu', () => {
@@ -141,8 +143,6 @@ describe('SelectMenuComponent', () => {
     button().click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.app-menu-empty').textContent).toContain(
-      'Loading…',
-    );
+    expect(document.querySelector('.app-menu-empty')!.textContent).toContain('Loading…');
   });
 });

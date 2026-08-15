@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CandidatePoolDto, CardDto, RulingDto, SetSummaryDto } from '../models/game.models';
+import {
+  CandidatePoolDto,
+  CardDto,
+  PricePointDto,
+  RulingDto,
+  SetSummaryDto,
+} from '../models/game.models';
 
 /**
  * Result of scanning a card photo.
@@ -35,6 +41,17 @@ export class GameApiService {
 
   loadCard(oracleId: string): Observable<CardDto> {
     return this.http.get<CardDto>(`${this.base}/cards/${oracleId}`);
+  }
+
+  /**
+   * Daily price history for one printing. Empty until the printing has spent time in a
+   * collection — the server only snapshots printings someone owns.
+   */
+  getPriceHistory(scryfallId: string, days: number): Observable<PricePointDto[]> {
+    return this.http.get<PricePointDto[]>(
+      `${this.base}/cards/printings/${scryfallId}/price-history`,
+      { params: { days } },
+    );
   }
 
   getSets(filterQuery?: string): Observable<SetSummaryDto[]> {

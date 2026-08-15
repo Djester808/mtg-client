@@ -1,5 +1,4 @@
 <div class="detail-shell">
-
   <div class="detail-bg">
     <div class="bg-orb orb-1"></div>
     <div class="bg-grid"></div>
@@ -7,6 +6,26 @@
 
   <!-- Header -->
   <header class="detail-header">
+    <!-- The cover leads the header: it identifies the collection, so it sits ahead of the
+         way out of it rather than down in the filter bar. -->
+    <div
+      class="header-cover"
+      *ngIf="collection$ | async as coverCol"
+      (click)="openDetailCoverPicker()"
+      [title]="coverCol.coverUri ? 'Change cover image' : 'Set a cover image'"
+    >
+      <div
+        class="header-cover-art"
+        [style.backgroundImage]="coverCol.coverUri ? 'url(' + coverCol.coverUri + ')' : 'none'"
+        [class.no-cover]="!coverCol.coverUri"
+      >
+        <span class="header-cover-placeholder" *ngIf="!coverCol.coverUri"
+          ><i class="bi bi-image"></i
+        ></span>
+        <div class="header-cover-overlay"><i class="bi bi-pencil"></i></div>
+      </div>
+    </div>
+
     <button class="back-btn" (click)="goBack()">← Collections</button>
 
     <ng-container *ngIf="collection$ | async as col; else loadingHeader">
@@ -15,13 +34,25 @@
         <p class="header-desc" *ngIf="col.description">{{ col.description }}</p>
       </div>
       <div class="header-right">
-        <span class="header-count">{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span>
-        <button class="scan-btn-header" (click)="showScanner = true" title="Scan a card with your camera">
+        <span class="header-count"
+          >{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span
+        >
+        <button
+          class="scan-btn-header"
+          (click)="showScanner = true"
+          title="Scan a card with your camera"
+        >
           <i class="bi bi-camera"></i> Scan
         </button>
         <!-- Hidden while swapped: the search panel is the main area there and must stay open. -->
-        <button class="add-btn" *ngIf="!swapMode" [class.is-active]="showSearchPanel" (click)="toggleSearchPanel()">
-          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i> {{ showSearchPanel ? 'Close' : 'Add Cards' }}
+        <button
+          class="add-btn"
+          *ngIf="!swapMode"
+          [class.is-active]="showSearchPanel"
+          (click)="toggleSearchPanel()"
+        >
+          <i class="bi" [class.bi-x]="showSearchPanel" [class.bi-plus]="!showSearchPanel"></i>
+          {{ showSearchPanel ? 'Close' : 'Add Cards' }}
         </button>
       </div>
     </ng-container>
@@ -35,68 +66,89 @@
 
   <!-- Body: grid + optional search panel -->
   <div class="detail-body">
-
     <!-- Card grid area -->
-    <main class="grid-area" *ngIf="!swapMode" [style.--card-zoom]="zoomLevel"
-          (dragover)="onAreaDragOver($event)"
-          (drop)="onAreaDrop($event)">
-
+    <main
+      class="grid-area"
+      [class.is-panel-open]="showSearchPanel"
+      *ngIf="!swapMode"
+      [style.--card-zoom]="zoomLevel"
+      (dragover)="onAreaDragOver($event)"
+      (drop)="onAreaDrop($event)"
+    >
       <!-- Filter bar (only when cards exist) -->
       <ng-container *ngIf="collection$ | async as col">
-      <div class="filter-bar" *ngIf="col.cards.length">
-        <div class="filter-wrap">
-          <span class="filter-icon"><i class="bi bi-search"></i></span>
-          <input
-            class="filter-input"
-            type="text"
-            [(ngModel)]="filterQuery"
-            autocomplete="off"
-            placeholder="Filter cards in collection…"
-            (focus)="filterSuggOpen = true"
-            (input)="filterSuggOpen = true"
-            (blur)="closeFilterSuggSoon()"
-            (keydown.escape)="filterSuggOpen = false"
-          />
-          <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
-          <div class="app-menu filter-sugg-menu" *ngIf="filterSuggOpen && filterSuggestions(col).length > 0">
-            <button class="app-menu-item" *ngFor="let n of filterSuggestions(col)"
-                    (mousedown)="selectFilterSuggestion(n); $event.preventDefault()">{{ n }}</button>
-          </div>
-        </div>
-        <div class="zoom-group">
-          <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">−</button>
-          <span class="zoom-label">{{ zoomLabel }}</span>
-          <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in">+</button>
-        </div>
-        <!-- Display: grid vs build mode (search fills the area, collection as a side list) -->
-        <div class="zoom-group display-toggle">
-          <button class="zoom-btn disp-btn is-active" title="Grid view"><i class="bi bi-grid"></i></button>
-          <button class="zoom-btn disp-btn" (click)="toggleSwapMode()"
-                  title="Build mode — search fills the area, collection as a side list">
-            <i class="bi bi-layout-sidebar-reverse"></i>
-          </button>
-        </div>
-      </div>
+        <!-- The bar itself is app-card-grid-filters, shared with the deck grid. What is
+             projected into it is what only this page has: the cover picker on the left,
+             the select / group / display cluster on the right. -->
+        <app-card-grid-filters
+          class="grid-filters"
+          *ngIf="col.cards.length"
+          [filters]="filters"
+          [facets]="true"
+          [setOptions]="setFilterOptions(col)"
+          [suggestions]="filterSuggestions(col)"
+          placeholder="Filter cards in collection…"
+          [zoomLabel]="zoomLabel"
+          [canZoomIn]="zoomLevel < 2.0"
+          [canZoomOut]="zoomLevel > 0.5"
+          (filtersChange)="onFiltersChanged()"
+          (zoomIn)="zoomIn()"
+          (zoomOut)="zoomOut()"
+        >
+          <ng-container cgfRight>
+            <div class="cbar-labeled-group">
+              <span class="cbar-label">Select</span>
+              <div class="zoom-group">
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="selectMode"
+                  (click)="toggleSelectMode()"
+                  title="Select several cards to move at once"
+                >
+                  <i class="bi bi-check2-square"></i>
+                </button>
+              </div>
+            </div>
+            <div class="cbar-labeled-group">
+              <span class="cbar-label">Group</span>
+              <div class="zoom-group">
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="groupSameCard"
+                  (click)="toggleGroupSameCard()"
+                  title="Group the same card from different sets into one tile"
+                >
+                  <i class="bi bi-collection-fill"></i>
+                </button>
+              </div>
+            </div>
+            <div class="cbar-labeled-group">
+              <span class="cbar-label">Display</span>
+              <div class="zoom-group display-toggle">
+                <button class="zoom-btn disp-btn is-active" title="Grid view">
+                  <i class="bi bi-grid"></i>
+                </button>
+                <button
+                  class="zoom-btn disp-btn"
+                  (click)="toggleSwapMode()"
+                  title="Build mode — search fills the area, collection as a side list"
+                >
+                  <i class="bi bi-layout-sidebar-reverse"></i>
+                </button>
+              </div>
+            </div>
+          </ng-container>
+        </app-card-grid-filters>
       </ng-container>
-
-      <!-- Legend -->
-      <div class="legend" *ngIf="(collection$ | async)?.cards?.length">
-        <span class="legend-item"><span class="legend-dot"><i class="bi bi-layers"></i></span> Normal</span>
-        <span class="legend-sep">·</span>
-        <span class="legend-item legend-item-foil"><span class="legend-dot">✦</span> Foil</span>
-        <span class="legend-sep">·</span>
-        <span class="legend-item legend-item-owned"><span class="legend-badge legend-badge-gold">✓</span> This printing owned</span>
-        <span class="legend-sep">·</span>
-        <span class="legend-item legend-item-also-owned"><span class="legend-badge legend-badge-blue">✓</span> Also owned (other entry)</span>
-        <span class="legend-sep">·</span>
-        <span class="legend-item legend-item-hint">Different sets create separate entries</span>
-      </div>
 
       <!-- Loading skeleton -->
       <div class="loading-state" *ngIf="loading$ | async">Loading…</div>
 
       <!-- Empty collection -->
-      <div class="empty-state" *ngIf="(loading$ | async) === false && (collection$ | async)?.cards?.length === 0">
+      <div
+        class="empty-state"
+        *ngIf="(loading$ | async) === false && (collection$ | async)?.cards?.length === 0"
+      >
         <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
         <p class="empty-sub">Click "Add Cards" to search and add cards to your collection.</p>
@@ -106,74 +158,60 @@
       <!-- Card grid -->
       <ng-container *ngIf="collection$ | async as col">
         <div class="card-grid" *ngIf="col.cards.length > 0">
-
           <div
             class="card-wrap"
-            *ngFor="let card of filteredCards(col)"
+            *ngFor="let card of filteredCards(col); trackBy: trackByCardId"
+            [attr.data-card-id]="card.id"
             (mouseenter)="onCardHover(card)"
             (mouseleave)="onCardLeave()"
           >
+            <!-- Selection checkbox, only while picking cards for a bulk move -->
+            <button
+              class="tile-select"
+              *ngIf="selectMode"
+              [class.is-checked]="isSelected(card)"
+              (click)="toggleSelected(card, $event)"
+              [attr.aria-pressed]="isSelected(card)"
+              [title]="isSelected(card) ? 'Deselect' : 'Select'"
+            >
+              <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
+            </button>
             <!-- Visual tile -->
-            <div class="card-tile" [class.is-foil]="card.quantityFoil > 0"
-                 [class.has-info]="tileInfoId === card.id">
-
-              <!-- Card image — click opens detail modal -->
-              <div
-                class="card-art"
-                [style.backgroundImage]="tileImage(card)
-                  ? 'url(' + tileImage(card) + ')'
-                  : 'none'"
-                (click)="onTileClick(card, $event)"
-              >
-                <div class="art-placeholder" *ngIf="!tileImage(card)">◈</div>
-                <button class="flip-btn"
-                        *ngIf="tileHasBack(card)"
-                        [class.is-flipped]="flippedCardIds.has(card.id)"
-                        (click)="toggleTileFlip(card, $event)"
-                        title="Flip card">⟲</button>
-                <div class="tile-badges">
-                  <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
-                  <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0">✦{{ card.quantityFoil }}</span>
-                </div>
-
-                <!-- Click-toggled description overlay (double click opens the modal) -->
-                <div class="card-info-panel" *ngIf="tileInfoId === card.id">
-                  <!-- Top: name, mana, type -->
-                  <div class="info-top">
-                    <div class="info-header">
-                      <span class="info-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
-                      <app-mana-cost *ngIf="card.cardDetails?.manaCost" [cost]="card.cardDetails!.manaCost"></app-mana-cost>
-                    </div>
-                    <div class="info-type" *ngIf="card.cardDetails">{{ typeLine(card) }}</div>
-                  </div>
-                  <!-- Middle: oracle text, scrollable -->
-                  <div class="info-oracle" *ngIf="card.cardDetails?.oracleText">
-                    <div [innerHTML]="card.cardDetails!.oracleText | oracleSymbols"></div>
-                  </div>
-                  <!-- Bottom: artist + stats -->
-                  <div class="info-bottom">
-                    <div class="info-stats"
-                         *ngIf="card.cardDetails?.power != null || card.cardDetails?.startingLoyalty != null">
-                      <span class="info-pt" *ngIf="card.cardDetails?.power != null">
-                        {{ card.cardDetails!.power }}/{{ card.cardDetails!.toughness }}
-                      </span>
-                      <span class="info-loyalty" *ngIf="card.cardDetails?.startingLoyalty != null">
-                        <i class="ms ms-loyalty-start ms-loyalty-{{ card.cardDetails!.startingLoyalty }}"></i>
-                      </span>
-                    </div>
-                    <div class="info-artist" *ngIf="card.cardDetails?.artist">
-                      Illus. {{ card.cardDetails!.artist }}
-                    </div>
-                  </div>
-                </div>
+            <app-card-tile
+              class="card-tile"
+              [class.is-selectable]="selectMode"
+              [class.is-selected]="selectMode && isSelected(card)"
+              (click)="selectMode && toggleSelected(card, $event)"
+              [class.is-foil]="card.quantityFoil > 0"
+              [class.has-info]="tileInfoId === card.id"
+              [card]="card"
+              [image]="tileImage(card)"
+              [hasBack]="tileHasBack(card)"
+              [flipped]="flippedCardIds.has(card.id)"
+              [showInfo]="tileInfoId === card.id"
+              (flip)="toggleTileFlip(card, $event)"
+              (artClick)="onTileClick(card, $event)"
+            >
+              <div class="tile-badges" tileBadges>
+                <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
+                <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0"
+                  >✦{{ card.quantityFoil }}</span
+                >
               </div>
 
               <!-- Hover strip: set picker + normal/foil quantities -->
-              <div class="card-bottom" (click)="$event.stopPropagation()">
+              <div class="card-bottom" tileBottom (click)="$event.stopPropagation()">
+                <!-- A dropdown that can only ever pick what is already selected is
+                     noise; one printing renders as a plain label instead. -->
+                <span class="set-single-label" *ngIf="singlePrintingLabel(card) as only">
+                  <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
+                  {{ only }}
+                </span>
                 <app-select-menu
+                  *ngIf="!singlePrintingLabel(card)"
                   class="set-select-menu"
                   [options]="printingOptions(card)"
-                  [value]="card.scryfallId"
+                  [value]="pickerValue(card)"
                   [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
                   (opened)="onSelectFocus(card)"
                   (valueChange)="onSetChange(card, $event)"
@@ -181,46 +219,54 @@
 
                 <div class="ctrl-strip-row">
                   <div class="ctrl-row">
-                    <button class="ctrl-btn ctrl-dec" (click)="decrementNormal(card)" title="Remove regular">−</button>
+                    <button
+                      class="ctrl-btn ctrl-dec"
+                      (click)="decrementNormal(card)"
+                      title="Remove regular"
+                    >
+                      −
+                    </button>
                     <span class="ctrl-label"><i class="bi bi-layers"></i> {{ card.quantity }}</span>
-                    <button class="ctrl-btn ctrl-inc" (click)="incrementNormal(card)" title="Add regular">+</button>
+                    <button
+                      class="ctrl-btn ctrl-inc"
+                      (click)="incrementNormal(card)"
+                      title="Add regular"
+                    >
+                      +
+                    </button>
                   </div>
 
                   <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
-                    <button class="ctrl-btn ctrl-dec" (click)="decrementFoil(card)" title="Remove foil">−</button>
+                    <button
+                      class="ctrl-btn ctrl-dec"
+                      (click)="decrementFoil(card)"
+                      title="Remove foil"
+                    >
+                      −
+                    </button>
                     <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
-                    <button class="ctrl-btn ctrl-inc" (click)="incrementFoil(card)" title="Add foil">+</button>
+                    <button
+                      class="ctrl-btn ctrl-inc"
+                      (click)="incrementFoil(card)"
+                      title="Add foil"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-
+            </app-card-tile>
           </div>
 
           <!-- No filter results -->
-          <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filterQuery">
-            No cards match "{{ filterQuery }}"
+          <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filters.query">
+            No cards match "{{ filters.query }}"
           </div>
         </div>
       </ng-container>
     </main>
 
     <!-- Cover sidebar -->
-    <aside class="cover-panel" *ngIf="!showSearchPanel">
-      <ng-container *ngIf="collection$ | async as col">
-        <div class="cover-section" (click)="openDetailCoverPicker()">
-          <div class="cover-art"
-               [style.backgroundImage]="col.coverUri ? 'url(' + col.coverUri + ')' : 'none'"
-               [class.no-cover-art]="!col.coverUri">
-            <span class="cover-art-placeholder" *ngIf="!col.coverUri">◈</span>
-            <div class="cover-edit-overlay">
-              <span class="cover-edit-icon"><i class="bi bi-pencil"></i></span>
-              <span class="cover-edit-label">Change Cover</span>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-    </aside>
 
     <!-- Search panel (shared component, slides in from right; fills the main area in swap mode) -->
     <app-card-search-panel
@@ -253,7 +299,9 @@
               <i class="bi bi-arrow-left-right"></i> Grid
             </button>
           </div>
-          <span class="side-list-count">{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span>
+          <span class="side-list-count"
+            >{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span
+          >
         </div>
       </app-card-side-list>
     </ng-container>
@@ -278,62 +326,116 @@
 
   <!-- ---- Card detail modal ----------------------------------- -->
   <ng-container *ngIf="collection$ | async as modalCol">
-  <ng-container *ngIf="selectedCard as card">
-  <app-card-modal
-    [card]="card.cardDetails ?? null"
-    [printings]="modalPrintings"
-    [(viewedScryfallId)]="modalViewScryfallId"
-    [(flipped)]="modalFlipped"
-    [primaryScryfallId]="card.scryfallId ?? null"
-    [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
-    [countBadge]="viewedEntry(modalCol, card)?.quantity ?? null"
-    [foilCountBadge]="viewedEntry(modalCol, card)?.quantityFoil ?? null"
-    [infoTabLabel]="viewedEntry(modalCol, card) ? 'Notes' : null"
-    (closed)="closeCard()"
-  >
-    <!-- Adds ride above the art (counts sit beside the name); removes + notes below. -->
-    <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
-      <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
-        <div class="modal-btn-pair">
-          <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
-            <i class="bi bi-plus-lg"></i> Normal
-          </button>
-          <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
-            <i class="bi bi-plus-lg"></i> ✦ Foil
-          </button>
+    <ng-container *ngIf="selectedCard as card">
+      <app-card-modal
+        [card]="card.cardDetails ?? null"
+        [printings]="modalPrintings"
+        [(viewedScryfallId)]="modalViewScryfallId"
+        [(flipped)]="modalFlipped"
+        [primaryScryfallId]="card.scryfallId ?? null"
+        [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
+        [countBadge]="modalCount(modalCol, card)"
+        [foilCountBadge]="modalFoilCount(modalCol, card)"
+        [infoTabLabel]="viewedEntry(modalCol, card) ? 'Notes' : null"
+        [ownedEntry]="viewedEntry(modalCol, card)"
+        (closed)="closeCard()"
+      >
+        <!-- Adds ride above the art (counts sit beside the name); removes + notes below. -->
+        <!-- Move lives in the title bar: it acts on the whole entry, not on the
+             quantity controls it used to sit beside. -->
+        <button
+          title-action
+          class="modal-title-btn"
+          *ngIf="viewedEntry(modalCol, card) as viewed"
+          (click)="openMove(viewed)"
+          title="Move this card to another collection"
+        >
+          <i class="bi bi-box-arrow-right"></i> Move to…
+        </button>
+        <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
+          <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
+            <div class="modal-btn-pair">
+              <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
+                <i class="bi bi-plus-lg"></i> Normal
+              </button>
+              <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
+                <i class="bi bi-plus-lg"></i> ✦ Foil
+              </button>
+            </div>
+          </ng-container>
+          <ng-template #noScryfallHint>
+            <span class="modal-qty-not-owned">Select a printing below</span>
+          </ng-template>
         </div>
-      </ng-container>
-      <ng-template #noScryfallHint>
-        <span class="modal-qty-not-owned">Select a printing below</span>
-      </ng-template>
-    </div>
-    <div extra class="modal-extra-wrap" *ngIf="viewedEntry(modalCol, card) as viewed">
-      <div class="modal-btn-pair">
-        <button class="modal-action-btn modal-action-btn--remove"
-                [disabled]="viewed.quantity <= 0"
-                (click)="modalDecrementNormal(modalCol, card)">
-          <i class="bi bi-dash-lg"></i> Normal
-        </button>
-        <button class="modal-action-btn modal-action-btn--remove"
-                [disabled]="viewed.quantityFoil <= 0"
-                (click)="modalDecrementFoil(modalCol, card)">
-          <i class="bi bi-dash-lg"></i> ✦ Foil
-        </button>
-      </div>
-    </div>
-    <!-- Notes live in a tab beside the card details -->
-    <div info-tab class="modal-notes-section" *ngIf="viewedEntry(modalCol, card) as viewed">
-      <textarea
-        class="modal-notes-input"
-        [value]="noteDraftValue(viewed)"
-        (input)="setNoteDraft(viewed.id, $any($event.target).value)"
-        (blur)="saveNotes(viewed)"
-        placeholder="Add personal notes…"
-        rows="6"
-      ></textarea>
-    </div>
-  </app-card-modal>
-  </ng-container>
+        <div extra class="modal-extra-wrap" *ngIf="viewedEntry(modalCol, card) as viewed">
+          <div class="modal-btn-pair">
+            <button
+              class="modal-action-btn modal-action-btn--remove"
+              [disabled]="viewed.quantity <= 0"
+              (click)="modalDecrementNormal(modalCol, card)"
+            >
+              <i class="bi bi-dash-lg"></i> Normal
+            </button>
+            <button
+              class="modal-action-btn modal-action-btn--remove"
+              [disabled]="viewed.quantityFoil <= 0"
+              (click)="modalDecrementFoil(modalCol, card)"
+            >
+              <i class="bi bi-dash-lg"></i> ✦ Foil
+            </button>
+          </div>
+        </div>
+        <!-- Notes live in a tab beside the card details -->
+        <div info-tab class="modal-notes-section" *ngIf="viewedEntry(modalCol, card) as viewed">
+          <textarea
+            class="modal-notes-input"
+            [value]="noteDraftValue(viewed)"
+            (input)="setNoteDraft(viewed.id, $any($event.target).value)"
+            (blur)="saveNotes(viewed)"
+            placeholder="Add personal notes…"
+            rows="6"
+          ></textarea>
+        </div>
+      </app-card-modal>
+    </ng-container>
   </ng-container>
 
+  <!-- Selection bar: slides up while picking cards, so the count and the action are
+       always visible without scrolling back to the toolbar. -->
+  <div class="select-bar" *ngIf="selectMode && (collection$ | async) as selCol">
+    <span class="select-count"> {{ selectedIds.size }} selected </span>
+    <button class="select-link" (click)="selectAll(selCol)">Select all shown</button>
+    <button class="select-link" (click)="clearSelection()" [disabled]="!selectedIds.size">
+      Clear
+    </button>
+    <span class="select-fill"></span>
+    <button class="select-move-btn" [disabled]="!selectedIds.size" (click)="openBulkMove()">
+      <i class="bi bi-box-arrow-right"></i> Move to…
+    </button>
+    <button class="select-link" (click)="toggleSelectMode()">Done</button>
+  </div>
+
+  <!-- Bulk move dialog — same picker as the single-card move. -->
+  <app-collection-picker-dialog
+    *ngIf="bulkMoveOpen"
+    heading="Move Cards"
+    [lead]="bulkMoveLead"
+    [targets]="(moveTargets$ | async) ?? []"
+    confirmLabel="Move"
+    emptyText="You need another collection to move these cards to."
+    (confirmed)="confirmBulkMove($event.targetId)"
+    (closed)="closeBulkMove()"
+  ></app-collection-picker-dialog>
+
+  <!-- Move-card dialog (shared with the list's merge dialog). -->
+  <app-collection-picker-dialog
+    *ngIf="moveCard as moving"
+    heading="Move Card"
+    [lead]="moveLead(moving)"
+    [targets]="(moveTargets$ | async) ?? []"
+    confirmLabel="Move"
+    emptyText="You need another collection to move this card to."
+    (confirmed)="confirmMove(moving, $event.targetId)"
+    (closed)="closeMove()"
+  ></app-collection-picker-dialog>
 </div>

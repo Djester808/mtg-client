@@ -1,0 +1,67 @@
+<div class="picker-overlay" (click)="closed.emit()">
+  <div class="picker-modal" (click)="$event.stopPropagation()">
+    <div class="picker-header">
+      <h2>{{ heading }}</h2>
+      <button class="picker-close" (click)="closed.emit()" title="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="picker-body">
+      <p class="picker-lead" *ngIf="lead"><ng-content></ng-content>{{ lead }}</p>
+
+      <!-- Search appears only once the list is long enough to need it. -->
+      <div class="picker-search" *ngIf="showSearch">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [value]="search"
+          (input)="onSearch($any($event.target).value)"
+          placeholder="Search collections…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="picker-targets" *ngIf="targets.length; else noTargets">
+        <button
+          class="picker-target"
+          *ngFor="let t of visibleTargets; trackBy: trackById"
+          [class.is-selected]="selectedId === t.id"
+          (click)="select(t.id)"
+        >
+          <span
+            class="picker-target-cover"
+            [style.backgroundImage]="t.coverUri ? 'url(' + t.coverUri + ')' : 'none'"
+            [class.no-cover]="!t.coverUri"
+          ></span>
+          <span class="picker-target-text">
+            <span class="picker-target-name">{{ t.name }}</span>
+            <span class="picker-target-count"
+              >{{ t.cardCount }} card{{ t.cardCount !== 1 ? 's' : '' }}</span
+            >
+          </span>
+          <i class="bi bi-check-lg picker-target-tick" *ngIf="selectedId === t.id"></i>
+        </button>
+        <p class="picker-more" *ngIf="hiddenCount">
+          + {{ hiddenCount }} more — search to narrow the list
+        </p>
+        <p class="picker-empty" *ngIf="noMatches">No collection matches “{{ search }}”.</p>
+      </div>
+      <ng-template #noTargets>
+        <p class="picker-empty">{{ emptyText }}</p>
+      </ng-template>
+
+      <label class="picker-check" *ngIf="checkboxLabel">
+        <input type="checkbox" [(ngModel)]="checked" />
+        <span>{{ checkboxLabel }}</span>
+      </label>
+
+      <div class="picker-actions">
+        <button type="button" class="picker-cancel" (click)="closed.emit()">Cancel</button>
+        <button type="button" class="picker-confirm" [disabled]="!selectedId" (click)="confirm()">
+          {{ confirmLabel }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

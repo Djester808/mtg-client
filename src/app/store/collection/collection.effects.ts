@@ -158,6 +158,77 @@ export class CollectionEffects {
     ),
   );
 
+  // concatMap for the same reason as updateCard: a move is relative arithmetic on both
+  // collections, so two in flight at once could interleave and double-count.
+  moveCard$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.moveCard),
+      concatMap(({ collectionId, cardId, request, targetName }) =>
+        this.api.moveCard(collectionId, cardId, request).pipe(
+          map((result) =>
+            CollectionActions.moveCardSuccess({ collectionId, cardId, result, targetName }),
+          ),
+          catchError((err) =>
+            of(CollectionActions.moveCardFailure({ collectionId, error: describeHttpError(err) })),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  moveCards$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.moveCards),
+      concatMap(({ collectionId, cardIds, targetCollectionId, targetName }) =>
+        this.api.moveCards(collectionId, { targetCollectionId, cardIds }).pipe(
+          map((result) => CollectionActions.moveCardsSuccess({ collectionId, result, targetName })),
+          catchError((err) =>
+            of(CollectionActions.moveCardsFailure({ collectionId, error: describeHttpError(err) })),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  mergeCollections$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.mergeCollections),
+      concatMap(({ targetCollectionId, sourceCollectionId, deleteSource, targetName }) =>
+        this.api.mergeCollections(targetCollectionId, { sourceCollectionId, deleteSource }).pipe(
+          map((result) =>
+            CollectionActions.mergeCollectionsSuccess({
+              sourceCollectionId,
+              result,
+              targetName,
+            }),
+          ),
+          catchError((err) =>
+            of(
+              CollectionActions.mergeCollectionsFailure({
+                collectionId: targetCollectionId,
+                error: describeHttpError(err),
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  // Both operations change card counts on two collections at once, and the list only
+  // carries a rolled-up cardCount — cheaper and less error-prone to re-read it than to
+  // reproduce the server's folding arithmetic in the reducer.
+  refreshListAfterTransfer$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        CollectionActions.moveCardSuccess,
+        CollectionActions.moveCardsSuccess,
+        CollectionActions.mergeCollectionsSuccess,
+      ),
+      map(() => CollectionActions.loadCollections()),
+    ),
+  );
+
   // A failed card mutation leaves the optimistic state wrong — re-fetch the truth.
   resyncAfterCardFailure$ = createEffect(() =>
     this.actions$.pipe(
@@ -165,6 +236,9 @@ export class CollectionEffects {
         CollectionActions.addCardFailure,
         CollectionActions.updateCardFailure,
         CollectionActions.removeCardFailure,
+        CollectionActions.moveCardFailure,
+        CollectionActions.moveCardsFailure,
+        CollectionActions.mergeCollectionsFailure,
       ),
       map(({ collectionId }) => CollectionActions.refreshCollection({ id: collectionId })),
     ),
@@ -180,8 +254,46 @@ export class CollectionEffects {
           CollectionActions.addCardFailure,
           CollectionActions.updateCardFailure,
           CollectionActions.removeCardFailure,
+          CollectionActions.moveCardFailure,
+          CollectionActions.moveCardsFailure,
+          CollectionActions.mergeCollectionsFailure,
         ),
         tap(({ error }) => this.toast.error(error)),
+      ),
+    { dispatch: false },
+  );
+
+  // Moves and merges are the two actions whose result isn't visible on the page you are
+  // on (the copies land somewhere else), so they confirm in words as well as motion.
+  notifyTransferSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(
+          CollectionActions.moveCardSuccess,
+          CollectionActions.moveCardsSuccess,
+          CollectionActions.mergeCollectionsSuccess,
+        ),
+        tap((action) => {
+          if (action.type === CollectionActions.moveCardSuccess.type) {
+            const moved = action.result.target;
+            const name = moved.cardDetails?.name ?? 'Card';
+            this.toast.show(`Moved ${name} to ${action.targetName}`, 'success');
+          } else if (action.type === CollectionActions.moveCardsSuccess.type) {
+            const n = action.result.removedCardIds.length;
+            this.toast.show(
+              `Moved ${n} ${n === 1 ? 'card' : 'cards'} to ${action.targetName}`,
+              'success',
+            );
+          } else {
+            const { cardsMoved, cardsFolded, copiesTransferred } = action.result;
+            const rows = cardsMoved + cardsFolded;
+            this.toast.show(
+              `Merged ${copiesTransferred} ${copiesTransferred === 1 ? 'copy' : 'copies'} ` +
+                `(${rows} ${rows === 1 ? 'card' : 'cards'}) into ${action.targetName}`,
+              'success',
+            );
+          }
+        }),
       ),
     { dispatch: false },
   );

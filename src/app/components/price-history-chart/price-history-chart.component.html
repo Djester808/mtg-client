@@ -1,0 +1,173 @@
+<div class="chart-empty" *ngIf="model.empty && !loading">
+  No price history recorded yet. Prices are captured daily once a card is in a collection.
+</div>
+
+<ng-container *ngIf="!model.empty">
+  <!-- Legend: present whenever a second series is plotted, so identity never rests on colour alone. -->
+  <div class="chart-legend" *ngIf="showLegend && view === 'chart'">
+    <span class="legend-item" *ngFor="let s of model.series">
+      <svg class="legend-key" width="14" height="8" aria-hidden="true">
+        <line
+          x1="0"
+          y1="4"
+          x2="14"
+          y2="4"
+          [attr.stroke]="s.color"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <span class="legend-label">{{ s.label }}</span>
+    </span>
+  </div>
+
+  <svg
+    class="chart-svg"
+    *ngIf="view === 'chart'"
+    [class.is-loading]="loading"
+    [attr.viewBox]="'0 0 ' + model.width + ' ' + model.height"
+    preserveAspectRatio="xMidYMid meet"
+    role="img"
+    aria-label="Price history"
+    (pointermove)="onPointerMove($event)"
+    (pointerleave)="onPointerLeave()"
+  >
+    <!-- Gridlines: hairline, solid, recessive. -->
+    <g class="chart-grid">
+      <line
+        *ngFor="let t of model.yTicks"
+        [attr.x1]="model.plot.x"
+        [attr.x2]="model.plot.x + model.plot.w"
+        [attr.y1]="t.pos"
+        [attr.y2]="t.pos"
+      />
+    </g>
+
+    <g class="chart-axis-text">
+      <text
+        *ngFor="let t of model.yTicks"
+        [attr.x]="model.plot.x - 8"
+        [attr.y]="t.pos + 3"
+        text-anchor="end"
+      >
+        {{ t.label }}
+      </text>
+      <text
+        *ngFor="let t of model.xTicks"
+        [attr.x]="t.pos"
+        [attr.y]="model.plot.y + model.plot.h + 16"
+        text-anchor="middle"
+      >
+        {{ t.label }}
+      </text>
+    </g>
+
+    <!-- Area wash under the primary series, then the 2px lines. -->
+    <g>
+      <ng-container *ngFor="let s of model.series">
+        <path *ngIf="s.areaPath" [attr.d]="s.areaPath" [attr.fill]="s.color" fill-opacity="0.1" />
+      </ng-container>
+      <path
+        *ngFor="let s of model.series"
+        [attr.d]="s.path"
+        fill="none"
+        [attr.stroke]="s.color"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+    </g>
+
+    <!-- Crosshair + markers for the hovered day. -->
+    <g *ngIf="hovered as h">
+      <line
+        class="chart-crosshair"
+        [attr.x1]="h.x"
+        [attr.x2]="h.x"
+        [attr.y1]="model.plot.y"
+        [attr.y2]="model.plot.y + model.plot.h"
+      />
+      <circle
+        *ngFor="let v of h.values"
+        [attr.cx]="h.x"
+        [attr.cy]="v.y"
+        r="4"
+        [attr.fill]="v.color"
+        class="chart-marker"
+      />
+    </g>
+
+    <!-- End-dot per series: the anchor for the latest value, and the only visible mark
+         when just one day has been captured (a lone point draws no line). -->
+    <g>
+      <ng-container *ngFor="let s of model.series">
+        <circle
+          *ngIf="s.end"
+          [attr.cx]="s.end.x"
+          [attr.cy]="s.end.y"
+          r="4"
+          [attr.fill]="s.color"
+          class="chart-marker"
+        />
+      </ng-container>
+    </g>
+
+    <!-- Direct label at each line end — the value you can read without hovering. -->
+    <g class="chart-end-label">
+      <ng-container *ngFor="let s of model.series">
+        <text *ngIf="s.end" [attr.x]="s.end.x + 8" [attr.y]="s.end.y + 3">
+          {{ formatUsd(s.end.value) }}
+        </text>
+      </ng-container>
+    </g>
+  </svg>
+
+  <!-- Tooltip: values lead, series names follow, keyed by a short stroke of the line colour. -->
+  <div
+    class="chart-tooltip"
+    *ngIf="hovered as h"
+    [style.left.%]="(tooltipX(h) / model.width) * 100"
+  >
+    <div class="tooltip-date">{{ formatDay(h.date) }}</div>
+    <div class="tooltip-row" *ngFor="let v of h.values">
+      <svg class="tooltip-key" width="10" height="6" aria-hidden="true">
+        <line
+          x1="0"
+          y1="3"
+          x2="10"
+          y2="3"
+          [attr.stroke]="v.color"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <span class="tooltip-value">{{ formatUsd(v.value) }}</span>
+      <span class="tooltip-label">{{ v.label }}</span>
+    </div>
+  </div>
+
+  <!-- One day recorded reads as a bare dot; say why rather than look broken. -->
+  <div class="chart-note" *ngIf="model.singlePoint && view === 'chart'">
+    Only today has been recorded so far — the line builds as daily prices accumulate.
+  </div>
+
+  <!-- Table view: every plotted value, reachable without a pointer. -->
+  <div class="chart-table-wrap" *ngIf="view === 'table'">
+    <table class="chart-table">
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Non-foil</th>
+          <th scope="col" *ngIf="showLegend">Foil</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of points; trackBy: trackByDate">
+          <td>{{ formatDay(p.date) }}</td>
+          <td>{{ p.usd != null ? formatUsd(p.usd) : '—' }}</td>
+          <td *ngIf="showLegend">{{ p.usdFoil != null ? formatUsd(p.usdFoil) : '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</ng-container>

@@ -14,6 +14,24 @@ surrounding code disagree, the rule wins — fix the code, don't copy it.
 - The e2e/characterization scripts run through Selenium with
   `NODE_PATH=c:/Users/John/Documents/Projects/mtg-client/e2e/node_modules`.
 
+## Knowledge docs — they live in the API repo, read them there
+
+This file loads automatically every session; the API's knowledge docs do not, and they
+are **not duplicated here on purpose** — a second copy drifts and the two halves start
+disagreeing. Open the original in the sibling `MtgEngine` repo:
+
+- **`MtgEngine/MtgEngine.Api/Knowledge/commander-doctrine.md`** — the deck-building
+  standard every AI pass reasons from. Read it before building or changing any UI that
+  displays AI suggestions, synergy scores, or deck advice, so the wording on screen
+  matches the doctrine the scores came from.
+- **`MtgEngine/CARD_COLLECTION_FEATURE.md`** — collection/deck domain, the DTO shapes
+  this client binds to (including `prices`, `priceUsdAtAdd`, and the price-history
+  endpoint). Read before changing collection, deck, or price components.
+- **`MtgEngine/CLAUDE.md`** — the API's standards, for any cross-repo change.
+
+When a change spans both repos, read the API doc first: the DTO contract is defined
+there and mirrored here.
+
 ## Change detection — OnPush is the default, and it has a contract
 
 - Components use `ChangeDetectionStrategy.OnPush`. **Every path that mutates

@@ -317,3 +317,71 @@
     user-select: none;
   }
 }
+
+// Cover thumbnail block (label above a clickable image). The deck and collection pages
+// had separate copies of this; the only real difference was the accent colour.
+@mixin cover-block($prefix, $accent, $wash) {
+  .#{$prefix}-cover-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .#{$prefix}-section-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0 0 5px;
+  }
+
+  .#{$prefix}-cover {
+    flex-shrink: 0;
+    width: 96px;
+    height: 58px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+
+    &:hover .#{$prefix}-cover-overlay {
+      opacity: 1;
+    }
+  }
+
+  .#{$prefix}-cover-art {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.no-cover {
+      background: linear-gradient(135deg, $wash, rgba(20, 18, 12, 0.8));
+    }
+  }
+
+  .#{$prefix}-cover-placeholder {
+    font-size: 20px;
+    color: $accent;
+  }
+
+  .#{$prefix}-cover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--text-secondary);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+}

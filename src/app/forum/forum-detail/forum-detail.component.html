@@ -5,44 +5,67 @@
   </div>
 
   <div class="detail-content" *ngIf="post$ | async as post; else loadingTpl">
-
     <!-- Header -->
-    <header class="detail-header"
-            [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null">
+    <header
+      class="detail-header"
+      [style.backgroundImage]="post.deckCoverUri ? 'url(' + post.deckCoverUri + ')' : null"
+    >
       <div class="header-overlay"></div>
       <div class="header-inner">
         <a class="back-btn" routerLink="/community/forum">← Community Decks</a>
 
         <div class="header-flex">
           <!-- Commander card image (shown when deck has a commander) -->
-          <div class="fd-commander-wrap" *ngIf="post.commanderImageUri"
-               [title]="'View ' + (post.commanderName ?? 'Commander')"
-               (click)="openCommanderCard(post)">
-            <img class="fd-commander-img" [src]="post.commanderImageUri" [alt]="post.commanderName ?? 'Commander'" />
+          <div
+            class="fd-commander-wrap"
+            *ngIf="post.commanderImageUri"
+            [title]="'View ' + (post.commanderName ?? 'Commander')"
+            (click)="openCommanderCard(post)"
+          >
+            <img
+              class="fd-commander-img"
+              [src]="post.commanderImageUri"
+              [alt]="post.commanderName ?? 'Commander'"
+            />
             <div class="fd-commander-hint"><i class="bi bi-search"></i></div>
           </div>
 
           <!-- Main header info -->
           <div class="header-text">
             <div class="header-meta">
-              <div class="header-format" *ngIf="post.deckFormat">{{ formatLabel(post.deckFormat) }}</div>
+              <div class="header-format" *ngIf="post.deckFormat">
+                {{ formatLabel(post.deckFormat) }}
+              </div>
               <div class="header-pips" *ngIf="post.colorIdentity?.length">
-                <i class="ms ms-cost ms-shadow" *ngFor="let c of post.colorIdentity" [ngClass]="'ms-' + c.toLowerCase()"></i>
+                <i
+                  class="ms ms-cost ms-shadow"
+                  *ngFor="let c of post.colorIdentity"
+                  [ngClass]="'ms-' + c.toLowerCase()"
+                ></i>
               </div>
             </div>
             <div class="fd-commander-name" *ngIf="post.commanderName">{{ post.commanderName }}</div>
             <h1 class="header-title">{{ post.deckName }}</h1>
             <div class="header-byline">
-              by <a class="author-link" [routerLink]="['/u', post.authorUsername]"><strong>{{ post.authorUsername }}</strong></a>
-              &nbsp;·&nbsp; {{ timeAgo(post.publishedAt) }}
-              &nbsp;·&nbsp; {{ totalCards(post) }} cards
+              by
+              <a class="author-link" [routerLink]="['/u', post.authorUsername]"
+                ><strong>{{ post.authorUsername }}</strong></a
+              >
+              &nbsp;·&nbsp; {{ timeAgo(post.publishedAt) }} &nbsp;·&nbsp;
+              {{ totalCards(post) }} cards
             </div>
-            <p class="header-desc" *ngIf="post.description" [innerHTML]="post.description | oracleSymbols"></p>
+            <p
+              class="header-desc"
+              *ngIf="post.description"
+              [innerHTML]="post.description | oracleSymbols"
+            ></p>
             <div class="header-actions">
-              <button class="copy-deck-btn"
-                      *ngIf="isLoggedIn$ | async"
-                      [disabled]="copyState === 'copying' || copyState === 'done'"
-                      (click)="copyDeck(post)">
+              <button
+                class="copy-deck-btn"
+                *ngIf="isLoggedIn$ | async"
+                [disabled]="copyState === 'copying' || copyState === 'done'"
+                (click)="copyDeck(post)"
+              >
                 <ng-container *ngIf="copyState === 'idle'">
                   <i class="bi bi-copy"></i> Copy to My Decks
                 </ng-container>
@@ -57,9 +80,11 @@
                 </ng-container>
               </button>
 
-              <button class="delete-post-btn"
-                      *ngIf="(username$ | async) === post.authorUsername"
-                      (click)="deletePost(post.id)">
+              <button
+                class="delete-post-btn"
+                *ngIf="(username$ | async) === post.authorUsername"
+                (click)="deletePost(post.id)"
+              >
                 <i class="bi bi-trash3"></i> Delete Post
               </button>
             </div>
@@ -71,25 +96,41 @@
     </header>
 
     <div class="detail-body">
-
       <!-- Left: card list -->
       <section class="card-list-section">
-
         <!-- Toolbar: board tabs + view toggle -->
         <div class="list-toolbar">
-          <div class="board-tabs" *ngIf="totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0; else boardTabsSpacer">
-            <button class="board-tab" [class.active]="activeTab === 'main'"
-                    title="View main deck cards" (click)="activeTab = 'main'">
+          <div
+            class="board-tabs"
+            *ngIf="
+              totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0;
+              else boardTabsSpacer
+            "
+          >
+            <button
+              class="board-tab"
+              [class.active]="activeTab === 'main'"
+              title="View main deck cards"
+              (click)="activeTab = 'main'"
+            >
               Mainboard ({{ totalCards(post) }})
             </button>
-            <button class="board-tab" [class.active]="activeTab === 'side'"
-                    *ngIf="totalCards(post, 'side') > 0"
-                    title="View sideboard cards" (click)="activeTab = 'side'">
+            <button
+              class="board-tab"
+              [class.active]="activeTab === 'side'"
+              *ngIf="totalCards(post, 'side') > 0"
+              title="View sideboard cards"
+              (click)="activeTab = 'side'"
+            >
               Sideboard ({{ totalCards(post, 'side') }})
             </button>
-            <button class="board-tab" [class.active]="activeTab === 'maybe'"
-                    *ngIf="totalCards(post, 'maybe') > 0"
-                    title="View maybeboard cards" (click)="activeTab = 'maybe'">
+            <button
+              class="board-tab"
+              [class.active]="activeTab === 'maybe'"
+              *ngIf="totalCards(post, 'maybe') > 0"
+              title="View maybeboard cards"
+              (click)="activeTab = 'maybe'"
+            >
               Maybeboard ({{ totalCards(post, 'maybe') }})
             </button>
           </div>
@@ -98,26 +139,47 @@
           <div class="toolbar-right">
             <!-- Sort -->
             <div class="sort-group" title="Sort cards within the list">
-              <button class="sort-btn" *ngFor="let s of sortOptions"
-                      [class.is-active]="sortMode === s.value"
-                      [title]="'Sort by ' + s.label"
-                      (click)="setSortMode(s.value)">{{ s.label }}</button>
+              <button
+                class="sort-btn"
+                *ngFor="let s of sortOptions"
+                [class.is-active]="sortMode === s.value"
+                [title]="'Sort by ' + s.label"
+                (click)="setSortMode(s.value)"
+              >
+                {{ s.label }}
+              </button>
             </div>
 
             <!-- Zoom -->
             <div class="zoom-group">
-              <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out (−)">−</button>
+              <button
+                class="zoom-btn"
+                (click)="zoomOut()"
+                [disabled]="zoomLevel <= 0.5"
+                title="Zoom out (−)"
+              >
+                −
+              </button>
               <span class="zoom-label" title="Current zoom level">{{ zoomLabel }}</span>
-              <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoomLevel >= 2.0" title="Zoom in (+)">+</button>
+              <button
+                class="zoom-btn"
+                (click)="zoomIn()"
+                [disabled]="zoomLevel >= 2.0"
+                title="Zoom in (+)"
+              >
+                +
+              </button>
             </div>
 
             <!-- View toggle -->
             <div class="view-toggle">
-              <button class="view-btn"
-                      *ngFor="let v of viewOptions"
-                      [class.is-active]="viewMode === v.value"
-                      [title]="v.title"
-                      (click)="setViewMode(v.value)">
+              <button
+                class="view-btn"
+                *ngFor="let v of viewOptions"
+                [class.is-active]="viewMode === v.value"
+                [title]="v.title"
+                (click)="setViewMode(v.value)"
+              >
                 <i class="bi" [ngClass]="v.icon"></i>
               </button>
             </div>
@@ -137,7 +199,8 @@
               <app-mana-cost
                 *ngIf="card.cardDetails?.manaCost"
                 [cost]="card.cardDetails!.manaCost"
-                class="card-cost">
+                class="card-cost"
+              >
               </app-mana-cost>
             </div>
           </div>
@@ -151,16 +214,24 @@
               <span class="group-count">{{ group.total }}</span>
             </div>
             <div class="visual-grid" [style.--zoom]="zoomLevel">
-              <div class="visual-card-wrap"
-                   *ngFor="let card of group.cards"
-                   [title]="card.cardDetails?.name ?? ''">
-                <div class="visual-card-img"
-                     [style.backgroundImage]="cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'"
-                     [class.no-image]="!cardImage(card)"
-                     (click)="openCard(card)">
+              <div
+                class="visual-card-wrap"
+                *ngFor="let card of group.cards"
+                [title]="card.cardDetails?.name ?? ''"
+              >
+                <div
+                  class="visual-card-img"
+                  [style.backgroundImage]="
+                    cardImage(card) ? 'url(' + cardImage(card) + ')' : 'none'
+                  "
+                  [class.no-image]="!cardImage(card)"
+                  (click)="openCard(card)"
+                >
                   <span class="visual-placeholder" *ngIf="!cardImage(card)">◈</span>
                 </div>
-                <div class="visual-qty-badge" *ngIf="cardCount(card) > 1">×{{ cardCount(card) }}</div>
+                <div class="visual-qty-badge" *ngIf="cardCount(card) > 1">
+                  ×{{ cardCount(card) }}
+                </div>
               </div>
             </div>
           </div>
@@ -176,27 +247,19 @@
             </div>
           </div>
         </div>
-
       </section>
 
       <!-- Right: stats + comments -->
       <aside class="side-panel">
-
         <!-- Stats -->
         <div class="panel-block">
           <h3 class="panel-title">Mana Curve</h3>
-          <app-stats-chart
-            [data]="getCurveData(post)"
-            type="vbar">
-          </app-stats-chart>
+          <app-stats-chart [data]="getCurveData(post)" type="vbar"> </app-stats-chart>
         </div>
 
         <div class="panel-block">
           <h3 class="panel-title">Card Types</h3>
-          <app-stats-chart
-            [data]="getTypeData(post)"
-            type="bar">
-          </app-stats-chart>
+          <app-stats-chart [data]="getTypeData(post)" type="bar"> </app-stats-chart>
         </div>
 
         <!-- Comments -->
@@ -213,11 +276,15 @@
 
             <div class="comment" *ngFor="let c of post.comments">
               <div class="comment-header">
-                <a class="comment-author author-link" [routerLink]="['/u', c.authorUsername]">{{ c.authorUsername }}</a>
+                <a class="comment-author author-link" [routerLink]="['/u', c.authorUsername]">{{
+                  c.authorUsername
+                }}</a>
                 <span class="comment-time">{{ timeAgo(c.createdAt) }}</span>
                 <div class="comment-actions" *ngIf="(username$ | async) === c.authorUsername">
                   <button class="comment-action-btn" (click)="startEdit(c)">Edit</button>
-                  <button class="comment-action-btn danger" (click)="deleteComment(post.id, c.id)">Delete</button>
+                  <button class="comment-action-btn danger" (click)="deleteComment(post.id, c.id)">
+                    Delete
+                  </button>
                 </div>
               </div>
 
@@ -226,7 +293,9 @@
               <div *ngIf="editingCommentId === c.id" class="comment-edit">
                 <textarea class="comment-textarea" [(ngModel)]="editDraft" rows="3"></textarea>
                 <div class="comment-edit-actions">
-                  <button class="comment-submit-btn" (click)="submitEdit(post.id, c.id)">Save</button>
+                  <button class="comment-submit-btn" (click)="submitEdit(post.id, c.id)">
+                    Save
+                  </button>
                   <button class="comment-cancel-btn" (click)="cancelEdit()">Cancel</button>
                 </div>
               </div>
@@ -234,25 +303,26 @@
           </div>
 
           <div class="comment-form" *ngIf="isLoggedIn$ | async; else signInPrompt">
-            <textarea class="comment-textarea"
-                      [(ngModel)]="commentDraft"
-                      placeholder="Leave a comment or suggestion..."
-                      rows="3">
+            <textarea
+              class="comment-textarea"
+              [(ngModel)]="commentDraft"
+              placeholder="Leave a comment or suggestion..."
+              rows="3"
+            >
             </textarea>
-            <button class="comment-submit-btn"
-                    [disabled]="!commentDraft.trim()"
-                    (click)="submitComment(post.id)">
+            <button
+              class="comment-submit-btn"
+              [disabled]="!commentDraft.trim()"
+              (click)="submitComment(post.id)"
+            >
               Post Comment
             </button>
           </div>
 
           <ng-template #signInPrompt>
-            <p class="sign-in-prompt">
-              <a routerLink="/login">Sign in</a> to leave a comment.
-            </p>
+            <p class="sign-in-prompt"><a routerLink="/login">Sign in</a> to leave a comment.</p>
           </ng-template>
         </div>
-
       </aside>
     </div>
   </div>
@@ -271,7 +341,8 @@
       [printings]="modalPrintings"
       [(viewedScryfallId)]="modalViewScryfallId"
       [showOverlay]="true"
-      (closed)="closeCard()">
+      (closed)="closeCard()"
+    >
     </app-card-modal>
   </ng-container>
 </div>

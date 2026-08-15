@@ -24,6 +24,7 @@ import {
   SuggestedCardDto,
 } from '../../services/deck-api.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
+import { SetIconComponent } from '../set-icon/set-icon.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SearchInputComponent } from '../search-input/search-input.component';
 import { ToBodyDirective } from '../../shared/to-body.directive';
@@ -55,6 +56,7 @@ export interface SuggestionCategory {
     ManaCostComponent,
     CardModalComponent,
     SearchInputComponent,
+    SetIconComponent,
     ToBodyDirective,
   ],
   templateUrl: './deck-suggestions-panel.component.html',

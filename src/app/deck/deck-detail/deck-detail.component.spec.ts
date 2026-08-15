@@ -11,6 +11,7 @@ import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models';
 import { makeCard } from '../../testing/test-factories';
 import { PreferencesApiService } from '../../services/preferences-api.service';
+import { CollectionApiService } from '../../services/collection-api.service';
 
 function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
@@ -87,6 +88,12 @@ async function setup() {
   preferencesApi.load.and.returnValue(of({ deckLayout: 'visual' }));
   preferencesApi.save.and.stub();
 
+  // Ownership greys out cards you do not hold; the page must not need the network for it.
+  const collectionApi = jasmine.createSpyObj<CollectionApiService>('CollectionApiService', [
+    'getOwnedOracleIds',
+  ]);
+  collectionApi.getOwnedOracleIds.and.returnValue(of([]));
+
   await TestBed.configureTestingModule({
     imports: [DeckDetailComponent],
     schemas: [NO_ERRORS_SCHEMA],
@@ -96,6 +103,7 @@ async function setup() {
       { provide: GameApiService, useValue: gameApi },
       { provide: DeckApiService, useValue: deckApi },
       { provide: PreferencesApiService, useValue: preferencesApi },
+      { provide: CollectionApiService, useValue: collectionApi },
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
     ],
@@ -123,13 +131,13 @@ describe('DeckDetailComponent — filteredCards', () => {
 
   it('returns all cards when filterQuery is empty', async () => {
     const { component } = await setup();
-    component.filterQuery = '';
+    component.filters.query = '';
     expect(component.filteredCards(makeDeck(CARDS))).toHaveSize(3);
   });
 
   it('filters by name case-insensitively', async () => {
     const { component } = await setup();
-    component.filterQuery = 'lightning';
+    component.filters.query = 'lightning';
     const results = component.filteredCards(makeDeck(CARDS));
     expect(results).toHaveSize(2);
     expect(results.map((c) => c.id)).toContain('c1');
@@ -138,7 +146,7 @@ describe('DeckDetailComponent — filteredCards', () => {
 
   it('returns empty when no cards match', async () => {
     const { component } = await setup();
-    component.filterQuery = 'goblin';
+    component.filters.query = 'goblin';
     expect(component.filteredCards(makeDeck(CARDS))).toHaveSize(0);
   });
 });

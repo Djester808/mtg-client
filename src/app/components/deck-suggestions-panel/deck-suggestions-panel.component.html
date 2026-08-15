@@ -5,15 +5,22 @@
 
 <!-- Commander context bar -->
 <div class="sugg-commander" *ngIf="commanderCard">
-  <div class="sugg-card-art-wrap sugg-cmdr-art-wrap"
-       [class.is-loading]="artOf(commanderCard) && !isImageLoaded(artOf(commanderCard))">
-    <img class="sugg-card-art" *ngIf="artOf(commanderCard) as src"
-         [src]="src" [alt]="commanderCard.name"
-         (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
+  <div
+    class="sugg-card-art-wrap sugg-cmdr-art-wrap"
+    [class.is-loading]="artOf(commanderCard) && !isImageLoaded(artOf(commanderCard))"
+  >
+    <img
+      class="sugg-card-art"
+      *ngIf="artOf(commanderCard) as src"
+      [src]="src"
+      [alt]="commanderCard.name"
+      (load)="onImageSettled(src)"
+      (error)="onImageSettled(src)"
+    />
   </div>
   <div class="sugg-cmdr-info">
     <span class="sugg-cmdr-name">{{ commanderCard.name }}</span>
-    <span class="sugg-cmdr-sub">Commander · {{ (deck?.cards?.length ?? 0) }} cards in deck</span>
+    <span class="sugg-cmdr-sub">Commander · {{ deck?.cards?.length ?? 0 }} cards in deck</span>
   </div>
   <button class="sugg-generate-btn" (click)="generate()" [disabled]="loading">
     <i class="bi" [class.bi-arrow-repeat]="!loading" [class.bi-hourglass-split]="loading"></i>
@@ -24,27 +31,37 @@
 <!-- Fine-tuning tags -->
 <div class="sugg-tags-section" *ngIf="commanderCard">
   <div class="sugg-tags-row">
-    <span class="sugg-tag" *ngFor="let t of (deck?.tags ?? [])">
+    <span class="sugg-tag" *ngFor="let t of deck?.tags ?? []">
       <i class="bi bi-tag"></i> {{ t }}
     </span>
     <span class="sugg-tag sugg-tag--focus" *ngFor="let t of suggestionTags">
-      {{ t }}<button class="sugg-tag-remove" (click)="removeSuggestionTag(t)"><i class="bi bi-x"></i></button>
+      {{ t
+      }}<button class="sugg-tag-remove" (click)="removeSuggestionTag(t)">
+        <i class="bi bi-x"></i>
+      </button>
     </span>
     <span class="sugg-tag-input-wrap">
-      <input class="sugg-tag-input"
-             [(ngModel)]="tagDraft"
-             placeholder="+ focus"
-             autocomplete="off"
-             (focus)="focusSuggOpen = true"
-             (input)="focusSuggOpen = true"
-             (blur)="closeFocusSuggSoon()"
-             (keydown.escape)="focusSuggOpen = false"
-             (keydown.enter)="commitTagInput(); $event.preventDefault()"
-             (keydown.comma)="commitTagInput(); $event.preventDefault()" />
+      <input
+        class="sugg-tag-input"
+        [(ngModel)]="tagDraft"
+        placeholder="+ focus"
+        autocomplete="off"
+        (focus)="focusSuggOpen = true"
+        (input)="focusSuggOpen = true"
+        (blur)="closeFocusSuggSoon()"
+        (keydown.escape)="focusSuggOpen = false"
+        (keydown.enter)="commitTagInput(); $event.preventDefault()"
+        (keydown.comma)="commitTagInput(); $event.preventDefault()"
+      />
       <!-- Custom suggestion menu: the native datalist popup cannot be styled. -->
       <div class="app-menu sugg-tag-menu" *ngIf="focusSuggOpen && focusSuggestions.length > 0">
-        <button class="app-menu-item" *ngFor="let t of focusSuggestions"
-                (mousedown)="pickFocusTag(t); $event.preventDefault()">{{ t }}</button>
+        <button
+          class="app-menu-item"
+          *ngFor="let t of focusSuggestions"
+          (mousedown)="pickFocusTag(t); $event.preventDefault()"
+        >
+          {{ t }}
+        </button>
       </div>
     </span>
   </div>
@@ -83,13 +100,23 @@
     </div>
 
     <div class="sugg-card-list" [@listStagger]="cardsFor(cat.key).length">
-      <div class="sugg-card" *ngFor="let s of cardsFor(cat.key); trackBy: trackByCardName" (click)="openDetail(s, $event)">
-        <div class="sugg-card-art-wrap"
-             [class.is-loading]="artOf(s.card) && !isImageLoaded(artOf(s.card))">
-          <img class="sugg-card-art"
-               *ngIf="artOf(s.card) as src; else artPlaceholder"
-               [src]="src" [alt]="s.name"
-               (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
+      <div
+        class="sugg-card"
+        *ngFor="let s of cardsFor(cat.key); trackBy: trackByCardName"
+        (click)="openDetail(s, $event)"
+      >
+        <div
+          class="sugg-card-art-wrap"
+          [class.is-loading]="artOf(s.card) && !isImageLoaded(artOf(s.card))"
+        >
+          <img
+            class="sugg-card-art"
+            *ngIf="artOf(s.card) as src; else artPlaceholder"
+            [src]="src"
+            [alt]="s.name"
+            (load)="onImageSettled(src)"
+            (error)="onImageSettled(src)"
+          />
           <ng-template #artPlaceholder>
             <div class="sugg-art-placeholder">◈</div>
           </ng-template>
@@ -98,27 +125,43 @@
         <div class="sugg-card-body">
           <div class="sugg-card-top">
             <span class="sugg-card-name">{{ s.name }}</span>
-            <app-mana-cost *ngIf="s.card?.manaCost" [cost]="s.card!.manaCost" class="sugg-mana"></app-mana-cost>
-            <span class="sugg-score" *ngIf="s.score" [class.sugg-score--high]="s.score >= 80" [class.sugg-score--mid]="s.score >= 60 && s.score < 80">{{ s.score }}%</span>
+            <app-mana-cost
+              *ngIf="s.card?.manaCost"
+              [cost]="s.card!.manaCost"
+              class="sugg-mana"
+            ></app-mana-cost>
+            <span
+              class="sugg-score"
+              *ngIf="s.score"
+              [class.sugg-score--high]="s.score >= 80"
+              [class.sugg-score--mid]="s.score >= 60 && s.score < 80"
+              >{{ s.score }}%</span
+            >
           </div>
           <span class="sugg-card-type" *ngIf="s.card">
             {{ s.card.supertypes.join(' ') }} {{ s.card.cardTypes.join(' ') }}
-            <ng-container *ngIf="s.card.subtypes?.length"> — {{ s.card.subtypes.join(' ') }}</ng-container>
+            <ng-container *ngIf="s.card.subtypes?.length">
+              — {{ s.card.subtypes.join(' ') }}</ng-container
+            >
           </span>
           <span class="sugg-card-reason">{{ s.reason }}</span>
         </div>
 
-        <button class="sugg-add-btn"
-                *ngIf="!isInDeck(s)"
-                [disabled]="!s.scryfallId"
-                (click)="addCardFromRow(s, $event); $event.stopPropagation()"
-                [title]="s.scryfallId ? 'Add to deck' : 'Card not found in database'">
+        <button
+          class="sugg-add-btn"
+          *ngIf="!isInDeck(s)"
+          [disabled]="!s.scryfallId"
+          (click)="addCardFromRow(s, $event); $event.stopPropagation()"
+          [title]="s.scryfallId ? 'Add to deck' : 'Card not found in database'"
+        >
           <i class="bi bi-plus-lg"></i>
         </button>
-        <button class="sugg-add-btn sugg-add-btn--added"
-                *ngIf="isInDeck(s)"
-                (click)="removeCard(s); $event.stopPropagation()"
-                title="Remove from deck">
+        <button
+          class="sugg-add-btn sugg-add-btn--added"
+          *ngIf="isInDeck(s)"
+          (click)="removeCard(s); $event.stopPropagation()"
+          title="Remove from deck"
+        >
           <i class="bi bi-check-lg"></i>
         </button>
       </div>
@@ -140,7 +183,8 @@
       <i class="bi" [ngClass]="moreCategory.icon"></i>
       <span>{{ moreCategory.label }}</span>
       <span class="sugg-more-total" *ngIf="moreTotal">
-        {{ moreTotal }} card{{ moreTotal === 1 ? '' : 's' }}<ng-container *ngIf="scoringInFlight"> · scoring…</ng-container>
+        {{ moreTotal }} card{{ moreTotal === 1 ? '' : 's'
+        }}<ng-container *ngIf="scoringInFlight"> · scoring…</ng-container>
       </span>
       <button class="sugg-more-close" (click)="closeMore()" title="Close">
         <i class="bi bi-x-lg"></i>
@@ -162,70 +206,128 @@
     <!-- Types on their own row: mana value and sort read as one control each and were
          being split across the wrap when they shared a row with seven type chips. -->
     <div class="sugg-more-filters">
-      <button class="sugg-chip" *ngFor="let t of typeFilters"
-              [class.is-active]="selectedTypes.has(t)"
-              (click)="toggleTypeFilter(t)">{{ t }}</button>
+      <button
+        class="sugg-chip"
+        *ngFor="let t of typeFilters"
+        [class.is-active]="selectedTypes.has(t)"
+        (click)="toggleTypeFilter(t)"
+      >
+        {{ t }}
+      </button>
     </div>
 
     <div class="sugg-more-filters sugg-more-filters--secondary">
       <span class="sugg-filter-label">MV</span>
-      <button class="sugg-chip sugg-chip--cmc" *ngFor="let c of cmcFilters; let i = index"
-              [class.is-active]="cmcIndex === i"
-              (click)="setCmcFilter(i)">{{ c.label }}</button>
+      <button
+        class="sugg-chip sugg-chip--cmc"
+        *ngFor="let c of cmcFilters; let i = index"
+        [class.is-active]="cmcIndex === i"
+        (click)="setCmcFilter(i)"
+      >
+        {{ c.label }}
+      </button>
 
       <span class="sugg-filter-sep"></span>
 
       <span class="sugg-filter-label">Sort</span>
-      <button class="sugg-chip" *ngFor="let s of sortOptions"
-              [class.is-active]="moreSort === s.value"
-              [disabled]="moreReloading"
-              (click)="setMoreSort(s.value)"
-              [title]="s.hint">{{ s.label }}</button>
+      <button
+        class="sugg-chip"
+        *ngFor="let s of sortOptions"
+        [class.is-active]="moreSort === s.value"
+        [disabled]="moreReloading"
+        (click)="setMoreSort(s.value)"
+        [title]="s.hint"
+      >
+        {{ s.label }}
+      </button>
 
-      <button class="sugg-chip sugg-chip--clear" *ngIf="hasMoreFilters" (click)="clearMoreFilters()"
-              title="Clear search and filters">
+      <button
+        class="sugg-chip sugg-chip--clear"
+        *ngIf="hasMoreFilters"
+        (click)="clearMoreFilters()"
+        title="Clear search and filters"
+      >
         <i class="bi bi-x-circle"></i> Clear
       </button>
     </div>
 
-    <div class="sugg-more-list" [@listStagger]="displayCards.length" (scroll)="onMoreScroll($event)">
-      <div class="sugg-card" *ngFor="let c of displayCards; trackBy: trackCandidate"
-           (click)="openCandidateDetail(c, $event)">
-        <div class="sugg-card-art-wrap"
-             [class.is-loading]="artOf(c.card) && !isImageLoaded(artOf(c.card))">
-          <img class="sugg-card-art" *ngIf="artOf(c.card) as src; else morePlaceholder"
-               [src]="src" [alt]="c.card.name"
-               (load)="onImageSettled(src)" (error)="onImageSettled(src)" />
+    <div
+      class="sugg-more-list"
+      [@listStagger]="displayCards.length"
+      (scroll)="onMoreScroll($event)"
+    >
+      <div
+        class="sugg-card"
+        *ngFor="let c of displayCards; trackBy: trackCandidate"
+        (click)="openCandidateDetail(c, $event)"
+      >
+        <div
+          class="sugg-card-art-wrap"
+          [class.is-loading]="artOf(c.card) && !isImageLoaded(artOf(c.card))"
+        >
+          <img
+            class="sugg-card-art"
+            *ngIf="artOf(c.card) as src; else morePlaceholder"
+            [src]="src"
+            [alt]="c.card.name"
+            (load)="onImageSettled(src)"
+            (error)="onImageSettled(src)"
+          />
           <ng-template #morePlaceholder><div class="sugg-art-placeholder">◈</div></ng-template>
         </div>
 
         <div class="sugg-card-body">
           <div class="sugg-card-top">
             <span class="sugg-card-name">{{ c.card.name }}</span>
-            <app-mana-cost *ngIf="c.card.manaCost" [cost]="c.card.manaCost" class="sugg-mana"></app-mana-cost>
-            <span class="sugg-score" *ngIf="scoreFor(c) as score"
-                  [class.sugg-score--high]="score >= 80"
-                  [class.sugg-score--mid]="score >= 60 && score < 80"
-                  title="Synergy with this commander">{{ score }}%</span>
-            <span class="sugg-score sugg-score--pending" *ngIf="scoreFor(c) === null" title="Scoring…">
+            <app-mana-cost
+              *ngIf="c.card.manaCost"
+              [cost]="c.card.manaCost"
+              class="sugg-mana"
+            ></app-mana-cost>
+            <span
+              class="sugg-score"
+              *ngIf="scoreFor(c) as score"
+              [class.sugg-score--high]="score >= 80"
+              [class.sugg-score--mid]="score >= 60 && score < 80"
+              title="Synergy with this commander"
+              >{{ score }}%</span
+            >
+            <span
+              class="sugg-score sugg-score--pending"
+              *ngIf="scoreFor(c) === null"
+              title="Scoring…"
+            >
               <span class="dot-pulse"></span>
             </span>
           </div>
           <span class="sugg-card-type">
             {{ c.card.supertypes.join(' ') }} {{ c.card.cardTypes.join(' ') }}
-            <ng-container *ngIf="c.card.subtypes?.length"> — {{ c.card.subtypes.join(' ') }}</ng-container>
-            <span class="sugg-set-chip" *ngIf="c.setCode" [title]="c.setName || c.setCode">{{ c.setCode }}</span>
+            <ng-container *ngIf="c.card.subtypes?.length">
+              — {{ c.card.subtypes.join(' ') }}</ng-container
+            >
+            <span class="sugg-set-chip" *ngIf="c.setCode" [title]="c.setName || c.setCode">
+              <app-set-icon [setCode]="c.setCode" [setName]="c.setName"></app-set-icon>
+              {{ c.setCode }}
+            </span>
           </span>
           <span class="sugg-card-reason">{{ c.card.oracleText }}</span>
         </div>
 
-        <button class="sugg-add-btn" *ngIf="!isCandidateInDeck(c)"
-                [disabled]="!c.scryfallId" (click)="addCandidateFromRow(c, $event); $event.stopPropagation()"
-                [title]="c.scryfallId ? 'Add to deck' : 'No printing available'">
+        <button
+          class="sugg-add-btn"
+          *ngIf="!isCandidateInDeck(c)"
+          [disabled]="!c.scryfallId"
+          (click)="addCandidateFromRow(c, $event); $event.stopPropagation()"
+          [title]="c.scryfallId ? 'Add to deck' : 'No printing available'"
+        >
           <i class="bi bi-plus-lg"></i>
         </button>
-        <button class="sugg-add-btn sugg-add-btn--added" *ngIf="isCandidateInDeck(c)"
-                (click)="removeCandidate(c); $event.stopPropagation()" title="Remove from deck">
+        <button
+          class="sugg-add-btn sugg-add-btn--added"
+          *ngIf="isCandidateInDeck(c)"
+          (click)="removeCandidate(c); $event.stopPropagation()"
+          title="Remove from deck"
+        >
           <i class="bi bi-check-lg"></i>
         </button>
       </div>
@@ -233,7 +335,7 @@
       <!-- Skeleton rows on a first load: a bare spinner in an empty panel reads as
            "nothing here" rather than "still fetching". -->
       <div class="sugg-skeleton" *ngIf="moreLoading && moreCards.length === 0">
-        <div class="sugg-card sugg-card--skeleton" *ngFor="let _ of [1,2,3,4,5,6]">
+        <div class="sugg-card sugg-card--skeleton" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
           <div class="sugg-card-art-wrap is-loading"></div>
           <div class="sugg-card-body">
             <div class="sk-line sk-line--title"></div>
@@ -244,7 +346,8 @@
       </div>
 
       <div class="sugg-more-status" *ngIf="moreLoading && moreCards.length > 0">
-        <div class="spinner"></div><span>Loading…</span>
+        <div class="spinner"></div>
+        <span>Loading…</span>
       </div>
       <div class="sugg-more-status" *ngIf="!moreLoading && moreCards.length === 0">
         No cards match those filters.
@@ -265,23 +368,33 @@
 >
   <div extra class="sugg-modal-extra">
     <!-- Confirmation states shown while the modal plays its exit after Add/Remove. -->
-    <button class="sugg-modal-add-btn sugg-modal-add-btn--confirm"
-            *ngIf="modalCloseAction === 'added'" disabled>
+    <button
+      class="sugg-modal-add-btn sugg-modal-add-btn--confirm"
+      *ngIf="modalCloseAction === 'added'"
+      disabled
+    >
       <i class="bi bi-check-lg"></i> Added to Deck
     </button>
-    <button class="sugg-modal-add-btn sugg-modal-add-btn--confirm sugg-modal-add-btn--confirm-remove"
-            *ngIf="modalCloseAction === 'removed'" disabled>
+    <button
+      class="sugg-modal-add-btn sugg-modal-add-btn--confirm sugg-modal-add-btn--confirm-remove"
+      *ngIf="modalCloseAction === 'removed'"
+      disabled
+    >
       <i class="bi bi-check-lg"></i> Removed
     </button>
-    <button class="sugg-modal-add-btn"
-            *ngIf="!modalCloseAction && !isInDeck(selectedSuggestion!)"
-            [disabled]="!selectedSuggestion!.scryfallId"
-            (click)="addAndClose(selectedSuggestion!)">
+    <button
+      class="sugg-modal-add-btn"
+      *ngIf="!modalCloseAction && !isInDeck(selectedSuggestion!)"
+      [disabled]="!selectedSuggestion!.scryfallId"
+      (click)="addAndClose(selectedSuggestion!)"
+    >
       <i class="bi bi-plus-lg"></i> Add to Deck
     </button>
-    <button class="sugg-modal-add-btn sugg-modal-add-btn--remove"
-            *ngIf="!modalCloseAction && isInDeck(selectedSuggestion!)"
-            (click)="removeAndClose(selectedSuggestion!)">
+    <button
+      class="sugg-modal-add-btn sugg-modal-add-btn--remove"
+      *ngIf="!modalCloseAction && isInDeck(selectedSuggestion!)"
+      (click)="removeAndClose(selectedSuggestion!)"
+    >
       <i class="bi bi-dash-lg"></i> Remove from Deck
     </button>
   </div>

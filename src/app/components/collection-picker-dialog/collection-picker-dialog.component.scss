@@ -1,0 +1,290 @@
+// Prefixed class names + keyframes: emulated encapsulation does not scope keyframes,
+// so an unprefixed `fade-in` here would fight the ones in global.scss.
+:host {
+  display: contents;
+}
+
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 320;
+  animation: picker-fade-in 0.15s ease;
+}
+
+.picker-modal {
+  width: min(460px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 14px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  animation: picker-modal-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes picker-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes picker-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-dim);
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+}
+
+.picker-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface);
+  }
+}
+
+.picker-body {
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+}
+
+.picker-lead {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+
+  i {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 12px;
+
+    &::placeholder {
+      color: var(--text-dim);
+    }
+  }
+
+  &:focus-within {
+    border-color: var(--gold-dim);
+  }
+}
+
+.picker-more {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+  text-align: center;
+}
+
+.picker-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.picker-target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  &.is-selected {
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+}
+
+.picker-target-cover {
+  width: 44px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center 30%;
+
+  &.no-cover {
+    background: var(--bg-raised);
+  }
+}
+
+.picker-target-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.picker-target-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-target-count {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.picker-target-tick {
+  color: var(--gold);
+  font-size: 12px;
+}
+
+.picker-empty {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+}
+
+.picker-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  input {
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+}
+
+.picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.picker-cancel,
+.picker-confirm {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.picker-cancel {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+
+  &:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-lit);
+  }
+}
+
+.picker-confirm {
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: #1a1a12;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

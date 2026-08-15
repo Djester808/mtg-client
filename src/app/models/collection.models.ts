@@ -19,7 +19,60 @@ export interface CollectionCardDto {
   notes: string | null;
   board?: string;
   addedAt: string;
+  /** Market price when this entry was created; null for entries predating price tracking. */
+  priceUsdAtAdd?: number | null;
+  priceUsdFoilAtAdd?: number | null;
   cardDetails: CardDto | null;
+}
+
+/** Moves copies of one card row to another collection; omit quantities to move it whole. */
+export interface MoveCardRequest {
+  targetCollectionId: string;
+  quantity?: number | null;
+  quantityFoil?: number | null;
+}
+
+export interface MoveCardResultDto {
+  /** The destination row after the moved copies were folded in. */
+  target: CollectionCardDto;
+  /** What is left in the source, or null when the row moved whole. */
+  sourceRemainder: CollectionCardDto | null;
+}
+
+/** Moves several whole card rows at once. */
+export interface MoveCardsRequest {
+  targetCollectionId: string;
+  cardIds: string[];
+}
+
+export interface MoveCardsResultDto {
+  cardsMoved: number;
+  cardsFolded: number;
+  copiesTransferred: number;
+  /** Source rows that no longer exist, so the view can drop them. */
+  removedCardIds: string[];
+}
+
+export interface MergeCollectionsRequest {
+  sourceCollectionId: string;
+  deleteSource?: boolean;
+}
+
+export interface MergeCollectionsResultDto {
+  cardsMoved: number;
+  cardsFolded: number;
+  copiesTransferred: number;
+  sourceDeleted: boolean;
+  target: CollectionDetailDto;
+}
+
+/** One day's prices for a printing, from the price-history endpoint. */
+export interface PricePointDto {
+  date: string;
+  usd: number | null;
+  usdFoil: number | null;
+  eur: number | null;
+  tix: number | null;
 }
 
 export interface CollectionDetailDto {
@@ -59,6 +112,25 @@ export interface UpdateCollectionCardRequest {
   notes?: string | null;
 }
 
+/**
+ * Scryfall's daily market prices for one printing (USD TCGplayer, EUR Cardmarket,
+ * tix Cardhoarder). A null field means no listing for that finish, not zero.
+ */
+export interface CardPricesDto {
+  usd: number | null;
+  usdFoil: number | null;
+  usdEtched: number | null;
+  eur: number | null;
+  eurFoil: number | null;
+  tix: number | null;
+  /** TCGplayer product id → tcgplayer.com/product/{id}. */
+  tcgplayerId: number | null;
+  /** Cardmarket product id (no stable public URL; unused for links). */
+  cardmarketId: number | null;
+  /** MTGO catalog id → cardhoarder.com/cards/{id}. */
+  mtgoId: number | null;
+}
+
 export interface PrintingDto {
   scryfallId: string;
   setCode: string;
@@ -72,6 +144,8 @@ export interface PrintingDto {
   flavorText: string | null;
   artist: string | null;
   manaCost: string | null;
+  /** Optional so object literals predating prices (tests, factories) stay valid. */
+  prices?: CardPricesDto | null;
 }
 
 // SetSummaryDto lives in game.models.ts. A second, narrower copy here used to shadow

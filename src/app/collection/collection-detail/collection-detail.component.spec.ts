@@ -169,12 +169,12 @@ describe('CollectionDetailComponent — filteredCards', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('returns all cards when filterQuery is empty', () => {
-    component.filterQuery = '';
+    component.filters.query = '';
     expect(component.filteredCards(makeCollection(CARDS))).toHaveSize(3);
   });
 
   it('returns matching cards case-insensitively', () => {
-    component.filterQuery = 'lightning';
+    component.filters.query = 'lightning';
     const results = component.filteredCards(makeCollection(CARDS));
     expect(results).toHaveSize(2);
     expect(results.map((c) => c.id)).toContain('c1');
@@ -182,7 +182,7 @@ describe('CollectionDetailComponent — filteredCards', () => {
   });
 
   it('returns empty array when no cards match', () => {
-    component.filterQuery = 'goblin';
+    component.filters.query = 'goblin';
     expect(component.filteredCards(makeCollection(CARDS))).toHaveSize(0);
   });
 });
@@ -751,5 +751,141 @@ describe('CollectionDetailComponent — modalDecrementFoil', () => {
     component.modalDecrementFoil(col, card);
 
     expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  // ---- viewedEntry ----------------------------------------------
+
+  it('viewedEntry finds the row that pins the printing on screen', () => {
+    const pinned = makeCollectionCard({ id: 'a', scryfallId: 'scry-2', quantity: 3 });
+    const col = makeCollection([makeCollectionCard({ id: 'b', scryfallId: 'scry-1' }), pinned]);
+    component.modalViewScryfallId = 'scry-2';
+
+    expect(component.viewedEntry(col, pinned)?.id).toBe('a');
+  });
+
+  it('viewedEntry falls back to an unpinned row when no row pins the viewed printing', () => {
+    // The regression: an unpinned row means "owned, printing unspecified", but the modal
+    // always views a concrete printing, so matching on printing alone found nothing and
+    // a card the grid showed as owned opened with a count of zero.
+    const unpinned = makeCollectionCard({ id: 'u', scryfallId: null, quantity: 1 });
+    const col = makeCollection([unpinned]);
+    component.modalViewScryfallId = 'scry-newest';
+
+    const found = component.viewedEntry(col, unpinned);
+    expect(found?.id).toBe('u');
+    expect(found?.quantity).toBe(1);
+  });
+
+  it('viewedEntry prefers the pinned row over the unpinned one for the same card', () => {
+    const unpinned = makeCollectionCard({ id: 'u', scryfallId: null, quantity: 1 });
+    const pinned = makeCollectionCard({ id: 'p', scryfallId: 'scry-9', quantity: 4 });
+    const col = makeCollection([unpinned, pinned]);
+    component.modalViewScryfallId = 'scry-9';
+
+    expect(component.viewedEntry(col, pinned)?.id).toBe('p');
+  });
+
+  it('viewedEntry does not fall back to another row once any printing is pinned', () => {
+    // Switching the modal to a printing you do not own must resolve to no row, so the
+    // + button adds that printing. Falling through to the row you already had made it
+    // increment the wrong printing — "it adds the default instead of the one I picked".
+    const owned = makeCollectionCard({ id: 'p', scryfallId: 'scry-owned', quantity: 1 });
+    const col = makeCollection([owned]);
+    component.modalViewScryfallId = 'scry-other';
+
+    expect(component.viewedEntry(col, owned)).toBeNull();
+  });
+
+  // ---- grouping the same card across sets -------------------------
+
+  function groupedCollection(): CollectionDetailDto {
+    return makeCollection([
+      makeCollectionCard({ id: 'r1', scryfallId: 'scry-a', quantity: 1, cardDetails: null }),
+      makeCollectionCard({ id: 'r2', scryfallId: 'scry-b', quantity: 2, quantityFoil: 1 }),
+    ]);
+  }
+
+  it('groups copies of one card from different sets into a single tile', () => {
+    const col = groupedCollection();
+    expect(component.filteredCards(col).length).toBe(2);
+
+    component.toggleGroupSameCard();
+    const grouped = component.filteredCards(col);
+    expect(grouped.length).toBe(1);
+    expect(grouped[0].quantity).toBe(3);
+    expect(grouped[0].quantityFoil).toBe(1);
+  });
+
+  it('offers every owned printing in the grouped picker, not just the displayed one', () => {
+    const col = groupedCollection();
+    component.toggleGroupSameCard();
+    component.filteredCards(col); // builds the group members the picker reads
+
+    const opts = component.printingOptions(col.cards[0]);
+    expect(opts.length).toBe(2);
+    expect(opts.map((o) => o.value)).toEqual(['r1', 'r2']);
+    // Keyed by row, so a row that pins no printing still gets an entry.
+    expect(component.singlePrintingLabel(col.cards[0])).toBeNull();
+  });
+
+  it('includes a row that pins no printing among the grouped choices', () => {
+    const col = makeCollection([
+      makeCollectionCard({ id: 'r1', scryfallId: 'scry-a', quantity: 1 }),
+      makeCollectionCard({ id: 'r2', scryfallId: null, quantity: 1 }),
+    ]);
+    component.toggleGroupSameCard();
+    component.filteredCards(col);
+
+    expect(component.printingOptions(col.cards[0]).map((o) => o.value)).toEqual(['r1', 'r2']);
+  });
+
+  it('shows plain text instead of a picker when only one printing is owned', () => {
+    const col = makeCollection([makeCollectionCard({ id: 'r1', scryfallId: 'scry-a' })]);
+    component.toggleGroupSameCard();
+    component.filteredCards(col);
+
+    expect(component.singlePrintingLabel(col.cards[0])).not.toBeNull();
+  });
+
+  it('switching the grouped picker changes the shown printing without touching the data', () => {
+    const col = groupedCollection();
+    component.toggleGroupSameCard();
+    expect(component.filteredCards(col)[0].id).toBe('r1');
+
+    (store.dispatch as jasmine.Spy).calls.reset();
+    component.onSetChange(col.cards[0], 'r2');
+
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(component.filteredCards(col)[0].id).toBe('r2');
+    // Totals stay the group's, whichever member is on display.
+    expect(component.filteredCards(col)[0].quantity).toBe(3);
+  });
+
+  it('reports the group total to the modal badges', () => {
+    const col = groupedCollection();
+    component.toggleGroupSameCard();
+    component.filteredCards(col);
+
+    expect(component.modalCount(col, col.cards[0])).toBe(3);
+    expect(component.modalFoilCount(col, col.cards[0])).toBe(1);
+  });
+
+  it('viewedEntry returns null for a card that is not in the collection', () => {
+    const col = makeCollection([makeCollectionCard({ oracleId: 'other', scryfallId: null })]);
+    component.modalViewScryfallId = 'scry-1';
+
+    expect(component.viewedEntry(col, makeCollectionCard())).toBeNull();
+  });
+
+  it('viewedEntry re-resolves when the viewed printing changes', () => {
+    const a = makeCollectionCard({ id: 'a', scryfallId: 'scry-1' });
+    const b = makeCollectionCard({ id: 'b', scryfallId: 'scry-2' });
+    const col = makeCollection([a, b]);
+
+    component.modalViewScryfallId = 'scry-1';
+    expect(component.viewedEntry(col, a)?.id).toBe('a');
+    // Memoized on the printing, so switching must not serve the stale row.
+    component.modalViewScryfallId = 'scry-2';
+    expect(component.viewedEntry(col, a)?.id).toBe('b');
   });
 });
