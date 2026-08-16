@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   CandidatePoolDto,
   CardDto,
+  CardHistoryEntryDto,
   PricePointDto,
   RulingDto,
   SetSummaryDto,
@@ -99,6 +100,20 @@ export class GameApiService {
 
   getCardRulings(oracleId: string): Observable<RulingDto[]> {
     return this.http.get<RulingDto[]>(`${this.base}/cards/${oracleId}/rulings`);
+  }
+
+  /**
+   * What the signed-in user has done with this card — added, removed, moved between
+   * collections and decks — newest first. Scoped to the caller server-side, so this is
+   * their activity, not the card's.
+   *
+   * Empty for a card untouched since history recording shipped: nothing reconstructs
+   * changes made before that, so an empty list is correct rather than a failure.
+   */
+  getCardHistory(oracleId: string, limit = 100): Observable<CardHistoryEntryDto[]> {
+    return this.http.get<CardHistoryEntryDto[]>(`${this.base}/cards/${oracleId}/history`, {
+      params: { limit },
+    });
   }
 
   // Printings loading lives in PrintingsService — one cache, one endpoint owner.

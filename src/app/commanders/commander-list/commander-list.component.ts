@@ -6,6 +6,7 @@ import { CommandersApiService } from '../../services/commanders-api.service';
 import { CommanderSummary } from '../../models/commander.models';
 import { ManaCostPipe } from '../../pipes/mana-cost.pipe';
 import { SearchInputComponent } from '../../components/search-input/search-input.component';
+import { matchesColorSelection } from '../../utils/color-filter';
 
 @Component({
   selector: 'app-commander-list',
@@ -84,13 +85,12 @@ export class CommanderListComponent implements OnInit {
 
   get filteredCommanders(): CommanderSummary[] {
     // Name matching is done server-side now; only colour filtering stays local.
-    return this.commanders.filter((cmd) => {
-      if (this.selectedColors.size > 0) {
-        const hasAll = [...this.selectedColors].every((c) => cmd.colorIdentity.includes(c));
-        if (!hasAll) return false;
-      }
-      return true;
-    });
+    // The rule is shared — this screen used to require the identity to contain *all* the
+    // selected colours, so Red+White listed only Boros-or-wider commanders and never a
+    // mono-red one, disagreeing with every other pip row in the app.
+    return this.commanders.filter((cmd) =>
+      matchesColorSelection(cmd.colorIdentity, this.selectedColors),
+    );
   }
 
   get hasActiveFilters(): boolean {

@@ -68,9 +68,18 @@ export function formatUsd(value: number): string {
   return value >= 100 ? `$${Math.round(value)}` : `$${value.toFixed(2)}`;
 }
 
+/**
+ * Labels a price snapshot's day.
+ *
+ * Rendered in UTC on purpose. A snapshot is not an instant — it is "the price on this UTC
+ * day", stamped at UTC midnight. Formatting it in local time would move every point west
+ * of UTC onto the previous day's label, so a chart read one day behind the data it plots.
+ * Timestamps that really are instants (when a card was added, when a post went up) should
+ * be shown in local time; these should not.
+ */
 export function formatDay(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 /** A round step (1/2/5 × 10ⁿ) so the axis reads 0.50 / 1.00 / 1.50, never 0.37. */

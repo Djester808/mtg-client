@@ -32,7 +32,13 @@ import { CardGridFiltersComponent } from '../../components/card-grid-filters/car
 import { CardTileComponent } from '../../components/card-tile/card-tile.component';
 import { buildTypeLine } from '../../utils/card.utils';
 import { PrintingsService } from '../../services/printings.service';
-import { CardGridFilterService } from '../../services/card-grid-filter.service';
+import {
+  CARD_GROUP_OPTIONS,
+  CardGridFilterService,
+  CardGroupMode,
+  CardSection,
+} from '../../services/card-grid-filter.service';
+import { PreferencesApiService } from '../../services/preferences-api.service';
 import { CardFilters } from '../../models/card-filters';
 import {
   printingOption,
@@ -51,6 +57,19 @@ import {
   SelectMenuComponent,
   SelectMenuOption,
 } from '../../components/select-menu/select-menu.component';
+
+/**
+ * Rows with a thumbnail, or a grid of card tiles. The deck's third mode (free arrange)
+ * carries per-deck saved positions and has no collection equivalent.
+ */
+export type CollectionLayout = 'list' | 'visual';
+
+/**
+ * How much of each card a visual tile shows. Note this is tile *size*, not the deck's
+ * overlapping stacks — those exist so a column of cards can be drag-reordered, and the
+ * collection grid has no ordering to drag.
+ */
+export type CollectionDensity = 'full' | 'half' | 'name';
 
 @Component({
   selector: 'app-collection-detail',
@@ -97,6 +116,64 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   showDetailCoverPicker = false;
   showScanner = false;
   zoomLevel = 1.0;
+
+  // ---- Display: grouping, layout, density --------------------------
+  //
+  // The same three controls the deck grid carries, over the same CardGridFilterService.
+  // The collection rendered one flat unlabelled grid until now; a large collection is the
+  // case that most needs sections, so the options are shared rather than deck-only.
+
+  /**
+   * Which sections the grid is cut into. Defaults to none: the collection was a flat
+   * sorted grid before it had sections, and every other mode re-orders inside its own
+   * section, which would silently override the Sort chips.
+   */
+  groupMode: CardGroupMode = 'none';
+  readonly groupModeOptions = CARD_GROUP_OPTIONS;
+
+  /** Rows with a thumbnail, or full tiles. */
+  layout: CollectionLayout = 'visual';
+
+  /** Visual layout only: how much of each card the tile shows. */
+  density: CollectionDensity = 'half';
+
+  /** Either layout can render as plain text rows instead of art. */
+  textStyle = false;
+
+  setGroupMode(mode: CardGroupMode): void {
+    this.groupMode = mode;
+    this.persistDisplay();
+    this.cdr.markForCheck();
+  }
+
+  setLayout(mode: CollectionLayout): void {
+    this.layout = mode;
+    // Text style is a property of the rows, not of the page: carrying it across a layout
+    // switch leaves the user on a text list after asking for cards.
+    this.textStyle = false;
+    this.persistDisplay();
+    this.cdr.markForCheck();
+  }
+
+  setDensity(value: CollectionDensity): void {
+    this.density = value;
+    this.textStyle = false;
+    this.cdr.markForCheck();
+  }
+
+  setTextStyle(on: boolean): void {
+    this.textStyle = on;
+    this.cdr.markForCheck();
+  }
+
+  /** Sections for the grid, memoized by the service on (cards identity, mode). */
+  getGroups(collection: CollectionDetailDto): CardSection[] {
+    return this.filterRules.sections(this.filteredCards(collection), this.groupMode);
+  }
+
+  private persistDisplay(): void {
+    this.prefs.save({ collectionLayout: this.layout, collectionGroup: this.groupMode });
+  }
 
   zoomIn(): void {
     this.zoomLevel = Math.min(2.0, +(this.zoomLevel + 0.25).toFixed(2));
@@ -147,6 +224,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private host: ElementRef<HTMLElement>,
     private filterRules: CardGridFilterService,
+    private prefs: PreferencesApiService,
   ) {
     this.collection$ = this.store.select(selectActiveCollection);
     this.loading$ = this.store.select(selectCollectionLoading);
@@ -157,6 +235,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   trackByCollectionId = (_: number, col: CollectionDto): string => col.id;
   /** Stable tile identity so a moved card's tile leaves without re-rendering the rest. */
   trackByCardId = (_: number, card: CollectionCardDto): string => card.id;
+  /** Sections are re-cut on every filter change; the key keeps a surviving one in place. */
+  trackByGroupKey = (_: number, section: CardSection): string => section.key;
 
   openMove(entry: CollectionCardDto): void {
     this.moveCard = entry;
@@ -354,6 +434,19 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     // open from the start or the restored layout would show an empty main area.
     this.swapMode = localStorage.getItem('collection-swap-mode') === '1';
     if (this.swapMode) this.showSearchPanel = true;
+
+    // Layout and grouping follow the user across devices, the way the deck's do. The
+    // service falls back to localStorage when the request fails, so this still restores
+    // offline; take(1) because a preferences change elsewhere must not reset the grid the
+    // user is looking at.
+    this.prefs
+      .load()
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe((p) => {
+        this.layout = p.collectionLayout ?? 'visual';
+        if (p.collectionGroup) this.groupMode = p.collectionGroup as CardGroupMode;
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {

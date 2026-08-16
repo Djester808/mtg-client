@@ -28,6 +28,154 @@
   animation: fade-up 0.25s ease;
 }
 
+// ---- Sections (Group By) -----------------------------------
+//
+// Written here rather than reused from the deck: the deck's equivalents live inside
+// `app-deck-detail { … }` in global.scss along with its drag-stack behaviour, and lifting
+// a thousand lines out of that host to share a header was not worth the blast radius.
+
+.col-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-bottom: 20px;
+}
+
+.col-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  // A rule that runs to the end of the row, so a section reads as a band rather than a
+  // caption floating above cards.
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.5;
+  }
+}
+
+.col-group-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.col-group-count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// ---- Density -----------------------------------------------
+//
+// Tile size, not the deck's overlap. `--card-zoom` already scales the track, so density
+// multiplies it rather than setting a fixed width — the two controls compose instead of
+// fighting over the same number.
+.col-groups.density-half .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(calc(112px * var(--card-zoom, 1)), 1fr));
+  gap: 10px;
+}
+
+.col-groups.density-name .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(calc(78px * var(--card-zoom, 1)), 1fr));
+  gap: 7px;
+}
+
+// ---- List layout -------------------------------------------
+// One wide column of short tiles; the hover strip still carries the quantity controls.
+.col-groups.is-list .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(calc(300px * var(--card-zoom, 1)), 1fr));
+  gap: 8px;
+}
+
+// ---- Text rows ---------------------------------------------
+.col-text-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.col-text-row {
+  display: grid;
+  // Four tracks, because the checkbox is *ngIf'd away when select mode is off. A fifth
+  // "auto" track for it does not collapse — the track stays and every child shifts one
+  // column left, which put the name in the 34px quantity track (truncating it to "A…")
+  // and gave the 1fr to the mana cost.
+  grid-template-columns: 34px 1fr max-content 22px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 8px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-body);
+  // Zoom scales the rows, so the control keeps working after a layout switch rather than
+  // appearing to do nothing.
+  font-size: calc(13px * var(--card-zoom, 1));
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-raised);
+  }
+
+  // Select mode adds the checkbox, and with it a fifth track at the front.
+  &.is-selectable {
+    grid-template-columns: 15px 34px 1fr max-content 22px;
+  }
+
+  &.is-selected {
+    background: rgba(167, 139, 250, 0.14);
+    box-shadow: inset 2px 0 0 #a78bfa;
+  }
+}
+
+// The cost sits at the end of the name's run rather than hard against the set icon, which
+// is how a deck list reads: quantity, name, what it costs.
+.col-text-cost {
+  justify-self: end;
+  opacity: 0.9;
+}
+
+.col-text-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #a78bfa;
+
+  .is-selected & {
+    border-color: #a78bfa;
+  }
+}
+
+.col-text-qty {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.col-text-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-text-set {
+  display: inline-flex;
+  opacity: 0.75;
+}
+
 .no-filter-results {
   grid-column: 1 / -1;
   text-align: center;
@@ -418,12 +566,17 @@
 // not reach them anyway, since a child component's DOM carries its own encapsulation.
 
 .grid-filters {
-  display: block;
   // Full width of the grid area, controls still inset by its gutter: negative margins
   // widen the box, the matching padding puts them back. A bar only as wide as the content
   // box leaves a strip of gutter at each end that reads as a gap beside it.
   margin-inline: -32px;
   // Breathing room before the grid: the chip rows were butting straight into the cards.
-  padding: 10px 32px 6px;
-  margin-bottom: 22px;
+  // Padding rather than the margin this used to be, because the bar is sticky now and a
+  // margin sits outside its background — cards scroll up through the transparent strip it
+  // leaves. 28px is the 6px of padding plus the 22px margin it replaces, so the gap below
+  // the bar is unchanged.
+  padding: 10px 32px 28px;
+  // Nothing above it on this page, so it pins to the top of .grid-area. The deck sets its
+  // own offset for the board tabs above its bar.
+  --cgf-sticky-top: 0;
 }

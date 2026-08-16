@@ -85,6 +85,7 @@
           *ngIf="col.cards.length"
           [filters]="filters"
           [facets]="true"
+          [sortControls]="false"
           [setOptions]="setFilterOptions(col)"
           [suggestions]="filterSuggestions(col)"
           placeholder="Filter cards in collection…"
@@ -95,9 +96,57 @@
           (zoomIn)="zoomIn()"
           (zoomOut)="zoomOut()"
         >
+          <!-- Side by side, not stacked. The deck puts Layout under Group By because its
+               cluster genuinely outgrew the bar; this one measures clean at every width, and
+               inheriting the workaround only cost the collection a second toolbar row. -->
+          <ng-container cgfLeft>
+            <div class="cgf-group">
+              <span class="cgf-label">Group By</span>
+              <div class="sort-group">
+                <app-select-menu
+                  class="sort-select-menu"
+                  [options]="groupModeOptions"
+                  [value]="groupMode"
+                  (valueChange)="setGroupMode($any($event))"
+                ></app-select-menu>
+              </div>
+            </div>
+            <div class="cgf-group">
+              <span class="cgf-label">Layout</span>
+              <div class="sort-group view-toggle">
+                <button
+                  class="sort-btn"
+                  [class.is-active]="layout === 'list'"
+                  (click)="setLayout('list')"
+                  title="List view"
+                >
+                  <i class="bi bi-list"></i>
+                </button>
+                <button
+                  class="sort-btn"
+                  [class.is-active]="layout === 'visual'"
+                  (click)="setLayout('visual')"
+                  title="Visual view"
+                >
+                  <i class="bi bi-grid"></i>
+                </button>
+                <!-- Build mode lived under Display beside a dead "Grid view" button that
+                     had no handler at all; it belongs with the other view choices. -->
+                <button
+                  class="sort-btn"
+                  [class.is-active]="swapMode"
+                  (click)="toggleSwapMode()"
+                  title="Build mode — search fills the area, collection as a side list"
+                >
+                  <i class="bi bi-layout-sidebar-reverse"></i>
+                </button>
+              </div>
+            </div>
+          </ng-container>
+
           <ng-container cgfRight>
-            <div class="cbar-labeled-group">
-              <span class="cbar-label">Select</span>
+            <div class="cgf-group">
+              <span class="cgf-label">Select</span>
               <div class="zoom-group">
                 <button
                   class="zoom-btn disp-btn"
@@ -109,8 +158,8 @@
                 </button>
               </div>
             </div>
-            <div class="cbar-labeled-group">
-              <span class="cbar-label">Group</span>
+            <div class="cgf-group">
+              <span class="cgf-label">Group</span>
               <div class="zoom-group">
                 <button
                   class="zoom-btn disp-btn"
@@ -122,18 +171,60 @@
                 </button>
               </div>
             </div>
-            <div class="cbar-labeled-group">
-              <span class="cbar-label">Display</span>
-              <div class="zoom-group display-toggle">
-                <button class="zoom-btn disp-btn is-active" title="Grid view">
-                  <i class="bi bi-grid"></i>
+            <div class="cgf-group">
+              <span class="cgf-label">Display</span>
+              <!-- List rows are thumbnail-or-text; visual tiles also choose how much of
+                   the card to show. Same pair of pickers the deck carries. -->
+              <div class="zoom-group display-toggle" *ngIf="layout === 'list'">
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="!textStyle"
+                  (click)="setTextStyle(false)"
+                  title="Thumbnail"
+                >
+                  <i class="bi bi-image"></i>
                 </button>
                 <button
                   class="zoom-btn disp-btn"
-                  (click)="toggleSwapMode()"
-                  title="Build mode — search fills the area, collection as a side list"
+                  [class.is-active]="textStyle"
+                  (click)="setTextStyle(true)"
+                  title="Text list"
                 >
-                  <i class="bi bi-layout-sidebar-reverse"></i>
+                  <i class="bi bi-text-left"></i>
+                </button>
+              </div>
+              <div class="zoom-group display-toggle" *ngIf="layout === 'visual'">
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="!textStyle && density === 'full'"
+                  (click)="setDensity('full')"
+                  title="Full card"
+                >
+                  <i class="bi bi-square"></i>
+                </button>
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="!textStyle && density === 'half'"
+                  (click)="setDensity('half')"
+                  title="Half card"
+                >
+                  <i class="bi bi-layout-split"></i>
+                </button>
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="!textStyle && density === 'name'"
+                  (click)="setDensity('name')"
+                  title="Name only"
+                >
+                  <i class="bi bi-list-ul"></i>
+                </button>
+                <button
+                  class="zoom-btn disp-btn"
+                  [class.is-active]="textStyle"
+                  (click)="setTextStyle(true)"
+                  title="Text list"
+                >
+                  <i class="bi bi-text-left"></i>
                 </button>
               </div>
             </div>
@@ -155,16 +246,64 @@
         <button class="add-btn-primary" (click)="toggleSearchPanel()">+ Add Cards</button>
       </div>
 
-      <!-- Card grid -->
+      <!-- Card grid, cut into the sections Group By names. One header per section, then
+           the same tiles as before — the tile markup is untouched by grouping. -->
       <ng-container *ngIf="collection$ | async as col">
-        <div class="card-grid" *ngIf="col.cards.length > 0">
-          <div
-            class="card-wrap"
-            *ngFor="let card of filteredCards(col); trackBy: trackByCardId"
-            [attr.data-card-id]="card.id"
-            (mouseenter)="onCardHover(card)"
-            (mouseleave)="onCardLeave()"
+        <div
+          class="col-groups"
+          *ngIf="col.cards.length > 0"
+          [class.is-text]="textStyle"
+          [class.is-list]="!textStyle && layout === 'list'"
+          [class.density-half]="!textStyle && layout === 'visual' && density === 'half'"
+          [class.density-name]="!textStyle && layout === 'visual' && density === 'name'"
+        >
+          <section
+            class="col-group"
+            *ngFor="let group of getGroups(col); trackBy: trackByGroupKey"
           >
+            <!-- "No grouping" is one unlabelled section; a heading with no name would
+                 read as a section that failed to render. -->
+            <header class="col-group-header" *ngIf="group.label">
+              <span class="col-group-label">{{ group.label }}</span>
+              <span class="col-group-count">{{ group.totalCount }}</span>
+            </header>
+
+            <!-- Text rows: no art at all, for scanning a large collection by name. Select
+                 mode still has to work here — a control that silently stops applying when
+                 you change layout reads as broken, so the row itself is the checkbox. -->
+            <div class="col-text-rows" *ngIf="textStyle">
+              <button
+                class="col-text-row"
+                *ngFor="let card of group.cards; trackBy: trackByCardId"
+                [class.is-selectable]="selectMode"
+                [class.is-selected]="selectMode && isSelected(card)"
+                (click)="selectMode ? toggleSelected(card, $event) : openCard(card)"
+                (mouseenter)="onCardHover(card)"
+                (mouseleave)="onCardLeave()"
+              >
+                <span class="col-text-check" *ngIf="selectMode">
+                  <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
+                </span>
+                <span class="col-text-qty">{{ card.quantity + card.quantityFoil }}</span>
+                <span class="col-text-name">{{ card.cardDetails?.name }}</span>
+                <app-mana-cost
+                  class="col-text-cost"
+                  [cost]="card.cardDetails?.manaCost ?? ''"
+                ></app-mana-cost>
+                <span class="col-text-set">
+                  <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
+                </span>
+              </button>
+            </div>
+
+            <div class="card-grid" *ngIf="!textStyle">
+              <div
+                class="card-wrap"
+                *ngFor="let card of group.cards; trackBy: trackByCardId"
+                [attr.data-card-id]="card.id"
+                (mouseenter)="onCardHover(card)"
+                (mouseleave)="onCardLeave()"
+              >
             <!-- Selection checkbox, only while picking cards for a bulk move -->
             <button
               class="tile-select"
@@ -255,8 +394,10 @@
                   </div>
                 </div>
               </div>
-            </app-card-tile>
-          </div>
+              </app-card-tile>
+              </div>
+            </div>
+          </section>
 
           <!-- No filter results -->
           <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filters.query">

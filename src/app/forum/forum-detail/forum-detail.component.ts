@@ -31,6 +31,7 @@ import { PrintingsService } from '../../services/printings.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { describeHttpError } from '../../utils/http-error.utils';
+import { timeAgo as relativeTime } from '../../utils/time';
 
 interface CardGroup {
   label: string;
@@ -399,15 +400,9 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     return format.charAt(0).toUpperCase() + format.slice(1);
   }
 
+  /** Delegates to the shared helper; see `utils/time.ts`. */
   timeAgo(dateStr: string): string {
-    const secs = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (secs < 60) return 'just now';
-    const mins = Math.floor(secs / 60);
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    return relativeTime(dateStr);
   }
 
   submitComment(postId: string): void {

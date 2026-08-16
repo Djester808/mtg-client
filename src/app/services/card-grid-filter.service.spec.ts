@@ -66,10 +66,26 @@ describe('CardGridFilterService', () => {
     expect(svc.matches(card({}, { colorIdentity: ['U'] }), s)).toBeFalse();
   });
 
-  it('matches any selected color, not all of them', () => {
+  // Replaces an earlier test named "matches any selected color, not all of them", which
+  // pinned the behaviour this filter was reported for: picking Red listed every Boros,
+  // Grixis and five-colour card that merely contained red. The rule is now "within these
+  // colours" — see utils/color-filter.ts, which owns it for every screen.
+  it('matches only cards whose whole identity fits inside the selection', () => {
     const s = state({ colors: new Set(['R', 'G']) });
     expect(svc.matches(card({}, { colorIdentity: ['G'] }), s)).toBeTrue();
+    expect(svc.matches(card({}, { colorIdentity: ['R', 'G'] }), s)).toBeTrue();
+    // The regression: red *and something you did not ask for*.
+    expect(svc.matches(card({}, { colorIdentity: ['R', 'U'] }), s)).toBeFalse();
     expect(svc.matches(card({}, { colorIdentity: ['U'] }), s)).toBeFalse();
+  });
+
+  it('a single colour means mono-coloured, not "contains that colour"', () => {
+    const s = state({ colors: new Set(['R']) });
+    expect(svc.matches(card({}, { colorIdentity: ['R'] }), s)).toBeTrue();
+    expect(svc.matches(card({}, { colorIdentity: ['R', 'W'] }), s)).toBeFalse();
+    expect(svc.matches(card({}, { colorIdentity: ['W', 'U', 'B', 'R', 'G'] }), s)).toBeFalse();
+    // Colourless is its own pip, so it does not ride along with a colour selection.
+    expect(svc.matches(card({}, { colorIdentity: [] }), s)).toBeFalse();
   });
 
   it('matches any selected type', () => {
@@ -236,6 +252,12 @@ describe('CardGridFilterService', () => {
       card({ id: 'i' }, { cardTypes: [CardType.Instant] }),
     ];
     expect(labels(svc, cards, 'type')).toEqual(['Creatures', 'Instants', 'Lands', 'Other']);
+  });
+
+  it('pluralises a type ending in -y correctly', () => {
+    // Every other type pluralises with a bare 's', which is why "Sorcerys" survived.
+    const cards = [card({ id: 's' }, { cardTypes: [CardType.Sorcery] })];
+    expect(labels(svc, cards, 'type')).toEqual(['Sorceries']);
   });
 
   it('splits creatures, non-creatures and lands, and a land creature counts as a land', () => {

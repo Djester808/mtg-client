@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { CollectionCardDto, CardType, ManaColor } from '../models/game.models';
 import { CardFilterState } from '../models/card-filters';
 import { SelectMenuOption } from '../components/select-menu/select-menu.component';
+import { matchesColorSelection } from '../utils/color-filter';
 
 /**
- * How a grid cuts its cards into labelled sections. The collection grid does not offer
- * sections at all today; the deck grid offers all of these.
+ * How a grid cuts its cards into labelled sections. Both the deck grid and the collection
+ * grid offer all of these.
  */
 export type CardGroupMode =
+  | 'none'
   | 'cmc'
   | 'name'
   | 'type'
@@ -25,6 +27,37 @@ export interface CardSection {
   key: string;
   cards: CollectionCardDto[];
   totalCount: number;
+}
+
+/**
+ * The Group By picker's options, in the order they are offered. Lives here beside
+ * `sections()` because two grids now show this list, and a mode present in one menu but
+ * not the other is a mode the service can produce and a user cannot reach.
+ */
+export const CARD_GROUP_OPTIONS: SelectMenuOption[] = [
+  // Every other mode imposes its own order inside each section, which overrides whatever
+  // the Sort chips say. This one keeps the caller's order and draws no headings, so a grid
+  // can still be a plain sorted list — the collection's behaviour before it had sections.
+  { value: 'none', label: 'No grouping' },
+  { value: 'cmc', label: 'CMC' },
+  { value: 'type', label: 'Type' },
+  { value: 'creature-split', label: 'Creature / Non-Creature' },
+  { value: 'name', label: 'Name' },
+  { value: 'subtype', label: 'Subtype' },
+  { value: 'color', label: 'Color' },
+  { value: 'color-identity', label: 'Color Identity' },
+  { value: 'rarity', label: 'Rarity' },
+  { value: 'artist', label: 'Artist' },
+  { value: 'set', label: 'Set' },
+];
+
+/**
+ * Section heading for a card type. A bare `+ 's'` rendered "Sorcerys" — wrong on the deck
+ * for as long as grouping has existed, and now shown on the collection too.
+ */
+function pluralType(type: CardType): string {
+  const name = CardType[type];
+  return name.endsWith('y') ? `${name.slice(0, -1)}ies` : `${name}s`;
 }
 
 const COLOR_ORDER = ['White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor', 'Colorless'];
@@ -79,13 +112,8 @@ function matchesQuery(card: CollectionCardDto, query: string): boolean {
   );
 }
 
-function matchesColors(ci: readonly ManaColor[], colors: ReadonlySet<string>): boolean {
-  if (colors.size === 0) return true;
-  // Multicolor and colorless are cardinality questions, not membership ones.
-  if (colors.has('M')) return ci.length >= 2;
-  if (colors.has('C')) return ci.length === 0;
-  return ci.some((x) => colors.has(x.toUpperCase()));
-}
+// Colour matching lives in utils/color-filter.ts — the grid, the commander list, the forum
+// list and the server all answer this question, and they used to answer it differently.
 
 function matchesCmc(value: number, cmc: string | null): boolean {
   if (cmc === null) return true;
@@ -149,7 +177,7 @@ export class CardGridFilterService {
     return (
       matchesQuery(card, s.query) &&
       (!s.set || d?.setCode?.toLowerCase() === s.set) &&
-      matchesColors(d?.colorIdentity ?? [], s.colors) &&
+      matchesColorSelection(d?.colorIdentity ?? [], s.colors) &&
       (s.types.size === 0 || (d?.cardTypes ?? []).some((t) => s.types.has(t))) &&
       // A printing with no rarity recorded never matches a rarity filter — it is
       // unknown, not common.
@@ -292,6 +320,10 @@ export class CardGridFilterService {
 
   private computeSections(cards: CollectionCardDto[], mode: CardGroupMode): CardSection[] {
     switch (mode) {
+      case 'none':
+        // Untouched order — the caller has already sorted, and re-sorting here is what
+        // makes the Sort control look broken.
+        return [section('', 'none', cards)];
       case 'name':
         return [section('All Cards', 'all', [...cards].sort(byName))];
       case 'type':
@@ -349,7 +381,7 @@ export class CardGridFilterService {
       const inType = cards
         .filter((c) => c.cardDetails?.cardTypes?.includes(type))
         .sort(byCmcThenName);
-      if (inType.length) sections.push(section(CardType[type] + 's', `type-${type}`, inType));
+      if (inType.length) sections.push(section(pluralType(type), `type-${type}`, inType));
     }
     // A card with no type we order by (or none at all) still has to land somewhere.
     const typed = new Set(sections.flatMap((g) => g.cards.map((c) => c.id)));

@@ -122,6 +122,13 @@
         </button>
         <button
           class="modal-info-tab"
+          [class.is-active]="infoTab === 'history'"
+          (click)="infoTab = 'history'"
+        >
+          History
+        </button>
+        <button
+          class="modal-info-tab"
           *ngIf="infoTabLabel"
           [class.is-active]="infoTab === 'extra'"
           (click)="infoTab = 'extra'"
@@ -145,6 +152,15 @@
           No rulings for this card.
         </div>
       </div>
+
+      <!-- History tab: what this user has done with the card. Its own component so the
+           request fires only when the tab is opened; *ngIf, not a hidden div, for the
+           same reason. -->
+      <app-card-history-panel
+        *ngIf="infoTab === 'history'"
+        [oracleId]="card?.oracleId ?? null"
+        [reloadKey]="historyReloadKey"
+      ></app-card-history-panel>
 
       <!-- Prices tab: what this copy cost when it was added versus today, then prices,
            history chart and printing list (their own component). -->

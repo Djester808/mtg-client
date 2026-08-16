@@ -439,6 +439,40 @@ describe('CardModalComponent', () => {
     expect(component.infoTab).toBe('details');
   });
 
+  // ---- history reload key ------------------------------
+  // The History tab is open while the modal's own +/- controls are usable, so this key is
+  // the only thing that tells it a change happened.
+
+  it('historyReloadKey changes when the copy count changes', () => {
+    component.countBadge = 2;
+    component.foilCountBadge = 0;
+    const before = component.historyReloadKey;
+    component.countBadge = 3;
+    expect(component.historyReloadKey).not.toBe(before);
+  });
+
+  it('historyReloadKey changes when the foil count changes', () => {
+    component.countBadge = 2;
+    component.foilCountBadge = 0;
+    const before = component.historyReloadKey;
+    component.foilCountBadge = 1;
+    expect(component.historyReloadKey).not.toBe(before);
+  });
+
+  it('historyReloadKey changes when the pinned printing changes', () => {
+    component.ownedEntry = { scryfallId: 's1' } as never;
+    const before = component.historyReloadKey;
+    component.ownedEntry = { scryfallId: 's2' } as never;
+    expect(component.historyReloadKey).not.toBe(before);
+  });
+
+  it('historyReloadKey is stable while nothing about the card moves', () => {
+    component.countBadge = 2;
+    component.foilCountBadge = 1;
+    // Must be value-equal across reads, or the child would refetch every change detection.
+    expect(component.historyReloadKey).toBe(component.historyReloadKey);
+  });
+
   // ---- carousel ----------------------------------------
 
   it('carouselCanPrev is false when at start', () => {

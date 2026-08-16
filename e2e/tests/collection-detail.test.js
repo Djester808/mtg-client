@@ -290,6 +290,36 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
     expect(cls).not.toContain('is-open');
   });
 
+  // ── Colour pips ────────────────────────────────────────────────────────────────────
+  // Asserts the rule rather than a fixed card list, so it holds whatever is in the
+  // collection: picking one colour must leave only cards that are *that colour and
+  // nothing else*. It used to leave every card that merely contained the colour.
+
+  test('a single colour pip shows only mono-coloured cards of that colour', async () => {
+    const identities = async () =>
+      driver.executeScript(
+        `return Array.from(document.querySelectorAll('app-card-tile')).map(el => {
+           try { return (ng.getComponent(el).card.cardDetails.colorIdentity || []).slice().sort(); }
+           catch (e) { return null; }
+         }).filter(Boolean);`,
+      );
+
+    const before = await identities();
+    // Only meaningful if the collection actually holds a red card and something else.
+    if (!before.some((ci) => ci.includes('R')) || before.length < 2) return;
+
+    const redPip = await driver.findElement(By.css('[title="Red"]'));
+    await driver.executeScript('arguments[0].click()', redPip);
+    await driver.sleep(400);
+
+    const after = await identities();
+    expect(after.length).toBeGreaterThan(0);
+    for (const ci of after) expect(ci).toEqual(['R']);
+
+    await driver.executeScript('arguments[0].click()', redPip);
+    await driver.sleep(300);
+  });
+
   // ── Back navigation ────────────────────────────────────────────────────────────────
 
   test('back button returns to collection list', async () => {

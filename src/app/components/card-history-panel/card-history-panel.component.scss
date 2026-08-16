@@ -1,0 +1,106 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.history-loading,
+.history-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+
+  p {
+    margin: 0 0 4px;
+  }
+}
+
+.history-empty-hint {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.history-retry {
+  margin-top: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-hover, var(--bg-raised));
+  }
+}
+
+// Timeline, lineless like the prices panel: the icon column reads as the spine, so no
+// rules or boxes are needed between entries.
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 18px 1fr max-content;
+  align-items: baseline;
+  column-gap: 10px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: 4px;
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--bg-raised);
+  }
+}
+
+.history-icon {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  color: var(--text-dim);
+
+  // Same greens/reds the modal's price-delta row uses, so gain/loss reads consistently
+  // across the two tabs.
+  .tone-gain & {
+    color: #4ec27a;
+  }
+  .tone-loss & {
+    color: #e2565a;
+  }
+}
+
+.history-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.history-headline {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.history-detail {
+  font-size: 10px;
+  color: var(--text-dim);
+  // Long collection names must not push the timestamp off the row.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-when {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}

@@ -24,6 +24,7 @@ import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selec
 import { CollectionCardDto, PrintingDto, CardType, CardDto } from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import {
+  CARD_GROUP_OPTIONS,
   CardGridFilterService,
   CardGroupMode,
   CardSection,
@@ -118,18 +119,8 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   filterCardNames: string[] = [];
   sortMode: CardGroupMode = 'cmc';
 
-  readonly sortModeOptions: SelectMenuOption[] = [
-    { value: 'cmc', label: 'CMC' },
-    { value: 'type', label: 'Type' },
-    { value: 'creature-split', label: 'Creature / Non-Creature' },
-    { value: 'name', label: 'Name' },
-    { value: 'subtype', label: 'Subtype' },
-    { value: 'color', label: 'Color' },
-    { value: 'color-identity', label: 'Color Identity' },
-    { value: 'rarity', label: 'Rarity' },
-    { value: 'artist', label: 'Artist' },
-    { value: 'set', label: 'Set' },
-  ];
+  /** Shared with the collection grid — see CARD_GROUP_OPTIONS. */
+  readonly sortModeOptions = CARD_GROUP_OPTIONS;
 
   private suggMemo: { pool: string[]; query: string; value: string[] } | null = null;
 

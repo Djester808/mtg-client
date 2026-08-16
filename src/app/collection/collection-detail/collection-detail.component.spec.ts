@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { CollectionDetailComponent } from './collection-detail.component';
 import { GameApiService } from '../../services/game-api.service';
 import { PrintingsService } from '../../services/printings.service';
+import { PreferencesApiService } from '../../services/preferences-api.service';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import { CollectionDetailDto, CollectionCardDto } from '../../models/game.models';
 
@@ -54,6 +55,14 @@ async function setupTestBed() {
   printings.has.and.returnValue(false);
   printings.get.and.returnValue(of([]));
 
+  // Stubbed rather than given a real HttpClient: the grid's layout and grouping now
+  // restore from preferences on init, and a spec has no business issuing that request.
+  const preferencesApi = jasmine.createSpyObj<PreferencesApiService>('PreferencesApiService', [
+    'load',
+    'save',
+  ]);
+  preferencesApi.load.and.returnValue(of({}));
+
   await TestBed.configureTestingModule({
     imports: [CollectionDetailComponent, CommonModule, FormsModule],
     schemas: [NO_ERRORS_SCHEMA],
@@ -61,12 +70,13 @@ async function setupTestBed() {
       provideMockStore({ initialState: INITIAL_STATE }),
       { provide: GameApiService, useValue: gameApi },
       { provide: PrintingsService, useValue: printings },
+      { provide: PreferencesApiService, useValue: preferencesApi },
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'col-1' } } } },
     ],
   }).compileComponents();
 
-  return { printings };
+  return { printings, preferencesApi };
 }
 
 // ── Search panel toggle ──────────────────────────────────────────────────────
@@ -887,5 +897,104 @@ describe('CollectionDetailComponent — modalDecrementFoil', () => {
     // Memoized on the printing, so switching must not serve the stale row.
     component.modalViewScryfallId = 'scry-2';
     expect(component.viewedEntry(col, a)?.id).toBe('b');
+  });
+});
+
+// ── Display: grouping, layout, density ───────────────────────────────────────
+// The collection rendered one flat unlabelled grid until these were added; the grouping
+// itself is CardGridFilterService's and tested there, so these cover the wiring.
+
+describe('CollectionDetailComponent — display options', () => {
+  let component: CollectionDetailComponent;
+  let preferencesApi: jasmine.SpyObj<PreferencesApiService>;
+
+  beforeEach(async () => {
+    ({ preferencesApi } = await setupTestBed());
+    const fixture = TestBed.createComponent(CollectionDetailComponent);
+    component = fixture.componentInstance;
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('cuts the grid into sections for the chosen mode', () => {
+    const col = makeCollection([
+      makeCollectionCard({ id: 'a', scryfallId: 'scry-1' }),
+      makeCollectionCard({ id: 'b', scryfallId: 'scry-2' }),
+    ]);
+    const sections = component.getGroups(col);
+    expect(sections.length).toBeGreaterThan(0);
+    // Every card that survives the filter has to land in exactly one section, or the grid
+    // silently drops cards the flat loop used to show.
+    const total = sections.reduce((n, s) => n + s.cards.length, 0);
+    expect(total).toBe(component.filteredCards(col).length);
+  });
+
+  it('offers every group mode the service can produce', () => {
+    // A mode the service supports but the menu omits is a mode nobody can reach.
+    expect(component.groupModeOptions.map((o) => o.value)).toEqual([
+      'none',
+      'cmc',
+      'type',
+      'creature-split',
+      'name',
+      'subtype',
+      'color',
+      'color-identity',
+      'rarity',
+      'artist',
+      'set',
+    ]);
+  });
+
+  it('persists the group mode so it survives a reload', () => {
+    component.setGroupMode('rarity');
+    expect(component.groupMode).toBe('rarity');
+    expect(preferencesApi.save).toHaveBeenCalledWith(
+      jasmine.objectContaining({ collectionGroup: 'rarity' }),
+    );
+  });
+
+  it('persists the layout and drops text style when the layout changes', () => {
+    component.setTextStyle(true);
+    component.setLayout('list');
+
+    expect(component.layout).toBe('list');
+    // Otherwise asking for a different layout leaves the user looking at text rows.
+    expect(component.textStyle).toBeFalse();
+    expect(preferencesApi.save).toHaveBeenCalledWith(
+      jasmine.objectContaining({ collectionLayout: 'list' }),
+    );
+  });
+
+  it('choosing a density leaves text style', () => {
+    component.setTextStyle(true);
+    component.setDensity('name');
+    expect(component.density).toBe('name');
+    expect(component.textStyle).toBeFalse();
+  });
+
+  it('restores the saved layout and group mode on init', () => {
+    preferencesApi.load.and.returnValue(
+      of({ collectionLayout: 'list', collectionGroup: 'artist' }),
+    );
+    component.ngOnInit();
+    expect(component.layout).toBe('list');
+    expect(component.groupMode).toBe('artist');
+  });
+
+  it('falls back to the ungrouped visual grid when nothing is stored', () => {
+    preferencesApi.load.and.returnValue(of({}));
+    component.ngOnInit();
+    expect(component.layout).toBe('visual');
+    // Grouping is opt-in: every other mode re-orders inside its sections, which would
+    // override the Sort chips for anyone who never asked for sections.
+    expect(component.groupMode).toBe('none');
+  });
+
+  it('draws no section heading when grouping is off', () => {
+    const col = makeCollection([makeCollectionCard({ id: 'a' }), makeCollectionCard({ id: 'b' })]);
+    const sections = component.getGroups(col);
+    expect(sections.length).toBe(1);
+    expect(sections[0].label).toBe('');
   });
 });

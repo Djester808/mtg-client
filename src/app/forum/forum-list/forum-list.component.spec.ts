@@ -171,15 +171,20 @@ describe('ForumListComponent — filteredPosts color filter', () => {
     expect(component.filteredPosts(posts)).toHaveSize(2);
   });
 
-  it('keeps posts that include any selected color', async () => {
+  // Was "keeps posts that include any selected color", which pinned the behaviour this
+  // filter was reported for. Colour selection now means "within these colours" everywhere
+  // — see utils/color-filter.ts.
+  it('keeps only posts whose whole identity fits inside the selection', async () => {
     const { component } = await setup();
     const posts = [
       makePost({ id: 'p1', colorIdentity: ['R', 'G'] }),
       makePost({ id: 'p2', colorIdentity: ['U', 'B'] }),
+      makePost({ id: 'p3', colorIdentity: ['R'] }),
     ];
     component.toggleColor('R');
+    // p1 is Gruul: it contains red, but Gruul is not a red deck.
     expect(component.filteredPosts(posts)).toHaveSize(1);
-    expect(component.filteredPosts(posts)[0].id).toBe('p1');
+    expect(component.filteredPosts(posts)[0].id).toBe('p3');
   });
 
   it('matches posts with any of multiple selected colors (OR logic)', async () => {

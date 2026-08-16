@@ -16,7 +16,7 @@
   <!-- `display: contents` at full width, so everything inside is laid out by the bar's
        own grid; a dropping panel below the button once the bar is narrow. -->
   <div class="cgf-clusters" [class.is-open]="menuOpen">
-    <!-- Page-specific controls at the left: the deck's Group By / Layout pickers. -->
+    <!-- Page-specific controls at the left, then the bar's own columns. -->
     <div class="cgf-left">
       <ng-content select="[cgfLeft]"></ng-content>
 

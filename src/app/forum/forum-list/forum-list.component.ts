@@ -11,6 +11,8 @@ import { selectIsLoggedIn } from '../../store/auth/auth.selectors';
 import { ForumPostSummary } from '../../models/forum.models';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { SearchInputComponent } from '../../components/search-input/search-input.component';
+import { timeAgo as relativeTime } from '../../utils/time';
+import { matchesColorSelection } from '../../utils/color-filter';
 
 type SortOption = 'newest' | 'comments' | 'cards';
 
@@ -108,11 +110,10 @@ export class ForumListComponent implements OnInit {
       );
     }
 
-    if (this.selectedColors.size > 0) {
-      result = result.filter((p) =>
-        [...this.selectedColors].some((c) => p.colorIdentity.includes(c)),
-      );
-    }
+    // A deck's colours are its commander's identity, so the same "within these colours"
+    // rule the card grids use reads correctly here: Red+White finds the Boros decks and
+    // the mono-red ones, not every deck that happens to contain red.
+    result = result.filter((p) => matchesColorSelection(p.colorIdentity, this.selectedColors));
 
     if (this.selectedFormats.size > 0) {
       result = result.filter(
@@ -145,19 +146,8 @@ export class ForumListComponent implements OnInit {
     return format.charAt(0).toUpperCase() + format.slice(1);
   }
 
+  /** Delegates to the shared helper; see `utils/time.ts`. */
   timeAgo(dateStr: string): string {
-    const now = Date.now();
-    const then = new Date(dateStr).getTime();
-    const secs = Math.floor((now - then) / 1000);
-    if (secs < 60) return 'just now';
-    const mins = Math.floor(secs / 60);
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months}mo ago`;
-    return `${Math.floor(months / 12)}y ago`;
+    return relativeTime(dateStr);
   }
 }

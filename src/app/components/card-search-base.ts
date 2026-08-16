@@ -12,6 +12,7 @@ import {
 
 export type { RarityCode } from './filter-chips/filter-chip-sets';
 import type { RarityCode } from './filter-chips/filter-chip-sets';
+import { colorSelectionToken } from '../utils/color-filter';
 export type CmcOption = '0' | '1' | '2' | '3' | '4' | '5' | '6+';
 export type SortBy = 'name' | 'cmc';
 export type SortDir = 'asc' | 'desc';
@@ -257,12 +258,12 @@ export abstract class CardSearchBase {
     const parts: string[] = [];
     if (text.trim().length >= 2) parts.push(`(name:"${text.trim()}" or o:"${text.trim()}")`);
 
-    if (this.selectedColors.size > 0) {
-      const codes = [...this.selectedColors];
-      if (codes.includes('M')) parts.push('c:m');
-      else if (codes.includes('C')) parts.push('c:c');
-      else parts.push(`c:${codes.join('').toLowerCase()}`);
-    }
+    // One token carrying every lit pip, including C and M. The old form let M win over C
+    // win over the colours, so selecting "multicolour" plus red searched for *all*
+    // multicolour cards while leaving the red pip lit. The server parses the combination
+    // and applies the same "within these colours" rule the grids use.
+    const colorToken = colorSelectionToken(this.selectedColors);
+    if (colorToken) parts.push(colorToken);
 
     if (this.selectedTypes.size > 0) {
       const t = [...this.selectedTypes].map((x) => x.toLowerCase());

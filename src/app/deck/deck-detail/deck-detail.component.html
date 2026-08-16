@@ -508,9 +508,12 @@
       </div>
 
       <!-- Filter bar — app-card-grid-filters, shared with the collection grid. Group By,
-           Layout and the density pickers are this page's own and are projected in. -->
+           Layout and the density pickers are this page's own and are projected in.
+           cgf-stacked tells the bar this page projects a .cgf-stack (Layout under Group
+           By), so it spans its left column across both rows and keeps the facet chips
+           beside that second row instead of below it. -->
       <app-card-grid-filters
-        class="filter-bar"
+        class="filter-bar cgf-stacked"
         [filters]="filters"
         [suggestions]="filterSuggestions"
         [showQuery]="viewMode !== 'free'"
@@ -525,61 +528,68 @@
         (zoomIn)="zoomIn()"
         (zoomOut)="zoomOut()"
       >
-        <!-- Sort + view: always left, so free-mode users can switch views -->
+        <!-- Sort + view: always left, so free-mode users can switch views.
+             Side by side, not stacked. Stacking made the cluster taller than the bar's
+             first grid row, so the facet band below it painted over the Layout buttons and
+             swallowed every click on them — they could not be used at all. The width that
+             stacking was working around is handled by `ownControlsSide` instead, which
+             moves Set and Filters to the other cluster rather than folding this one. -->
         <ng-container cgfLeft *ngIf="deck$ | async as deck">
-          <div class="fbar-labeled-group">
-            <span class="fbar-label">Group By</span>
-            <div class="sort-group">
-              <app-select-menu
-                class="sort-select-menu"
-                [options]="sortModeOptions"
-                [value]="sortMode"
-                (valueChange)="setSortMode($any($event), deck)"
-              ></app-select-menu>
+          <ng-container>
+            <div class="cgf-group">
+              <span class="cgf-label">Group By</span>
+              <div class="sort-group">
+                <app-select-menu
+                  class="sort-select-menu"
+                  [options]="sortModeOptions"
+                  [value]="sortMode"
+                  (valueChange)="setSortMode($any($event), deck)"
+                ></app-select-menu>
+              </div>
             </div>
-          </div>
-          <div class="fbar-labeled-group">
-            <span class="fbar-label">Layout</span>
-            <div class="sort-group view-toggle">
-              <button
-                class="sort-btn"
-                [class.is-active]="viewMode === 'list'"
-                (click)="setViewMode('list', deck)"
-                title="List view"
-              >
-                <i class="bi bi-list"></i>
-              </button>
-              <button
-                class="sort-btn"
-                [class.is-active]="viewMode === 'visual'"
-                (click)="setViewMode('visual', deck)"
-                title="Visual view"
-              >
-                <i class="bi bi-grid"></i>
-              </button>
-              <button
-                class="sort-btn"
-                [class.is-active]="viewMode === 'free'"
-                (click)="setViewMode('free', deck)"
-                title="Free arrange"
-              >
-                <i class="bi bi-columns-gap"></i>
-              </button>
-              <button
-                class="sort-btn"
-                [class.is-active]="swapMode"
-                (click)="toggleSwapMode()"
-                title="Build mode — search fills the board, deck as a side list"
-              >
-                <i class="bi bi-layout-sidebar-reverse"></i>
-              </button>
+            <div class="cgf-group">
+              <span class="cgf-label">Layout</span>
+              <div class="sort-group view-toggle">
+                <button
+                  class="sort-btn"
+                  [class.is-active]="viewMode === 'list'"
+                  (click)="setViewMode('list', deck)"
+                  title="List view"
+                >
+                  <i class="bi bi-list"></i>
+                </button>
+                <button
+                  class="sort-btn"
+                  [class.is-active]="viewMode === 'visual'"
+                  (click)="setViewMode('visual', deck)"
+                  title="Visual view"
+                >
+                  <i class="bi bi-grid"></i>
+                </button>
+                <button
+                  class="sort-btn"
+                  [class.is-active]="viewMode === 'free'"
+                  (click)="setViewMode('free', deck)"
+                  title="Free arrange"
+                >
+                  <i class="bi bi-columns-gap"></i>
+                </button>
+                <button
+                  class="sort-btn"
+                  [class.is-active]="swapMode"
+                  (click)="toggleSwapMode()"
+                  title="Build mode — search fills the board, deck as a side list"
+                >
+                  <i class="bi bi-layout-sidebar-reverse"></i>
+                </button>
+              </div>
             </div>
-          </div>
+          </ng-container>
         </ng-container>
 
         <!-- Display controls: nothing to set in free mode, where cards are placed by hand -->
-        <div class="fbar-labeled-group" cgfRight *ngIf="viewMode !== 'free'">
-          <span class="fbar-label">Display</span>
+        <div class="cgf-group" cgfRight *ngIf="viewMode !== 'free'">
+          <span class="cgf-label">Display</span>
           <div class="fbar-display-controls">
             <!-- List density -->
             <div class="density-picker" *ngIf="viewMode === 'list'">

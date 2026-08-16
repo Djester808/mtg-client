@@ -1,0 +1,28 @@
+<div class="history-loading" *ngIf="loading">Loading history…</div>
+
+<div class="history-empty" *ngIf="!loading && failed">
+  <p>Couldn't load this card's history.</p>
+  <button class="history-retry" (click)="retry()">Try again</button>
+</div>
+
+<!-- Empty is the expected state for a card untouched since recording shipped, so it says
+     what would fill it rather than reading as an error. -->
+<div class="history-empty" *ngIf="!loading && !failed && !rows.length">
+  <p>No changes recorded for this card yet.</p>
+  <p class="history-empty-hint">
+    Adding, moving, or removing it from a collection or deck will show up here.
+  </p>
+</div>
+
+<ol class="history-list" *ngIf="!loading && !failed && rows.length">
+  <li class="history-row" *ngFor="let row of rows; trackBy: trackRow" [class]="'tone-' + row.tone">
+    <span class="history-icon" aria-hidden="true">{{ row.icon }}</span>
+    <span class="history-body">
+      <span class="history-headline">{{ row.headline }}</span>
+      <span class="history-detail">{{ row.detail }}</span>
+    </span>
+    <time class="history-when" [attr.datetime]="row.entry.createdAt" [title]="row.whenExact">
+      {{ row.when }}
+    </time>
+  </li>
+</ol>

@@ -709,92 +709,153 @@ body.is-dragging-card * {
 }
 
 // Filter bar
-.filter-bar {
-  // Sticky inside .grid-area, which is the scrolling element (confirmed by walking the
-  // DOM: .grid-area is overflow-y:auto, everything above it is overflow:hidden).
-  // Opaque, not translucent — a semi-transparent bar let card art read through it.
-  // Spacing below is padding, not margin: a margin sits outside the background and
-  // cards scroll up through the transparent strip it leaves.
-  position: sticky;
-  top: 0;
-  // Above the tiles' flip buttons (z 300), which otherwise punch through the bar as the
-  // cards scroll under it. Still below the select menu popup (z 400).
-  z-index: 350;
-  margin-bottom: 0;
-  padding: 24px 0 12px;
-  background: var(--bg-base, #0a0a0a);
-  display: flex;
-  align-items: center;
-  // Wraps instead of overflowing: as a single nowrap row the controls at the right end
-  // (zoom, display) were pushed past the edge and clipped on narrower windows.
-  flex-wrap: wrap;
-  row-gap: 8px;
-  gap: 12px;
-  align-items: flex-end;
-}
+//
+// The bar is app-card-grid-filters on both grids, and it brings its own layout, sticky
+// behaviour and background — see that component's sheet. There is deliberately no rule
+// for `.filter-bar` here: this one described the *collection's* bar (it pinned inside
+// .grid-area) and stayed behind when that page moved to `.grid-filters`, so it was left
+// styling the deck's bar by accident. Its `top: 0` also tied on specificity with the
+// component's own `top`, which is a coin-flip on stylesheet order for whether the deck's
+// offset under the board tabs survives. Place the bar from the page that owns it and set
+// --cgf-sticky-top; do not restore a global rule for the class.
 
-// Cover stays pinned left; the auto margins on it and the trailing spacer centre
-// everything between them.
-.filter-block {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  position: sticky;
-  top: 0;
-  z-index: 350;
-  background: var(--bg-base, #0a0a0a);
-  padding-top: 20px;
-}
+// `.filter-block`, `.filter-block-rows`, `.cbar-cover-group` and `.fbar-right` were the
+// scaffolding of the collection's hand-rolled bar — a sticky wrapper, a cover column and
+// a right-hand cluster. app-card-grid-filters owns that layout now and nothing rendered
+// them any more, so they are gone rather than left to look load-bearing.
 
-.filter-block-rows {
-  flex: 1;
-  min-width: 0;
-}
-
-.cbar-cover-group {
-  // Its own column at the left of the control row, with room so the Set control beside
-  // it is not jammed against the thumbnail.
-  margin-right: 22px;
-}
-
-// Zoom / select / group / display cluster at the right edge; with the cover's auto
-// margin this leaves the search centred between them.
-.fbar-right {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-left: auto;
-}
-
-// Labelled control columns, matching the deck page's filter bar.
-.cbar-labeled-group {
+// ---- Labelled control column, for the card-grid filter bar ----------
+//
+// One caption above one control. Defined here at the top level, not in
+// card-grid-filters' own sheet, because both that component *and* the two pages that
+// project controls into it render this — and a component's sheet cannot reach projected
+// nodes, which keep the projecting page's encapsulation. Same reason `.ct-flip` and
+// `.rarity-badge` live out here.
+//
+// It has to be one definition rather than three matching ones. There were three —
+// `.cgf-group` in the component at 10.5px/5px, `.cbar-labeled-group` here at 9.5px/5px,
+// `.fbar-labeled-group` under app-deck-detail at 9px/3px — and the shorter caption block
+// made the deck's Group By and Layout ride high above the Set and Zoom columns beside
+// them, because a cluster centres its items and those items were different heights.
+.cgf-group {
   display: flex;
   flex-direction: column;
   gap: 5px;
   // Centred, and children keep their natural width — a column stretches its children by
-  // default, so a wide label dragged its single button out to match it.
+  // default, so a wide caption drags a lone button out to match it.
   align-items: center;
 }
 
-// The search keeps the width it had before it gained a label; stacking it in a column
-// otherwise shrank it to its content.
-.cbar-group--filter {
-  flex: 0 0 420px;
-  max-width: 100%;
+// Two labelled columns stacked into one. A cluster is a single row of columns, so a page
+// with more controls than the bar has width puts one under another rather than pushing the
+// name box off-centre — the deck stacks Layout under Group By. It is one item to the
+// cluster, so it sits exactly where a single column would, and its first caption stays on
+// the bar's caption line.
+.cgf-stack {
+  display: flex;
+  flex-direction: column;
+  // Flush left, not centred: the two rows are read as one column, and centring rows of
+  // different widths against each other (a select over a four-button group) leaves both
+  // captions and both controls on their own indents. One left edge lines the stack up.
+  align-items: flex-start;
+  gap: 10px;
 
-  .filter-wrap {
-    width: 100%;
+  // Same reason one level down — a caption centred over its own control re-introduces the
+  // stagger the stack just removed.
+  .cgf-group {
+    align-items: flex-start;
   }
 }
 
-.cbar-label {
+.cgf-label {
   font-family: var(--font-display);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+// A pill of segmented controls, and the buttons in it. Both pages project one of these
+// into the bar — the deck for Group By and Layout, the collection for the same pair.
+//
+// These lived inside `app-deck-detail` while only the deck had them, so the collection's
+// copies rendered as bare browser buttons the moment it grew the same controls. They are
+// bar chrome, not deck chrome, so they belong out here beside `.cgf-stack` and `.cgf-label`.
+.sort-group {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.sort-btn {
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  transition: all 0.15s;
+
+  &:hover {
+    color: var(--gold);
+  }
+  &.is-active {
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+  }
+}
+
+// Icon buttons rather than words, so they need the room a glyph wants.
+.view-toggle .sort-btn {
+  font-size: 14px;
+  padding: 4px 9px;
+}
+
+// Sort is a two-chip pair plus a direction arrow and has to read as one line. `.chip-row`
+// wraps by design — right for the facet band underneath, wrong here: as soon as the
+// collection grew a Group By column and narrowed this one, CMC dropped under Name and the
+// arrow was left beside neither. Global rather than in the bar's stylesheet because
+// `.chip-row` belongs to app-filter-chips, behind its own view encapsulation.
+// Qualified by element to outrank it: emulated encapsulation rewrites the component's own
+// `.chip-row` as `.chip-row[_ngcontent-…]`, which ties a plain two-class selector and wins
+// on source order.
+.cgf-sort-chips app-filter-chips .chip-row {
+  flex-wrap: nowrap;
+}
+
+// Group-by picker (app-select-menu) — blends its button into the .sort-group pill.
+//
+// Qualified by element on purpose: app-select-menu sets `:host { min-width: 0 }`, which is
+// the same specificity as a bare class and is injected later, so it would win. This used to
+// be nested under `app-deck-detail`, and that extra selector was quietly what beat it.
+app-select-menu.sort-select-menu {
+  min-width: 96px;
+
+  .asm-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    &:hover:not(:disabled),
+    &.is-open {
+      color: var(--gold);
+      border: none;
+    }
+  }
 }
 
 @include zoom-control;
@@ -2083,59 +2144,6 @@ app-deck-detail {
     }
   }
 
-  .sort-group {
-    display: flex;
-    gap: 2px;
-    background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: 3px;
-  }
-
-  .sort-btn {
-    background: none;
-    border: none;
-    border-radius: 5px;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-family: var(--font-display);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 5px 10px;
-    transition: all 0.15s;
-
-    &:hover {
-      color: var(--gold);
-    }
-    &.is-active {
-      background: rgba(167, 139, 250, 0.15);
-      color: #a78bfa;
-    }
-  }
-
-  // Group-by picker (app-select-menu) — blends its button into the .sort-group pill.
-  .sort-select-menu {
-    min-width: 96px;
-
-    .asm-btn {
-      background: none;
-      border: none;
-      font-family: var(--font-display);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      &:hover:not(:disabled),
-      &.is-open {
-        color: var(--gold);
-        border: none;
-      }
-    }
-  }
-
   .header-count {
     @include header-count;
   }
@@ -2443,43 +2451,19 @@ app-deck-detail {
     }
   }
 
+  // This is app-card-grid-filters' host. The bar's own layout, and the sticky/opaque
+  // behaviour that goes with scrolling, belong to that component — all this does is place
+  // it on the board, which is the same contract the collection's .grid-filters has. It
+  // used to carry a flex row here as well, left over from when the controls were this
+  // page's own children; a single grid child made those inert and they are gone.
   .filter-bar {
-    // Sticky inside .groups-area, the scrolling element. Opaque — a translucent bar lets
-    // card art read through it — and the spacing below is padding so nothing scrolls up
-    // through a transparent margin.
-    position: sticky;
     // Measured height of the sticky .board-row above it, so the two stack rather than
-    // overlap.
-    top: 63px;
-    // Above the tiles' flip buttons (z 300), which otherwise punch through the bar as the
-    // cards scroll under it. Still below the select menu popup (z 400).
-    z-index: 350;
+    // overlap. The component pins the bar; this only says how far down.
+    --cgf-sticky-top: 63px;
     margin-bottom: 0;
     // Full board width, controls inset by the gutter — see .board-row above.
     margin-inline: -24px;
     padding: 10px 24px 12px;
-    background: var(--bg-base, #0a0a0a);
-    display: flex;
-    align-items: center;
-    // Wraps instead of overflowing: as a single nowrap row the controls at the right end
-    // (zoom, display) were pushed past the edge and clipped on narrower windows.
-    flex-wrap: wrap;
-    row-gap: 8px;
-    gap: 12px;
-  }
-
-  .filter-bar .zoom-group,
-  .filter-bar .display-toggle {
-    flex-shrink: 0;
-  }
-
-  .filter-bar-spacer {
-    flex: 1;
-  }
-
-  // The Add Cards button lives at the filter bar's right edge; it must never be squeezed.
-  .fbar-add-btn {
-    flex-shrink: 0;
   }
 
   // ---- Swap mode (Arena-style: search fills the board, deck as a side list) ----
@@ -2539,32 +2523,10 @@ app-deck-detail {
     }
   }
 
-  .fbar-labeled-group {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    // Label centred over its control, and children keep their natural width — a column
-    // stretches its children by default, so a wide label drags a lone button out with it.
-    align-items: center;
-
-    &.fbar-filter {
-      min-width: 380px;
-
-      .filter-wrap {
-        width: 100%;
-      }
-    }
-  }
-
-  .fbar-label {
-    font-family: var(--font-display);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    padding-left: 2px;
-  }
+  // The controls this page projects into the filter bar use the shared `.cgf-group` /
+  // `.cgf-label` at the top of this file — the same pair the bar's own columns use, so
+  // Group By and Layout line up with Set, Filter Cards and Zoom. This page's private
+  // copy at 9px/3px is what knocked them out of line; do not reintroduce one.
 
   .fbar-display-controls {
     display: flex;
@@ -3516,13 +3478,6 @@ app-deck-detail {
       border-color: var(--gold-dim);
       color: var(--gold);
     }
-  }
-
-  // ---- View toggle -----------------------------------------
-
-  .view-toggle .sort-btn {
-    font-size: 14px;
-    padding: 4px 9px;
   }
 
   // ---- Zoom controls ---------------------------------------

@@ -161,6 +161,49 @@ describe('Card Modal — Content, Carousel, Legalities, Flip, Resize', () => {
     }
   });
 
+  // ── History tab ───────────────────────────────────────────────────────────────
+
+  test('history tab is present in the tab bar', async () => {
+    const tabs = await driver.findElements(By.css('.modal-info-tab'));
+    const labels = await Promise.all(tabs.map((t) => t.getText()));
+    // The bar is text-transform: uppercase, so getText reports "HISTORY".
+    expect(labels.map((l) => l.trim().toLowerCase())).toContain('history');
+  });
+
+  test('clicking History mounts the panel and resolves to a real state', async () => {
+    const tabs = await driver.findElements(By.css('.modal-info-tab'));
+    const labels = await Promise.all(tabs.map((t) => t.getText()));
+    const idx = labels.findIndex((l) => l.trim().toLowerCase() === 'history');
+    await tabs[idx].click();
+    await driver.sleep(300);
+
+    const panels = await driver.findElements(By.css('app-card-history-panel'));
+    expect(panels.length).toBe(1);
+
+    // It must settle into rows or the empty state — never stay on the spinner and never
+    // land in the error state. A card nobody has touched legitimately has no history.
+    await driver.wait(async () => {
+      const loading = await driver.findElements(By.css('.history-loading'));
+      return loading.length === 0;
+    }, 15000, 'history never finished loading');
+
+    const failed = await driver.findElements(By.css('.history-retry'));
+    expect(failed.length).toBe(0);
+
+    const rows = await driver.findElements(By.css('.history-row'));
+    const empty = await driver.findElements(By.css('.history-empty'));
+    expect(rows.length + empty.length).toBeGreaterThan(0);
+  });
+
+  test('history tab unmounts its panel when another tab is selected', async () => {
+    const tabs = await driver.findElements(By.css('.modal-info-tab'));
+    const labels = await Promise.all(tabs.map((t) => t.getText()));
+    await tabs[labels.findIndex((l) => l.trim().toLowerCase() === 'details')].click();
+    await driver.sleep(250);
+    const panels = await driver.findElements(By.css('app-card-history-panel'));
+    expect(panels.length).toBe(0);
+  });
+
   // ── Double-faced card flip ─────────────────────────────────────────────────────
 
   test('DFC flip button is present for double-faced cards', async () => {

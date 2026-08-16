@@ -23,6 +23,21 @@
 :host {
   display: block;
   container-type: inline-size;
+
+  // The bar stays put while a long grid scrolls under it. Owned here rather than by each
+  // page: both pages want it and only the offset differs, and leaving it to the page is
+  // how the deck ended up sticky and the collection not. A page sets --cgf-sticky-top to
+  // the height of whatever sticky chrome sits above it (the deck's board tabs); the
+  // default 0 suits a bar with nothing above it.
+  position: sticky;
+  top: var(--cgf-sticky-top, 0);
+  // Above the tiles' flip buttons (z 300), which otherwise punch through the bar as the
+  // cards scroll under it. Still below the select menu popup (z 400).
+  z-index: 350;
+  // Opaque, not translucent — card art read through a semi-transparent bar. The page
+  // owns the padding that carries this background; spacing below the bar must be padding
+  // rather than margin, or cards scroll up through the transparent strip a margin leaves.
+  background: var(--bg-base, #0a0a0a);
 }
 
 // Narrow: one column holding the box, with the button floated over the left end. The
@@ -94,8 +109,34 @@
   border-radius: 10px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
 
+  // Grows out of the button rather than appearing on top of it. `display` has to take
+  // part in the transition — an element on its way to `display: none` is gone on the
+  // first frame otherwise, which is the whole of the pop — hence `allow-discrete`, and
+  // `@starting-style` for the frame the panel is opened *from*: without it the entry has
+  // no start value to move away from and only the exit would animate.
+  //
+  // The `transform` here makes this panel a containing block for `position: fixed`, so
+  // the Set picker inside it would strand wherever it was measured — except that
+  // select-menu lifts its popup to <body> on open, which takes it out of this subtree.
+  // That lift is load-bearing for this animation now; if it ever goes, this transform has
+  // to go with it. See select-menu.component.ts and components/CLAUDE.md.
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    display 0.16s allow-discrete;
+
   &.is-open {
     display: flex;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
   }
 
   // Inside the menu the clusters are rows of controls, centred like everything else,
@@ -105,6 +146,18 @@
     flex-wrap: wrap;
     justify-content: center;
     row-gap: 12px;
+  }
+}
+
+// The panel still has to appear and disappear — only the movement goes.
+@media (prefers-reduced-motion: reduce) {
+  .cgf-clusters {
+    transform: none;
+    transition: none;
+
+    &.is-open {
+      transform: none;
+    }
   }
 }
 
@@ -144,24 +197,12 @@
 
 // ---- Labelled control column ----------------------------------------
 //
-// Caption above the control, children at their natural width — a column stretches its
-// children by default, so a wide caption drags a lone button out with it.
-.cgf-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  align-items: center;
-}
-
-.cgf-label {
-  font-family: var(--font-display);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
+// `.cgf-group` and `.cgf-label` are deliberately NOT defined here — they live at the top
+// level of global.scss. The pages projecting controls into the bar render the same pair,
+// and projected nodes keep their own page's encapsulation, so a rule in this sheet could
+// only reach the bar's own columns. Two definitions is how they drifted to different
+// caption sizes and left the columns sitting at different heights. Variants that are
+// genuinely this component's, like `.cgf-group--filter` below, still belong here.
 
 // ---- The name box ---------------------------------------------------
 
@@ -238,28 +279,95 @@
 //
 // `display: contents` hands the menu's children straight to the bar's grid, so they are
 // laid out here without being rendered twice.
-// 1340px, and the number is derived rather than guessed. The two side columns are equal,
-// so the binding constraint is the *wider* cluster fitting in one of them:
+// 1180px. The two side columns are equal, so the binding constraint is the *wider*
+// cluster fitting in one of them:
 //
-//     width >= 2 x widest-cluster + box + gaps  =  2 x 420 + 460 + 28  =  1328
+//     width >= 2 x widest-cluster + box + gaps
 //
-// (420px is the deck's Group By + Layout.) Anything lower and wide mode engaged before
-// there was room: the cluster overflowed its column and sat on top of the box.
-@container (min-width: 1340px) {
+// A fixed 460px box put the floor at 1328, so wide mode needed ~1400px of window and a
+// full-screen laptop got the menu instead. The box is the only soft term — a cluster is
+// as wide as its controls — so it gives up width first (see .cgf-center below).
+//
+// ⚠️ KNOWN: the collection fits here; the deck does not. Measured by rendering the bar in
+// a Karma spec and reading getBoundingClientRect/scrollWidth at 1180–1500, the deck's left
+// cluster needs ~485px, not the 420px this derivation originally assumed, and it overflows
+// its column by ~59px from 1180 up to ~1420. That is NOT new to the 1180 breakpoint: at
+// the old 1340 the box was 460, giving columns of (1340-460-28)/2 = 426 against the same
+// 485, so the deck bar has overlapped between ~1340 and ~1420 all along — it just went
+// unnoticed above ~1420, where the columns are finally wide enough.
+//
+// The cause is that the deck is lopsided: four groups left (Group By, Layout, Set,
+// Filters) against two right (Display, Zoom), and a symmetric grid sizes both columns to
+// the wider side. Deferred deliberately, to be fixed while working in that area. The
+// options measured out as: size the side columns to content (`1fr`, drop `min-width: 0`)
+// so nothing overlaps but the box drifts off-centre; raise the threshold to ~1300, which
+// costs wide mode on a 1366px laptop; or add an input so Set and Filters render in the
+// right cluster on the deck, balancing both sides near ~340px. Re-measure, don't estimate.
+@container (min-width: 1180px) {
   .cgf-row {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    // `minmax(auto, ...)`, not `minmax(0, ...)`: a zero minimum lets a column be squeezed
+    // below its contents, and the contents then spill over the name box rather than the
+    // column growing. An auto minimum makes the column take the width its controls need.
+    // The equal 1fr maximum still centres the box whenever both sides fit inside it; only
+    // a side that genuinely cannot fit pushes the box off-centre, which is the better of
+    // the two failures.
+    grid-template-columns: minmax(auto, 1fr) auto minmax(auto, 1fr);
     grid-template-areas:
       'left center right'
       'facets facets facets';
     row-gap: 10px;
+    // Captions on one line. Every caption block is the same height, so aligning the columns
+    // at the top puts all of them on one line and every control immediately under it on a
+    // second — only the *bottoms* differ, by however much the controls differ in height.
+    // Centring staggered both lines, and bottom-aligning traded a ragged caption line for a
+    // straight control line, which reads worse: the captions are the row the eye follows.
+    // It also could not survive a stacked column (the deck puts Layout under Group By),
+    // where there is no single bottom edge to align to.
+    align-items: start;
+  }
+
+  // Back to one line each. The menu panel's `.cgf-clusters .cgf-left` rule above still
+  // matches here — `display: contents` takes away the box, not the DOM ancestry, so a
+  // descendant selector written for the panel keeps applying on the bar — and the wrap it
+  // sets leaked out. The deck's left cluster is the one that felt it: Group By, Layout,
+  // Set and Filters do not fit on one line, so Filters wrapped below them and the cluster
+  // became two rows, leaving its controls sitting a line above the box and the zoom. The
+  // collection's left cluster fits, which is why only one of the two pages looked wrong.
+  // Selectors are `.cgf-clusters .cgf-*` to match the panel rule's specificity exactly
+  // (0-2-0) and win on source order. Written as bare `.cgf-left` they are 0-1-0 and lose —
+  // `@container` adds no specificity of its own, so the panel's wrap survived and the
+  // cluster still broke onto two lines.
+  .cgf-clusters .cgf-left,
+  .cgf-clusters .cgf-right {
+    flex-wrap: nowrap;
+    row-gap: 0;
+    align-items: flex-start;
+    // Undoes the `min-width: 0` these carry for menu mode. That zero is what defeats the
+    // `minmax(auto, ...)` columns above: a grid item's own min-width overrides the
+    // automatic minimum, so the column was still free to shrink below its controls and
+    // let them spill over the name box. `auto` hands the decision back to the contents.
+    min-width: auto;
+  }
+
+  .cgf-clusters .cgf-left {
+    justify-content: flex-start;
+  }
+
+  .cgf-clusters .cgf-right {
+    justify-content: flex-end;
   }
 
   .cgf-menu-btn {
     display: none;
   }
 
+  // `display: contents` leaves no box, so the menu's own opacity and transform are
+  // ignored here — stated anyway, so a bar laid out inline can never inherit the closed
+  // menu's `opacity: 0` and vanish.
   .cgf-clusters {
     display: contents;
+    opacity: 1;
+    transform: none;
   }
 
   .cgf-left {
@@ -275,12 +383,46 @@
     width: 100%;
   }
 
+  // A page that stacks a column (the deck: Layout under Group By) makes the first row twice
+  // as tall, and the chips underneath were pushed down by the whole of that second row —
+  // leaving a band of empty bar to the right of Layout and the chips floating away from the
+  // controls they belong to. The left column spans both rows so the chips ride up beside
+  // the stack's second row.
+  //
+  // The chip row still spans all three columns, so it stays centred on the bar exactly as
+  // it is on the collection. Giving it only the right two columns also lifts it, but then
+  // it centres on *that* span and sits ~200px right of where the same row sits on the other
+  // page — lined up with nothing.
+  :host(.cgf-stacked) .cgf-row {
+    grid-template-areas:
+      'left center right'
+      'facets facets facets';
+  }
+
+  // Explicit lines rather than the `left` area, which now names row 1 only.
+  :host(.cgf-stacked) .cgf-left {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
   // A stated width, so the middle column does not resize with what is typed into it and
   // slide the two clusters about as it goes. No inset: the button it made room for is
   // not rendered at this width.
+  //
+  // It is stated in terms of the bar rather than as one number, because a single number
+  // has to be either 460 (and wide mode starts too late for a laptop) or ~320 (and every
+  // desktop gets a stunted box). 880 = 2 x 440 for the clusters + 28 of gaps + 12 slack,
+  // so whatever is left after the clusters have their width is the box's, up to the 460
+  // it wants. At the 1180 breakpoint that is 300px; by 1340 it is the full 460 again.
+  //
+  // 440 covers the collection, whose clusters measured within it at every width. It does
+  // NOT cover the deck's ~485px left cluster — see the KNOWN note on the container query
+  // above. Raising this constant to 1010 would reserve the deck's real width, but it
+  // leaves a 170px box at 1180, which is why the fix is to rebalance the deck's clusters
+  // rather than to keep buying room from the box.
   .cgf-center {
     width: auto;
-    min-width: 460px;
+    min-width: min(460px, calc(100cqi - 880px));
     padding: 0;
   }
 

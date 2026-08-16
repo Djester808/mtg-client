@@ -21,6 +21,7 @@ import {
   PrintingDto,
   RulingDto,
 } from '../../models/game.models';
+import { CardHistoryPanelComponent } from '../card-history-panel/card-history-panel.component';
 import { CardPricesPanelComponent } from '../card-prices-panel/card-prices-panel.component';
 import { SetIconComponent } from '../set-icon/set-icon.component';
 import { buildTypeLine } from '../../utils/card.utils';
@@ -47,6 +48,7 @@ export interface PriceDelta {
     CommonModule,
     ManaCostComponent,
     OracleSymbolsPipe,
+    CardHistoryPanelComponent,
     CardPricesPanelComponent,
     SetIconComponent,
   ],
@@ -95,7 +97,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() infoTabLabel: string | null = null;
 
   /** Which info tab is showing; snaps back to details when the card changes. */
-  infoTab: 'details' | 'rulings' | 'prices' | 'extra' = 'details';
+  infoTab: 'details' | 'rulings' | 'prices' | 'history' | 'extra' = 'details';
 
   @Input() isGameChanger = false;
   /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
@@ -317,22 +319,18 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
     return value;
   }
 
-  /** Sort key: cheapest available finish, nonfoil preferred; unpriced sorts last. */
-  private static effectiveUsd(p: PrintingDto): number {
-    return p.prices?.usd ?? p.prices?.usdFoil ?? p.prices?.usdEtched ?? Number.POSITIVE_INFINITY;
-  }
-
-  private pricedMemo: { printings: PrintingDto[]; value: PrintingDto[] } | null = null;
-
-  /** Printings that have any price data, cheapest first, for the Prices tab list. */
-  get pricedPrintings(): PrintingDto[] {
-    const m = this.pricedMemo;
-    if (m && m.printings === this.printings) return m.value;
-    const value = this.printings
-      .filter((p) => p.prices)
-      .sort((a, b) => CardModalComponent.effectiveUsd(a) - CardModalComponent.effectiveUsd(b));
-    this.pricedMemo = { printings: this.printings, value };
-    return value;
+  /**
+   * Changes whenever this card's stored copies or pinned printing do, so the History tab
+   * refetches after a change made from inside the modal. A plain string, not an object:
+   * Angular propagates it to the child only when the value actually differs, so a card
+   * sitting still costs nothing.
+   *
+   * The host store updates optimistically and then again when the server value
+   * reconciles, so this fires twice on a change — the second is what guarantees the tab
+   * ends up showing the event even if the write was slow.
+   */
+  get historyReloadKey(): string {
+    return `${this.countBadge ?? 0}:${this.foilCountBadge ?? 0}:${this.ownedEntry?.scryfallId ?? ''}`;
   }
 
   get hasBack(): boolean {

@@ -66,6 +66,47 @@ export interface MergeCollectionsResultDto {
   target: CollectionDetailDto;
 }
 
+/**
+ * What can happen to a card in a collection. Mirrors the API's
+ * `CollectionCardEventType`, which serializes as its name, not an ordinal.
+ */
+export type CardHistoryEventType =
+  | 'Added'
+  | 'QuantityChanged'
+  | 'PrintingChanged'
+  | 'Removed'
+  | 'MovedOut'
+  | 'MovedIn';
+
+/**
+ * One entry in the card modal's History tab.
+ *
+ * Every name here is the value recorded when the event happened, not resolved now — a
+ * collection can be renamed or deleted, and the history has to keep reading correctly
+ * either way. `setCode` is only populated for events where the server already had the
+ * card definition in hand (the add path), so treat null as "not recorded", not "unknown
+ * printing".
+ */
+export interface CardHistoryEntryDto {
+  id: string;
+  eventType: CardHistoryEventType;
+  collectionId: string;
+  collectionName: string;
+  isDeck: boolean;
+  board: string;
+  scryfallId: string | null;
+  setCode: string | null;
+  quantityDelta: number;
+  quantityFoilDelta: number;
+  quantityAfter: number;
+  quantityFoilAfter: number;
+  counterpartCollectionId: string | null;
+  /** The other collection in a transfer; null for everything else. */
+  counterpartCollectionName: string | null;
+  priceUsd: number | null;
+  createdAt: string;
+}
+
 /** One day's prices for a printing, from the price-history endpoint. */
 export interface PricePointDto {
   date: string;

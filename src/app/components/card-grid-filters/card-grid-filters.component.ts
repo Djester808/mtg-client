@@ -111,7 +111,7 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
    * the bar. Kept in step with the `@container` query in the stylesheet by hand — there
    * is no way to read a container query back from script.
    */
-  private static readonly WIDE_AT = 1340;
+  private static readonly WIDE_AT = 1180;
 
   private resize?: ResizeObserver;
 
