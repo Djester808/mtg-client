@@ -329,4 +329,63 @@ describe('CardGridFilterService', () => {
     svc.sections(cards, 'name');
     expect(cards.map((c) => c.id)).toEqual(['b', 'a']);
   });
+  // ---- facetsPresent -------------------------------------------------
+
+  describe('facetsPresent', () => {
+    it('reports a colour when any card identity includes it, not only mono cards', () => {
+      // 'Within these colours' means neither pip matches a Boros-only pool on its own.
+      // Testing that way would hide both and leave the R+W combination unreachable.
+      const f = svc.facetsPresent([card({}, { colorIdentity: [ManaColor.Red, ManaColor.White] })]);
+      expect(f.colors.has('R')).toBeTrue();
+      expect(f.colors.has('W')).toBeTrue();
+      expect(f.colors.has('U')).toBeFalse();
+    });
+
+    it('counts the pseudo-pips by cardinality', () => {
+      const mono = svc.facetsPresent([card({}, { colorIdentity: [ManaColor.Red] })]);
+      expect(mono.colors.has('M')).toBeFalse();
+      expect(mono.colors.has('C')).toBeFalse();
+
+      const gold = svc.facetsPresent([
+        card({}, { colorIdentity: [ManaColor.Red, ManaColor.White] }),
+      ]);
+      expect(gold.colors.has('M')).toBeTrue();
+
+      const artifact = svc.facetsPresent([card({}, { colorIdentity: [] })]);
+      expect(artifact.colors.has('C')).toBeTrue();
+    });
+
+    it('reports the types and rarities present', () => {
+      const f = svc.facetsPresent([
+        card({ id: 'a' }, { cardTypes: [CardType.Creature], rarity: 'rare' }),
+        card({ id: 'b' }, { cardTypes: [CardType.Land], rarity: 'common' }),
+      ]);
+      expect([...f.types].sort()).toEqual(
+        [String(CardType.Creature), String(CardType.Land)].sort(),
+      );
+      expect([...f.rarities].sort()).toEqual(['common', 'rare']);
+    });
+
+    it('buckets mana value the way the CMC filter does', () => {
+      const f = svc.facetsPresent([
+        card({ id: 'a' }, { manaValue: 0 }),
+        card({ id: 'b' }, { manaValue: 3 }),
+        card({ id: 'c' }, { manaValue: 9 }),
+      ]);
+      // matchesCmc folds everything from six upwards into one chip, so this must too.
+      expect([...f.cmc].sort()).toEqual(['0', '3', '6+']);
+    });
+
+    it('ignores cards with no details rather than inventing facets', () => {
+      const f = svc.facetsPresent([card({}, null as never)]);
+      expect(f.colors.size).toBe(0);
+      expect(f.types.size).toBe(0);
+    });
+
+    it('memoizes on the cards identity', () => {
+      const cards = [card({}, { colorIdentity: [ManaColor.Red] })];
+      expect(svc.facetsPresent(cards)).toBe(svc.facetsPresent(cards));
+      expect(svc.facetsPresent([...cards])).not.toBe(svc.facetsPresent(cards));
+    });
+  });
 });

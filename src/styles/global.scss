@@ -4503,7 +4503,9 @@ app-deck-detail {
     position: sticky;
     top: 0;
     z-index: 360;
-    background: var(--bg-base, #0a0a0a);
+    // Same phantom token the filter bar had: `--bg-base` is defined nowhere, so this
+    // always fell back to a shade off the page it sits on.
+    background: var(--bg-void, #0a0a0a);
     display: flex;
     align-items: flex-end;
     gap: 16px;

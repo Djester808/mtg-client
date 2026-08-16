@@ -32,12 +32,19 @@ import { PreferencesApiService } from '../../services/preferences-api.service';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { describeHttpError } from '../../utils/http-error.utils';
 import { timeAgo as relativeTime } from '../../utils/time';
-
-interface CardGroup {
-  label: string;
-  cards: CollectionCardDto[];
-  total: number;
-}
+import { CardGridFiltersComponent } from '../../components/card-grid-filters/card-grid-filters.component';
+import {
+  SelectMenuComponent,
+  SelectMenuOption,
+} from '../../components/select-menu/select-menu.component';
+import { CardFilters } from '../../models/card-filters';
+import {
+  AvailableFacets,
+  CARD_GROUP_OPTIONS,
+  CardGridFilterService,
+  CardGroupMode,
+  CardSection,
+} from '../../services/card-grid-filter.service';
 
 @Component({
   selector: 'app-forum-detail',
@@ -50,6 +57,8 @@ interface CardGroup {
     StatsChartComponent,
     CardModalComponent,
     OracleSymbolsPipe,
+    CardGridFiltersComponent,
+    SelectMenuComponent,
   ],
   templateUrl: './forum-detail.component.html',
   styleUrls: ['./forum-detail.component.scss'],
@@ -68,7 +77,8 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
   editDraft = '';
   activeTab: 'main' | 'side' | 'maybe' = 'main';
   viewMode: 'list' | 'visual' | 'text' = 'list';
-  sortMode: 'type' | 'cmc' | 'name' = 'type';
+  /** Widened from type/cmc/name to the full set now that grouping is the shared one. */
+  sortMode: CardGroupMode = 'type';
   zoomLevel = 1.0;
   selectedCard: CollectionCardDto | null = null;
   modalViewScryfallId: string | null = null;
@@ -81,11 +91,8 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     { value: 'text' as const, icon: 'bi-text-left', title: 'Text only' },
   ];
 
-  readonly sortOptions: { value: 'type' | 'cmc' | 'name'; label: string }[] = [
-    { value: 'type', label: 'Type' },
-    { value: 'cmc', label: 'CMC' },
-    { value: 'name', label: 'Name' },
-  ];
+  /** The same Group By list the other two grids offer. */
+  readonly sortOptions = CARD_GROUP_OPTIONS;
 
   private destroy$ = new Subject<void>();
 
@@ -97,6 +104,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     private deckApi: DeckApiService,
     private printings: PrintingsService,
     private prefs: PreferencesApiService,
+    private gridFilter: CardGridFilterService,
   ) {
     this.post$ = this.store.select(selectActiveForumPost);
     this.loading$ = this.store.select(selectForumPostLoading);
@@ -131,7 +139,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((p) => {
         if (p.forumLayout) this.viewMode = p.forumLayout;
-        if (p.forumSort) this.sortMode = p.forumSort;
+        if (p.forumSort) this.sortMode = p.forumSort as CardGroupMode;
         this.cdr.markForCheck();
       });
 
@@ -152,85 +160,73 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     return card.quantity + card.quantityFoil;
   }
 
-  getGroups(post: ForumPostDetail): CardGroup[] {
-    const cards = post.cards.filter((c) => (c.board ?? 'main') === this.activeTab);
+  // ---- The shared filter bar --------------------------------------
+  //
+  // This page used to hand-roll its own grouping — a private copy of the service's cmc /
+  // name / type cases, down to the same type order and the same quantity+foil totals — and
+  // offered no filtering at all. It now runs the same CardGridFilterService the collection
+  // and deck grids do, so a published deck can be searched and filtered like any other.
 
-    if (this.sortMode === 'cmc') {
-      const buckets = new Map<number, CollectionCardDto[]>();
-      for (const c of cards) {
-        const cmc = c.cardDetails?.manaValue ?? 0;
-        if (!buckets.has(cmc)) buckets.set(cmc, []);
-        buckets.get(cmc)!.push(c);
-      }
-      return [...buckets.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([cmc, group]) => {
-          const sorted = [...group].sort((a, b) =>
-            (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-          );
-          return {
-            label: `CMC ${cmc}`,
-            cards: sorted,
-            total: sorted.reduce((s, c) => s + this.cardCount(c), 0),
-          };
-        });
+  readonly filters = new CardFilters();
+
+  /** The board's cards, memoized so `sections()` downstream keeps its own memo. */
+  private boardMemo: {
+    cards: CollectionCardDto[];
+    board: string;
+    value: CollectionCardDto[];
+  } | null = null;
+
+  private boardCards(post: ForumPostDetail): CollectionCardDto[] {
+    const m = this.boardMemo;
+    if (m && m.cards === post.cards && m.board === this.activeTab) return m.value;
+    const value = post.cards.filter((c) => (c.board ?? 'main') === this.activeTab);
+    this.boardMemo = { cards: post.cards, board: this.activeTab, value };
+    return value;
+  }
+
+  private filteredMemo: {
+    cards: CollectionCardDto[];
+    key: string;
+    value: CollectionCardDto[];
+  } | null = null;
+
+  filteredCards(post: ForumPostDetail): CollectionCardDto[] {
+    const cards = this.boardCards(post);
+    const key = this.gridFilter.stateKey(this.filters.toState());
+    const m = this.filteredMemo;
+    if (m && m.cards === cards && m.key === key) return m.value;
+    const value = this.gridFilter.apply(cards, this.filters.toState());
+    this.filteredMemo = { cards, key, value };
+    return value;
+  }
+
+  getGroups(post: ForumPostDetail): CardSection[] {
+    return this.gridFilter.sections(this.filteredCards(post), this.sortMode);
+  }
+
+  /** Sets represented in this deck, for the bar's Set picker. */
+  setFilterOptions(post: ForumPostDetail): SelectMenuOption[] {
+    return this.gridFilter.setOptions(post.cards);
+  }
+
+  /** Whole deck, not the filtered board: a filter must not remove the chip that undoes it. */
+  availableFacets(post: ForumPostDetail): AvailableFacets {
+    return this.gridFilter.facetsPresent(post.cards);
+  }
+
+  filterSuggestions(post: ForumPostDetail): string[] {
+    const q = this.filters.query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const names = new Set<string>();
+    for (const c of post.cards) {
+      const n = c.cardDetails?.name;
+      if (n && n.toLowerCase().includes(q)) names.add(n);
     }
+    return [...names].sort().slice(0, 8);
+  }
 
-    if (this.sortMode === 'name') {
-      const sorted = [...cards].sort((a, b) =>
-        (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-      );
-      return [
-        {
-          label: 'All Cards',
-          cards: sorted,
-          total: sorted.reduce((s, c) => s + this.cardCount(c), 0),
-        },
-      ];
-    }
-
-    // Default: by type
-    const typeOrder: [string, CardType][] = [
-      ['Creatures', CardType.Creature],
-      ['Planeswalkers', CardType.Planeswalker],
-      ['Instants', CardType.Instant],
-      ['Sorceries', CardType.Sorcery],
-      ['Enchantments', CardType.Enchantment],
-      ['Artifacts', CardType.Artifact],
-      ['Lands', CardType.Land],
-    ];
-    const groups: CardGroup[] = [];
-    const used = new Set<string>();
-
-    for (const [label, type] of typeOrder) {
-      const group = cards.filter(
-        (c) => !used.has(c.id) && c.cardDetails?.cardTypes?.includes(type),
-      );
-      if (group.length) {
-        group.forEach((c) => used.add(c.id));
-        const sorted = [...group].sort(
-          (a, b) =>
-            (a.cardDetails?.manaValue ?? 0) - (b.cardDetails?.manaValue ?? 0) ||
-            (a.cardDetails?.name ?? '').localeCompare(b.cardDetails?.name ?? ''),
-        );
-        groups.push({
-          label,
-          cards: sorted,
-          total: sorted.reduce((s, c) => s + this.cardCount(c), 0),
-        });
-      }
-    }
-
-    const rest = cards.filter((c) => !used.has(c.id));
-    if (rest.length) {
-      groups.push({
-        label: 'Other',
-        cards: rest,
-        total: rest.reduce((s, c) => s + this.cardCount(c), 0),
-      });
-    }
-
-    return groups;
+  onFiltersChanged(): void {
+    this.cdr.markForCheck();
   }
 
   getCurveData(post: ForumPostDetail): ChartEntry[] {
@@ -277,7 +273,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  setSortMode(mode: 'type' | 'cmc' | 'name'): void {
+  setSortMode(mode: CardGroupMode): void {
     this.sortMode = mode;
     this.prefs.save({ forumLayout: this.viewMode, forumSort: mode });
     this.cdr.markForCheck();

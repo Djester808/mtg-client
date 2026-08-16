@@ -12,7 +12,8 @@ import { catchError, tap } from 'rxjs/operators';
 export interface UserPreferences {
   deckLayout?: 'list' | 'visual';
   forumLayout?: 'list' | 'visual' | 'text';
-  forumSort?: 'type' | 'cmc' | 'name';
+  /** A CardGroupMode — widened from type/cmc/name when the forum adopted the shared bar. */
+  forumSort?: string;
   collectionLayout?: 'list' | 'visual';
   /** A CardGroupMode. Kept loose here so the service does not depend on the grid module. */
   collectionGroup?: string;
@@ -68,7 +69,7 @@ export class PreferencesApiService {
     const fl = localStorage.getItem(LS_KEYS.forumLayout);
     if (fl === 'list' || fl === 'visual' || fl === 'text') prefs.forumLayout = fl;
     const fs = localStorage.getItem(LS_KEYS.forumSort);
-    if (fs === 'type' || fs === 'cmc' || fs === 'name') prefs.forumSort = fs;
+    if (fs && GROUP_MODES.includes(fs)) prefs.forumSort = fs;
     const cl = localStorage.getItem(LS_KEYS.collectionLayout);
     if (cl === 'list' || cl === 'visual') prefs.collectionLayout = cl;
     const cg = localStorage.getItem(LS_KEYS.collectionGroup);

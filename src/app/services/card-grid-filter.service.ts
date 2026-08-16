@@ -21,6 +21,18 @@ export type CardGroupMode =
   | 'set'
   | 'creature-split';
 
+/**
+ * The facet values a set of cards actually contains, by chip code. A bar given this offers
+ * only chips that would find something — a collection of red cards has no reason to show
+ * six colour pips, four rarities and every mana value.
+ */
+export interface AvailableFacets {
+  colors: ReadonlySet<string>;
+  types: ReadonlySet<string>;
+  rarities: ReadonlySet<string>;
+  cmc: ReadonlySet<string>;
+}
+
 /** A labelled run of cards in a grid — one heading and the cards under it. */
 export interface CardSection {
   label: string;
@@ -293,6 +305,53 @@ export class CardGridFilterService {
     ];
 
     this.setOptionsMemo = { cards, value };
+    return value;
+  }
+
+  private facetsMemo: { cards: CollectionCardDto[]; value: AvailableFacets } | null = null;
+
+  /**
+   * Which facet values these cards actually contain, so the bar can offer only the chips
+   * that would find something. Same idea as `setOptions` above, and memoized the same way.
+   *
+   * Two things this deliberately is not:
+   *
+   * A colour counts as present when *any* card's identity includes it, not when the pip
+   * alone would match. Colour filtering means "within these colours", so in a pool of only
+   * Boros cards neither R nor W matches on its own — testing that way would hide both pips
+   * and leave the R+W combination that does match unreachable.
+   *
+   * And the caller must pass the *unfiltered* pool. Deriving this from the filtered result
+   * would delete the chip you just used as soon as you used it, leaving no way to undo it.
+   */
+  facetsPresent(cards: CollectionCardDto[]): AvailableFacets {
+    const m = this.facetsMemo;
+    if (m && m.cards === cards) return m.value;
+
+    const colors = new Set<string>();
+    const types = new Set<string>();
+    const rarities = new Set<string>();
+    const cmc = new Set<string>();
+
+    for (const c of cards) {
+      const d = c.cardDetails;
+      if (!d) continue;
+
+      const identity = d.colorIdentity ?? [];
+      for (const colour of identity) colors.add(String(colour).toUpperCase());
+      // The two pseudo-pips are cardinality questions, so they are counted, not collected.
+      if (identity.length === 0) colors.add('C');
+      if (identity.length >= 2) colors.add('M');
+
+      for (const t of d.cardTypes ?? []) types.add(String(t));
+      if (d.rarity) rarities.add(d.rarity);
+      // Matches `matchesCmc`, which buckets everything from six upwards into "6+".
+      const mv = d.manaValue ?? 0;
+      cmc.add(mv >= 6 ? '6+' : String(mv));
+    }
+
+    const value: AvailableFacets = { colors, types, rarities, cmc };
+    this.facetsMemo = { cards, value };
     return value;
   }
 

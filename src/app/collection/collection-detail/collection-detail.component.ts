@@ -33,6 +33,7 @@ import { CardTileComponent } from '../../components/card-tile/card-tile.componen
 import { buildTypeLine } from '../../utils/card.utils';
 import { PrintingsService } from '../../services/printings.service';
 import {
+  AvailableFacets,
   CARD_GROUP_OPTIONS,
   CardGridFilterService,
   CardGroupMode,
@@ -794,6 +795,14 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   /** Sets represented in this collection — the deck grid asks the same question. */
   setFilterOptions(col: CollectionDetailDto): SelectMenuOption[] {
     return this.filterRules.setOptions(col.cards);
+  }
+
+  /**
+   * Which chips the bar should offer. Derived from the whole collection, not the filtered
+   * view — narrowing to red must not delete every other colour pip.
+   */
+  availableFacets(col: CollectionDetailDto): AvailableFacets {
+    return this.filterRules.facetsPresent(col.cards);
   }
 
   filteredCards(collection: CollectionDetailDto): CollectionCardDto[] {

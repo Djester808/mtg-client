@@ -84,8 +84,11 @@
 
     <!-- The facet chips: their own full-width band under the bar at full width, and part
          of the menu once it takes over. -->
-    <div class="cgf-facets" *ngIf="facets">
+    <!-- Each row is dropped when the page holds nothing it could offer, and the band with
+         it — a caption over an empty space reads as a control that failed to render. -->
+    <div class="cgf-facets" *ngIf="facets && hasAnyFacetChips">
       <app-filter-chips
+        *ngIf="typeChips.length"
         [chips]="typeChips"
         [active]="filters.types"
         (toggled)="onToggleType($event)"
@@ -93,16 +96,19 @@
 
       <div class="cgf-chips">
         <app-filter-chips
+          *ngIf="colorChips.length"
           [chips]="colorChips"
           [active]="filters.colors"
           (toggled)="onToggleColor($event)"
         ></app-filter-chips>
         <app-filter-chips
+          *ngIf="rarityChips.length"
           [chips]="rarityChips"
           [active]="filters.rarities"
           (toggled)="onToggleRarity($event)"
         ></app-filter-chips>
         <app-filter-chips
+          *ngIf="cmcChips.length"
           label="CMC"
           [narrow]="true"
           [chips]="cmcChips"

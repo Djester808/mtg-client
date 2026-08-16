@@ -24,6 +24,7 @@ import { selectActiveDeck, selectDeckLoading } from '../../store/deck/deck.selec
 import { CollectionCardDto, PrintingDto, CardType, CardDto } from '../../models/game.models';
 import { DeckDetailDto, DeckApiService } from '../../services/deck-api.service';
 import {
+  AvailableFacets,
   CARD_GROUP_OPTIONS,
   CardGridFilterService,
   CardGroupMode,
@@ -2100,6 +2101,14 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   /** Sets represented on this board, for the bar's Set picker. */
   setFilterOptions(deck: DeckDetailDto): SelectMenuOption[] {
     return this.gridFilter.setOptions(deck.cards);
+  }
+
+  /**
+   * Which chips the bar should offer. From the whole deck, not the filtered board — a
+   * filter must not remove the chip that would undo it.
+   */
+  availableFacets(deck: DeckDetailDto): AvailableFacets {
+    return this.gridFilter.facetsPresent(deck.cards);
   }
 
   boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {

@@ -205,7 +205,8 @@ describe('ForumDetailComponent — getGroups', () => {
     const post = makePost({ cards: [card] });
     const groups = component.getGroups(post);
     const instants = groups.find((g) => g.label === 'Instants')!;
-    expect(instants.total).toBe(4);
+    // `totalCount` since the page moved onto CardGridFilterService's CardSection.
+    expect(instants.totalCount).toBe(4);
   });
 });
 

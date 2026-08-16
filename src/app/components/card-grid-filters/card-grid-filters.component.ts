@@ -15,7 +15,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardFilters, SortBy } from '../../models/card-filters';
-import { FilterChipsComponent } from '../filter-chips/filter-chips.component';
+import { FilterChip, FilterChipsComponent } from '../filter-chips/filter-chips.component';
+import { AvailableFacets } from '../../services/card-grid-filter.service';
 import {
   COLOR_CHIPS,
   TYPE_CHIPS,
@@ -77,6 +78,16 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   /** The deck's free-arrange mode has no filterable grid, so it hides the box. */
   @Input() showQuery = true;
 
+  /**
+   * Which facet values the page's cards actually contain, from
+   * `CardGridFilterService.facetsPresent`. Chips outside this are dropped, so a mono-red
+   * collection does not offer five colours it has none of.
+   *
+   * Null leaves every chip on — a page that cannot say what it holds gets the full set
+   * rather than an empty bar.
+   */
+  @Input() available: AvailableFacets | null = null;
+
   @Input() zoomLabel = '';
   @Input() canZoomIn = true;
   @Input() canZoomOut = true;
@@ -88,10 +99,10 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   @Output() zoomIn = new EventEmitter<void>();
   @Output() zoomOut = new EventEmitter<void>();
 
-  readonly colorChips = COLOR_CHIPS;
-  readonly typeChips = TYPE_CHIPS;
-  readonly cmcChips = CMC_CHIPS;
-  readonly rarityChips = RARITY_CHIPS;
+  private readonly allColorChips = COLOR_CHIPS;
+  private readonly allTypeChips = TYPE_CHIPS;
+  private readonly allCmcChips = CMC_CHIPS;
+  private readonly allRarityChips = RARITY_CHIPS;
   readonly sortChips = SORT_CHIPS;
   readonly clearChips = CLEAR_CHIPS;
   /** Chips that act as buttons rather than toggles never read as active. */
@@ -162,6 +173,65 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
       this.menuOpen = false;
       this.cdr.markForCheck();
     }
+  }
+
+  // ---- Chip rows, narrowed to what the page actually holds ------------
+  //
+  // Memoized on the availability object plus the live selection: these bind in the
+  // template, so rebuilding the arrays every change-detection pass would hand
+  // app-filter-chips a new `chips` identity each time and re-render every row.
+
+  private chipMemo = new Map<string, { key: string; value: FilterChip[] }>();
+
+  /**
+   * Chips present in the cards, plus any the user has already switched on. Keeping an
+   * active chip is what stops a filter becoming impossible to undo: narrow a collection
+   * until nothing red is left and the red pip would otherwise vanish while still filtering.
+   */
+  private offered(
+    name: string,
+    chips: readonly FilterChip[],
+    present: ReadonlySet<string> | undefined,
+    active: ReadonlySet<string>,
+  ): FilterChip[] {
+    if (!present) return chips as FilterChip[];
+    const key = `${[...present].sort().join(',')}|${[...active].sort().join(',')}`;
+    const m = this.chipMemo.get(name);
+    if (m && m.key === key) return m.value;
+    const value = chips.filter((c) => present.has(c.code) || active.has(c.code));
+    this.chipMemo.set(name, { key, value });
+    return value;
+  }
+
+  get colorChips(): FilterChip[] {
+    return this.offered('color', this.allColorChips, this.available?.colors, this.filters.colors);
+  }
+
+  get typeChips(): FilterChip[] {
+    return this.offered('type', this.allTypeChips, this.available?.types, this.filters.types);
+  }
+
+  get rarityChips(): FilterChip[] {
+    return this.offered(
+      'rarity',
+      this.allRarityChips,
+      this.available?.rarities,
+      this.filters.rarities,
+    );
+  }
+
+  get cmcChips(): FilterChip[] {
+    return this.offered('cmc', this.allCmcChips, this.available?.cmc, this.activeCmc);
+  }
+
+  /** A row with nothing left to offer is a caption over an empty space. */
+  get hasAnyFacetChips(): boolean {
+    return (
+      this.colorChips.length > 0 ||
+      this.typeChips.length > 0 ||
+      this.rarityChips.length > 0 ||
+      this.cmcChips.length > 0
+    );
   }
 
   get sortDirChips() {

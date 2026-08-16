@@ -37,7 +37,12 @@
   // Opaque, not translucent — card art read through a semi-transparent bar. The page
   // owns the padding that carries this background; spacing below the bar must be padding
   // rather than margin, or cards scroll up through the transparent strip a margin leaves.
-  background: var(--bg-base, #0a0a0a);
+  // Opaque because the bar is sticky and cards scroll under it — art read through a
+  // translucent bar. It has to be the page's own background, though: this said
+  // `var(--bg-base, …)` and `--bg-base` is defined nowhere, so every page got the #0a0a0a
+  // fallback and the bar painted a band a shade off whatever it was sitting on.
+  // `--bg-void` is the token the shared `detail-shell` mixin actually uses.
+  background: var(--bg-void, #0a0a0a);
 }
 
 // Narrow: one column holding the box, with the button floated over the left end. The
@@ -146,6 +151,21 @@
     flex-wrap: wrap;
     justify-content: center;
     row-gap: 12px;
+  }
+}
+
+// The controls settling in when the bar crosses into wide mode.
+//
+// Opacity only, deliberately. A translate reads better in isolation, but `both` holds the
+// offset for the whole run, and the clusters carry the captions — so for 200ms they sat
+// above the centred box's caption and the bar's one-line caption row was broken. The
+// layout spec measures exactly that, and caught it. Nothing here may move.
+@keyframes cgf-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -368,6 +388,39 @@
     display: contents;
     opacity: 1;
     transform: none;
+  }
+
+  // ---- Crossing into wide mode ---------------------------------------
+  //
+  // The changeover is a discrete swap: the clusters stop being a dropdown panel and become
+  // `display: contents`, so three columns of controls appear in one frame where a single
+  // hamburger button was. Nothing about that is animatable directly — `display` has no
+  // in-between, and `display: contents` leaves no box to transition.
+  //
+  // What can be animated is the arrival. These declarations only exist while the query
+  // matches, so the animation runs at the moment the bar crosses the breakpoint and never
+  // again; the controls settle into place instead of snapping in. The columns are staggered
+  // outward from the centred box so the eye follows the widening rather than the pop.
+  .cgf-left,
+  .cgf-right,
+  .cgf-facets {
+    animation: cgf-arrive 0.2s ease both;
+  }
+
+  .cgf-facets {
+    // Last: the band is the tallest thing to appear, and leading with it is what reads as
+    // the bar jumping.
+    animation-delay: 0.04s;
+  }
+
+  // Declared here rather than beside the panel's own reduced-motion block, which sits
+  // above this query and would lose to it.
+  @media (prefers-reduced-motion: reduce) {
+    .cgf-left,
+    .cgf-right,
+    .cgf-facets {
+      animation: none;
+    }
   }
 
   .cgf-left {

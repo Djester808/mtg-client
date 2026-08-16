@@ -95,11 +95,12 @@
       </div>
     </header>
 
-    <div class="detail-body">
-      <!-- Left: card list -->
-      <section class="card-list-section">
-        <!-- Toolbar: board tabs + view toggle -->
-        <div class="list-toolbar">
+    <!-- Board tabs and the filter bar span the page rather than the card column. The bar
+         lays its controls out only once its own container passes 1180px, and inside the
+         768px column beside the sidebar it never could — every control stayed folded into
+         the hamburger no matter how wide the window was. -->
+    <div class="deck-toolbar">
+      <div class="list-toolbar">
           <div
             class="board-tabs"
             *ngIf="
@@ -136,62 +137,64 @@
           </div>
           <ng-template #boardTabsSpacer><div class="board-tabs-spacer"></div></ng-template>
 
-          <div class="toolbar-right">
-            <!-- Sort -->
-            <div class="sort-group" title="Sort cards within the list">
-              <button
-                class="sort-btn"
-                *ngFor="let s of sortOptions"
-                [class.is-active]="sortMode === s.value"
-                [title]="'Sort by ' + s.label"
-                (click)="setSortMode(s.value)"
-              >
-                {{ s.label }}
-              </button>
-            </div>
-
-            <!-- Zoom -->
-            <div class="zoom-group">
-              <button
-                class="zoom-btn"
-                (click)="zoomOut()"
-                [disabled]="zoomLevel <= 0.5"
-                title="Zoom out (−)"
-              >
-                −
-              </button>
-              <span class="zoom-label" title="Current zoom level">{{ zoomLabel }}</span>
-              <button
-                class="zoom-btn"
-                (click)="zoomIn()"
-                [disabled]="zoomLevel >= 2.0"
-                title="Zoom in (+)"
-              >
-                +
-              </button>
-            </div>
-
-            <!-- View toggle -->
-            <div class="view-toggle">
-              <button
-                class="view-btn"
-                *ngFor="let v of viewOptions"
-                [class.is-active]="viewMode === v.value"
-                [title]="v.title"
-                (click)="setViewMode(v.value)"
-              >
-                <i class="bi" [ngClass]="v.icon"></i>
-              </button>
-            </div>
-          </div>
         </div>
 
+        <!-- The same bar the collection and deck grids use. Sort and the view toggle move
+             into it as Group By and Layout; zoom and the search box are the bar's own. -->
+        <app-card-grid-filters
+          [filters]="filters"
+          [facets]="true"
+          [sortControls]="false"
+          [setOptions]="setFilterOptions(post)"
+          [available]="availableFacets(post)"
+          [suggestions]="filterSuggestions(post)"
+          placeholder="Filter cards in this deck…"
+          [zoomLabel]="zoomLabel"
+          [canZoomIn]="zoomLevel < 2.0"
+          [canZoomOut]="zoomLevel > 0.5"
+          (filtersChange)="onFiltersChanged()"
+          (zoomIn)="zoomIn()"
+          (zoomOut)="zoomOut()"
+        >
+          <ng-container cgfLeft>
+            <div class="cgf-group">
+              <span class="cgf-label">Group By</span>
+              <div class="sort-group">
+                <app-select-menu
+                  class="sort-select-menu"
+                  [options]="sortOptions"
+                  [value]="sortMode"
+                  (valueChange)="setSortMode($any($event))"
+                ></app-select-menu>
+              </div>
+            </div>
+            <div class="cgf-group">
+              <span class="cgf-label">Layout</span>
+              <div class="sort-group view-toggle">
+                <button
+                  class="sort-btn"
+                  *ngFor="let v of viewOptions"
+                  [class.is-active]="viewMode === v.value"
+                  [title]="v.title"
+                  (click)="setViewMode(v.value)"
+                >
+                  <i class="bi" [ngClass]="v.icon"></i>
+                </button>
+              </div>
+            </div>
+          </ng-container>
+        </app-card-grid-filters>
+    </div>
+
+    <div class="detail-body">
+      <!-- Left: card list -->
+      <section class="card-list-section">
         <!-- ── List view ── -->
         <div class="card-groups" *ngIf="viewMode === 'list'" [style.--zoom]="zoomLevel">
           <div class="card-group" *ngFor="let group of getGroups(post)">
             <div class="group-header">
               <span class="group-label">{{ group.label }}</span>
-              <span class="group-count">{{ group.total }}</span>
+              <span class="group-count">{{ group.totalCount }}</span>
             </div>
             <div class="card-row" *ngFor="let card of group.cards" (click)="openCard(card)">
               <span class="card-qty">{{ cardCount(card) }}</span>
@@ -211,7 +214,7 @@
           <div class="visual-group" *ngFor="let group of getGroups(post)">
             <div class="group-header">
               <span class="group-label">{{ group.label }}</span>
-              <span class="group-count">{{ group.total }}</span>
+              <span class="group-count">{{ group.totalCount }}</span>
             </div>
             <div class="visual-grid" [style.--zoom]="zoomLevel">
               <div
@@ -240,7 +243,7 @@
         <!-- ── Text view ── -->
         <div class="text-groups" *ngIf="viewMode === 'text'" [style.--zoom]="zoomLevel">
           <div class="text-group" *ngFor="let group of getGroups(post)">
-            <div class="text-group-label">{{ group.label }} ({{ group.total }})</div>
+            <div class="text-group-label">{{ group.label }} ({{ group.totalCount }})</div>
             <div class="text-row" *ngFor="let card of group.cards" (click)="openCard(card)">
               <span class="text-qty">{{ cardCount(card) }}×</span>
               <span class="text-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
