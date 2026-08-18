@@ -1,0 +1,87 @@
+@use 'breakpoints' as *;
+
+// One definition of what a filter bar looks like on a phone.
+//
+// There are several filter bars in this app and they are genuinely different components:
+// app-card-grid-filters is a shared, faceted, container-queried bar used by the deck and
+// collection grids; the forum has its own hand-rolled `ff-` block; home and the commander
+// list have theirs. That is fine as *code* — they carry different controls — but it had
+// stopped being fine as *design*: each one had grown its own narrow-screen behaviour, so
+// the same "search plus filters" idea looked and worked three different ways depending on
+// which page you were on. One bar centred its labels, another left-aligned them; one put
+// the search beside the toggle, another stacked them; chips wrapped ragged in one and
+// stretched in the next.
+//
+// These mixins are the shared answer. A bar keeps its own controls and its own trigger
+// logic and includes the treatment, so the abstractions stay separate but the result on
+// screen is identical.
+
+// The row that is always visible: a toggle and a search field, side by side, same height.
+// Never stacked — two full-width rows for one control pair is the single biggest waste of
+// vertical space on a 375px screen, and it reads as two unrelated things.
+@mixin filter-top-row($gap: 8px) {
+  display: flex;
+  align-items: stretch;
+  gap: $gap;
+  width: 100%;
+  min-width: 0;
+}
+
+/// The collapse trigger: a small capsule centred on its own row under the search field,
+/// with a chevron pointing at what the next tap does. The deck's filter block introduced it
+/// and it stuck, so it is the app's collapse affordance and the forum bar wears the same
+/// one.
+@mixin filter-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  i {
+    font-size: 10px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+/// The "something is filtering this list" dot — a dot and not a count, because a number
+/// here competes with the result count the page already shows. Each bar applies it to
+/// whichever element carries its collapsed state: the two nest the pill differently, and
+/// that is the one thing worth leaving to the host.
+@mixin filter-active-dot {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+// The search field beside it, matched in height so the pair reads as one unit.
+@mixin filter-search-field {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+
+  input,
+  .si-input,
+  .si-wrap {
+    min-height: $tap-min;
+  }
+}

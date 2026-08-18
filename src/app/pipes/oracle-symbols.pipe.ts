@@ -1,45 +1,27 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { symbolToClass } from '../utils/mana.utils';
-
-// Longest phrases first so multi-word keywords match before their components.
-const KEYWORDS = [
-  'Double Strike',
-  'First Strike',
-  'Deathtouch',
-  'Indestructible',
-  'Lifelink',
-  'Vigilance',
-  'Hexproof',
-  'Trample',
-  'Menace',
-  'Protection',
-  'Shroud',
-  'Flying',
-  'Reach',
-  'Haste',
-  'Flash',
-  'Ward',
-];
-
-const _kwPattern = KEYWORDS.map((k) => k.replace(/\s+/g, '\\s+')).join('|');
-// Alternation: match either a complete HTML tag (pass through) or a keyword (linkify).
-const KW_LINK_RE = new RegExp(`(<[^>]+>)|((?<!=)\\b(?:${_kwPattern})\\b)`, 'gi');
+import { KeywordLinkService } from '../services/keyword-link.service';
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function linkKeywords(html: string): string {
-  return html.replace(KW_LINK_RE, (_, tag, kw) => {
-    if (tag) return tag;
-    return `<a href="/kb?kw=${encodeURIComponent(kw)}" target="_blank" rel="noopener" class="kw-link">${kw}</a>`;
-  });
-}
-
+/**
+ * Renders a card's oracle text: mana and loyalty symbols as glyphs, keywords as links to
+ * the knowledge base.
+ *
+ * The keyword list is not here. It was — sixteen names in a const array, copied from a
+ * `KeywordAbility` enum — so a card reading "Cascade", "Landfall" or "Cumulative Upkeep"
+ * linked nothing. {@link KeywordLinkService} holds the terms the server derives from the
+ * Comprehensive Rules, which is all of them and stays current on its own.
+ */
 @Pipe({ name: 'oracleSymbols', standalone: true, pure: true })
 export class OracleSymbolsPipe implements PipeTransform {
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(
+    private sanitizer: DomSanitizer,
+    private keywords: KeywordLinkService,
+  ) {}
 
   transform(text: string | null | undefined): SafeHtml {
     if (!text) return '';
@@ -60,6 +42,6 @@ export class OracleSymbolsPipe implements PipeTransform {
       return `${prefix}<i class="ms ${cls}"></i>:`;
     });
 
-    return this.sanitizer.bypassSecurityTrustHtml(linkKeywords(withLoyalty));
+    return this.sanitizer.bypassSecurityTrustHtml(this.keywords.linkify(withLoyalty));
   }
 }

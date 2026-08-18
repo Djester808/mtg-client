@@ -1,0 +1,38 @@
+<div class="kws-backdrop" *ngIf="open" (click)="close()"></div>
+
+<aside
+  class="kws-panel"
+  *ngIf="open"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="keyword ? keyword.name : 'Keyword'"
+>
+  <header class="kws-header">
+    <div class="kws-heading">
+      <span class="kws-eyebrow" *ngIf="keyword">{{ keyword.category }}</span>
+      <h2 class="kws-title">{{ keyword?.name || loadingName }}</h2>
+    </div>
+    <button type="button" class="kws-close" (click)="close()" aria-label="Close">
+      <i class="bi bi-x"></i>
+    </button>
+  </header>
+
+  <div class="kws-body">
+    <p class="kws-note" *ngIf="loadingName">Loading…</p>
+    <p class="kws-note" *ngIf="failed">That keyword could not be loaded.</p>
+
+    <ng-container *ngIf="keyword as kw">
+      <p class="kws-definition">{{ kw.definition }}</p>
+
+      <app-rule-block *ngFor="let rule of kw.rules; trackBy: trackByNumber" [rule]="rule" />
+    </ng-container>
+  </div>
+
+  <footer class="kws-footer" *ngIf="keyword as kw">
+    <!-- For anyone who wants the surrounding rules. Routed, not a new tab: this app is
+         headed for a packaged build, where there is no tab to open. -->
+    <a class="kws-more" routerLink="/kb" [queryParams]="{ kw: kw.name }" (click)="close()">
+      Open in the knowledge base →
+    </a>
+  </footer>
+</aside>

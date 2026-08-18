@@ -1,3 +1,5 @@
+@use '../../../styles/breakpoints' as *;
+
 :host {
   display: block;
   height: 100%;
@@ -56,6 +58,21 @@
 // ---- Header ----------------------------------------------
 
 .list-header {
+  // Back button + icon + title on the left, action cluster on the right — together they
+  // need ~520px. Below that the actions ran past the edge of a shell that clips instead
+  // of scrolling, so the page's primary button (New Deck / New Collection) was
+  // unreachable. Wrapping puts them on their own line rather than off the screen.
+  @include upto($bp-phone) {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+
+    .header-actions,
+    .create-btn {
+      flex-wrap: wrap;
+    }
+  }
+
   position: relative;
   z-index: 1;
   display: flex;

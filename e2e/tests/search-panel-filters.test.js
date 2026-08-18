@@ -45,27 +45,27 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('panel has color pip filter buttons (W U B R G C M)', async () => {
-    const pips = await driver.findElements(By.css('.panel-filters .color-pip'));
+    const pips = await driver.findElements(By.css('.panel-filters [data-chips="colors"] .color-chip'));
     expect(pips.length).toBe(7);
   });
 
   test('panel has type filter pills', async () => {
-    const pills = await driver.findElements(By.css('.panel-filters .filter-pill'));
+    const pills = await driver.findElements(By.css('.panel-filters [data-chips="types"] .text-chip'));
     expect(pills.length).toBeGreaterThan(0);
   });
 
   test('panel has rarity badge filter buttons', async () => {
-    const badges = await driver.findElements(By.css('.panel-filters .rarity-badge'));
+    const badges = await driver.findElements(By.css('.panel-filters [data-chips="rarities"] .rarity-badge'));
     expect(badges.length).toBeGreaterThan(0);
   });
 
   test('panel has CMC filter buttons', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .cmc-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="cmc"] .text-chip'));
     expect(btns.length).toBeGreaterThan(0);
   });
 
   test('panel has sort buttons (Name and CMC)', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .sort-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="sort"] .text-chip'));
     const texts = await Promise.all(btns.map(b => b.getText()));
     const lower = texts.map(t => t.toLowerCase());
     expect(lower.some(t => t.includes('name'))).toBe(true);
@@ -73,7 +73,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('panel has sort direction button', async () => {
-    const btn = await page.isPresent(By.css('.panel-filters .sort-dir-btn'), 2000);
+    const btn = await page.isPresent(By.css('.panel-filters [data-chips="sort-dir"] .text-chip'), 2000);
     expect(btn).toBe(true);
   });
 
@@ -99,7 +99,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   // ── Color filter ───────────────────────────────────────────────────────────────
 
   test('clicking a color pip activates it (is-active class)', async () => {
-    const pips = await driver.findElements(By.css('.panel-filters .color-pip'));
+    const pips = await driver.findElements(By.css('.panel-filters [data-chips="colors"] .color-chip'));
     await driver.executeScript('arguments[0].click()', pips[0]);
     await driver.sleep(500);
     const cls = await pips[0].getAttribute('class');
@@ -109,7 +109,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   test('color filter reduces visible results', async () => {
     const rowsFiltered = await driver.findElements(page.resultRow);
     // Deactivate filter
-    const pips = await driver.findElements(By.css('.panel-filters .color-pip'));
+    const pips = await driver.findElements(By.css('.panel-filters [data-chips="colors"] .color-chip'));
     await driver.executeScript('arguments[0].click()', pips[0]);
     await driver.sleep(500);
     const rowsAll = await driver.findElements(page.resultRow);
@@ -117,7 +117,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('multiple color pips can be active simultaneously', async () => {
-    const pips = await driver.findElements(By.css('.panel-filters .color-pip'));
+    const pips = await driver.findElements(By.css('.panel-filters [data-chips="colors"] .color-chip'));
     if (pips.length >= 2) {
       await driver.executeScript('arguments[0].click()', pips[0]);
       await driver.sleep(300);
@@ -137,7 +137,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   // ── Rarity filter ──────────────────────────────────────────────────────────────
 
   test('clicking a rarity badge activates it', async () => {
-    const badges = await driver.findElements(By.css('.panel-filters .rarity-badge'));
+    const badges = await driver.findElements(By.css('.panel-filters [data-chips="rarities"] .rarity-badge'));
     await driver.executeScript('arguments[0].click()', badges[0]);
     await driver.sleep(400);
     const cls = await badges[0].getAttribute('class');
@@ -148,7 +148,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
     const filtered = await driver.findElements(page.resultRow);
     expect(filtered.length).toBeGreaterThanOrEqual(0);
     // Reset
-    const badges = await driver.findElements(By.css('.panel-filters .rarity-badge'));
+    const badges = await driver.findElements(By.css('.panel-filters [data-chips="rarities"] .rarity-badge'));
     await driver.executeScript('arguments[0].click()', badges[0]);
     await driver.sleep(400);
   });
@@ -156,7 +156,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   // ── Type filter ────────────────────────────────────────────────────────────────
 
   test('clicking a type pill activates it', async () => {
-    const pills = await driver.findElements(By.css('.panel-filters .filter-pill'));
+    const pills = await driver.findElements(By.css('.panel-filters [data-chips="types"] .text-chip'));
     if (pills.length === 0) return;
     await driver.executeScript('arguments[0].click()', pills[0]);
     await driver.sleep(400);
@@ -170,7 +170,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   // ── CMC filter ─────────────────────────────────────────────────────────────────
 
   test('clicking CMC 1 button activates it and filters results', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .cmc-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="cmc"] .text-chip'));
     if (btns.length === 0) return;
     await driver.executeScript('arguments[0].click()', btns[0]);
     await driver.sleep(500);
@@ -182,7 +182,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('clicking the same CMC button again deactivates it', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .cmc-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="cmc"] .text-chip'));
     if (btns.length === 0) return;
     await driver.executeScript('arguments[0].click()', btns[0]);
     await driver.sleep(300);
@@ -195,7 +195,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   // ── Sort ───────────────────────────────────────────────────────────────────────
 
   test('clicking CMC sort activates it', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .sort-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="sort"] .text-chip'));
     let cmcBtn = null;
     for (const b of btns) {
       const t = (await b.getText()).toLowerCase();
@@ -209,7 +209,7 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('clicking Name sort activates it and deactivates CMC', async () => {
-    const btns = await driver.findElements(By.css('.panel-filters .sort-btn'));
+    const btns = await driver.findElements(By.css('.panel-filters [data-chips="sort"] .text-chip'));
     let nameBtn = null;
     let cmcBtn = null;
     for (const b of btns) {
@@ -229,15 +229,17 @@ describe('Card Search Panel — Filters, Sort, Set', () => {
   });
 
   test('sort direction button toggles between ascending and descending', async () => {
-    const dirBtn = await driver.findElement(By.css('.panel-filters .sort-dir-btn'));
-    const before = await dirBtn.getText();
-    await dirBtn.click();
-    await driver.sleep(300);
-    const after = await dirBtn.getText();
+    // Re-found after each click rather than held: toggling re-runs the search, which
+    // re-renders the filter row, and a reference taken before the click goes stale.
+    const sel = By.css('.panel-filters [data-chips="sort-dir"] .text-chip');
+    const before = await (await driver.findElement(sel)).getText();
+    await (await driver.findElement(sel)).click();
+    await driver.sleep(400);
+    const after = await (await driver.findElement(sel)).getText();
     expect(after).not.toBe(before);
     // Reset
-    await dirBtn.click();
-    await driver.sleep(300);
+    await (await driver.findElement(sel)).click();
+    await driver.sleep(400);
   });
 
   // ── Set filter ─────────────────────────────────────────────────────────────────

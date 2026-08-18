@@ -1,4 +1,5 @@
 @use '../../../styles/add-controls' as *;
+@use '../../../styles/breakpoints' as *;
 
 :host {
   display: contents;
@@ -11,6 +12,12 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(3px);
+
+  // Matches the sheet's raised stacking below $bp-nav so the dimmer covers the navbar
+  // too; otherwise the nav stays lit above a dimmed page.
+  @include upto($bp-nav) {
+    z-index: 1099;
+  }
   z-index: 300;
   animation: modal-overlay-in 0.28s ease-out both;
 
@@ -28,6 +35,32 @@
   min-height: 520px;
   max-width: 96vw;
   max-height: 94vh;
+
+  // min-width beats max-width in CSS, so `max-width: 96vw` above never applied on a
+  // phone: the window rendered its full 680px on a 375px screen — measured at 680x566
+  // sitting at x=15, which put the oracle text, the tab row and the close button off
+  // the glass with no way to scroll or drag to them (drag is mousedown-based, so it is
+  // dead on touch too). Below the breakpoint it becomes a full-screen sheet, which is
+  // what a modal should be at this width anyway.
+  @include upto($bp-nav) {
+    min-width: 0;
+    min-height: 0;
+    // Above the navbar, which is z-1000. At 301 the nav painted over the sheet's top
+    // 52px — the strip holding .modal-close-btn — so the only way out of a full-screen
+    // modal was covered by the hamburger.
+    z-index: 1100;
+    // The element's left/top/width/height are set inline by the component's drag and
+    // resize state, so overriding them needs !important — there is no other way to beat
+    // an inline style from a stylesheet.
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+  }
   background: var(--bg-deep);
   border: 1px solid var(--border-dim);
   border-radius: 14px;
@@ -200,6 +233,30 @@
   min-width: 0;
 }
 
+// On the full-screen sheet the title bar holds one 26px close button, but the name and
+// the actions cluster each took `flex: 1 1 0` — an equal half of the bar — so the name
+// ellipsized at "BRAIDS, ARISEN NIGH…" with ~150px of empty bar sitting beside it. The
+// equal split exists to centre the Added chip on a wide window; there is no room to
+// centre anything at 375px. The name takes the whole width the actions do not need, and
+// one still too long for that pans sideways rather than losing its tail.
+@include upto($bp-nav) {
+  .modal-title-actions {
+    flex: 0 0 auto;
+  }
+
+  .modal-drag-name {
+    overflow-x: auto;
+    text-overflow: clip;
+    scrollbar-width: none;
+    // The bar is a drag handle; claim the horizontal swipe for the name itself.
+    touch-action: pan-x;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
 .modal-close-btn {
   background: none;
   border: none;
@@ -226,12 +283,28 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+
+  // Two columns need ~680px. On a phone they stack and the sheet scrolls, rather than
+  // the art column's 240px floor squeezing the details column to nothing.
+  @include upto($bp-nav) {
+    flex-direction: column;
+    overflow-y: auto;
+  }
 }
 
 // Left: art column
 .modal-art-col {
   flex: 0 0 34%;
   min-width: 240px;
+
+  @include upto($bp-nav) {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    align-items: center;
+    border-right: none;
+  }
   max-width: 320px;
   display: flex;
   flex-direction: column;
@@ -298,6 +371,18 @@
   // Size container for the card image's cqw/cqh math below.
   container-type: size;
 
+  // `container-type: size` also applies SIZE CONTAINMENT: the element sizes as if it
+  // had no contents. In the desktop row its height comes from the flex line, so that is
+  // invisible — but once .modal-body stacks, this column is content-sized, and a
+  // contained child reports zero. The art column collapsed to 16px (its margins) and
+  // the card image rendered 0x0. No containment on a phone; the image sizes from width
+  // there instead, so nothing needs cqh.
+  @include upto($bp-nav) {
+    container-type: normal;
+    flex: 0 0 auto;
+    padding: 4px 0 12px;
+  }
+
   &.is-game-changer .modal-card-img {
     animation: modal-gc-pulse 2s ease-in-out infinite;
   }
@@ -347,6 +432,13 @@
   // box wider than the picture, squaring off the rounded corners). Every MTG scan
   // shares the 488:680 ratio, so the box always hugs the printed card exactly.
   width: min(100cqw, calc(100cqh * 488 / 680));
+
+  // Once .modal-body stacks, .modal-art has no definite height, so `container-type:
+  // size` gives 100cqh = 0 and this collapsed to 0x0 — the card art simply vanished.
+  // Width-based sizing instead; aspect-ratio above supplies the height.
+  @include upto($bp-nav) {
+    width: min(100%, 56vw);
+  }
   aspect-ratio: 488 / 680;
   display: block;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);

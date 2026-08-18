@@ -3,6 +3,8 @@
 // ============================================================
 
 @use 'add-controls' as *;
+@use 'breakpoints' as *;
+@use 'filter-bar' as *;
 @use 'detail-page' as *;
 @tailwind components;
 @tailwind utilities;
@@ -744,6 +746,66 @@ body.is-dragging-card * {
   // Centred, and children keep their natural width — a column stretches its children by
   // default, so a wide caption drags a lone button out to match it.
   align-items: center;
+
+  // (Phone treatment for this panel deliberately removed: the dropped panel is already a
+  // narrow centred sheet by design — max-width min(92vw, 460px) — and the full-width
+  // stretch that used to live here made it sparse instead of tidy.)
+}
+
+@include upto($bp-phone) {
+  // Labels sit INLINE with their controls, matching the search panel's idiom (CMC and
+  // SORT there hang their captions on the same line). The caption-above-control column is
+  // the desktop bar's look; stacked five times in a phone dropdown it read as a different
+  // design and doubled the panel's height.
+  .cgf-clusters {
+    gap: 10px;
+
+    .cgf-group {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .cgf-label {
+      margin: 0;
+    }
+
+    .cgf-stack {
+      align-items: center;
+      gap: 10px;
+    }
+  }
+
+  // `.is-reserved` holds a fixed slot for the active-filter chips so the DESKTOP bar does
+  // not jump when a chip appears. In the dropped panel that reservation is a band of
+  // nothing between Set and Zoom. The panel may change height freely, so it reserves
+  // nothing here — and when no filter is active the slot goes entirely.
+  .cgf-clusters .cgf-group.is-reserved {
+    min-height: 0;
+    height: auto;
+  }
+
+  .cgf-clusters .cgf-group.is-reserved:not(.has-chips) {
+    display: none;
+  }
+
+  // Sized to the search panel's chip scale — the first pass used 36-44px pills, which is
+  // why the two toolbars read as different designs even with matching layouts.
+  .cgf-clusters :is(app-select-menu button, .sort-btn, .zoom-btn) {
+    min-height: 26px;
+    padding: 2px 7px;
+    font-size: 9px;
+  }
+
+  .cgf-clusters .cgf-label {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .cgf-clusters .cgf-group {
+    gap: 6px;
+  }
 }
 
 // Two labelled columns stacked into one. A cluster is a single row of columns, so a page
@@ -935,6 +997,28 @@ app-card-search-panel {
       min-width: min(340px, 55vw);
       max-width: 600px;
       border-left: 1px solid var(--border-dim);
+
+      // On a phone there is no "beside": at 375px the panel took 55vw and left the deck
+      // 170px, where the empty state's own Add Cards button wrapped onto two lines and
+      // the search results sat below the fold. Two panes do not fit, so the panel stops
+      // pretending to be one and becomes a full-screen sheet over the board — the deck
+      // is still there underneath, and closing the panel returns to it.
+      @include upto($bp-phone) {
+        position: fixed;
+        inset: 52px 0 0; // below the navbar, which stays reachable
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        z-index: 400;
+        border-left: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    // The width transition animates the sheet in from zero-width otherwise, which reads
+    // as a horizontal wipe across the whole screen rather than a panel opening.
+    @include upto($bp-phone) {
+      transition: none;
     }
 
     // Swap mode: the panel IS the board area — full width, results tiled into a grid.
@@ -1071,27 +1155,18 @@ app-card-search-panel {
   // ---- Panel header -------------------------------------------
 
   .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-dim);
-    flex-shrink: 0;
+    @include drawer-header;
   }
 
   .panel-title-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .panel-title {
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
+    @include drawer-title(#a78bfa);
   }
 
   .panel-cmdr-badge {
@@ -1108,17 +1183,7 @@ app-card-search-panel {
   }
 
   .panel-close {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: color 0.15s;
-    &:hover {
-      color: var(--text-primary);
-    }
+    @include drawer-close;
   }
 
   // ---- Search input -------------------------------------------
@@ -3592,6 +3657,37 @@ app-deck-detail {
       width: calc(140px * var(--card-zoom, 1));
       margin-bottom: 0;
     }
+
+    // Phone only — on a wide board the arrangement above is what it has always been, and
+    // the toggle that reaches it there is the user's own choice.
+    @include upto($bp-phone) {
+      .cmc-group {
+        // The 260px cap on .groups-list.is-visual .cmc-group is a COLUMN cap: it stops a
+        // two-column board stretching its cards absurdly wide. Stacked on a phone the
+        // group is a full-width section, and the cap only ends its header 100px short of
+        // the board's right edge.
+        max-width: none;
+      }
+
+      // A grid, not a wrapping flex row: at a fixed 140px a card left 213px of the 353px
+      // group empty beside it, and wrapping only ever fills the width by accident. The
+      // track is the zoom size as a MINIMUM — as many cards as fit, then they share out
+      // what is left, so a row always reaches both edges.
+      //
+      // auto-FIT, not auto-fill: fit collapses the tracks a group has no card for, so a
+      // group holding one card gives that card the whole section instead of parking it in
+      // a 174px cell beside 174px of nothing. Groups with more cards than tracks are
+      // unaffected — a short last row keeps its cell size rather than stretching.
+      .visual-stack {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(calc(140px * var(--card-zoom, 1)), 1fr));
+        gap: 6px;
+      }
+
+      .visual-card {
+        width: auto;
+      }
+    }
   }
 
   .visual-stack {
@@ -3862,11 +3958,31 @@ app-deck-detail {
       width: 380px;
       border-left: 1px solid var(--border-dim);
       overflow-y: hidden;
+
+      // Same reasoning as the card search panel: at 375px a 300-380px drawer leaves the
+      // board a sliver, clips its own header (and the close button in it), and reads as
+      // a broken column rather than a panel. Below the breakpoint every deck drawer is a
+      // full-screen sheet over the board, inset under the navbar so nav stays reachable.
+      @include upto($bp-phone) {
+        position: fixed;
+        inset: 52px 0 0;
+        width: auto;
+        max-width: none;
+        z-index: 400;
+        border-left: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+      }
     }
 
     app-deck-suggestions-panel {
       width: 380px;
       height: 100%;
+
+      // The child restated the drawer's fixed width, so widening the parent alone left
+      // the panel's own content still 380px inside a 375px sheet.
+      @include upto($bp-phone) {
+        width: 100%;
+      }
     }
   }
 
@@ -3890,11 +4006,26 @@ app-deck-detail {
       width: 320px;
       border-left: 1px solid var(--border-dim);
       overflow-y: hidden;
+
+      // Full-screen sheet on a phone — see the card search panel for the reasoning.
+      @include upto($bp-phone) {
+        position: fixed;
+        inset: 52px 0 0;
+        width: auto;
+        max-width: none;
+        z-index: 400;
+        border-left: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+      }
     }
 
     app-mana-suggest-panel {
       width: 320px;
       height: 100%;
+
+      @include upto($bp-phone) {
+        width: 100%;
+      }
     }
   }
 
@@ -3918,6 +4049,20 @@ app-deck-detail {
       width: 300px;
       border-left: 1px solid var(--border-dim);
       overflow-y: auto;
+
+      // Same reasoning as the card search panel: at 375px a 300-380px drawer leaves the
+      // board a sliver, clips its own header (and the close button in it), and reads as
+      // a broken column rather than a panel. Below the breakpoint every deck drawer is a
+      // full-screen sheet over the board, inset under the navbar so nav stays reachable.
+      @include upto($bp-phone) {
+        position: fixed;
+        inset: 52px 0 0;
+        width: auto;
+        max-width: none;
+        z-index: 400;
+        border-left: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+      }
     }
 
     &::-webkit-scrollbar {
@@ -3933,39 +4078,16 @@ app-deck-detail {
   }
 
   .side-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-dim);
-    flex-shrink: 0;
+    @include drawer-header;
   }
 
   .side-panel-title {
-    font-family: var(--font-display);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-dim);
+    // #a78bfa is the deck page's accent throughout — its active tab, its links, its bars.
+    @include drawer-title(#a78bfa);
   }
 
   .side-panel-close {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    transition:
-      color 0.15s,
-      background 0.15s;
-
-    &:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.06);
-    }
+    @include drawer-close;
   }
 
   // ---- Deck Stats ------------------------------------------
@@ -4510,6 +4632,62 @@ app-deck-detail {
     align-items: flex-end;
     gap: 16px;
     padding-top: 20px;
+
+    // The board tabs and the deck tools share this line, and neither yields: the tabs
+    // are flex:1 and the tools are flex-shrink:0 with margin-left:auto. At 375px the
+    // tools ran to x=434 AND painted across the tabs, because .board-tabs carries a
+    // 12px bottom margin that offsets the two by exactly enough to collide. The row
+    // wraps below the breakpoint so the tools take their own line.
+    @include upto($bp-phone) {
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0;
+      padding-top: 12px;
+
+      .board-tabs {
+        width: 100%;
+        flex: 1 1 100%;
+        margin-bottom: 0;
+      }
+
+      // Equal thirds, one line each — the same treatment as the community tabs. At their
+      // desktop size "MAIN DECK" broke to two lines beside one-line siblings, which read
+      // as a layout accident at the top of every deck screen.
+      .board-tab {
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
+        padding: 10px 2px;
+        font-size: 9.5px;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+
+      // The four tools share one line in equal parts rather than wrapping 3+1 with
+      // SUGGEST orphaned underneath.
+      .vbar-panel-btns {
+        width: 100%;
+        margin-left: 0;
+        padding: 6px 0;
+        flex-wrap: nowrap;
+        justify-content: center;
+        gap: 2px;
+
+        .tool-btn {
+          flex: 1 1 0;
+          min-width: 0;
+          justify-content: center;
+          padding: 7px 2px;
+          font-size: 8.5px;
+          letter-spacing: 0.05em;
+          white-space: nowrap;
+
+          i {
+            font-size: 12px;
+          }
+        }
+      }
+    }
   }
 
   .vbar-panel-btns {
@@ -5999,3 +6177,688 @@ app-deck-detail {
 // of the projecting component, and a host-scoped @include never matches them. Emitted
 // once at top level, where the projected nodes actually live.
 @include modal-extra-chrome;
+
+// ============================================================
+// Filter bars on a phone — the light touch
+// ============================================================
+//
+// The heavy version of this block stacked every bar full-width with captions on their
+// own lines — and made things worse. The search panel and the card-grid-filters dropdown
+// were DESIGNED narrow (~340-460px): their native centered-cluster layouts already read
+// well at phone width, and stretching their controls edge to edge produced the sparse,
+// gappy panels the screenshots kept showing. The native layout is the target, not the
+// thing to replace.
+//
+// So the phone treatment is only what narrow really needs:
+//   - thumb-sized chips and pips,
+//   - the SET row centered like the rows around it,
+//   - no reserved empty slots inside a dropdown panel.
+// Component-specific behaviour (the forum bar's fold-behind-a-button, the sheets) lives
+// with those components.
+@include upto($bp-phone) {
+  // Chips and pips at a size a thumb can hit — the one change every bar genuinely needs.
+  .filter-pill {
+    min-height: 24px;
+    padding: 3px 8px;
+    font-size: 8px;
+  }
+
+  // The search panel's filters, compressed to five rows. The template's three
+  // .filter-row wrappers dissolve (display: contents) so every cluster shares one wrap
+  // flow, and `order` seats them: colours and rarities on one line, the nine type chips
+  // wrapping across two, CMC on its own, and Set beside Sort on the last. Chips shrink a
+  // step below the app-wide floor — density is the point of a filter block, and this is
+  // the panel the rest of the bars are being matched to.
+  app-card-search-panel .panel-filters {
+    display: flex;
+    // Explicit: the panel's own styles make this a COLUMN, and a column was silently
+    // inherited here — in column direction flex-basis is vertical, which is where the
+    // set group's phantom 150px height came from, and every cluster stacked one per
+    // line no matter how narrow it was.
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 5px 8px;
+
+    > .filter-row {
+      display: contents;
+    }
+
+    > .filter-row > app-filter-chips {
+      display: contents;
+    }
+
+    // Facet rows are arranged inside app-filter-facets now; only host-level pieces are
+    // ordered here: the component first, then Set, then Sort.
+    // No width here: the component fixes its own at 302px so every context wraps
+    // identically. Stretching it to 100% in this one host was the last source of a
+    // different wrap (343px wide, one row fewer) that the pixel-diff caught.
+    app-filter-facets {
+      order: 1;
+    }
+    // Matches the scoped `.filter-row.filter-row-set .filter-group-set` at (0,4,1) so
+    // file order decides, and this block is later. Anything lighter loses the flex fight.
+    .filter-row-set .filter-group-set {
+      order: 5;
+      // Its desktop row gives it `flex: 1` / a 150px basis so it fills the line beside
+      // the chips. In this flattened flow that grow pushed Sort onto its own row and
+      // stretched the group tall. Content-sized here.
+      flex: 0 0 auto;
+      align-self: center;
+      min-height: 0;
+      height: auto;
+      padding: 0;
+    }
+    app-filter-chips[data-chips='sort'] .chip-row {
+      order: 6;
+    }
+    // The attribute is 'sort-dir', with the hyphen — guessed wrong first time, and an
+    // unmatched item defaults to order 0, which put the lone direction arrow at the very
+    // top of the panel.
+    app-filter-chips[data-chips='sort-dir'] .chip-row {
+      order: 7;
+    }
+
+    // No chip sizing here. These were panel-only overrides at 22px, and once the facet
+    // rows moved into the shared app-filter-facets they were silently making this panel's
+    // pips 22px while the deck bar's were 24 — the two "identical" blocks differing by
+    // 2px per pip. The chip component owns its size; every host gets the same one.
+
+    // The dropdown already says "All Sets" — the caption is 30px the last row needs.
+    .filter-group-set .filter-label {
+      display: none;
+    }
+
+    .set-trigger {
+      min-height: 24px;
+      padding: 2px 7px;
+      font-size: 9px;
+    }
+  }
+
+  // ---- The deck/collection toolbar presents like the search panel ----
+  //
+  // Same idea, same look: controls visible under the search field, not behind a sliders
+  // button. The fold-behind-a-button was the desktop bar's answer to a narrow CONTAINER;
+  // on a phone it made the two toolbars read as different designs, and it cost a tap to
+  // see controls the search panel just shows.
+  app-card-grid-filters .cgf-row .cgf-menu-btn {
+    display: none;
+  }
+
+  // The bar becomes one column: search box first — the same top slot it has in the card
+  // search panel — then the control rows in their natural order (Group By, Layout, Set,
+  // Zoom, Display), then the facet chips. The first attempt flattened the cluster
+  // wrappers with display:contents, which scrambled that order (Zoom jumped to the top)
+  // and left the search box — which sits AFTER the clusters in the DOM — buried at the
+  // bottom, off the first screen.
+  app-card-grid-filters .cgf-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  // Canonical order for every filter area in the app:
+  //   1 search box · 2 mana pips + rarities · 3 types · 4 CMC + set  (the shared block)
+  //   9 anything the HOST adds on top of that
+  // Group By / Layout / Zoom / Display / Save / Reset are deck-grid controls, not
+  // filters, so they sit under the filters rather than pushing them down the screen.
+  // This is what makes the deck bar and the card search panel read as one design even
+  // though one of them carries five extra controls.
+  app-card-grid-filters .cgf-row .cgf-center {
+    order: 1;
+    padding: 0;
+    width: 100%;
+  }
+
+  app-card-grid-filters .cgf-row .cgf-facets {
+    order: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // The input speaks for itself, as it does in the search panel — no caption above it.
+  app-card-grid-filters .cgf-row .cgf-group--filter > .cgf-label {
+    display: none;
+  }
+
+  app-card-grid-filters .cgf-row .cgf-group--filter,
+  app-card-grid-filters .cgf-row .filter-wrap {
+    width: 100%;
+    max-width: none;
+  }
+
+  // One search-field height across every filter bar. The deck bar's was 44 and the card
+  // search panel's 37 — the single most visible size difference between two blocks that
+  // are meant to read as the same control.
+  // The Aa \b .* flags stay visible wherever the search feature exists (Home and the
+  // card search panel). They were hidden for a while in the panel only, which made the
+  // two search-capable bars disagree with each other — the exact inconsistency this
+  // whole pass exists to remove. The deck bar has no flags because its filter has no
+  // such feature, which is a real difference, not a styling one.
+
+  :is(
+    app-card-grid-filters .cgf-row .filter-input,
+    app-card-search-panel .search-input,
+    app-card-search-panel input[type='text'],
+    app-home .search-input
+  ) {
+    min-height: 40px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    padding: 8px 74px 8px 30px !important;
+
+    &:focus {
+      border-color: var(--gold-dim) !important;
+    }
+  }
+
+  // One wrap flow, short controls pairing on shared lines — the same compression that
+  // took the search panel to five rows. One control per line was seven rows of toolbar
+  // before a single card. Order is pinned per group via :has() on each one's distinctive
+  // control, because the groups arrive by content projection and DOM order varies by
+  // page — trusting it is what scrambled Zoom to the top last time.
+  app-card-grid-filters .cgf-row .cgf-clusters {
+    position: static;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: center;
+    // Group By + Layout + Zoom + Display measured 344px against 343 available — a single
+    // pixel was keeping Display on a row of its own. 6px gaps buy back 6.
+    column-gap: 5px;
+    row-gap: 7px;
+    width: 100%;
+    max-width: none;
+    padding: 2px 0 4px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    animation: none;
+    transition: none;
+
+    :is(.cgf-left, .cgf-right, .cgf-stack, .cgf-facets, .cgf-chips) {
+      display: contents;
+    }
+
+    // The control groups share ONE line in every view. Sizing them per-view kept failing
+    // because each view projects a different set (2 display buttons in list, 3 in visual,
+    // none in free) into a different available width — a target that moves. Nowrap plus
+    // shrinkable groups removes the arithmetic entirely: the line cannot break, so the
+    // row count is identical across views by construction.
+    .cgf-controls-line {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      // 3px and a 343px cap: the five groups total ~340px, and at 5px gaps they ran to
+      // 373 against 367 available — the All Sets dropdown clipped at the frame edge and
+      // the row sat flush left-to-right while every row above it is a centred block.
+      gap: 3px 5px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 343px;
+      margin-inline: auto;
+      min-width: 0;
+      // Bottom: host controls come after the shared filter block.
+      order: 9;
+    }
+
+    // Icon-only controls at thumb-minimum, not desktop size. Display's six buttons
+    // measured 203px, which alone made Zoom(85) + Display + Set(108) impossible to fit
+    // on one line at 343px; at 24px each the three pack onto one row.
+    // Everything in this bar sits at the chip scale. The wrappers were the problem, not
+    // the buttons: the layout and zoom BUTTONS were already 26px, but their groups
+    // carried desktop padding and borders that inflated them to 34-36px, so the control
+    // rows towered over 22px chips two rows below and read as a different design.
+    :is(.fbar-display-controls, .view-toggle, .density-picker) button,
+    :is(.fbar-display-controls, .view-toggle) .sort-btn,
+    .zoom-btn {
+      min-width: 20px;
+      width: 20px;
+      min-height: 22px;
+      height: 22px;
+      padding: 0;
+      font-size: 10px;
+    }
+
+    // The groups themselves: no padding, no border, no min-height of their own.
+    :is(.sort-group, .view-toggle, .fbar-display-controls, .zoom-group, .density-picker) {
+      padding: 1px;
+      min-height: 0;
+      gap: 1px;
+      align-items: center;
+      // Groups must be allowed to shrink onto a shared line. Without this they keep
+      // their content width and the last one wraps to a row of its own even when the
+      // line has room for it.
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    // Four control groups on one line: 100 + 95 + 79 + display, in 343px. Display gives
+    // up the most because it is icon-only and the least frequently used.
+    // The three views project different Display controls — 2 buttons in list, 3 in
+    // visual, none in free — and the available width differs too (321 vs 313). Sized so
+    // the widest case still packs: 84 + 95 + 58 + 49 + gaps = 301 of 313. The row is now
+    // one line in every view instead of one in list, two in visual and one in free.
+    .fbar-display-controls {
+      max-width: 51px;
+      overflow: hidden;
+
+      button {
+        min-width: 17px;
+        width: 17px;
+      }
+    }
+
+    // "CMC" does not need 100px, and the row misses by 4px without this. Targets the
+    // element directly — the previous child-combinator form never matched, because the
+    // select is not a direct child of .cgf-group.
+    // Cap the WRAPPER, not the select: an element-qualified desktop rule keeps the
+    // select itself at ~96px no matter what a bare max-width here says, so the Group By
+    // cluster stayed 100px wide and pushed the line 40px past its box. With the wrapper
+    // capped and the select told to fill it, the caret stays visible and the maths
+    // finally closes: 60+87+58+48+45 + four 3px gaps = 310 in a 313px box.
+    .cgf-controls-line .sort-group:has(app-select-menu) {
+      max-width: 60px;
+      overflow: hidden;
+    }
+
+    .cgf-controls-line .sort-group app-select-menu,
+    .cgf-controls-line .sort-group app-select-menu button {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .fbar-display-controls {
+      max-width: 48px;
+    }
+
+    // The percentage readout goes: the card size on screen already shows the zoom level,
+    // and at 30px it was the difference between Display sharing this line and taking one
+    // of its own. The - and + buttons stay.
+    .zoom-label {
+      display: none;
+    }
+
+    // The select triggers match too.
+    app-select-menu button {
+      min-height: 24px;
+      height: 24px;
+      padding: 0 7px;
+      font-size: 8.5px;
+    }
+
+    // 18px was the whole gap between "All Sets on its own row" and "All Sets sharing the
+    // Zoom/Display line". Trimming the trigger closes it: 85 + 132 + 90 + gaps = 331.
+    .cgf-group:has(.set-filter-menu) app-select-menu button {
+      padding: 1px 5px;
+      font-size: 8px;
+    }
+
+    // Captions off. They are what kept every control on a row of its own: "GROUP BY" +
+    // its select is ~180px and "LAYOUT" + its four icons ~220px, so at 343px nothing
+    // could pair and the block ran to ten rows. The reference panel labels only CMC and
+    // Sort for exactly this reason — a select showing "CMC", four layout icons, a zoom
+    // stepper and six display icons all read without being told what they are.
+    .cgf-group > .cgf-label {
+      display: none;
+    }
+
+    // Free mode: Group By has nothing to group — the columns are arranged by hand — and
+    // its 60px is exactly what forced the controls onto a ragged second line there. The
+    // free controls take pinned slots at the line's end, echoing the other views' order.
+    &:has(.free-save-btn) .cgf-group:has(app-select-menu):not(:has(.set-filter-menu)) {
+      display: none;
+    }
+
+    .free-save-btn {
+      order: 6;
+    }
+    .free-reset-btn {
+      order: 7;
+    }
+    .density-picker {
+      order: 8;
+    }
+
+    // Row 1: Group By + Layout. Row 2: Set + Zoom. Row 3: Display. Row 4: facet chips.
+    .cgf-group:has(app-select-menu):not(:has(.set-filter-menu)) {
+      order: 1;
+    }
+    .cgf-group:has(.view-toggle) {
+      order: 2;
+    }
+    // Set rides beside CMC at the bottom, matching the search panel, instead of taking
+    // a control row of its own. Its caption goes — the trigger already reads "All Sets".
+    .cgf-group:has(.set-filter-menu) {
+      order: 6;
+
+      // Compact on the shared controls line — "All Sets" at natural width plus the four
+      // other groups overshot the row and clipped the display toggle at the right edge.
+      app-select-menu,
+      app-select-menu button {
+        max-width: 58px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      width: auto;
+
+      > .cgf-label {
+        display: none;
+      }
+
+      // 5px decides whether this shares the CMC line or wraps under it.
+      app-select-menu button {
+        padding: 1px 6px;
+        font-size: 8.5px;
+        min-height: 24px;
+      }
+    }
+    .cgf-group.cgf-zoom {
+      order: 4;
+    }
+    .cgf-group:has(.fbar-display-controls) {
+      order: 5;
+    }
+    .cgf-group:has(.cgf-sort-chips) {
+      order: 6;
+    }
+    .cgf-chips {
+      order: 7;
+    }
+
+    // The chips row speaks for itself, like the search panel's colour row.
+    .cgf-facets > .cgf-label {
+      display: none;
+    }
+
+    // The facet arrangement lives inside app-filter-facets — the same component the
+    // card search panel mounts — replacing the :has()/order apparatus that used to
+    // fight the projection boundary here. Only the block's slot in the toolbar remains.
+    .cgf-facets {
+      order: 7;
+      width: 100%;
+      display: flex;
+    }
+  }
+
+  // ---- Search results: one row per card, always ----
+  //
+  // .result-row-main wraps by design for the old NARROW side panel; the panel is
+  // full-screen here, so wrapping just dropped the x1/+/- controls onto their own line
+  // once a card was owned. One line: the name and the set column give, the controls
+  // never do.
+  app-card-search-panel .result-row-main {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  app-card-search-panel .result-info {
+    min-width: 56px;
+  }
+
+  app-card-search-panel .result-set-wrap {
+    width: auto;
+    max-width: 108px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  app-card-search-panel .set-static {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ---- Deck list view fits the screen ----
+  //
+  // Rows pinned themselves at max-content width, so the whole board scrolled sideways.
+  app-deck-detail .list-row {
+    min-width: 0;
+  }
+
+  // The full-bleed trick (-24px margins against a 24px page gutter) overflows once the
+  // phone gutter is smaller than 24.
+  app-deck-detail .board-row {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  // Free view's toolbar sits AFTER the filter bar in the DOM, so its Save / Reset /
+  // Display row rendered below the filter chips while list view keeps those controls
+  // above them — the two views read as different layouts. The area becomes a flex column
+  // purely so `order` can lift it up next to the board row, matching list and visual.
+  // Same rule one level up: the free view's Save / Reset are host additions, so they
+  // follow the filter bar rather than being lifted above it.
+  app-deck-detail .groups-area {
+    display: flex;
+    flex-direction: column;
+
+    // The area kept the desktop's 24px-a-side gutter, and every child pads itself again
+    // inside it: the board tabs were 305px of a 375px screen and their divider stopped
+    // short of both edges, which is what reads as "not stretching". The area goes edge to
+    // edge and each child owns its inset — 0 for the tab row so its rule spans the
+    // screen, 8px for the bar and the card groups.
+    padding-inline: 0;
+
+    > .groups-list {
+      padding-inline: 8px;
+    }
+
+    > .board-row {
+      order: 1;
+    }
+    > app-card-grid-filters {
+      order: 2;
+    }
+    > .free-toolbar {
+      order: 3;
+    }
+    > * {
+      order: 4;
+      min-width: 0;
+    }
+
+    // The card columns must not widen the column beyond the screen: making .groups-area
+    // a flex container let .groups-list size to its content, which pushed it off the
+    // right edge once cards were in the deck.
+    > .groups-list {
+      max-width: 100%;
+    }
+  }
+
+  // A drawer opened as a full-screen sheet paints from inside .detail-body, and it is
+  // .detail-body's own `z-index: 3` that competes with the header's 60 — the sheet's 400
+  // is spent inside that context and never reaches the contest. So the header sat across
+  // the top 129px of every sheet, covering the panel's title, its close button and the
+  // first block of its content (the mana panel's Current/Recommended comparison). While
+  // a sheet is open the body takes the higher layer instead. Direct children only: the
+  // side panel has its own `.is-open` sections nested inside it.
+  app-deck-detail .detail-body:has(> .is-open) {
+    z-index: 61;
+  }
+
+  // Header, reordered for a phone: the deck NAME owns row one (it was squeezed to a
+  // single ellipsized character between the back button and the tags cluster), Format
+  // and Publish share row two, tags take row three where they can breathe. And the
+  // "FORMAT" caption goes — the dropdown already says Format.
+  app-deck-detail .detail-header {
+    row-gap: 8px;
+
+    > .back-btn {
+      order: 1;
+    }
+
+    // Desktop's `flex: 1` pusher, which keeps its default order 0 — so once the header
+    // wraps it sorts BEFORE the back button and takes the first slot of row one, holding
+    // the button 34px (its own 22 plus the 12 gap) off the left edge while everything
+    // below it sat flush. Publish's `margin-left: auto` does the pushing on a phone.
+    > .header-spacer {
+      display: none;
+    }
+
+    .header-name-wrap {
+      order: 2;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .header-name {
+      font-size: 16px;
+    }
+
+    // Format group: the one whose button carries the dropdown caret.
+    .header-labeled-group:has(.format-caret) {
+      order: 3;
+
+      > .header-label {
+        display: none;
+      }
+    }
+
+    .publish-btn {
+      order: 4;
+      margin-left: auto;
+    }
+
+    // Tags: full row of their own. The caption goes the same way the Format one did —
+    // the input's own "+ tag" placeholder already says what the row is.
+    .header-labeled-group:has(.deck-tag-input) {
+      order: 5;
+      flex: 1 1 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+
+      > .header-label {
+        display: none;
+      }
+    }
+  }
+
+  // Free view's Save Layout / Reset live in .free-toolbar, which is a SIBLING of the
+  // filter bar rather than projected into it — so a rule scoped inside .cgf-clusters
+  // never reached them, and they kept taking a second control row of their own. Both
+  // buttons already carry an icon, so the labels go and they join the line.
+  app-deck-detail .free-toolbar {
+    display: contents;
+
+    :is(.free-save-btn, .free-reset-btn) {
+      flex: 0 0 auto;
+      min-width: 26px;
+      width: 26px;
+      height: 24px;
+      min-height: 24px;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 0;
+
+      i {
+        font-size: 12px;
+      }
+    }
+  }
+
+  // The bar hung 24px off the left edge: the deck gives it the same full-bleed
+  // margin-inline pair as .board-row (widen by the gutter, pad the controls back in).
+  // The phone gutter is smaller than 24, so the bleed was pure overhang.
+  app-deck-detail app-card-grid-filters.filter-bar {
+    // Not sticky on phones. The component pins itself at --cgf-sticky-top: 63px — the
+    // measured height of the DESKTOP board-row — but the mobile board-row is taller, so
+    // the bar tucked under the tools and the search box rendered half-hidden. Static
+    // costs sticky filters while scrolling; it buys the whole bar actually visible.
+    position: static !important;
+    top: auto !important;
+    margin-inline: 0;
+    // Matches the card groups below it, now that .groups-area no longer spends 24px a
+    // side of its own: the bar's outer edge and theirs line up.
+    padding-inline: 8px;
+    max-width: 100%;
+  }
+
+  app-deck-detail .grid-area {
+    padding-inline: 8px;
+  }
+
+  // Nothing: the tab row's underline is the divider between the deck's chrome and its
+  // board, and a divider that stops 32px short of each edge reads as a mis-sized panel.
+  app-deck-detail .board-row {
+    padding-inline: 0;
+  }
+
+  // Free view keeps its horizontal pan — the column positions are the user's own saved
+  // layout, so reflowing them the way visual view does would throw away the thing the
+  // view exists for. What it was missing is any sign that it pans: cards were sliced flat
+  // at the right edge, which reads as a broken layout rather than as more board. Only the
+  // edge that HAS more past it fades, so at either end nothing is dimmed for no reason.
+  // Classes come from appScrollEdges.
+  app-deck-detail .groups-area {
+    &.can-scroll-right {
+      mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    }
+    &.can-scroll-left {
+      mask-image: linear-gradient(to right, transparent 0, #000 28px);
+    }
+    &.can-scroll-left.can-scroll-right {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 28px,
+        #000 calc(100% - 28px),
+        transparent 100%
+      );
+    }
+  }
+
+  // List rows: one line per card. Applies to every .card-row, not just the text-mode
+  // .list-row variant — the image-mode row (thumb + name/type + mana + qty) is the one
+  // list view actually renders, and it was left with the desktop's 48px of horizontal
+  // padding, so its name and type were crushed to a few characters while the quantity
+  // controls sat off the right edge.
+  //
+  // Only the text column gives; the thumb, mana and controls keep their size.
+  app-deck-detail .card-row {
+    padding-inline: 12px;
+    gap: 8px;
+
+    .card-info,
+    .list-name {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .card-name,
+    .card-type,
+    .list-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-thumb,
+    .card-mana,
+    .card-actions,
+    .list-qty,
+    .list-mana,
+    .list-actions {
+      flex-shrink: 0;
+    }
+  }
+}

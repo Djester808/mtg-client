@@ -1,4 +1,5 @@
 @use '../../../styles/add-controls' as *;
+@use '../../../styles/detail-page' as *;
 
 :host {
   display: flex;
@@ -11,41 +12,18 @@
 // ---- Header -------------------------------------------------------
 
 .sugg-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include drawer-header;
   // Tight bottom padding: the header sits directly on the raised commander bar, and a larger
   // gap here reads as a dead dark band between the title and the commander.
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
+  padding-bottom: 10px;
 }
 
 .sugg-title {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  i {
-    color: var(--gold);
-  }
+  @include drawer-title(var(--gold));
 }
 
 .sugg-close {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 4px;
-  font-size: 14px;
-  border-radius: 4px;
-  &:hover {
-    color: var(--text-primary);
-    background: var(--bg-raised);
-  }
+  @include drawer-close;
 }
 
 // ---- Commander bar ------------------------------------------------

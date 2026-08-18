@@ -1,0 +1,6 @@
+{
+  "src/app/app.component.ts": "The shell itself \u2014 router outlet, navbar, toast and keyword sheet. Every route capture in shoot.js is a capture of it.",
+  "src/app/components/navbar/navbar.component.ts": "Chrome present in every shoot.js route capture at both phone widths, and its collapsed drawer is driven by e2e/_verify-nav-rules.js.",
+  "src/app/components/card-search-panel/card-search-panel.component.ts": "Covered by e2e/verify-same.js, which pixel-diffs its filter block against the other three hosts.",
+  "src/app/components/user-avatar/user-avatar.component.ts": "A fixed-size circle with no layout of its own, rendered inside surfaces the harness already captures: the players grid (shoot.js 'players'), the profile hero (shoot.js 'profile') and the account page (shoot.js 'account')."
+}

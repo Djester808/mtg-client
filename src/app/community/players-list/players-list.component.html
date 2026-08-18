@@ -8,7 +8,7 @@
     <header class="pl-header">
       <div>
         <h1 class="pl-title">Players</h1>
-        <p class="pl-subtitle">Community members who have published decks</p>
+        <p class="pl-subtitle">Community members</p>
       </div>
     </header>
 
@@ -62,8 +62,9 @@
 
     <!-- Empty -->
     <div class="pl-empty" *ngIf="!loading && filteredPlayers.length === 0">
-      <i class="bi bi-person-x"></i>
-      <p>No players found.</p>
+      <i class="bi bi-person-x empty-icon"></i>
+      <p class="empty-title">No players found</p>
+      <p class="empty-sub">Try a different search.</p>
     </div>
 
     <!-- Grid -->
@@ -74,11 +75,15 @@
         [routerLink]="['/u', p.username]"
         [title]="'View ' + p.username + '\'s profile'"
       >
-        <div class="pl-avatar" [style.background]="avatarColor(p.username)">
-          {{ p.username[0].toUpperCase() }}
-        </div>
+        <app-user-avatar
+          [username]="p.username"
+          [displayName]="p.displayName"
+          [avatarUrl]="p.avatarUrl"
+          [size]="44"
+        ></app-user-avatar>
         <div class="pl-info">
-          <div class="pl-username">{{ p.username }}</div>
+          <div class="pl-username">{{ p.displayName || p.username }}</div>
+          <div class="pl-tagline" *ngIf="p.tagline">{{ p.tagline }}</div>
           <div class="pl-joined">Since {{ formatDate(p.joinedAt) }}</div>
         </div>
         <div class="pl-stats">

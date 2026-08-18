@@ -79,15 +79,19 @@
       <ng-container *ngIf="collection$ | async as col">
         <!-- The bar itself is app-card-grid-filters, shared with the deck grid. What is
              projected into it is what only this page has: the cover picker on the left,
-             the select / group / display cluster on the right. -->
+             the select / group / display cluster on the right.
+
+             ownableTypes: a collection holds what you own, and that includes tokens and
+             art-series cards, so it offers the same Token/Other chips Home's search does.
+             The deck grid does not — neither is legal in a deck. -->
         <app-card-grid-filters
           class="grid-filters"
           *ngIf="col.cards.length"
           [filters]="filters"
           [facets]="true"
+          [ownableTypes]="true"
           [sortControls]="false"
           [setOptions]="setFilterOptions(col)"
-          [available]="availableFacets(col)"
           [suggestions]="filterSuggestions(col)"
           placeholder="Filter cards in collection…"
           [zoomLabel]="zoomLabel"
@@ -258,10 +262,7 @@
           [class.density-half]="!textStyle && layout === 'visual' && density === 'half'"
           [class.density-name]="!textStyle && layout === 'visual' && density === 'name'"
         >
-          <section
-            class="col-group"
-            *ngFor="let group of getGroups(col); trackBy: trackByGroupKey"
-          >
+          <section class="col-group" *ngFor="let group of getGroups(col); trackBy: trackByGroupKey">
             <!-- "No grouping" is one unlabelled section; a heading with no name would
                  read as a section that failed to render. -->
             <header class="col-group-header" *ngIf="group.label">
@@ -305,97 +306,99 @@
                 (mouseenter)="onCardHover(card)"
                 (mouseleave)="onCardLeave()"
               >
-            <!-- Selection checkbox, only while picking cards for a bulk move -->
-            <button
-              class="tile-select"
-              *ngIf="selectMode"
-              [class.is-checked]="isSelected(card)"
-              (click)="toggleSelected(card, $event)"
-              [attr.aria-pressed]="isSelected(card)"
-              [title]="isSelected(card) ? 'Deselect' : 'Select'"
-            >
-              <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
-            </button>
-            <!-- Visual tile -->
-            <app-card-tile
-              class="card-tile"
-              [class.is-selectable]="selectMode"
-              [class.is-selected]="selectMode && isSelected(card)"
-              (click)="selectMode && toggleSelected(card, $event)"
-              [class.is-foil]="card.quantityFoil > 0"
-              [class.has-info]="tileInfoId === card.id"
-              [card]="card"
-              [image]="tileImage(card)"
-              [hasBack]="tileHasBack(card)"
-              [flipped]="flippedCardIds.has(card.id)"
-              [showInfo]="tileInfoId === card.id"
-              (flip)="toggleTileFlip(card, $event)"
-              (artClick)="onTileClick(card, $event)"
-            >
-              <div class="tile-badges" tileBadges>
-                <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
-                <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0"
-                  >✦{{ card.quantityFoil }}</span
+                <!-- Selection checkbox, only while picking cards for a bulk move -->
+                <button
+                  class="tile-select"
+                  *ngIf="selectMode"
+                  [class.is-checked]="isSelected(card)"
+                  (click)="toggleSelected(card, $event)"
+                  [attr.aria-pressed]="isSelected(card)"
+                  [title]="isSelected(card) ? 'Deselect' : 'Select'"
                 >
-              </div>
+                  <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
+                </button>
+                <!-- Visual tile -->
+                <app-card-tile
+                  class="card-tile"
+                  [class.is-selectable]="selectMode"
+                  [class.is-selected]="selectMode && isSelected(card)"
+                  (click)="selectMode && toggleSelected(card, $event)"
+                  [class.is-foil]="card.quantityFoil > 0"
+                  [class.has-info]="tileInfoId === card.id"
+                  [card]="card"
+                  [image]="tileImage(card)"
+                  [hasBack]="tileHasBack(card)"
+                  [flipped]="flippedCardIds.has(card.id)"
+                  [showInfo]="tileInfoId === card.id"
+                  (flip)="toggleTileFlip(card, $event)"
+                  (artClick)="onTileClick(card, $event)"
+                >
+                  <div class="tile-badges" tileBadges>
+                    <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
+                    <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0"
+                      >✦{{ card.quantityFoil }}</span
+                    >
+                  </div>
 
-              <!-- Hover strip: set picker + normal/foil quantities -->
-              <div class="card-bottom" tileBottom (click)="$event.stopPropagation()">
-                <!-- A dropdown that can only ever pick what is already selected is
+                  <!-- Hover strip: set picker + normal/foil quantities -->
+                  <div class="card-bottom" tileBottom (click)="$event.stopPropagation()">
+                    <!-- A dropdown that can only ever pick what is already selected is
                      noise; one printing renders as a plain label instead. -->
-                <span class="set-single-label" *ngIf="singlePrintingLabel(card) as only">
-                  <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
-                  {{ only }}
-                </span>
-                <app-select-menu
-                  *ngIf="!singlePrintingLabel(card)"
-                  class="set-select-menu"
-                  [options]="printingOptions(card)"
-                  [value]="pickerValue(card)"
-                  [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
-                  (opened)="onSelectFocus(card)"
-                  (valueChange)="onSetChange(card, $event)"
-                ></app-select-menu>
+                    <span class="set-single-label" *ngIf="singlePrintingLabel(card) as only">
+                      <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
+                      {{ only }}
+                    </span>
+                    <app-select-menu
+                      *ngIf="!singlePrintingLabel(card)"
+                      class="set-select-menu"
+                      [options]="printingOptions(card)"
+                      [value]="pickerValue(card)"
+                      [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
+                      (opened)="onSelectFocus(card)"
+                      (valueChange)="onSetChange(card, $event)"
+                    ></app-select-menu>
 
-                <div class="ctrl-strip-row">
-                  <div class="ctrl-row">
-                    <button
-                      class="ctrl-btn ctrl-dec"
-                      (click)="decrementNormal(card)"
-                      title="Remove regular"
-                    >
-                      −
-                    </button>
-                    <span class="ctrl-label"><i class="bi bi-layers"></i> {{ card.quantity }}</span>
-                    <button
-                      class="ctrl-btn ctrl-inc"
-                      (click)="incrementNormal(card)"
-                      title="Add regular"
-                    >
-                      +
-                    </button>
-                  </div>
+                    <div class="ctrl-strip-row">
+                      <div class="ctrl-row">
+                        <button
+                          class="ctrl-btn ctrl-dec"
+                          (click)="decrementNormal(card)"
+                          title="Remove regular"
+                        >
+                          −
+                        </button>
+                        <span class="ctrl-label"
+                          ><i class="bi bi-layers"></i> {{ card.quantity }}</span
+                        >
+                        <button
+                          class="ctrl-btn ctrl-inc"
+                          (click)="incrementNormal(card)"
+                          title="Add regular"
+                        >
+                          +
+                        </button>
+                      </div>
 
-                  <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
-                    <button
-                      class="ctrl-btn ctrl-dec"
-                      (click)="decrementFoil(card)"
-                      title="Remove foil"
-                    >
-                      −
-                    </button>
-                    <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
-                    <button
-                      class="ctrl-btn ctrl-inc"
-                      (click)="incrementFoil(card)"
-                      title="Add foil"
-                    >
-                      +
-                    </button>
+                      <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
+                        <button
+                          class="ctrl-btn ctrl-dec"
+                          (click)="decrementFoil(card)"
+                          title="Remove foil"
+                        >
+                          −
+                        </button>
+                        <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
+                        <button
+                          class="ctrl-btn ctrl-inc"
+                          (click)="incrementFoil(card)"
+                          title="Add foil"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              </app-card-tile>
+                </app-card-tile>
               </div>
             </div>
           </section>

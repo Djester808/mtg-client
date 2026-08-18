@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 // Shared chrome for the detail pages (deck, collection, forum). The shell, background,
 // header, back button, filter field, states, and zoom control are one visual language;
 // the accent color is the only thing a page may vary, so it is the mixin parameter.
@@ -58,6 +60,16 @@
   backdrop-filter: blur(8px);
   background: rgba(8, 8, 8, 0.65);
   flex-shrink: 0;
+
+  // A back button, a title and an action cluster on one line need ~520px. Below that the
+  // actions ran off the right edge — on the deck list the New Deck button sat at x=442
+  // on a 375px screen, and the shell clips rather than scrolls, so the primary action on
+  // the page was simply gone. They wrap onto their own line instead.
+  @include upto($bp-phone) {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 16px;
+  }
 }
 
 @mixin back-btn($hover: var(--gold)) {
@@ -107,6 +119,67 @@
   text-transform: uppercase;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+// ---- Drawer chrome ------------------------------------------------------------------
+//
+// The bar every deck drawer wears: glyph, name, close. There were four of these — Mana
+// and Card Suggestions in 15px title case with a coloured icon, Stats/Commander in a 10px
+// dim uppercase caption, Add Cards in an 11px one, over three paddings and three close
+// buttons. Below $bp-phone each drawer is a full-screen sheet shown on its own, so the
+// difference does not read as variety, it reads as four unrelated screens. The glyph's
+// accent is the only thing a panel varies.
+
+@mixin drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+@mixin drawer-title($icon: var(--gold)) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  > i {
+    flex-shrink: 0;
+    font-size: 14px;
+    color: $icon;
+  }
+}
+
+@mixin drawer-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition:
+    color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-raised);
+  }
 }
 
 /// The page's primary action button. Collection uses gold-on-dark, deck purple-on-white.

@@ -15,7 +15,7 @@ export const COLOR_CHIPS: FilterChip[] = [
   { code: 'M', symbol: 'multicolor', title: 'Multicolor' },
 ];
 
-/** The collection grid only owns rows it can classify, so it stops at Planeswalker. */
+/** The seven types a deck can legally contain. */
 export const CARD_TYPES = [
   'Creature',
   'Instant',
@@ -26,7 +26,15 @@ export const CARD_TYPES = [
   'Planeswalker',
 ] as const;
 
-/** Search additionally offers the catch-alls, which no collection row carries. */
+/**
+ * Plus the two catch-alls. `Token` is every token and emblem; `Other` is everything the
+ * parser cannot type — art series cards, schemes, planes, ads, memorabilia.
+ *
+ * Used by anything that shows what a person can *own* rather than what a deck can play:
+ * Home's search and the collection grid. Tokens and art cards are real printings with
+ * real prices and people collect them, so a collection that cannot filter to them is
+ * hiding rows it is already holding.
+ */
 export const SEARCH_CARD_TYPES = [...CARD_TYPES, 'Token', 'Other'];
 
 export const TYPE_CHIPS: FilterChip[] = CARD_TYPES.map((t) => ({ code: t, label: t }));

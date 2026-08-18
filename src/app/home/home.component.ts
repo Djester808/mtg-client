@@ -27,12 +27,20 @@ import { PrintingsService } from '../services/printings.service';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../components/card-modal/card-modal.component';
 import { CardSearchBase } from '../components/card-search-base';
+import { FilterFacetsComponent } from '../components/filter-facets/filter-facets.component';
 import { COLOR_CHIPS, RARITY_CHIPS } from '../components/filter-chips/filter-chip-sets';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ManaCostComponent, CardModalComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    ManaCostComponent,
+    CardModalComponent,
+    FilterFacetsComponent,
+  ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   // OnPush is safe here: every mutation path already calls cdr.markForCheck().

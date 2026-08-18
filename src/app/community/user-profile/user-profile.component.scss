@@ -1,272 +1,545 @@
+// Three levels to src/ — this component sits at app/community/user-profile/.
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
+// Designed at 375 first. Everything here is a single column that grows into more columns
+// on its own; there is no wide-only layout and no phone-only override to escape.
 .up-page {
   max-width: 900px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
-  min-height: 100vh;
+  padding: 24px 16px 64px;
+
+  @include from($bp-phone) {
+    padding: 40px 24px 80px;
+  }
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgba(201, 168, 76, 0.2);
-  border-top-color: #c9a84c;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
 .up-loading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 120px 0;
-  justify-content: center;
-  color: rgba(230, 220, 195, 0.4);
-  font-size: 0.875rem;
-}
-.up-error {
-  text-align: center;
-  padding: 80px 0;
-  color: #e06060;
-  font-size: 0.9rem;
+  @include loading-state;
 }
 
-// ── Hero ─────────────────────────────────────────────────────────────────────
+.up-empty {
+  @include empty-state;
+}
+
+// ---- Hero -----------------------------------------------------------------
 
 .up-hero {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 36px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
-.up-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.08));
-  border: 1px solid rgba(201, 168, 76, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #c9a84c;
-  flex-shrink: 0;
+.up-hero-info {
+  // Without this a long display name pushes the flex row past the viewport instead of
+  // wrapping inside it.
+  min-width: 0;
 }
 
-.up-username {
-  font-size: 1.8rem;
+.up-name {
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
-  color: #e6dcc3;
-  margin: 0 0 6px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+  // Names wrap rather than truncate: the tail of a handle is what distinguishes it.
+  overflow-wrap: anywhere;
+
+  @include from($bp-phone) {
+    font-size: 28px;
+  }
+}
+
+.up-handle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.up-tagline {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+  line-height: 1.4;
 }
 
 .up-meta {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+  i {
+    margin-right: 4px;
+    color: var(--gold-dim);
+  }
+}
+
+.up-bio {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 16px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// ---- Pinned commander -----------------------------------------------------
+
+.up-pinned {
+  display: flex;
   align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(201, 168, 76, 0.07);
+  border: 1px solid rgba(201, 168, 76, 0.22);
+  text-decoration: none;
+}
+
+.up-pinned-art {
+  width: 72px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+}
+
+.up-pinned-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.up-pinned-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.up-pinned-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.up-pinned-pips i {
+  font-size: 11px;
+  margin-right: 2px;
+}
+
+// ---- Stat tiles -----------------------------------------------------------
+
+// Three across at 375px, more as the page widens. auto-fit rather than a fixed count so
+// there is no breakpoint to keep in step.
+.up-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
-  font-size: 0.8rem;
-  color: rgba(230, 220, 195, 0.4);
+  margin-top: 20px;
 }
 
-.up-sep {
-  opacity: 0.4;
+.up-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
+.up-stat-value {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.up-stat-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.25;
+}
+
+// ---- Sections -------------------------------------------------------------
+
+.up-section {
+  margin-top: 28px;
+}
+
+.up-section-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin: 0 0 12px;
+}
+
+// ---- Colour spread --------------------------------------------------------
+
+.up-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.up-color {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  i {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.up-color-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.up-color-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.75), rgba(201, 168, 76, 0.35));
+}
+
+.up-color-count {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 20px;
+  text-align: right;
+}
+
+// ---- Card / commander rails -----------------------------------------------
+
+// A grid, not a horizontal scroller. The app computed this list, so it reflows to fit
+// rather than panning — panning is reserved for layouts the user arranged.
+.up-rail {
+  display: grid;
+  // 150 rather than 104: at the smaller floor a phone fitted three tiles per row, which
+  // left the art too narrow to make out. Two larger tiles read better than three tiny ones.
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.up-played,
+.up-cmd {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  text-decoration: none;
+}
+
+.up-played-art,
+.up-cmd-art {
+  display: block;
+  // Scryfall's art_crop is 626x457. A fixed 52px height made the box roughly 4.7:1 against
+  // a ~245px tile, so `cover` discarded about seventy per cent of the picture's height —
+  // faces and focal points included. Matching the source's own ratio crops nothing.
+  aspect-ratio: 626 / 457;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+}
+
+.up-played-name,
+.up-cmd-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.up-played-count,
+.up-cmd-count {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// ---- Recently active ------------------------------------------------------
+
+.up-active {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.up-active-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  min-height: $tap-min;
+}
+
+.up-active-cover {
+  width: 56px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+}
+
+.up-active-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.up-active-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.up-active-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+// ---- Tabs -----------------------------------------------------------------
 
 .up-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
+  gap: 4px;
+  margin: 28px 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .up-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: rgba(230, 220, 195, 0.5);
-  font-size: 0.82rem;
+  gap: 6px;
+  min-height: $tap-min;
+  padding: 0 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
   cursor: pointer;
-  transition:
-    background 0.13s,
-    color 0.13s,
-    border-color 0.13s;
-
-  &:hover {
-    color: rgba(230, 220, 195, 0.85);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
 
   &.active {
-    background: rgba(201, 168, 76, 0.12);
-    border-color: rgba(201, 168, 76, 0.4);
-    color: #c9a84c;
+    color: var(--gold);
+    border-bottom-color: var(--gold);
   }
 }
 
 .up-tab-count {
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 1px 7px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
 }
 
-// ── Deck grid ────────────────────────────────────────────────────────────────
+// ---- Published decks ------------------------------------------------------
 
 .up-decks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
 }
 
 .up-deck-card {
-  background: rgba(20, 18, 32, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   text-decoration: none;
-  transition:
-    border-color 0.15s,
-    transform 0.15s;
-
-  &:hover {
-    border-color: rgba(201, 168, 76, 0.3);
-    transform: translateY(-2px);
-  }
 }
 
 .up-deck-cover {
   position: relative;
-  height: 100px;
+  height: 96px;
+  background-color: rgba(0, 0, 0, 0.4);
   background-size: cover;
-  background-position: center 30%;
-  background-color: rgba(10, 8, 20, 0.6);
+  background-position: center;
 }
 
 .up-deck-cover-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(14, 12, 28, 0.8));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.7));
 }
 
 .up-deck-pips {
   position: absolute;
+  left: 8px;
   bottom: 8px;
-  right: 10px;
   display: flex;
   gap: 2px;
-  .ms {
-    font-size: 0.9rem;
+
+  i {
+    font-size: 12px;
   }
 }
 
 .up-deck-body {
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  padding: 10px 12px 12px;
 }
 
 .up-deck-name {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: rgba(230, 220, 195, 0.9);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .up-deck-desc {
-  font-size: 0.75rem;
-  color: rgba(230, 220, 195, 0.45);
-  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+  // Two lines of blurb, then stop — this is a card in a grid, not the post.
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  .ms {
-    font-size: 0.75em;
-    vertical-align: middle;
-  }
 }
 
 .up-deck-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  font-size: 0.7rem;
-  color: rgba(230, 220, 195, 0.35);
-  i {
-    margin-right: 3px;
-  }
+  gap: 4px 12px;
+  margin-top: 10px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .up-deck-time {
   margin-left: auto;
 }
 
-// ── Comments ─────────────────────────────────────────────────────────────────
+// ---- Comment history ------------------------------------------------------
 
 .up-comments {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .up-comment-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  background: rgba(20, 18, 32, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  display: block;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   text-decoration: none;
-  transition: border-color 0.15s;
+}
 
-  &:hover {
-    border-color: rgba(201, 168, 76, 0.25);
-  }
+.up-comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
 }
 
 .up-comment-deck {
-  font-size: 0.72rem;
-  color: #c9a84c;
+  font-family: var(--font-body);
+  font-size: 12px;
   font-weight: 600;
-}
-
-.up-comment-content {
-  font-size: 0.83rem;
-  color: rgba(230, 220, 195, 0.7);
-  margin: 0;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  .ms {
-    font-size: 0.85em;
-    vertical-align: middle;
-  }
+  color: var(--gold-dim);
+  overflow-wrap: anywhere;
 }
 
 .up-comment-time {
-  font-size: 0.68rem;
-  color: rgba(230, 220, 195, 0.3);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
-// ── Empty ────────────────────────────────────────────────────────────────────
+.up-comment-edited {
+  font-style: italic;
+}
 
-.up-empty {
-  padding: 40px 0;
-  text-align: center;
-  color: rgba(230, 220, 195, 0.3);
-  font-size: 0.85rem;
+.up-comment-content {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.up-more {
+  align-self: center;
+  min-height: $tap-min;
+  padding: 0 20px;
+  margin-top: 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 }

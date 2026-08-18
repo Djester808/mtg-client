@@ -1,0 +1,94 @@
+// Three levels to src/ — this component sits at app/components/rule-block/.
+@use '../../../styles/breakpoints' as *;
+
+// The two knobs callers actually varied when this was three copies. Custom properties
+// rather than inputs because they inherit through view encapsulation, which a class on
+// the host would not.
+:host {
+  --rule-text-size: 14px;
+  --rule-number-width: 62px;
+
+  display: block;
+}
+
+.rule {
+  margin-bottom: 18px;
+}
+
+.rule-line {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+
+  @include upto($bp-phone) {
+    // The number takes a whole line of a 375px screen otherwise, leaving the text a
+    // column too narrow to read.
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.rule-number {
+  flex-shrink: 0;
+  min-width: var(--rule-number-width);
+  color: var(--gold-dim, var(--gold));
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.rule-text {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--rule-text-size);
+  line-height: 1.65;
+  // Rules that run to several paragraphs are joined with blank lines by the parser.
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.subrule {
+  margin-top: 8px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border-dim);
+
+  .rule-text {
+    font-size: calc(var(--rule-text-size) - 1px);
+  }
+}
+
+.rule-example {
+  margin-top: 6px;
+  margin-left: var(--rule-number-width);
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: calc(var(--rule-text-size) - 1.5px);
+  line-height: 1.55;
+  white-space: pre-line;
+
+  @include upto($bp-phone) {
+    margin-left: 0;
+  }
+}
+
+.rule-example-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+// A rule opened from a search hit is marked so it can be found in a group of forty.
+.is-highlighted > .rule-line {
+  padding: 6px 10px;
+  margin-left: -10px;
+  border-radius: 6px;
+  background: rgba(201, 168, 76, 0.1);
+  box-shadow: inset 2px 0 0 var(--gold);
+}

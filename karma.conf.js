@@ -1,4 +1,4 @@
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
     basePath: '',
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
@@ -17,7 +17,10 @@ module.exports = function(config) {
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage/mtg-client'),
       subdir: '.',
-      reporters: [{ type: 'html' }, { type: 'text-summary' }],
+      // json-summary is what tools/check-new-coverage.js reads. The repo sits around 54%
+      // overall, so a global threshold cannot see a new file arriving at 0 — the check is
+      // per-file and only looks at what the working tree changed.
+      reporters: [{ type: 'html' }, { type: 'text-summary' }, { type: 'json-summary' }],
     },
     reporters: ['progress', 'kjhtml'],
     browserDisconnectTimeout: 60000,

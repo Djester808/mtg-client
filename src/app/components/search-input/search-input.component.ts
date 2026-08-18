@@ -61,6 +61,11 @@ import { FormsModule } from '@angular/forms';
         position: relative;
         display: flex;
         align-items: center;
+        /* Let a host size the field: the input is ~28px of its own, and every caller that
+           wanted a taller one had been getting it by accident from a flex row's stretch.
+           Inherited min-height is auto unless the host sets one, so nothing else moves.
+           (No backticks in this comment — it lives inside a template literal.) */
+        min-height: inherit;
       }
 
       .si-icon {
@@ -76,6 +81,7 @@ import { FormsModule } from '@angular/forms';
       .si-input {
         flex: 1;
         min-width: 0;
+        align-self: stretch;
         padding: 6px 10px 6px 30px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.08);

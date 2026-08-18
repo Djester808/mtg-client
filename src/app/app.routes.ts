@@ -96,6 +96,14 @@ export const routes: Routes = [
         (m) => m.CommanderDetailComponent,
       ),
   },
+  // The account page: the signed-in user's own profile. The navbar has linked here since
+  // it was written; until now there was no route behind it, so the item did nothing.
+  {
+    path: 'account',
+    loadComponent: () =>
+      import('./profile/profile-edit/profile-edit.component').then((m) => m.ProfileEditComponent),
+    canActivate: [authGuard],
+  },
   {
     path: 'u/:username',
     loadComponent: () =>

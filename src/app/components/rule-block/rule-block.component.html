@@ -1,0 +1,24 @@
+<div class="rule" [class.is-highlighted]="isHighlighted(rule.number)">
+  <p class="rule-line">
+    <span class="rule-number">{{ rule.number }}</span>
+    <span class="rule-text">{{ rule.text }}</span>
+  </p>
+
+  <p class="rule-example" *ngFor="let example of rule.examples">
+    <span class="rule-example-label">Example</span>{{ example }}
+  </p>
+
+  <div
+    class="subrule"
+    *ngFor="let sub of rule.subrules; trackBy: trackByNumber"
+    [class.is-highlighted]="isHighlighted(sub.number)"
+  >
+    <p class="rule-line">
+      <span class="rule-number">{{ sub.number }}</span>
+      <span class="rule-text">{{ sub.text }}</span>
+    </p>
+    <p class="rule-example" *ngFor="let example of sub.examples">
+      <span class="rule-example-label">Example</span>{{ example }}
+    </p>
+  </div>
+</div>

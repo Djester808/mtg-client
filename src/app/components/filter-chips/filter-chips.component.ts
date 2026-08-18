@@ -29,7 +29,7 @@ export interface FilterChip {
     <div class="chip-row">
       <span class="chip-row-label" *ngIf="label">{{ label }}</span>
       <button
-        *ngFor="let c of chips"
+        *ngFor="let c of chips; trackBy: trackByCode"
         type="button"
         [class.color-chip]="c.symbol"
         [class.rarity-badge]="c.rarity"
@@ -56,4 +56,11 @@ export class FilterChipsComponent {
   @Input() narrow = false;
 
   @Output() toggled = new EventEmitter<string>();
+
+  /**
+   * Keyed on the chip's own code, so a caller that builds its list in a getter — the sort
+   * direction chip rebuilds its array every change-detection pass to carry the ▲/▼ — reuses
+   * the same button instead of tearing it down and making a new one each time.
+   */
+  trackByCode = (_: number, chip: FilterChip): string => chip.code;
 }

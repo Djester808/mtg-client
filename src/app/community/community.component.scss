@@ -1,3 +1,7 @@
+// Two levels to src/, not three — this component sits at app/community/, unlike the
+// app/components/<name>/ sheets that use '../../../'.
+@use '../../styles/breakpoints' as *;
+
 .community-page {
   min-height: 100vh;
 }
@@ -12,6 +16,61 @@
   background: rgba(8, 8, 8, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+  // Three tabs needed ~486px and ran off every phone. Scrolling them was the first fix
+  // and it was the wrong one: a strip of THREE peers that slices the first label to
+  // "TY DECKS" reads as a broken layout no matter how well it scrolls, and hides a
+  // whole section behind a gesture nothing advertises. They are made to fit instead —
+  // equal thirds, no icons, and the longest label drops its redundant first word. The
+  // scroll and fade below stay as a safety net for anything narrower than we target.
+  @include upto($bp-nav) {
+    padding: 0 8px;
+    overflow-x: auto;
+    // On a phone the gutter lines the first tab's LABEL up with the page content below
+    // it: 20 here plus the tab's own 4 is the 24px the titles, filter bar and cards all
+    // start at. The tab used to centre its text inside its third, so "Decks" floated
+    // 16px inboard of everything under it.
+    @include upto($bp-phone) {
+      padding: 0 20px;
+    }
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    // Snap so a swipe lands on a tab boundary rather than halfway through a label.
+    scroll-snap-type: x proximity;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // The fade is the affordance. Without it the strip is sliced flat at the screen edge
+    // and reads as a clipped layout bug — which is exactly how it looked before, even
+    // though it scrolled. Masked rather than overlaid with a gradient block so it works
+    // over the sticky blurred background without having to restate that background.
+    // Only the edge that HAS more content past it fades, so at either end the last tab
+    // is fully legible.
+    &.can-scroll-right {
+      mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    }
+    &.can-scroll-left {
+      mask-image: linear-gradient(to right, transparent 0, #000 28px);
+    }
+    &.can-scroll-left.can-scroll-right {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 28px,
+        #000 calc(100% - 28px),
+        transparent 100%
+      );
+    }
+  }
+}
+
+// Dropped below $bp-nav so "Community Decks" becomes "Decks" and the three tabs fit.
+.tab-word-optional {
+  @include upto($bp-nav) {
+    display: none;
+  }
 }
 
 .community-tab {
@@ -19,6 +78,37 @@
   align-items: center;
   gap: 7px;
   padding: 14px 20px 12px;
+  // Above the breakpoint the tabs keep their natural width and the strip does not scroll.
+  flex-shrink: 0;
+  scroll-snap-align: start;
+
+  @include upto($bp-nav) {
+    // Equal thirds so all three are on screen at once and none is cut.
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    padding: 12px 4px 10px;
+
+    // Phone only: the labels run from the left edge of their third rather than being
+    // centred in it, so the first tab starts on the page's content edge. Left of this
+    // breakpoint the thirds are ~110px and a label nearly fills one; at tablet width a
+    // third is ~290px and left-aligned labels would read as three stranded words.
+    @include upto($bp-phone) {
+      justify-content: flex-start;
+      text-align: left;
+    }
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
+    // Tap target: the row is 44px tall including its padding.
+    min-height: $tap-min;
+
+    // The icons are decoration next to a text label, and they cost ~20px each of the
+    // width the labels need.
+    i {
+      display: none;
+    }
+  }
   color: rgba(230, 220, 195, 0.45);
   text-decoration: none;
   font-size: 0.8rem;

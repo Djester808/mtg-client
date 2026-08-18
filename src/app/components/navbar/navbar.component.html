@@ -1,7 +1,11 @@
 <nav
   class="fixed top-0 left-0 right-0 z-[1000] h-[52px] flex items-center px-6 gap-8 bg-[rgba(8,8,8,0.85)] backdrop-blur-[12px] border-b border-solid border-dim"
 >
-  <a class="nav-logo flex items-center gap-2 no-underline shrink-0" routerLink="/">
+  <a
+    class="nav-logo flex items-center gap-2 no-underline shrink-0"
+    routerLink="/"
+    (click)="closeMenu()"
+  >
     <span class="text-[14px] text-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.5)]">&#9670;</span>
     <span class="font-display text-[14px] font-bold tracking-[0.12em] uppercase text-parchment"
       >MTG Engine</span
@@ -10,29 +14,12 @@
 
   <div class="nav-links flex items-center gap-1 flex-1">
     <a
+      *ngFor="let link of navLinks"
       class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
-      routerLink="/"
+      [routerLink]="link.path"
       routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      >Home</a
-    >
-    <a
-      class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
-      routerLink="/collection"
-      routerLinkActive="active"
-      >Collection</a
-    >
-    <a
-      class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
-      routerLink="/deck"
-      routerLinkActive="active"
-      >Decks</a
-    >
-    <a
-      class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
-      routerLink="/community"
-      routerLinkActive="active"
-      >Community</a
+      [routerLinkActiveOptions]="{ exact: link.exact }"
+      >{{ link.label }}</a
     >
   </div>
 
@@ -42,10 +29,15 @@
         class="account-btn flex items-center gap-2 py-1.5 px-3 bg-raised border border-solid border-dim rounded-lg cursor-pointer transition-[border-color,background] duration-150 hover:border-subtle hover:bg-elevated"
         (click)="toggleAccount()"
       >
-        <span class="text-[10px] text-gold">&#9670;</span>
+        <app-user-avatar
+          [username]="accountHandle()"
+          [displayName]="accountName()"
+          [avatarUrl]="avatarUrl()"
+          [size]="24"
+        ></app-user-avatar>
         <span
           class="account-name font-display text-[11px] font-semibold tracking-[0.08em] text-parchment max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap"
-          >{{ username$ | async }}</span
+          >{{ accountName() }}</span
         >
         <span
           class="account-caret text-[8px] text-parchment-faint transition-transform duration-200"
@@ -53,10 +45,7 @@
           >&#9660;</span
         >
       </button>
-      <div
-        class="account-dropdown absolute top-[calc(100%+6px)] right-0 min-w-[160px] bg-surface border border-solid border-subtle rounded-[10px] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] animate-dropdown-in"
-        *ngIf="accountOpen()"
-      >
+      <div class="account-dropdown animate-dropdown-in" *ngIf="accountOpen()">
         <a
           class="dropdown-item block w-full py-2 px-3 font-body text-[13px] text-parchment-muted no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms] hover:bg-raised hover:text-parchment"
           routerLink="/account"
@@ -85,4 +74,59 @@
       >
     </ng-template>
   </div>
+
+  <!-- Collapsed-width control. Hidden above $bp-nav; it is the only way to reach the
+       links and the account actions below it. -->
+  <button
+    type="button"
+    class="nav-toggle"
+    (click)="toggleMenu()"
+    [class.is-open]="menuOpen()"
+    [attr.aria-expanded]="menuOpen()"
+    aria-controls="mobile-nav"
+    aria-label="Menu"
+  >
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+  </button>
 </nav>
+
+<!-- Drawer. Rendered outside <nav> so it is not subject to the bar's 52px height and
+     its own backdrop-filter, which would otherwise clip and blur it. -->
+<div class="nav-scrim" *ngIf="menuOpen()" (click)="closeMenu()"></div>
+
+<div class="mobile-nav" id="mobile-nav" *ngIf="menuOpen()">
+  <a
+    *ngFor="let link of navLinks"
+    class="mobile-nav-link"
+    [routerLink]="link.path"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: link.exact }"
+    (click)="closeMenu()"
+    >{{ link.label }}</a
+  >
+
+  <div class="mobile-nav-rule"></div>
+
+  <ng-container *ngIf="isLoggedIn$ | async; else loggedOutMobile">
+    <p class="mobile-nav-user">
+      <app-user-avatar
+        [username]="accountHandle()"
+        [displayName]="accountName()"
+        [avatarUrl]="avatarUrl()"
+        [size]="28"
+      ></app-user-avatar>
+      <span>{{ accountName() }}</span>
+    </p>
+    <a class="mobile-nav-link" routerLink="/account" (click)="closeMenu()">Profile</a>
+    <button type="button" class="mobile-nav-link danger" (click)="signOut()">Sign Out</button>
+  </ng-container>
+
+  <ng-template #loggedOutMobile>
+    <a class="mobile-nav-link" routerLink="/login" (click)="closeMenu()">Sign In</a>
+    <a class="mobile-nav-link accent" routerLink="/register" (click)="closeMenu()"
+      >Create Account</a
+    >
+  </ng-template>
+</div>

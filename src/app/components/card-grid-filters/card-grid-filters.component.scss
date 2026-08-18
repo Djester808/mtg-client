@@ -1,3 +1,5 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/filter-bar' as *;
 // The filter bar above a card grid.
 //
 // Two layouts, chosen by the bar's *own* width — not the window's, because the search
@@ -95,6 +97,16 @@
   }
 }
 
+// The phone layout wraps .cgf-left and .cgf-right in .cgf-controls-line so their
+// controls cannot break onto separate rows. That wrapper must be INVISIBLE to the
+// desktop layout: this bar places .cgf-left / .cgf-center / .cgf-right into named grid
+// areas, and a real element between the grid and its items orphans them — which is
+// exactly what the layout specs caught (the right cluster landed at -980px). The phone
+// rule in global.scss overrides this.
+.cgf-controls-line {
+  display: contents;
+}
+
 // Closed. Absolute, so opening it never moves the grid below.
 .cgf-clusters {
   position: absolute;
@@ -108,6 +120,7 @@
   align-items: center;
   gap: 14px;
   padding: 16px;
+
   max-width: min(92vw, 460px);
   background: var(--bg-surface);
   border: 1px solid var(--border-dim);

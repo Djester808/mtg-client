@@ -1,3 +1,7 @@
+// Three levels to src/ — this component sits at app/forum/forum-list/.
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/filter-bar' as *;
+
 .forum-shell {
   min-height: 100vh;
   position: relative;
@@ -99,6 +103,124 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 12px;
+
+  @include upto($bp-phone) {
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 16px;
+  }
+}
+
+// ---- Collapsible filter panel (phones) -------------------
+//
+// At full width these controls are one wrapped row and that is fine. At 375px the same
+// row became five stacked bands of chips — colour, four format rows, sort — that pushed
+// the actual deck list most of a screen down, and every chip was a sub-30px tap target
+// packed against its neighbours. They fold behind one trigger instead.
+//
+// That trigger is the deck block's pill, not the square button it used to be: the search
+// field takes the whole first row and the pill sits centred under it, which is how the
+// deck bar collapses. Two bars with two different collapse affordances is the same drift
+// the chip rows had.
+.ff-menu-btn {
+  display: none;
+
+  @include upto($bp-phone) {
+    @include filter-toggle-pill;
+
+    &.has-filters:not(.is-open)::after {
+      @include filter-active-dot;
+    }
+  }
+}
+
+.ff-collapse {
+  display: contents;
+
+  @include upto($bp-phone) {
+    display: none;
+
+    // Centred clusters, matching the card search panel's native idiom: each row is a
+    // small-caps label INLINE with its controls, the whole cluster centred, everything at
+    // its natural width. The previous full-width stacked version wasted most of the
+    // screen and looked nothing like the other bars.
+    &.is-open {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .ff-sep,
+    .ff-spacer {
+      display: none;
+    }
+
+    .ff-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .ff-label {
+      margin: 0 4px 0 0;
+    }
+
+    .ff-chip {
+      min-height: 30px;
+      padding: 5px 10px;
+      font-size: 9px;
+    }
+
+    .ff-color-btn {
+      width: 34px;
+      height: 34px;
+
+      .ms {
+        font-size: 18px;
+      }
+    }
+
+    .ff-sort-btn {
+      min-height: 30px;
+      padding: 5px 10px;
+    }
+
+    .ff-view-btn {
+      min-width: 38px;
+      min-height: 34px;
+    }
+
+    .ff-clear {
+      min-height: 34px;
+    }
+  }
+}
+
+.ff-row-top {
+  display: contents;
+
+  @include upto($bp-phone) {
+    @include filter-top-row;
+    // The pill drops to its own centred row under the field, the way the deck's does.
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+
+    .ff-search-wrap {
+      @include filter-search-field;
+      flex: 1 1 100%;
+      // 40px: the deck bar's search box, measured. It used to inherit its height from
+      // whatever else shared its flex line, which is not a height.
+      min-height: 40px;
+    }
+  }
 }
 
 // Field itself is app-search-input; this only sizes it.
@@ -459,7 +581,48 @@
   gap: 4px;
 }
 
+// A three-across row needs ~520px: a 110px cover, a title/author/description column, and
+// a metadata cluster that is flex-shrink:0. Below that the middle column is the only one
+// that gives, so on a phone it collapsed to a sliver — the author wrapped underneath the
+// format badge and ran into the pips, and the description truncated to "A...". The cover
+// keeps its column and the other two stack beside it, so each gets the full width.
 .post-row {
+  @include upto($bp-phone) {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    align-items: start;
+
+    .pr-cover {
+      width: 84px;
+      height: 100%;
+      min-height: 90px;
+      grid-row: 1 / span 2;
+    }
+
+    .pr-main {
+      grid-column: 2;
+      padding: 10px 12px 2px;
+    }
+
+    .pr-meta {
+      grid-column: 2;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 12px 10px;
+    }
+
+    // Wrap to a couple of lines instead of ellipsing after one word — at this width
+    // nowrap left every deck described as "A...".
+    .pr-desc {
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
   display: flex;
   align-items: center;
   gap: 0;
@@ -508,6 +671,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  // A phone row leaves the name ~150px next to the thumb and the format badge, so
+  // "Kodama of the West Tree — Tuned" ellipsized at "Kodama of the…" — every deck in the
+  // list starting with the same few words is a list you cannot read. Smaller type buys
+  // characters, and what still does not fit pans instead of being cut.
+  @include upto($bp-phone) {
+    font-size: 11.5px;
+    overflow-x: auto;
+    text-overflow: clip;
+    scrollbar-width: none;
+    touch-action: pan-x;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
 
 .pr-badge {
@@ -518,9 +697,21 @@
 }
 
 .pr-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   font-size: 11px;
   color: #a09070;
   margin-top: 2px;
+}
+
+// The author name gives way before the badge does — the badge is a fixed short word.
+.pr-by {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pr-desc {

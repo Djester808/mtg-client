@@ -100,90 +100,90 @@
          768px column beside the sidebar it never could — every control stayed folded into
          the hamburger no matter how wide the window was. -->
     <div class="deck-toolbar">
-      <div class="list-toolbar">
-          <div
-            class="board-tabs"
-            *ngIf="
-              totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0;
-              else boardTabsSpacer
-            "
+      <!-- The whole row goes when there is nothing to tab between, rather than an empty
+           spacer holding it open. The row is only the board tabs now — the view controls
+           moved into the shared bar below — so on a deck with no sideboard or maybeboard
+           the spacer left a ruled 29px band of nothing above the bar, which is most of
+           what made the toolbar read as a black box. -->
+      <div
+        class="list-toolbar"
+        *ngIf="totalCards(post, 'side') > 0 || totalCards(post, 'maybe') > 0"
+      >
+        <div class="board-tabs">
+          <button
+            class="board-tab"
+            [class.active]="activeTab === 'main'"
+            title="View main deck cards"
+            (click)="activeTab = 'main'"
           >
-            <button
-              class="board-tab"
-              [class.active]="activeTab === 'main'"
-              title="View main deck cards"
-              (click)="activeTab = 'main'"
-            >
-              Mainboard ({{ totalCards(post) }})
-            </button>
-            <button
-              class="board-tab"
-              [class.active]="activeTab === 'side'"
-              *ngIf="totalCards(post, 'side') > 0"
-              title="View sideboard cards"
-              (click)="activeTab = 'side'"
-            >
-              Sideboard ({{ totalCards(post, 'side') }})
-            </button>
-            <button
-              class="board-tab"
-              [class.active]="activeTab === 'maybe'"
-              *ngIf="totalCards(post, 'maybe') > 0"
-              title="View maybeboard cards"
-              (click)="activeTab = 'maybe'"
-            >
-              Maybeboard ({{ totalCards(post, 'maybe') }})
-            </button>
-          </div>
-          <ng-template #boardTabsSpacer><div class="board-tabs-spacer"></div></ng-template>
-
+            Mainboard ({{ totalCards(post) }})
+          </button>
+          <button
+            class="board-tab"
+            [class.active]="activeTab === 'side'"
+            *ngIf="totalCards(post, 'side') > 0"
+            title="View sideboard cards"
+            (click)="activeTab = 'side'"
+          >
+            Sideboard ({{ totalCards(post, 'side') }})
+          </button>
+          <button
+            class="board-tab"
+            [class.active]="activeTab === 'maybe'"
+            *ngIf="totalCards(post, 'maybe') > 0"
+            title="View maybeboard cards"
+            (click)="activeTab = 'maybe'"
+          >
+            Maybeboard ({{ totalCards(post, 'maybe') }})
+          </button>
         </div>
+      </div>
 
-        <!-- The same bar the collection and deck grids use. Sort and the view toggle move
+      <!-- The same bar the collection and deck grids use. Sort and the view toggle move
              into it as Group By and Layout; zoom and the search box are the bar's own. -->
-        <app-card-grid-filters
-          [filters]="filters"
-          [facets]="true"
-          [sortControls]="false"
-          [setOptions]="setFilterOptions(post)"
-          [available]="availableFacets(post)"
-          [suggestions]="filterSuggestions(post)"
-          placeholder="Filter cards in this deck…"
-          [zoomLabel]="zoomLabel"
-          [canZoomIn]="zoomLevel < 2.0"
-          [canZoomOut]="zoomLevel > 0.5"
-          (filtersChange)="onFiltersChanged()"
-          (zoomIn)="zoomIn()"
-          (zoomOut)="zoomOut()"
-        >
-          <ng-container cgfLeft>
-            <div class="cgf-group">
-              <span class="cgf-label">Group By</span>
-              <div class="sort-group">
-                <app-select-menu
-                  class="sort-select-menu"
-                  [options]="sortOptions"
-                  [value]="sortMode"
-                  (valueChange)="setSortMode($any($event))"
-                ></app-select-menu>
-              </div>
+      <app-card-grid-filters
+        [filters]="filters"
+        [facets]="true"
+        [sortControls]="false"
+        [setOptions]="setFilterOptions(post)"
+        [available]="availableFacets(post)"
+        [suggestions]="filterSuggestions(post)"
+        placeholder="Filter cards in this deck…"
+        [zoomLabel]="zoomLabel"
+        [canZoomIn]="zoomLevel < 2.0"
+        [canZoomOut]="zoomLevel > 0.5"
+        (filtersChange)="onFiltersChanged()"
+        (zoomIn)="zoomIn()"
+        (zoomOut)="zoomOut()"
+      >
+        <ng-container cgfLeft>
+          <div class="cgf-group">
+            <span class="cgf-label">Group By</span>
+            <div class="sort-group">
+              <app-select-menu
+                class="sort-select-menu"
+                [options]="sortOptions"
+                [value]="sortMode"
+                (valueChange)="setSortMode($any($event))"
+              ></app-select-menu>
             </div>
-            <div class="cgf-group">
-              <span class="cgf-label">Layout</span>
-              <div class="sort-group view-toggle">
-                <button
-                  class="sort-btn"
-                  *ngFor="let v of viewOptions"
-                  [class.is-active]="viewMode === v.value"
-                  [title]="v.title"
-                  (click)="setViewMode(v.value)"
-                >
-                  <i class="bi" [ngClass]="v.icon"></i>
-                </button>
-              </div>
+          </div>
+          <div class="cgf-group">
+            <span class="cgf-label">Layout</span>
+            <div class="sort-group view-toggle">
+              <button
+                class="sort-btn"
+                *ngFor="let v of viewOptions"
+                [class.is-active]="viewMode === v.value"
+                [title]="v.title"
+                (click)="setViewMode(v.value)"
+              >
+                <i class="bi" [ngClass]="v.icon"></i>
+              </button>
             </div>
-          </ng-container>
-        </app-card-grid-filters>
+          </div>
+        </ng-container>
+      </app-card-grid-filters>
     </div>
 
     <div class="detail-body">

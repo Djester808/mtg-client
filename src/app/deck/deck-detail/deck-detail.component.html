@@ -419,8 +419,13 @@
   <!-- Body -->
   <div class="detail-body">
     <!-- Left: card groups -->
+    <!-- appScrollEdges: free view is a canvas of the user's own saved positions, so it
+         pans rather than reflowing. The directive marks which way there is more board, and
+         the stylesheet fades that edge — without it a 2104px arrangement in a 369px window
+         is just sliced off at the glass. -->
     <main
       class="groups-area"
+      appScrollEdges
       [class.is-panel-open]="showSearchPanel"
       [class.is-list]="viewMode === 'list'"
       [class.is-text]="textStyle"
@@ -511,15 +516,21 @@
            Layout and the density pickers are this page's own and are projected in.
            cgf-stacked tells the bar this page projects a .cgf-stack (Layout under Group
            By), so it spans its left column across both rows and keeps the facet chips
-           beside that second row instead of below it. -->
+           beside that second row instead of below it.
+
+           showQuery/facets: free view carries the same search and filters as the other two
+           views on a phone — three views one tap apart, one of them with no filter bar at
+           all, reads as broken. On a desktop board it keeps the arrangement it has always
+           had, where free view is a canvas and the bar stayed off it. `available` narrows
+           the chips to what the deck holds, which is also desktop-only: see `offered()`. -->
       <app-card-grid-filters
         class="filter-bar cgf-stacked"
         [filters]="filters"
         [suggestions]="filterSuggestions"
-        [showQuery]="viewMode !== 'free'"
-        [facets]="viewMode !== 'free'"
+        [showQuery]="isPhone || viewMode !== 'free'"
+        [facets]="isPhone || viewMode !== 'free'"
+        [available]="isPhone ? null : availableFacets(deck)"
         [setOptions]="setFilterOptions(deck)"
-        [available]="availableFacets(deck)"
         [sortControls]="false"
         placeholder="Search…"
         [zoomLabel]="zoomLabel"
@@ -536,6 +547,61 @@
              stacking was working around is handled by `ownControlsSide` instead, which
              moves Set and Filters to the other cluster rather than folding this one. -->
         <ng-container cgfLeft *ngIf="deck$ | async as deck">
+          <!-- Free mode's own controls ride the same projected controls line as Group
+               By and Layout, instead of forming a second, differently-styled row below
+               the bar — which is what made free view read as a different design. -->
+          <div class="free-toolbar" *ngIf="viewMode === 'free'">
+            <button
+              class="free-save-btn"
+              [class.is-saved]="layoutSaved"
+              (click)="saveLayoutExplicit()"
+            >
+              <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i>
+              {{ layoutSaved ? 'Saved' : 'Save Layout' }}
+            </button>
+            <button
+              class="free-reset-btn"
+              (click)="resetFreeLayout(deck)"
+              title="Reset columns to CMC groups"
+            >
+              <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </button>
+            <div class="density-picker">
+              <button
+                class="density-btn"
+                [class.is-active]="!textStyle && stackDensity === 'full'"
+                (click)="setStackDensity('full')"
+                title="Full card"
+              >
+                <i class="bi bi-grid-fill"></i>
+              </button>
+              <button
+                class="density-btn"
+                [class.is-active]="!textStyle && stackDensity === 'half'"
+                (click)="setStackDensity('half')"
+                title="Half card"
+              >
+                <i class="bi bi-layers-half"></i>
+              </button>
+              <button
+                class="density-btn"
+                [class.is-active]="!textStyle && stackDensity === 'name'"
+                (click)="setStackDensity('name')"
+                title="Name only"
+              >
+                <i class="bi bi-text-left"></i>
+              </button>
+              <button
+                class="density-btn"
+                [class.is-active]="textStyle"
+                (click)="setTextStyle(true)"
+                title="Text list"
+              >
+                <i class="bi bi-list"></i>
+              </button>
+            </div>
+          </div>
+
           <ng-container>
             <div class="cgf-group">
               <span class="cgf-label">Group By</span>
@@ -900,58 +966,6 @@
 
       <!-- ── Free arrange mode ── -->
       <ng-container *ngIf="viewMode === 'free' && (loading$ | async) === false">
-        <div class="free-toolbar">
-          <button
-            class="free-save-btn"
-            [class.is-saved]="layoutSaved"
-            (click)="saveLayoutExplicit()"
-          >
-            <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i>
-            {{ layoutSaved ? 'Saved' : 'Save Layout' }}
-          </button>
-          <button
-            class="free-reset-btn"
-            (click)="resetFreeLayout(deck)"
-            title="Reset columns to CMC groups"
-          >
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
-          </button>
-          <div class="density-picker">
-            <button
-              class="density-btn"
-              [class.is-active]="!textStyle && stackDensity === 'full'"
-              (click)="setStackDensity('full')"
-              title="Full card"
-            >
-              <i class="bi bi-grid-fill"></i>
-            </button>
-            <button
-              class="density-btn"
-              [class.is-active]="!textStyle && stackDensity === 'half'"
-              (click)="setStackDensity('half')"
-              title="Half card"
-            >
-              <i class="bi bi-layers-half"></i>
-            </button>
-            <button
-              class="density-btn"
-              [class.is-active]="!textStyle && stackDensity === 'name'"
-              (click)="setStackDensity('name')"
-              title="Name only"
-            >
-              <i class="bi bi-text-left"></i>
-            </button>
-            <button
-              class="density-btn"
-              [class.is-active]="textStyle"
-              (click)="setTextStyle(true)"
-              title="Text list"
-            >
-              <i class="bi bi-list"></i>
-            </button>
-          </div>
-        </div>
-
         <div
           class="groups-list is-free"
           (click)="clearFreeColSelection()"
@@ -1147,7 +1161,16 @@
     <!-- Stats / Commander drawer (overlays main content) -->
     <aside class="side-panel" [class.is-open]="showSidePanel && (swapMode || !showSearchPanel)">
       <div class="side-panel-header">
-        <span class="side-panel-title">{{ sideTab === 'commander' ? 'Commander' : 'Stats' }}</span>
+        <!-- Same glyph as the toolbar button that opened it, so the sheet says which of
+             the four drawers you are looking at the way the other three do. -->
+        <span class="side-panel-title">
+          <i
+            class="bi"
+            [class.bi-person-badge]="sideTab === 'commander'"
+            [class.bi-bar-chart-line]="sideTab !== 'commander'"
+          ></i>
+          {{ sideTab === 'commander' ? 'Commander' : 'Stats' }}
+        </span>
         <button class="side-panel-close" (click)="toggleSidePanel()">
           <i class="bi bi-x-lg"></i>
         </button>

@@ -1,0 +1,173 @@
+<div class="pe-page">
+  <div class="pe-loading" *ngIf="loading">Loading your profile…</div>
+
+  <div class="pe-empty" *ngIf="!loading && error">
+    <i class="bi bi-person-exclamation empty-icon"></i>
+    <p class="empty-title">Profile unavailable</p>
+    <p class="empty-sub">{{ error }}</p>
+    <button type="button" class="pe-btn pe-btn-primary" (click)="load()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="!loading && me as loaded">
+    <header class="pe-header">
+      <div>
+        <h1 class="pe-title">Your profile</h1>
+        <p class="pe-sub">{{ loaded.email }}</p>
+      </div>
+      <a class="pe-view-link" [routerLink]="['/u', loaded.profile.username]">
+        <i class="bi bi-box-arrow-up-right"></i>
+        View public profile
+      </a>
+    </header>
+
+    <!-- Avatar -->
+    <section class="pe-card">
+      <h2 class="pe-card-title">Photo</h2>
+      <div class="pe-avatar-row">
+        <app-user-avatar
+          [username]="loaded.profile.username"
+          [displayName]="loaded.profile.displayName"
+          [avatarUrl]="loaded.profile.avatarUrl"
+          [size]="88"
+        ></app-user-avatar>
+
+        <div class="pe-avatar-actions">
+          <label class="pe-btn pe-btn-primary" [class.is-busy]="uploading">
+            <i class="bi bi-upload"></i>
+            {{
+              uploading ? 'Working…' : loaded.profile.avatarUrl ? 'Change photo' : 'Upload photo'
+            }}
+            <input
+              type="file"
+              class="pe-file"
+              accept="image/jpeg,image/png,image/webp"
+              [disabled]="uploading"
+              (change)="onFileChosen($event)"
+            />
+          </label>
+
+          <button
+            type="button"
+            class="pe-btn pe-btn-quiet"
+            *ngIf="loaded.profile.avatarUrl"
+            [disabled]="uploading"
+            (click)="removeAvatar()"
+          >
+            Remove
+          </button>
+
+          <p class="pe-hint">Resized on this device before upload. JPEG, PNG or WebP.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="pe-card">
+      <h2 class="pe-card-title">About you</h2>
+
+      <label class="pe-field">
+        <span class="pe-label">Display name</span>
+        <input
+          class="pe-input"
+          type="text"
+          [(ngModel)]="displayName"
+          [maxlength]="maxes.displayName"
+          [placeholder]="loaded.profile.username"
+        />
+        <span class="pe-note">Shown instead of &#64;{{ loaded.profile.username }}.</span>
+      </label>
+
+      <label class="pe-field">
+        <span class="pe-label">Tagline</span>
+        <input
+          class="pe-input"
+          type="text"
+          [(ngModel)]="tagline"
+          [maxlength]="maxes.tagline"
+          placeholder="Group hug enjoyer. Will not attack you. Probably."
+        />
+        <span class="pe-note">{{ tagline.length }}/{{ maxes.tagline }}</span>
+      </label>
+
+      <label class="pe-field">
+        <span class="pe-label">Bio</span>
+        <textarea
+          class="pe-input pe-textarea"
+          rows="5"
+          [(ngModel)]="bio"
+          [maxlength]="maxes.bio"
+          placeholder="How you build, what you like to play, what you are looking for in a pod…"
+        ></textarea>
+        <span class="pe-note">{{ bio.length }}/{{ maxes.bio }}</span>
+      </label>
+
+      <label class="pe-field">
+        <span class="pe-label">Favourite format</span>
+        <select class="pe-input pe-select" [(ngModel)]="favoriteFormat">
+          <option value="">No preference</option>
+          <option *ngFor="let f of formats" [value]="f">{{ f }}</option>
+        </select>
+      </label>
+    </section>
+
+    <!-- Pinned commander -->
+    <section class="pe-card" *ngIf="commanderChoices.length > 0">
+      <h2 class="pe-card-title">Pinned commander</h2>
+      <p class="pe-card-sub">Pick one of the commanders you build with.</p>
+
+      <div class="pe-cmd-grid">
+        <button
+          type="button"
+          class="pe-cmd"
+          *ngFor="let c of commanderChoices"
+          [class.is-picked]="favoriteCommanderOracleId === c.oracleId"
+          (click)="pinCommander(c.oracleId)"
+        >
+          <span
+            class="pe-cmd-art"
+            [style.background-image]="c.imageUriArtCrop ? 'url(' + c.imageUriArtCrop + ')' : 'none'"
+          ></span>
+          <span class="pe-cmd-name">{{ c.name }}</span>
+          <span class="pe-cmd-count">{{ c.deckCount }} deck{{ c.deckCount === 1 ? '' : 's' }}</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Private stats -->
+    <section class="pe-card">
+      <h2 class="pe-card-title">Only you can see this</h2>
+      <p class="pe-card-sub">These never appear on your public profile.</p>
+
+      <div class="pe-private">
+        <div class="pe-private-stat">
+          <span class="pe-private-value">{{
+            formatValue(loaded.privateStats.collectionValueUsd)
+          }}</span>
+          <span class="pe-private-label">Collection value</span>
+          <span class="pe-private-note">
+            {{ loaded.privateStats.copiesValued }} of {{ loaded.profile.stats.cardsOwned }} copies
+            priced
+          </span>
+        </div>
+        <div class="pe-private-stat">
+          <span class="pe-private-value">{{ loaded.privateStats.unpublishedDecks }}</span>
+          <span class="pe-private-label">Unpublished decks</span>
+          <span class="pe-private-note">Not listed on your profile</span>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>
+
+<!-- Save bar: pinned so the action is reachable without scrolling back up on a phone. -->
+<div class="pe-savebar" *ngIf="!loading && me && dirty">
+  <span class="pe-savebar-text">Unsaved changes</span>
+  <div class="pe-savebar-actions">
+    <button type="button" class="pe-btn pe-btn-quiet" [disabled]="saving" (click)="revert()">
+      Cancel
+    </button>
+    <button type="button" class="pe-btn pe-btn-primary" [disabled]="saving" (click)="save()">
+      {{ saving ? 'Saving…' : 'Save changes' }}
+    </button>
+  </div>
+</div>

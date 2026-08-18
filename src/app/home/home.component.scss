@@ -155,6 +155,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  // The row above already wraps, but each group was one unbreakable line, so the five
+  // type pills stayed a single 761px item and a centred row spilled it off BOTH edges
+  // of a 375px screen (-193px to 568px) with the shell clipping rather than scrolling.
+  // Letting the group wrap costs nothing at desktop — it only breaks when there is no
+  // room — and is why this needs no breakpoint.
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .filter-label {

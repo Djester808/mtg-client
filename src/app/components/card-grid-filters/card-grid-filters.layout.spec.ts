@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { CardGridFiltersComponent } from './card-grid-filters.component';
 import { CardFilters } from '../../models/card-filters';
+import { PHONE_QUERY } from '../../shared/breakpoints.service';
 
 /**
  * Geometry, measured in the browser Karma already runs.
@@ -109,6 +110,14 @@ function layoutAt(width: number) {
     captions: Array.from(root.querySelectorAll('.cgf-label')).map((l) =>
       (l.textContent ?? '').trim(),
     ),
+    // The facet band's width. It is pinned to a fixed 302px BELOW $bp-phone so the block
+    // renders identically in every host that mounts it (verify-same.js holds that at 0
+    // differing pixels across four contexts). That pin was once written without the
+    // breakpoint, which left a 302px phone column stranded in the middle of a 1258px
+    // desktop bar on every page with facets — the deck, the collection and home at once.
+    facetsWidth: Math.round(
+      (root.querySelector('app-filter-facets') as HTMLElement)?.getBoundingClientRect().width ?? 0,
+    ),
   };
 
   document.body.removeChild(fixture.nativeElement);
@@ -128,6 +137,17 @@ describe('CardGridFiltersComponent layout', () => {
     expect(captions).toContain('Display');
     // Plus the bar's own: Set, Filters, Zoom and the name box.
     expect(captions.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('gives the facet band the bar’s width, not the phone column', () => {
+    // Viewport-dependent by design: the 302px pin is a viewport media query, so this
+    // asserts nothing on a phone-sized Karma window rather than asserting the opposite.
+    if (window.matchMedia(PHONE_QUERY).matches) {
+      pending('Karma viewport is phone-width; the 302px pin is correct there');
+      return;
+    }
+    const wide = layoutAt(1400);
+    expect(wide.facetsWidth).toBeGreaterThan(900);
   });
 
   it('lays the controls out on the bar once it is wide enough', () => {

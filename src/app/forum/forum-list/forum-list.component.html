@@ -17,97 +17,124 @@
 
     <!-- Filter bar -->
     <div class="forum-filters">
-      <!-- Search -->
-      <app-search-input
-        class="ff-search-wrap"
-        [value]="searchQuery"
-        [debounceMs]="0"
-        (valueChange)="searchQuery = $event; cdr.markForCheck()"
-        placeholder="Search decks or players…"
-        title="Filter by deck name or player"
-      ></app-search-input>
+      <!-- Search + the filter toggle are one unit; see styles/_filter-bar.scss. -->
+      <div class="ff-row-top">
+        <!-- Search -->
+        <app-search-input
+          class="ff-search-wrap"
+          [value]="searchQuery"
+          [debounceMs]="0"
+          (valueChange)="searchQuery = $event; cdr.markForCheck()"
+          placeholder="Search decks or players…"
+          title="Filter by deck name or player"
+        ></app-search-input>
 
-      <div class="ff-sep"></div>
-
-      <!-- Color identity -->
-      <div class="ff-group">
-        <span class="ff-label">Color</span>
+        <!-- Below $bp-phone every control folds behind this, mirroring the .cgf-menu-btn
+           on the deck/collection bar so the two filter bars behave the same way. The
+           search field stays out, because it is the one control worth a permanent slot. -->
         <button
-          class="ff-color-btn"
-          *ngFor="let c of colorOptions"
-          [class.is-active]="selectedColors.has(c)"
-          (click)="toggleColor(c)"
-          [title]="'Filter by ' + c + ' color'"
+          class="ff-menu-btn"
+          type="button"
+          [class.is-open]="filtersOpen"
+          [class.has-filters]="hasActiveFilters"
+          [attr.aria-expanded]="filtersOpen"
+          (click)="filtersOpen = !filtersOpen"
+          title="Filters"
         >
-          <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c)"></i>
+          <i class="bi bi-sliders"></i>
+          <span class="ff-menu-label">Filters</span>
+          <!-- Points at what the next tap does, matching the deck block's pill. -->
+          <i
+            class="bi"
+            [class.bi-chevron-up]="filtersOpen"
+            [class.bi-chevron-down]="!filtersOpen"
+          ></i>
         </button>
       </div>
 
-      <div class="ff-sep"></div>
+      <div class="ff-collapse" [class.is-open]="filtersOpen">
+        <div class="ff-sep"></div>
 
-      <!-- Format -->
-      <div class="ff-group ff-formats">
-        <span class="ff-label">Format</span>
-        <button
-          class="ff-chip"
-          *ngFor="let f of formatOptions"
-          [class.is-active]="selectedFormats.has(f)"
-          [title]="'Filter by ' + f + ' format'"
-          (click)="toggleFormat(f)"
-        >
-          {{ f }}
-        </button>
-      </div>
-
-      <div class="ff-spacer"></div>
-
-      <!-- Sort -->
-      <div class="ff-group">
-        <span class="ff-label">Sort</span>
-        <div class="ff-sort-group">
+        <!-- Color identity -->
+        <div class="ff-group">
+          <span class="ff-label">Color</span>
           <button
-            class="ff-sort-btn"
-            *ngFor="let s of sortOptions"
-            [class.is-active]="sortBy === s.value"
-            [title]="'Sort by ' + s.label"
-            (click)="setSortBy(s.value)"
+            class="ff-color-btn"
+            *ngFor="let c of colorOptions"
+            [class.is-active]="selectedColors.has(c)"
+            (click)="toggleColor(c)"
+            [title]="'Filter by ' + c + ' color'"
           >
-            {{ s.label }}
+            <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c)"></i>
           </button>
         </div>
-      </div>
 
-      <div class="ff-sep"></div>
+        <div class="ff-sep"></div>
 
-      <!-- View toggle -->
-      <div class="ff-view-toggle">
+        <!-- Format -->
+        <div class="ff-group ff-formats">
+          <span class="ff-label">Format</span>
+          <button
+            class="ff-chip"
+            *ngFor="let f of formatOptions"
+            [class.is-active]="selectedFormats.has(f)"
+            [title]="'Filter by ' + f + ' format'"
+            (click)="toggleFormat(f)"
+          >
+            {{ f }}
+          </button>
+        </div>
+
+        <div class="ff-spacer"></div>
+
+        <!-- Sort -->
+        <div class="ff-group">
+          <span class="ff-label">Sort</span>
+          <div class="ff-sort-group">
+            <button
+              class="ff-sort-btn"
+              *ngFor="let s of sortOptions"
+              [class.is-active]="sortBy === s.value"
+              [title]="'Sort by ' + s.label"
+              (click)="setSortBy(s.value)"
+            >
+              {{ s.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="ff-sep"></div>
+
+        <!-- View toggle -->
+        <div class="ff-view-toggle">
+          <button
+            class="ff-view-btn"
+            [class.is-active]="viewMode === 'grid'"
+            (click)="setViewMode('grid')"
+            title="Grid view"
+          >
+            <i class="bi bi-grid"></i>
+          </button>
+          <button
+            class="ff-view-btn"
+            [class.is-active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+            title="List view"
+          >
+            <i class="bi bi-list-ul"></i>
+          </button>
+        </div>
+
+        <!-- Clear -->
         <button
-          class="ff-view-btn"
-          [class.is-active]="viewMode === 'grid'"
-          (click)="setViewMode('grid')"
-          title="Grid view"
+          class="ff-clear"
+          *ngIf="hasActiveFilters"
+          (click)="clearFilters()"
+          title="Clear all active filters"
         >
-          <i class="bi bi-grid"></i>
-        </button>
-        <button
-          class="ff-view-btn"
-          [class.is-active]="viewMode === 'list'"
-          (click)="setViewMode('list')"
-          title="List view"
-        >
-          <i class="bi bi-list-ul"></i>
+          <i class="bi bi-x-circle"></i> Clear
         </button>
       </div>
-
-      <!-- Clear -->
-      <button
-        class="ff-clear"
-        *ngIf="hasActiveFilters"
-        (click)="clearFilters()"
-        title="Clear all active filters"
-      >
-        <i class="bi bi-x-circle"></i> Clear
-      </button>
     </div>
 
     <ng-container *ngIf="posts$ | async as allPosts">
@@ -210,21 +237,27 @@
           ></div>
 
           <div class="pr-main">
+            <!-- The name owns its row. The format badge used to sit beside it and took 88px
+                 of the 213 a phone row has, so every deck read "Kodama of the…" — and the
+                 author line under it was three short words and a lot of nothing. The badge
+                 goes there instead: same information, no second line, name gets the width. -->
             <div class="pr-title-row">
               <span class="pr-deck-name">{{ post.deckName }}</span>
+            </div>
+            <div class="pr-author">
+              <span class="pr-by"
+                >by
+                <a
+                  class="author-link"
+                  [routerLink]="['/u', post.authorUsername]"
+                  (click)="$event.stopPropagation()"
+                  title="View {{ post.authorUsername }}'s profile"
+                  >{{ post.authorUsername }}</a
+                ></span
+              >
               <span class="post-format-badge pr-badge" *ngIf="post.deckFormat">
                 {{ formatLabel(post.deckFormat) }}
               </span>
-            </div>
-            <div class="pr-author">
-              by
-              <a
-                class="author-link"
-                [routerLink]="['/u', post.authorUsername]"
-                (click)="$event.stopPropagation()"
-                title="View {{ post.authorUsername }}'s profile"
-                >{{ post.authorUsername }}</a
-              >
             </div>
             <p
               class="pr-desc"

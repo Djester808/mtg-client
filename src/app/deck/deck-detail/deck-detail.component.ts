@@ -8,6 +8,7 @@ import {
   HostListener,
   NgZone,
   ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +44,8 @@ import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CardFilters } from '../../models/card-filters';
 import { CardGridFiltersComponent } from '../../components/card-grid-filters/card-grid-filters.component';
 import { CardTileComponent } from '../../components/card-tile/card-tile.component';
+import { ScrollEdgesDirective } from '../../directives/scroll-edges.directive';
+import { BreakpointsService } from '../../shared/breakpoints.service';
 import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
@@ -101,6 +104,7 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
     CardGridFiltersComponent,
     CardTileComponent,
     OracleSymbolsPipe,
+    ScrollEdgesDirective,
   ],
   templateUrl: './deck-detail.component.html',
   styleUrls: ['./deck-detail.component.scss'],
@@ -230,7 +234,29 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
   flippedCardIds = new Set<string>();
   stackDensity: 'full' | 'half' | 'name' = 'half';
-  groupDir: 'h' | 'v' = 'h';
+
+  /**
+   * Drives the choices that are the breakpoint's to make and cannot be expressed in CSS:
+   * the default group arrangement below, and which controls the free view carries.
+   */
+  private readonly breakpoints = inject(BreakpointsService);
+
+  get isPhone(): boolean {
+    return this.breakpoints.isPhone();
+  }
+
+  /**
+   * Visual view's group arrangement. Horizontal is the deck-building idiom — one column
+   * per CMC, read as a curve — and it is right on a desktop board.
+   *
+   * On a phone it is not: the columns are a fixed 140px each, so a 13-card deck laid the
+   * board out 1060px wide inside a 369px window and every group after the second was off
+   * the glass behind a sideways scroll nothing advertises. Nothing about that arrangement
+   * is the user's own work (unlike free view's saved positions), so it reflows instead of
+   * panning — groups stack, cards wrap inside them. The Display toggle still switches it
+   * back for anyone who wants to pan.
+   */
+  groupDir: 'h' | 'v' = this.isPhone ? 'v' : 'h';
   layoutSaved = false;
   freeLayoutDirty = false;
   showUnsavedLayoutModal = false;

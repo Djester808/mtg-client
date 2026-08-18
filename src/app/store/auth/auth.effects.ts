@@ -13,7 +13,12 @@ export class AuthEffects {
       ofType(AuthActions.login),
       switchMap(({ username, password }) =>
         this.authService.login(username, password).pipe(
-          map(({ token }) => AuthActions.loginSuccess({ token, username })),
+          // The username comes from the RESPONSE, never from what was typed. Login accepts
+          // either a username or an email address, so echoing the request put people's
+          // email addresses in the navbar, in the avatar's colour hash, and into every
+          // /u/:username link built from the store — where it 404s, because no profile is
+          // keyed on an email.
+          map((res) => AuthActions.loginSuccess({ token: res.token, username: res.username })),
           catchError((err) =>
             of(AuthActions.loginFailure({ error: describeHttpError(err, 'Login failed') })),
           ),
@@ -27,7 +32,8 @@ export class AuthEffects {
       ofType(AuthActions.register),
       switchMap(({ username, email, password }) =>
         this.authService.register(username, email, password).pipe(
-          map(({ token }) => AuthActions.registerSuccess({ token, username })),
+          // Same rule as login: the server's spelling of the username wins.
+          map((res) => AuthActions.registerSuccess({ token: res.token, username: res.username })),
           catchError((err) =>
             of(
               AuthActions.registerFailure({ error: describeHttpError(err, 'Registration failed') }),

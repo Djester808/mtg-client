@@ -16,106 +16,114 @@
   <!-- `display: contents` at full width, so everything inside is laid out by the bar's
        own grid; a dropping panel below the button once the bar is narrow. -->
   <div class="cgf-clusters" [class.is-open]="menuOpen">
-    <!-- Page-specific controls at the left, then the bar's own columns. -->
-    <div class="cgf-left">
-      <ng-content select="[cgfLeft]"></ng-content>
+    <div class="cgf-controls-line">
+      <!-- Page-specific controls at the left, then the bar's own columns. -->
+      <div class="cgf-left">
+        <ng-content select="[cgfLeft]"></ng-content>
 
-      <div class="cgf-group" *ngIf="facets && setOptions">
-        <span class="cgf-label">Set</span>
-        <app-select-menu
-          class="set-filter-menu"
-          [options]="setOptions"
-          [value]="filters.set ?? '__all'"
-          (valueChange)="onSet($event)"
-        ></app-select-menu>
-      </div>
-
-      <div class="cgf-group" *ngIf="facets && sortControls">
-        <span class="cgf-label">Sort</span>
-        <div class="cgf-sort-chips">
-          <app-filter-chips
-            [chips]="sortChips"
-            [active]="activeSort"
-            (toggled)="onSort($any($event))"
-          ></app-filter-chips>
-          <app-filter-chips
-            [narrow]="true"
-            [chips]="sortDirChips"
-            [active]="none"
-            (toggled)="onSortDir()"
-          ></app-filter-chips>
+        <!-- Desktop keeps the Set picker where it has always been: its own labelled column
+           on the controls line. On a phone there is no room for a sixth column, so the
+           picker rides the CMC line inside the facet block instead (below). -->
+        <div class="cgf-group" *ngIf="facets && setOptions && !isPhone">
+          <span class="cgf-label">Set</span>
+          <app-select-menu
+            class="set-filter-menu"
+            [options]="setOptions"
+            [value]="filters.set ?? '__all'"
+            (valueChange)="onSet($event)"
+          ></app-select-menu>
         </div>
-      </div>
 
-      <!-- Reserved rather than removed — caption and all: dropping it narrows the row and
+        <div class="cgf-group" *ngIf="facets && sortControls">
+          <span class="cgf-label">Sort</span>
+          <div class="cgf-sort-chips">
+            <app-filter-chips
+              [chips]="sortChips"
+              [active]="activeSort"
+              (toggled)="onSort($any($event))"
+            ></app-filter-chips>
+            <app-filter-chips
+              [narrow]="true"
+              [chips]="sortDirChips"
+              [active]="none"
+              (toggled)="onSortDir()"
+            ></app-filter-chips>
+          </div>
+        </div>
+
+        <!-- Reserved rather than removed — caption and all: dropping it narrows the row and
            slides the centred box sideways the moment a filter goes on, and a caption with
            nothing under it reads as a control that failed to render. -->
-      <div class="cgf-group" *ngIf="facets" [class.is-reserved]="!filters.hasAny">
-        <span class="cgf-label">Filters</span>
-        <app-filter-chips
-          [chips]="clearChips"
-          [active]="none"
-          (toggled)="onClear()"
-        ></app-filter-chips>
-      </div>
-    </div>
-
-    <!-- Page-specific controls at the right, then the zoom stepper both pages carry. -->
-    <div class="cgf-right">
-      <ng-content select="[cgfRight]"></ng-content>
-      <div class="cgf-group cgf-zoom">
-        <span class="cgf-label">Zoom</span>
-        <div class="zoom-group">
-          <button
-            class="zoom-btn"
-            (click)="zoomOut.emit()"
-            [disabled]="!canZoomOut"
-            title="Zoom out"
-          >
-            −
-          </button>
-          <span class="zoom-label">{{ zoomLabel }}</span>
-          <button class="zoom-btn" (click)="zoomIn.emit()" [disabled]="!canZoomIn" title="Zoom in">
-            +
-          </button>
+        <div class="cgf-group" *ngIf="facets" [class.is-reserved]="!filters.hasAny">
+          <span class="cgf-label">Filters</span>
+          <app-filter-chips
+            [chips]="clearChips"
+            [active]="none"
+            (toggled)="onClear()"
+          ></app-filter-chips>
         </div>
       </div>
+
+      <!-- Page-specific controls at the right, then the zoom stepper both pages carry. -->
+      <div class="cgf-right">
+        <ng-content select="[cgfRight]"></ng-content>
+        <div class="cgf-group cgf-zoom">
+          <span class="cgf-label">Zoom</span>
+          <div class="zoom-group">
+            <button
+              class="zoom-btn"
+              (click)="zoomOut.emit()"
+              [disabled]="!canZoomOut"
+              title="Zoom out"
+            >
+              −
+            </button>
+            <span class="zoom-label">{{ zoomLabel }}</span>
+            <button
+              class="zoom-btn"
+              (click)="zoomIn.emit()"
+              [disabled]="!canZoomIn"
+              title="Zoom in"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- The facet chips: their own full-width band under the bar at full width, and part
+         of the menu once it takes over. -->
+      <!-- Each row is dropped when the page holds nothing it could offer, and the band with
+         it — a caption over an empty space reads as a control that failed to render. -->
     </div>
 
-    <!-- The facet chips: their own full-width band under the bar at full width, and part
-         of the menu once it takes over. -->
-    <!-- Each row is dropped when the page holds nothing it could offer, and the band with
-         it — a caption over an empty space reads as a control that failed to render. -->
     <div class="cgf-facets" *ngIf="facets && hasAnyFacetChips">
-      <app-filter-chips
-        *ngIf="typeChips.length"
-        [chips]="typeChips"
-        [active]="filters.types"
-        (toggled)="onToggleType($event)"
-      ></app-filter-chips>
-
-      <div class="cgf-chips">
-        <app-filter-chips
-          *ngIf="colorChips.length"
-          [chips]="colorChips"
-          [active]="filters.colors"
-          (toggled)="onToggleColor($event)"
-        ></app-filter-chips>
-        <app-filter-chips
-          *ngIf="rarityChips.length"
-          [chips]="rarityChips"
-          [active]="filters.rarities"
-          (toggled)="onToggleRarity($event)"
-        ></app-filter-chips>
-        <app-filter-chips
-          *ngIf="cmcChips.length"
-          label="CMC"
-          [narrow]="true"
-          [chips]="cmcChips"
-          [active]="activeCmc"
-          (toggled)="onToggleCmc($event)"
-        ></app-filter-chips>
-      </div>
+      <!-- Same shared arrangement the card search panel mounts. -->
+      <app-filter-facets
+        [colors]="colorChips"
+        [activeColors]="filters.colors"
+        (colorsToggled)="onToggleColor($event)"
+        [rarities]="rarityChips"
+        [activeRarities]="filters.rarities"
+        (raritiesToggled)="onToggleRarity($event)"
+        [types]="typeChips"
+        [activeTypes]="filters.types"
+        (typesToggled)="onToggleType($event)"
+        [cmc]="cmcChips"
+        [activeCmc]="activeCmc"
+        (cmcToggled)="onToggleCmc($event)"
+      >
+        <!-- Phone only: on the CMC line, off the controls line whose mixed control sizes
+             it kept breaking. Desktop renders it in its own column above instead. -->
+        <div class="cgf-group cgf-set-trail" facetTrail *ngIf="setOptions && isPhone">
+          <app-select-menu
+            class="set-filter-menu"
+            [options]="setOptions"
+            [value]="filters.set ?? '__all'"
+            (valueChange)="onSet($event)"
+          ></app-select-menu>
+        </div>
+      </app-filter-facets>
     </div>
   </div>
 

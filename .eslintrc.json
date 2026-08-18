@@ -24,7 +24,20 @@
         "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
         "no-console": ["warn", { "allow": ["warn", "error"] }],
         "max-lines": ["warn", { "max": 500, "skipBlankLines": true, "skipComments": true }],
-        "complexity": ["warn", 20]
+        "complexity": ["warn", 20],
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.property.name='matchMedia'] > Literal[value=/width:/]",
+            "message": "Breakpoints live in shared/breakpoints.service.ts, not inline. Three components each grew their own matchMedia('(max-width: 639.98px)') and the width ended up in five files, agreeing with styles/_breakpoints.scss by luck. Inject BreakpointsService and read isPhone()/isNavCollapsed()."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/shared/breakpoints.service.ts", "*.spec.ts"],
+      "rules": {
+        "no-restricted-syntax": "off"
       }
     },
     {

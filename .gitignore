@@ -49,3 +49,6 @@ e2e/node_modules/
 
 # Dev-server log written by local ng serve runs
 client-run.log
+
+# Mobile audit output (regenerate with e2e/shoot.js)
+/e2e/screenshots

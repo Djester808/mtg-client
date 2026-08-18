@@ -1,15 +1,9 @@
-<div
-  class="mana-header flex items-center justify-between px-4 pt-3.5 pb-3 border-b border-solid border-subtle shrink-0"
->
-  <span
-    class="mana-title font-display text-[15px] font-semibold text-parchment flex items-center gap-[7px]"
-  >
-    <i class="bi bi-droplet-half text-[#60a5fa]"></i> Mana Suggestions
-  </span>
-  <button
-    class="mana-close bg-transparent border-none text-parchment-faint cursor-pointer p-1 text-[14px] rounded-[4px] hover:text-parchment hover:bg-raised"
-    (click)="close()"
-  >
+<!-- The utility classes that used to restate this header's padding, type and colours are
+     gone: the three classes below carry the shared drawer chrome (styles/_detail-page.scss),
+     and a utility duplicating one of them is how the four drawers drifted apart. -->
+<div class="mana-header">
+  <span class="mana-title"> <i class="bi bi-droplet-half"></i> Mana Suggestions </span>
+  <button class="mana-close" (click)="close()">
     <i class="bi bi-x-lg"></i>
   </button>
 </div>

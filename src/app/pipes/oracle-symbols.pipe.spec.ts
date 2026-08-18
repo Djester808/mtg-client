@@ -1,13 +1,29 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { DomSanitizer } from '@angular/platform-browser';
 import { OracleSymbolsPipe } from './oracle-symbols.pipe';
+import { KeywordLinkService } from '../services/keyword-link.service';
 
 describe('OracleSymbolsPipe', () => {
   let pipe: OracleSymbolsPipe;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    pipe = new OracleSymbolsPipe(TestBed.inject(DomSanitizer));
+    TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
+
+    // The keyword terms come from the API now instead of a const array in the pipe, so
+    // the spec has to hand the service its table before any link can be asserted.
+    const keywords = TestBed.inject(KeywordLinkService);
+    keywords.load().subscribe();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/rules/keyword-links')
+      .flush([
+        { match: 'Double Strike', keyword: 'Double Strike' },
+        { match: 'Trample', keyword: 'Trample' },
+        { match: 'Cascade', keyword: 'Cascade' },
+        { match: 'Flying', keyword: 'Flying' },
+      ]);
+
+    pipe = new OracleSymbolsPipe(TestBed.inject(DomSanitizer), keywords);
   });
 
   function html(input: string | null | undefined): string {
@@ -118,6 +134,12 @@ describe('OracleSymbolsPipe', () => {
 
   it('linkifies Double Strike (multi-word keyword)', () => {
     expect(html('Double Strike')).toContain('kw=Double%20Strike');
+  });
+
+  it('linkifies a keyword the old hardcoded list did not carry', () => {
+    // The pipe used to know sixteen keywords copied from a C# enum; a card reading
+    // "Cascade" got plain text.
+    expect(html('Cascade')).toContain('kw=Cascade');
   });
 
   it('does not double-linkify keywords inside existing tags', () => {

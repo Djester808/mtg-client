@@ -61,65 +61,23 @@
 
     <!-- Filter row -->
     <div class="filter-row">
-      <!-- Color pips -->
-      <div class="filter-group">
-        <button
-          class="color-pip"
-          *ngFor="let c of colorOptions"
-          [ngClass]="'pip-' + c.code"
-          [class.is-active]="selectedColors.has(c.code)"
-          (click)="toggleColor(c.code)"
-          [title]="c.title"
-        >
-          {{ c.label }}
-        </button>
-      </div>
-
-      <span class="filter-divider"></span>
-
-      <!-- Type pills -->
-      <div class="filter-group filter-group-types">
-        <button
-          class="filter-pill"
-          *ngFor="let t of typeOptions"
-          [class.is-active]="selectedTypes.has(t)"
-          (click)="toggleType(t)"
-        >
-          {{ t }}
-        </button>
-      </div>
-
-      <span class="filter-divider"></span>
-
-      <!-- Rarity -->
-      <div class="filter-group">
-        <button
-          class="rarity-badge"
-          *ngFor="let r of rarityOptions"
-          [ngClass]="'rarity-' + r.code"
-          [class.is-active]="selectedRarities.has(r.code)"
-          (click)="toggleRarity(r.code)"
-        >
-          {{ r.label }}
-        </button>
-      </div>
-
-      <span class="filter-divider"></span>
-
-      <!-- CMC -->
-      <div class="filter-group">
-        <span class="filter-label">CMC</span>
-        <button
-          class="cmc-btn"
-          *ngFor="let opt of cmcOptions"
-          [class.is-active]="selectedCmc === opt"
-          (click)="toggleCmc(opt)"
-        >
-          {{ opt }}
-        </button>
-      </div>
-
-      <span class="filter-divider"></span>
+      <!-- The shared facet block — the same component the deck bar and the card search
+           panel mount, so Home cannot drift from them again. Sort and the set picker
+           stay below as Home's own additions, per the canonical order. -->
+      <app-filter-facets
+        [colors]="colorOptions"
+        [activeColors]="selectedColors"
+        (colorsToggled)="toggleColor($any($event))"
+        [rarities]="rarityOptions"
+        [activeRarities]="selectedRarities"
+        (raritiesToggled)="toggleRarity($any($event))"
+        [types]="typeChips"
+        [activeTypes]="selectedTypes"
+        (typesToggled)="toggleType($event)"
+        [cmc]="cmcChips"
+        [activeCmc]="activeCmc"
+        (cmcToggled)="toggleCmc($any($event))"
+      ></app-filter-facets>
 
       <!-- Sort -->
       <div class="filter-group">

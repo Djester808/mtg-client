@@ -1,0 +1,43 @@
+// Responsive breakpoints.
+//
+// Until now this app had none — three `@media` rules across 36 stylesheets, two of them
+// `prefers-reduced-motion`. Everything below is the shared vocabulary so the next
+// component does not invent its own number, which is exactly how the three that existed
+// ended up disagreeing.
+//
+// The values are chosen from where THIS app actually breaks, measured with
+// `e2e/shoot.js`, not from a framework's defaults:
+//
+//   $bp-nav (900px)  The navbar's own content — logo, four links, account cluster —
+//                    needs 850px before it starts running off the right edge. 900 also
+//                    matches the two `@media (max-width: 900px)` rules that already
+//                    existed in card-grid-filters and commander-detail, so the app keeps
+//                    one tablet line rather than gaining a second one 40px away.
+//   $bp-phone (640)  Below this there is no room for two of anything: side-by-side
+//                    panels become sheets, and multi-column grids become one column.
+//   $bp-wide (1200)  The two-pane grid+panel layout only really works above this.
+//
+// Use the mixins rather than raw queries — `upto()` subtracts a hair so a rule and its
+// `from()` counterpart can never both match at exactly the boundary width.
+
+$bp-phone: 640px;
+$bp-nav: 900px;
+$bp-wide: 1200px;
+
+// The smallest comfortable touch target. 44px is Apple's HIG floor and near enough to
+// Android's 48dp to serve as one number for both.
+$tap-min: 44px;
+
+/// Styles that apply at or below a breakpoint (mobile-down).
+@mixin upto($bp) {
+  @media (max-width: #{$bp - 0.02px}) {
+    @content;
+  }
+}
+
+/// Styles that apply above a breakpoint (desktop-up).
+@mixin from($bp) {
+  @media (min-width: $bp) {
+    @content;
+  }
+}

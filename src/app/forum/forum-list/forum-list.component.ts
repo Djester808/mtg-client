@@ -33,6 +33,13 @@ export class ForumListComponent implements OnInit {
   selectedColors = new Set<string>();
   selectedFormats = new Set<string>();
   sortBy: SortOption = 'newest';
+  /**
+   * Filter panel open state, used only below $bp-phone where the controls collapse
+   * behind .ff-menu-btn. At full width the panel is laid out by the bar itself and
+   * this flag has no effect.
+   */
+  filtersOpen = false;
+
   viewMode: 'grid' | 'list' = 'grid';
 
   readonly colorOptions = ['W', 'U', 'B', 'R', 'G', 'C'];

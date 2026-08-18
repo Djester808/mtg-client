@@ -1,3 +1,5 @@
+@use '../../../styles/breakpoints' as *;
+
 :host {
   // Inline so several chip rows can share one line (sort field + direction + clear).
   display: inline-flex;
@@ -83,4 +85,72 @@
   text-transform: uppercase;
   color: var(--text-dim);
   margin-right: 2px;
+}
+
+// ---- Phone sizing -------------------------------------------
+//
+// The chip owns how big a chip is. Earlier attempts set this from global.scss and from
+// the parent facets component with `::ng-deep`, and neither reached: `.color-chip` lives
+// inside THIS component's encapsulation, so sizing it from outside is a specificity and
+// piercing fight that kept silently losing. Here there is no fight — and because every
+// filter bar in the app renders these same chips, one rule sizes all of them.
+//
+// 22px is load-bearing: 7 colour pips plus 4 rarity badges plus gaps is ~286px, which
+// fits the ~297px a filter panel gets on a 375px screen, so those two rows share one
+// line instead of stacking.
+@include upto($bp-phone) {
+  // Row geometry lives HERE and nowhere else. The deck bar and the search panel each
+  // carried their own .chip-row gap (5px vs 4px) and chip paddings, so the "identical"
+  // shared block rendered 15px taller in one host — the pixel-diff caught it.
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    // 3px, not 4: at 4 the pips row (192) + rarities (108) + the gap between them
+    // overshot the block's fixed 302px by six pixels, which is the entire reason
+    // C/U/R/M kept wrapping onto their own line instead of sitting beside the mana
+    // symbols. At 3px the full line is 297px and fits.
+    gap: 3px;
+  }
+
+  .chip-row-label {
+    font-size: 8px;
+    line-height: 1.5;
+  }
+
+  // 24px — the SAME height as the colour pips, the rarity badges and the set dropdown.
+  // Three different control heights (22/24/28) inside one block is what read as clutter.
+  .text-chip {
+    min-height: 24px;
+    padding: 4px 6px;
+    font-size: 8px;
+    line-height: 1.4;
+  }
+
+  // 24/17, not 22/15. The Mana glyph IS the coloured circle — shrinking its font-size
+  // shrinks the whole pip, not just a symbol inside it, so at 15px the circle no longer
+  // filled the chip and the symbol within it was unreadable. 17px is the size the
+  // desktop bar uses; the chip is sized to hold it rather than the reverse.
+  .color-chip,
+  .rarity-badge {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+
+    .ms {
+      font-size: 17px;
+    }
+  }
+
+  .text-chip {
+    min-height: 22px;
+    padding: 3px 6px;
+    font-size: 8px;
+  }
+
+  .chip-row-label {
+    font-size: 8px;
+  }
 }

@@ -10,7 +10,10 @@
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\""
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
+    "verify": "npm run format:check && ng lint && node tools/check-dead-styles.js && node tools/check-shared-treatments.js && node tools/check-ui-states.js && ng test --watch=false --browsers=ChromeHeadless --code-coverage && node tools/check-new-coverage.js && ng build --configuration production",
+    "verify:ui": "cd e2e && node shoot.js --dpr=1 && node shoot-states.js && node verify-same.js && node sheet.js && cd .. && node tools/check-ui-audit.js",
+    "verify:ui:update": "node tools/check-ui-audit.js --update"
   },
   "dependencies": {
     "@angular/animations": "^17.3.0",

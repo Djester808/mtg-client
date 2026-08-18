@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { escapeRegExp } from '../../utils/regex.utils';
 import { Subject, combineLatest } from 'rxjs';
 import {
   debounceTime,
@@ -42,6 +43,7 @@ import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-menu.component';
 import { SetIconComponent } from '../set-icon/set-icon.component';
+import { FilterFacetsComponent } from '../filter-facets/filter-facets.component';
 import { FilterChipsComponent } from '../filter-chips/filter-chips.component';
 import { printingOptions as buildPrintingOptions } from '../../utils/printing-options';
 import { FlightSource } from '../../shared/fly-card';
@@ -60,6 +62,7 @@ import { COLOR_CHIPS, RARITY_CHIPS } from '../filter-chips/filter-chip-sets';
     SelectMenuComponent,
     SetIconComponent,
     FilterChipsComponent,
+    FilterFacetsComponent,
     OracleSymbolsPipe,
   ],
   templateUrl: './card-search-panel.component.html',
@@ -588,7 +591,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
   highlightParts(text: string): { text: string; match: boolean }[] {
     const q = (this.searchText.value ?? '').trim();
     if (!q) return [{ text, match: false }];
-    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = escapeRegExp(q);
     const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
     const testRe = new RegExp(`^${escaped}$`, 'i');
     return parts.filter((p) => p.length > 0).map((p) => ({ text: p, match: testRe.test(p) }));

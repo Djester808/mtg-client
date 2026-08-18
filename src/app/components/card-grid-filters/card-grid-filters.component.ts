@@ -16,16 +16,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardFilters, SortBy } from '../../models/card-filters';
 import { FilterChip, FilterChipsComponent } from '../filter-chips/filter-chips.component';
+import { FilterFacetsComponent } from '../filter-facets/filter-facets.component';
 import { AvailableFacets } from '../../services/card-grid-filter.service';
 import {
   COLOR_CHIPS,
   TYPE_CHIPS,
+  SEARCH_TYPE_CHIPS,
   CMC_CHIPS,
   RARITY_CHIPS,
   SORT_CHIPS,
   CLEAR_CHIPS,
 } from '../filter-chips/filter-chip-sets';
 import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-menu.component';
+import { BreakpointsService } from '../../shared/breakpoints.service';
 
 /**
  * The filter bar above a card grid: a name box with suggestions, the facet chips, and a
@@ -47,7 +50,13 @@ import { SelectMenuComponent, SelectMenuOption } from '../select-menu/select-men
 @Component({
   selector: 'app-card-grid-filters',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilterChipsComponent, SelectMenuComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    FilterChipsComponent,
+    FilterFacetsComponent,
+    SelectMenuComponent,
+  ],
   templateUrl: './card-grid-filters.component.html',
   styleUrls: ['./card-grid-filters.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -100,7 +109,24 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   @Output() zoomOut = new EventEmitter<void>();
 
   private readonly allColorChips = COLOR_CHIPS;
-  private readonly allTypeChips = TYPE_CHIPS;
+
+  /**
+   * Offer `Token` and `Other` beside the seven playable types — the set Home's search
+   * uses. A grid of what someone OWNS needs them: tokens and art-series cards are real
+   * printings with real prices, and a collection holding one could not filter to it while
+   * the row list stopped at Planeswalker. A deck cannot legally contain either, so the
+   * deck grid leaves this off.
+   */
+  @Input() ownableTypes = false;
+
+  /**
+   * The extra two also appear on a phone regardless: the bar sits one tap from the card
+   * search panel there, which always offers nine, and two blocks disagreeing about what
+   * types exist is the drift the shared filter block exists to prevent.
+   */
+  private get allTypeChips(): readonly FilterChip[] {
+    return this.ownableTypes || this.isPhone ? SEARCH_TYPE_CHIPS : TYPE_CHIPS;
+  }
   private readonly allCmcChips = CMC_CHIPS;
   private readonly allRarityChips = RARITY_CHIPS;
   readonly sortChips = SORT_CHIPS;
@@ -109,6 +135,21 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   readonly none: ReadonlySet<string> = new Set<string>();
 
   suggOpen = false;
+
+  /**
+   * Phone width. Two things genuinely differ by breakpoint rather than by CSS, so they
+   * cannot be expressed in the stylesheet:
+   *
+   *  - the Set picker sits in its own labelled column on the controls line at desktop
+   *    (where it has always been), and rides the CMC line on a phone (where a sixth
+   *    labelled column does not fit). CSS cannot move a node between two parents.
+   *  - the type chip list — see `allTypeChips`.
+   *
+   * The width itself lives in BreakpointsService, with the others.
+   */
+  get isPhone(): boolean {
+    return this.breakpoints.isPhone();
+  }
 
   /**
    * The controls menu, which CSS shows only while the bar is too narrow to lay them out
@@ -130,6 +171,7 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private host: ElementRef<HTMLElement>,
     private zone: NgZone,
+    private breakpoints: BreakpointsService,
   ) {}
 
   /**
@@ -194,6 +236,12 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
     present: ReadonlySet<string> | undefined,
     active: ReadonlySet<string>,
   ): FilterChip[] {
+    // Never narrowed on a phone. Narrowing is right on a desktop bar — a mono-red
+    // collection has no business offering five colours — but on a phone the deck bar sits
+    // one tap from the search panel, which cannot narrow to anything, and two blocks
+    // offering different chips is exactly the "why don't these look the same" defect the
+    // shared component exists to prevent.
+    if (this.isPhone) return chips as FilterChip[];
     if (!present) return chips as FilterChip[];
     const key = `${[...present].sort().join(',')}|${[...active].sort().join(',')}`;
     const m = this.chipMemo.get(name);

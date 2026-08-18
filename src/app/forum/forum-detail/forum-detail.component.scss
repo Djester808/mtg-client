@@ -300,6 +300,30 @@ $fd-page-width: 1300px;
   padding: 20px 24px 0;
 }
 
+// The filter bar gets this page's panel chrome — the same #101010 / hairline / radius 12
+// as `.card-list-section` and `.panel-block`, so the three blocks read as one set. Without
+// it the bar was the one block here with no container of its own: it painted `--bg-void`,
+// the page background, so the whole strip between the header art and the panels below read
+// as an empty black box with the controls floating in it.
+//
+// This belongs to the page, not to card-grid-filters, even though all three grids share
+// that component. On the deck and collection the bar is a full-bleed sticky band over a
+// scrolling grid, and boxing it in leaves a strip of gutter at each end for scrolled card
+// art to show through beside it — the regression `.board-row`/`.filter-bar`/`.grid-filters`
+// were given their negative-margin+padding pairs to fix. Only this page can take a panel:
+// nothing scrolls under its bar (the containing block is no taller than the bar, so
+// `position: sticky` never engages) and the host already spans exactly the card list plus
+// sidebar, so the edges line up with the panels below.
+//
+// The rule reaches the child's host element (the parent's `_ngcontent` attribute lands on
+// it) and outweighs the component's own `:host` background, which is what had the colour.
+.deck-toolbar app-card-grid-filters {
+  background: #101010;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
 .detail-body {
   display: grid;
   grid-template-columns: 1fr 360px;
@@ -323,16 +347,17 @@ $fd-page-width: 1300px;
   height: fit-content;
 }
 
-// ---- Toolbar (board tabs + view toggle) ----
+// ---- Toolbar (board tabs) ----
 
+// Board tabs only — the view toggle lives in the shared bar below. No rule under it any
+// more: that bar is a bordered panel now, and a second hairline 12px above its top border
+// read as a double edge.
 .list-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -378,10 +403,6 @@ $fd-page-width: 1300px;
 
 // Shared zoom control (this page's copy had drifted onto raw hex colors).
 @include zoom-control;
-
-.board-tabs-spacer {
-  flex: 1;
-}
 
 .board-tabs {
   display: flex;

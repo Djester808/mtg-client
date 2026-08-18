@@ -1,46 +1,196 @@
 <div class="up-page">
-  <div class="up-loading" *ngIf="loading">
-    <div class="spinner"></div>
-    <span>Loading profile…</span>
-  </div>
-  <div class="up-error" *ngIf="error">{{ error }}</div>
+  <div class="up-loading" *ngIf="loading">Loading profile…</div>
 
-  <ng-container *ngIf="!loading && profile">
+  <div class="up-empty" *ngIf="!loading && error">
+    <i class="bi bi-person-x empty-icon"></i>
+    <p class="empty-title">Profile not found</p>
+    <p class="empty-sub">{{ error }}</p>
+  </div>
+
+  <ng-container *ngIf="!loading && profile as p">
     <!-- Hero -->
-    <div class="up-hero">
-      <div class="up-avatar">{{ profile.username[0].toUpperCase() }}</div>
+    <header class="up-hero">
+      <app-user-avatar
+        [username]="p.username"
+        [displayName]="p.displayName"
+        [avatarUrl]="p.avatarUrl"
+        [size]="72"
+      ></app-user-avatar>
+
       <div class="up-hero-info">
-        <h1 class="up-username">{{ profile.username }}</h1>
-        <div class="up-meta">
-          <span>Joined {{ formatDate(profile.joinedAt) }}</span>
-          <span class="up-sep">·</span>
-          <span>{{ profile.deckCount }} deck{{ profile.deckCount === 1 ? '' : 's' }}</span>
-          <span class="up-sep">·</span>
-          <span>{{ profile.commentCount }} comment{{ profile.commentCount === 1 ? '' : 's' }}</span>
-        </div>
+        <h1 class="up-name">{{ name }}</h1>
+        <div class="up-handle" *ngIf="p.displayName">&#64;{{ p.username }}</div>
+        <p class="up-tagline" *ngIf="p.tagline">{{ p.tagline }}</p>
+      </div>
+    </header>
+
+    <div class="up-meta">
+      <span><i class="bi bi-calendar3"></i> Joined {{ formatDate(p.joinedAt) }}</span>
+      <span *ngIf="p.favoriteFormat"
+        ><i class="bi bi-suit-spade-fill"></i> {{ p.favoriteFormat }}</span
+      >
+      <span *ngIf="p.stats.lastActiveAt">
+        <i class="bi bi-clock-history"></i> Active {{ timeAgo(p.stats.lastActiveAt) }}
+      </span>
+    </div>
+
+    <p class="up-bio" *ngIf="p.bio">{{ p.bio }}</p>
+
+    <!-- Pinned commander -->
+    <a
+      class="up-pinned"
+      *ngIf="p.favoriteCommander as cmd"
+      [routerLink]="['/commanders', cmd.oracleId]"
+    >
+      <span
+        class="up-pinned-art"
+        [style.background-image]="cmd.imageUriArtCrop ? 'url(' + cmd.imageUriArtCrop + ')' : 'none'"
+      ></span>
+      <span class="up-pinned-body">
+        <span class="up-pinned-label">Plays</span>
+        <span class="up-pinned-name">{{ cmd.name }}</span>
+        <span class="up-pinned-pips">
+          <i
+            class="ms ms-cost ms-shadow"
+            *ngFor="let c of cmd.colorIdentity"
+            [ngClass]="manaClass(c)"
+          ></i>
+        </span>
+      </span>
+    </a>
+
+    <!-- Stats -->
+    <div class="up-stats">
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.decksBuilt) }}</span>
+        <span class="up-stat-label">Decks built</span>
+      </div>
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.decksPublished) }}</span>
+        <span class="up-stat-label">Published</span>
+      </div>
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.cardsOwned) }}</span>
+        <span class="up-stat-label">Cards owned</span>
+      </div>
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.distinctCards) }}</span>
+        <span class="up-stat-label">Unique cards</span>
+      </div>
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.commentsPosted) }}</span>
+        <span class="up-stat-label">Comments</span>
+      </div>
+      <div class="up-stat">
+        <span class="up-stat-value">{{ formatCount(p.stats.commentsReceived) }}</span>
+        <span class="up-stat-label">Replies received</span>
       </div>
     </div>
+
+    <!-- Colour spread -->
+    <section class="up-section" *ngIf="p.stats.colorSpread.length > 0">
+      <h2 class="up-section-title">Colours played</h2>
+      <div class="up-colors">
+        <div class="up-color" *ngFor="let c of p.stats.colorSpread">
+          <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c.color)"></i>
+          <div class="up-color-bar">
+            <span class="up-color-fill" [style.width.%]="colorShare(c.deckCount)"></span>
+          </div>
+          <span class="up-color-count">{{ c.deckCount }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Most played cards -->
+    <section class="up-section" *ngIf="p.mostPlayedCards.length > 0">
+      <h2 class="up-section-title">Cards they play most</h2>
+      <div class="up-rail">
+        <div class="up-played" *ngFor="let card of p.mostPlayedCards">
+          <span
+            class="up-played-art"
+            [style.background-image]="
+              card.imageUriArtCrop ? 'url(' + card.imageUriArtCrop + ')' : 'none'
+            "
+          ></span>
+          <span class="up-played-name">{{ card.name }}</span>
+          <span class="up-played-count"
+            >{{ card.deckCount }} deck{{ card.deckCount === 1 ? '' : 's' }}</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- Top commanders -->
+    <section class="up-section" *ngIf="p.topCommanders.length > 0">
+      <h2 class="up-section-title">Commanders</h2>
+      <div class="up-rail">
+        <a
+          class="up-cmd"
+          *ngFor="let cmd of p.topCommanders"
+          [routerLink]="['/commanders', cmd.oracleId]"
+        >
+          <span
+            class="up-cmd-art"
+            [style.background-image]="
+              cmd.imageUriArtCrop ? 'url(' + cmd.imageUriArtCrop + ')' : 'none'
+            "
+          ></span>
+          <span class="up-cmd-name">{{ cmd.name }}</span>
+          <span class="up-cmd-count"
+            >{{ cmd.deckCount }} deck{{ cmd.deckCount === 1 ? '' : 's' }}</span
+          >
+        </a>
+      </div>
+    </section>
+
+    <!-- Recently active decks -->
+    <section class="up-section" *ngIf="p.recentlyActive.length > 0">
+      <h2 class="up-section-title">Recently worked on</h2>
+      <div class="up-active">
+        <a
+          class="up-active-row"
+          *ngFor="let deck of p.recentlyActive"
+          [routerLink]="deck.forumPostId ? ['/forum', deck.forumPostId] : ['/deck', deck.deckId]"
+        >
+          <span
+            class="up-active-cover"
+            [style.background-image]="deck.coverUri ? 'url(' + deck.coverUri + ')' : 'none'"
+          ></span>
+          <span class="up-active-body">
+            <span class="up-active-name">{{ deck.name }}</span>
+            <span class="up-active-meta">
+              <span *ngIf="deck.format">{{ deck.format }}</span>
+              <span>{{ deck.cardCount }} cards</span>
+              <span>{{ timeAgo(deck.updatedAt) }}</span>
+            </span>
+          </span>
+        </a>
+      </div>
+    </section>
 
     <!-- Tabs -->
     <div class="up-tabs">
       <button class="up-tab" [class.active]="activeTab === 'decks'" (click)="setTab('decks')">
-        <i class="bi bi-collection-fill"></i> Published Decks
-        <span class="up-tab-count">{{ profile.deckCount }}</span>
+        Decks
+        <span class="up-tab-count">{{ p.deckCount }}</span>
       </button>
       <button class="up-tab" [class.active]="activeTab === 'comments'" (click)="setTab('comments')">
-        <i class="bi bi-chat-fill"></i> Recent Comments
-        <span class="up-tab-count">{{ profile.commentCount }}</span>
+        Comments
+        <span class="up-tab-count">{{ commentsTotal }}</span>
       </button>
     </div>
 
-    <!-- Decks grid -->
+    <!-- Decks -->
     <div class="up-decks" *ngIf="activeTab === 'decks'">
-      <div class="up-empty" *ngIf="profile.publishedDecks.length === 0">
-        No published decks yet.
+      <div class="up-empty" *ngIf="p.publishedDecks.length === 0">
+        <i class="bi bi-collection empty-icon"></i>
+        <p class="empty-title">No published decks</p>
+        <p class="empty-sub">Decks they publish to the community will show up here.</p>
       </div>
+
       <a
         class="up-deck-card"
-        *ngFor="let deck of profile.publishedDecks"
+        *ngFor="let deck of p.publishedDecks"
         [routerLink]="['/forum', deck.id]"
       >
         <div
@@ -72,18 +222,34 @@
       </a>
     </div>
 
-    <!-- Comments list -->
+    <!-- Comment history -->
     <div class="up-comments" *ngIf="activeTab === 'comments'">
-      <div class="up-empty" *ngIf="profile.recentComments.length === 0">No comments yet.</div>
-      <a
-        class="up-comment-row"
-        *ngFor="let c of profile.recentComments"
-        [routerLink]="['/forum', c.forumPostId]"
-      >
-        <div class="up-comment-deck">{{ c.deckName }}</div>
+      <div class="up-empty" *ngIf="comments.length === 0">
+        <i class="bi bi-chat-left empty-icon"></i>
+        <p class="empty-title">No comments yet</p>
+        <p class="empty-sub">Nothing they have said on a deck has landed here.</p>
+      </div>
+
+      <a class="up-comment-row" *ngFor="let c of comments" [routerLink]="['/forum', c.forumPostId]">
+        <div class="up-comment-head">
+          <span class="up-comment-deck">{{ c.deckName }}</span>
+          <span class="up-comment-time">
+            {{ timeAgo(c.createdAt)
+            }}<span class="up-comment-edited" *ngIf="c.edited"> · edited</span>
+          </span>
+        </div>
         <p class="up-comment-content" [innerHTML]="c.content | oracleSymbols"></p>
-        <span class="up-comment-time">{{ timeAgo(c.createdAt) }}</span>
       </a>
+
+      <button
+        type="button"
+        class="up-more"
+        *ngIf="hasMoreComments"
+        [disabled]="commentsLoading"
+        (click)="loadMoreComments()"
+      >
+        {{ commentsLoading ? 'Loading…' : 'Load more' }}
+      </button>
     </div>
   </ng-container>
 </div>

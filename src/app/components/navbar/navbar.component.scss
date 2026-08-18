@@ -1,3 +1,5 @@
+@use '../../../styles/breakpoints' as *;
+
 :host {
   display: block;
 }
@@ -16,6 +18,252 @@ nav {
   background: rgba(8, 8, 8, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-dim);
+  // The bar's own gutter tightens below the breakpoint, which moved the logo 8px left in
+  // a single frame — a visible hop next to the cross-fade the rest of the bar is doing.
+  // Both are animatable, so the logo glides to its new gutter instead.
+  transition:
+    padding 160ms ease,
+    gap 160ms ease;
+
+  @include upto($bp-nav) {
+    // The bar needs ~850px to seat the logo, four links and the account cluster. Below
+    // that they did not wrap or scroll — the shell clips at overflow:hidden, so they
+    // rendered at x=555 and x=826 on a 375px screen and were simply unreachable. The
+    // links and account actions move into the drawer; the bar keeps the logo and the
+    // toggle only, which fits at any width we support.
+    gap: 12px;
+    padding: 0 12px 0 16px;
+    justify-content: space-between;
+  }
+}
+
+// ---- Collapsed-width toggle -----------------------------------------------
+
+// Crossing the breakpoint used to be a hard cut: 602px of links and a 132px account
+// cluster disappeared between one pixel of window width and the next, and a 44px button
+// took their place. Nothing eased, so everything the eye was following jumped at once —
+// which is what reads as the bar snapping.
+//
+// It is a cross-fade now. Two details make it work:
+//
+//  - The toggle is taken OUT of the bar's flex flow (absolute, pinned right). In the flow
+//    it would have to share the line with the links and the account cluster during the
+//    overlap, pushing them — the snap again, just spread over 160ms.
+//  - `transition-behavior: allow-discrete` lets `display` participate: it flips to `none`
+//    at the END of the fade out, and at the START of the fade in, so the fade has
+//    something to animate while the element still ends up genuinely hidden. `display:none`
+//    is not decoration here — a hidden-but-present link is a tab stop leading somewhere
+//    the user cannot see (see .nav-links below). `@starting-style` supplies the state to
+//    animate FROM on the way in, which is otherwise unspecified for a newly shown box.
+//
+// Where the browser lacks allow-discrete/@starting-style it degrades to exactly the hard
+// swap this replaces, which is what the bar did before.
+$nav-morph: 160ms;
+
+.nav-toggle {
+  display: none;
+  position: absolute;
+  // 12px is the bar's own collapsed padding-right, so pinning it here leaves the button
+  // exactly where the flex flow used to put it.
+  right: 12px;
+  top: 4px;
+  width: $tap-min;
+  height: $tap-min;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity $nav-morph ease,
+    transform $nav-morph cubic-bezier(0.22, 1, 0.36, 1),
+    display $nav-morph allow-discrete;
+
+  @include upto($bp-nav) {
+    display: flex;
+    opacity: 1;
+    transform: none;
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+.nav-toggle-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text-primary);
+  transition:
+    transform 0.2s ease,
+    opacity 0.15s ease;
+}
+
+// Into an X, so the control reads as "close" while the drawer is open.
+.nav-toggle.is-open .nav-toggle-bar:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.nav-toggle.is-open .nav-toggle-bar:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle.is-open .nav-toggle-bar:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  nav,
+  .nav-toggle-bar,
+  .nav-toggle,
+  .nav-links,
+  .account-menu {
+    transition: none;
+  }
+
+  .nav-scrim,
+  .mobile-nav {
+    animation: none;
+  }
+}
+
+// ---- Drawer ---------------------------------------------------------------
+
+.nav-scrim {
+  position: fixed;
+  inset: 52px 0 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.6);
+  // Both the scrim and the drawer are *ngIf'd, so this animates them in. Closing is
+  // still instant: Angular removes the node before a transition could run, and giving
+  // the drawer an exit means holding it in the DOM and driving it from a class instead.
+  animation: nav-scrim-in 180ms ease both;
+
+  @include from($bp-nav) {
+    display: none;
+  }
+}
+
+@keyframes nav-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nav-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mobile-nav {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  // Never taller than the screen below the bar — the account rows have to stay reachable
+  // on a short landscape phone.
+  max-height: calc(100dvh - 52px);
+  overflow-y: auto;
+  // Drops from under the bar rather than appearing whole.
+  animation: nav-drawer-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @include from($bp-nav) {
+    display: none;
+  }
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  // Tap target, not a text height: these were 30px rows in the desktop bar.
+  min-height: $tap-min;
+  padding: 0 12px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+
+  &:active {
+    background: var(--bg-raised);
+  }
+  &.active {
+    color: var(--gold);
+    background: var(--bg-raised);
+  }
+  &.accent {
+    color: var(--gold);
+  }
+  &.danger {
+    color: #e74c3c;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -2px;
+  }
+}
+
+.mobile-nav-rule {
+  height: 1px;
+  margin: 8px 4px;
+  background: var(--border-dim);
+}
+
+.mobile-nav-user {
+  // A row now that it carries the avatar beside the name, not just a caption.
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0 12px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+
+  span {
+    // Wraps rather than ellipsising: a display name is the one thing on this line worth
+    // reading in full, and the drawer has the height to spare.
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 }
 
 .nav-logo {
@@ -31,6 +279,31 @@ nav {
   align-items: center;
   gap: 4px;
   flex: 1;
+  // Fades and lifts on the way out, against the toggle fading in over the same 160ms —
+  // see .nav-toggle for why `display` is in the transition.
+  transition:
+    opacity $nav-morph ease,
+    transform $nav-morph ease,
+    display $nav-morph allow-discrete;
+
+  // Coming back the other way, widening past the breakpoint, the links are leaving
+  // `display: none` — and a box that was not being rendered has no previous style to
+  // animate from, so without this they reappeared instantly while the toggle faded out
+  // beside them. It also gives them a 160ms fade on first paint, which matches the
+  // drawer and the account menu.
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  // The drawer renders this same list below $bp-nav. It still ENDS at `display:none`
+  // rather than visibility or opacity: these are focusable links, and a hidden-but-present
+  // link is a tab stop that leads somewhere the user cannot see.
+  @include upto($bp-nav) {
+    display: none;
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 
 .nav-link {
@@ -62,6 +335,26 @@ nav {
   gap: 8px;
   position: relative;
   flex-shrink: 0;
+  transition:
+    opacity $nav-morph ease,
+    transform $nav-morph ease,
+    display $nav-morph allow-discrete;
+
+  // Same reason as .nav-links: the state to animate from when it stops being `none`.
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  // Its contents move into the drawer below $bp-nav. This is the cluster that was
+  // rendering at x=587–826 on a 375px screen: the sign-in and create-account buttons
+  // existed, off the edge of the glass, so a logged-out phone had no way in at all.
+  // It hands the right-hand end of the bar to the toggle, so it fades toward it.
+  @include upto($bp-nav) {
+    display: none;
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 .account-btn {
@@ -108,7 +401,14 @@ nav {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 160px;
+  // The menu takes its width from the button above it, never from a number of its own.
+  // A fixed 160px here was unrelated to the trigger, whose width is content-driven
+  // (avatar + name + caret), so the two only lined up by coincidence: "Mobile Tester"
+  // made a 168px button against a 160px menu, and a short name made an 88px button with
+  // the menu overhanging it by 72px. `min-width: max-content` is the floor that keeps
+  // "Sign Out" on one line when the name is very short.
+  width: 100%;
+  min-width: max-content;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;

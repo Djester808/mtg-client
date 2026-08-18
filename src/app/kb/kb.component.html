@@ -15,266 +15,212 @@
     >
       ← Back
     </button>
-    <div class="flex items-center gap-2.5">
+    <div class="flex items-center gap-2.5 min-w-0">
       <span class="text-gold text-[18px] drop-shadow-[0_0_8px_rgba(201,168,76,0.5)]">✦</span>
-      <span class="font-display text-[13px] tracking-[0.12em] uppercase text-parchment-muted">
-        <span class="text-gold">MTG</span> Engine — Knowledge Base
+      <span
+        class="font-display text-[13px] tracking-[0.12em] uppercase text-parchment-muted truncate"
+      >
+        <span class="text-gold">MTG</span> Rules
       </span>
     </div>
     <div class="flex-1"></div>
+    <!-- Provenance, not decoration: a rules reference is only trustworthy if it says
+         which release it is. -->
+    <span
+      class="kb-effective font-display text-[9px] tracking-[0.1em] text-parchment-faint"
+      *ngIf="meta"
+    >
+      {{ meta.effectiveDate }}
+    </span>
   </header>
 
   <!-- Body: sidebar + detail -->
+  <!-- Columns live in the stylesheet, not an inline style: inline wins over any rule, so
+       the 240px sidebar could not be collapsed for narrow screens. It left 135px for the
+       detail pane on a 375px phone, and 39px of that after padding — body text wrapped to
+       one word per line. -->
   <div
-    class="relative z-[1] grid flex-1 min-h-0"
-    style="grid-template-columns: 240px 1fr"
-    *ngIf="kb; else loading"
+    class="kb-body relative z-[1] grid flex-1 min-h-0"
+    [class.has-selection]="!!selected"
+    *ngIf="!loading && !failed; else notReady"
   >
     <!-- Sidebar -->
     <aside
+      #sidebar
       class="kb-sidebar border-r border-solid border-dim flex flex-col overflow-y-auto overflow-x-hidden bg-[rgba(14,14,15,0.6)] py-4 pb-6"
-      style="scrollbar-width: thin"
     >
-      <!-- Search -->
-      <div
-        class="relative flex items-center mx-3 mb-4 bg-raised border border-solid border-subtle rounded-lg px-2.5 py-0 transition-[border-color] duration-[180ms] focus-within:border-gold"
-      >
-        <span class="text-parchment-faint text-[16px] mr-1.5 shrink-0"
-          ><i class="bi bi-search"></i
-        ></span>
-        <input
-          class="search-input flex-1 bg-transparent border-none outline-none text-parchment font-body text-[13px] py-2 min-w-0 placeholder:text-parchment-faint"
-          type="text"
-          placeholder="Search rules…"
-          [(ngModel)]="searchQuery"
-          autocomplete="off"
-        />
-        <button
-          class="search-clear bg-transparent border-none text-parchment-faint text-[11px] cursor-pointer p-1 shrink-0 transition-colors duration-150 hover:text-parchment-muted"
-          *ngIf="searchQuery"
-          (click)="clearSearch()"
+      <div class="px-3 mb-3">
+        <app-search-input
+          [value]="searchQuery"
+          placeholder="Search the rules…"
+          title="Search rules, keywords, and the glossary"
+          (debouncedChange)="onSearch($event)"
         >
-          <i class="bi bi-x"></i>
+          <span trailing *ngIf="searchTotal">{{ searchTotal }}</span>
+        </app-search-input>
+      </div>
+
+      <!-- Which list, when nothing is being searched for -->
+      <div class="kb-tabs" *ngIf="!searchQuery">
+        <button type="button" [class.active]="tab === 'rules'" (click)="setTab('rules')">
+          Rules
         </button>
-      </div>
-
-      <div
-        class="no-results font-body text-[12px] text-parchment-faint italic px-4 py-2"
-        *ngIf="searchQuery && totalFiltered === 0"
-      >
-        No matches for "{{ searchQuery }}"
-      </div>
-
-      <!-- Keywords group -->
-      <div class="mb-2" *ngIf="filteredKeywords.length">
-        <div
-          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
-        >
+        <button type="button" [class.active]="tab === 'keywords'" (click)="setTab('keywords')">
           Keywords
-        </div>
-        <button
-          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-          *ngFor="let e of filteredKeywords"
-          [class.active]="isSelected(e)"
-          (click)="select(e)"
-        >
-          <span
-            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-            >{{ labelOf(e) }}</span
-          >
-          <span
-            class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0"
-            [ngClass]="$any(e.data).status"
-            >{{ $any(e.data).status[0] }}</span
-          >
+        </button>
+        <button type="button" [class.active]="tab === 'glossary'" (click)="setTab('glossary')">
+          Glossary
         </button>
       </div>
 
-      <!-- Mechanics group -->
-      <div class="mb-2" *ngIf="filteredMechanics.length">
-        <div
-          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
-        >
-          Mechanics
+      <!-- ---- Search results ---- -->
+      <ng-container *ngIf="searchQuery">
+        <div class="kb-note" *ngIf="searching">Searching…</div>
+        <div class="kb-note" *ngIf="!searching && !searchHits.length">
+          No matches for “{{ searchQuery }}”
         </div>
+
         <button
-          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-          *ngFor="let e of filteredMechanics"
-          [class.active]="isSelected(e)"
-          (click)="select(e)"
+          class="sidebar-item hit"
+          *ngFor="let hit of searchHits; trackBy: trackByRef"
+          (click)="openHit(hit)"
         >
-          <span
-            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-            >{{ labelOf(e) }}</span
-          >
-          <span
-            class="font-display text-[8px] tracking-[0.08em] uppercase text-parchment-faint shrink-0"
-            *ngIf="$any(e.data).steps?.length"
-          >
-            {{ $any(e.data).steps.length }} steps
+          <span class="hit-head">
+            <span class="hit-kind" [ngClass]="hit.kind">{{ hit.kind }}</span>
+            <span class="hit-ref">{{ hit.ref }}</span>
           </span>
+          <span class="hit-snippet">{{ hit.snippet }}</span>
         </button>
-      </div>
 
-      <!-- SBA group -->
-      <div class="mb-2" *ngIf="filteredSba.length">
-        <div
-          class="group-label font-display text-[9px] tracking-[0.18em] uppercase text-parchment-faint px-4 pt-2.5 pb-1"
-        >
-          State-Based Actions
+        <div class="kb-note" *ngIf="searchTotal > searchHits.length">
+          Showing {{ searchHits.length }} of {{ searchTotal }} — narrow the search to see the rest.
         </div>
+      </ng-container>
+
+      <!-- ---- Rules, by section ---- -->
+      <ng-container *ngIf="!searchQuery && tab === 'rules'">
+        <div *ngFor="let section of sections; trackBy: trackByGroup" class="mb-2">
+          <div class="group-label">{{ section.number }}. {{ section.title }}</div>
+          <button
+            class="sidebar-item"
+            *ngFor="let group of section.groups; trackBy: trackByGroup"
+            [class.active]="isGroupSelected(group.number)"
+            (click)="selectGroup(group.number)"
+          >
+            <span class="item-label">{{ group.number }}. {{ group.title }}</span>
+            <span class="item-count">{{ group.ruleCount }}</span>
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ---- Keywords, by the category the rules put them in ---- -->
+      <ng-container *ngIf="!searchQuery && tab === 'keywords'">
+        <div *ngFor="let group of keywordGroups" class="mb-2">
+          <div class="group-label">{{ group.category }} ({{ group.keywords.length }})</div>
+          <button
+            class="sidebar-item"
+            *ngFor="let keyword of group.keywords; trackBy: trackByName"
+            [class.active]="isKeywordSelected(keyword.name)"
+            (click)="selectKeyword(keyword.name)"
+          >
+            <span class="item-label">{{ keyword.name }}</span>
+            <span class="item-count">{{ keyword.ruleRef }}</span>
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ---- Glossary ---- -->
+      <ng-container *ngIf="!searchQuery && tab === 'glossary'">
         <button
-          class="sidebar-item w-full bg-transparent border-none flex items-center justify-between gap-2 px-4 py-[7px] cursor-pointer transition-[background] duration-150 text-left hover:bg-raised"
-          *ngFor="let e of filteredSba"
-          [class.active]="isSelected(e)"
-          (click)="select(e)"
+          class="sidebar-item"
+          *ngFor="let entry of glossary; trackBy: trackByTerm"
+          [class.active]="isTermSelected(entry.term)"
+          (click)="selectGlossaryEntry(entry)"
         >
-          <span
-            class="item-label font-body text-[13px] text-parchment flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-            >{{ labelOf(e) }}</span
-          >
-          <span
-            class="item-badge font-display text-[8px] font-bold tracking-[0.05em] uppercase py-[2px] px-[5px] rounded-[3px] shrink-0"
-            [ngClass]="$any(e.data).status"
-            >{{ $any(e.data).status[0] }}</span
-          >
+          <span class="item-label">{{ entry.term }}</span>
         </button>
-      </div>
+        <button
+          class="kb-more"
+          type="button"
+          *ngIf="glossary.length < glossaryTotal"
+          (click)="loadMoreGlossary()"
+        >
+          Load more ({{ glossary.length }} of {{ glossaryTotal }})
+        </button>
+      </ng-container>
     </aside>
 
     <!-- Detail panel -->
-    <main class="kb-detail overflow-y-auto px-12 py-9" style="scrollbar-width: thin">
-      <div
-        class="detail-empty flex flex-col items-center justify-center h-full gap-3 text-parchment-faint font-body text-[14px] italic"
-        *ngIf="!selected"
-      >
-        <span class="text-[32px] text-gold-dim opacity-40">✦</span>
-        <p>Select an entry from the sidebar</p>
+    <main class="kb-detail overflow-y-auto px-12 py-9">
+      <!-- Only rendered where the two panes become one: on a phone the sidebar is
+           replaced by the detail, so without this there is no way back to the list. -->
+      <button type="button" class="kb-back" *ngIf="selected" (click)="clearSelection()">
+        <span aria-hidden="true">&#8592;</span> All entries
+      </button>
+
+      <div class="detail-empty" *ngIf="!selected">
+        <span class="empty-icon">✦</span>
+        <p class="empty-title">Choose an entry from the list</p>
+        <p class="empty-sub" *ngIf="meta">
+          {{ meta.ruleCount }} rules · {{ meta.keywordCount }} keywords ·
+          {{ meta.glossaryCount }} glossary entries
+        </p>
       </div>
 
-      <!-- Keyword detail -->
-      <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'keyword'">
-        <div class="flex items-center gap-3.5 mb-5">
-          <h2
-            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
-            style="font-size: clamp(20px, 3vw, 30px)"
-          >
-            {{ $any(selected!.data).name }}
-          </h2>
-          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{
-            $any(selected!.data).status
-          }}</span>
-        </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
-          {{ $any(selected!.data).description }}
-        </p>
-        <div class="flex items-center gap-3 mb-5">
-          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint"
-            >Rules Reference</span
-          >
-          <span class="font-display text-[11px] tracking-[0.1em] text-gold">{{
-            $any(selected!.data).rulesRef
-          }}</span>
-        </div>
-        <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
-          <ng-container [ngSwitch]="$any(selected!.data).status">
-            <span *ngSwitchCase="'implemented'"
-              >Fully enforced in the rules engine — attacker/blocker validation, damage assignment,
-              and SBAs all respect this keyword.</span
-            >
-            <span *ngSwitchCase="'partial'"
-              >Validation skeleton exists but full enforcement is not yet complete.</span
-            >
-            <span *ngSwitchCase="'stub'"
-              >Defined in the KeywordAbility enum. Logic not yet enforced in targeting or
-              combat.</span
-            >
-          </ng-container>
-        </div>
-      </div>
+      <!-- ---- A rule group ---- -->
+      <article class="detail-card animate-fade-in" *ngIf="selected?.kind === 'group'">
+        <ng-container *ngIf="$any(selected).group as group">
+          <div class="detail-eyebrow">{{ group.sectionNumber }}. {{ group.sectionTitle }}</div>
+          <h2 class="detail-title">{{ group.number }}. {{ group.title }}</h2>
 
-      <!-- Mechanic detail -->
-      <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'mechanic'">
-        <div class="flex items-center gap-3.5 mb-5">
-          <h2
-            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
-            style="font-size: clamp(20px, 3vw, 30px)"
-          >
-            {{ $any(selected!.data).name }}
-          </h2>
-        </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
-          {{ $any(selected!.data).description }}
-        </p>
-        <div
-          class="flex flex-col gap-3 border-l-2 border-solid border-dim pl-5 mt-2"
-          *ngIf="$any(selected!.data).steps?.length"
-        >
-          <div
-            class="step-row flex gap-3.5 items-start"
-            *ngFor="let s of $any(selected!.data).steps; let i = index"
-          >
-            <span class="font-display text-[10px] text-gold-dim min-w-[18px] pt-[3px] text-right">{{
-              i + 1
-            }}</span>
-            <div class="flex flex-col gap-[3px]">
-              <span class="font-display text-[11px] tracking-[0.08em] text-parchment">{{
-                s.name
-              }}</span>
-              <span class="font-body text-[13px] text-parchment-muted leading-[1.55]">{{
-                s.description
-              }}</span>
-            </div>
+          <app-rule-block
+            *ngFor="let rule of group.rules; trackBy: trackByNumber"
+            [rule]="rule"
+            [highlight]="$any(selected).highlight"
+          />
+        </ng-container>
+      </article>
+
+      <!-- ---- A keyword ---- -->
+      <article class="detail-card animate-fade-in" *ngIf="selected?.kind === 'keyword'">
+        <ng-container *ngIf="$any(selected).keyword as keyword">
+          <div class="detail-eyebrow">{{ keyword.category }}</div>
+          <div class="flex items-center gap-3.5 flex-wrap mb-4">
+            <h2 class="detail-title">{{ keyword.name }}</h2>
+            <span class="rule-ref">{{ keyword.ruleRef }}</span>
           </div>
-        </div>
-      </div>
 
-      <!-- SBA detail -->
-      <div class="detail-card max-w-[680px] animate-fade-in" *ngIf="selected?.kind === 'sba'">
-        <div class="flex items-center gap-3.5 mb-5">
-          <h2
-            class="detail-title font-display font-bold tracking-[0.1em] uppercase text-parchment"
-            style="font-size: clamp(20px, 3vw, 30px)"
-          >
-            {{ $any(selected!.data).rulesRef }}
-          </h2>
-          <span class="badge lg" [ngClass]="$any(selected!.data).status">{{
-            $any(selected!.data).status
-          }}</span>
-        </div>
-        <p class="detail-desc font-body text-[15px] text-parchment-muted leading-[1.7] mb-7">
-          {{ $any(selected!.data).description }}
-        </p>
-        <div class="flex items-center gap-3 mb-5">
-          <span class="font-display text-[9px] tracking-[0.16em] uppercase text-parchment-faint"
-            >Category</span
-          >
-          <span class="font-display text-[11px] tracking-[0.1em] text-gold"
-            >State-Based Action (CR 704)</span
-          >
-        </div>
-        <div class="detail-status-note" [ngClass]="$any(selected!.data).status">
-          <ng-container [ngSwitch]="$any(selected!.data).status">
-            <span *ngSwitchCase="'implemented'"
-              >Checked in <code>StateBasedActions.Apply()</code> after every game action. Loops
-              until stable.</span
-            >
-            <span *ngSwitchCase="'stub'"
-              >Skeleton only — the check is defined but the resolution effect is not yet
-              applied.</span
-            >
-          </ng-container>
-        </div>
-      </div>
+          <p class="detail-desc">{{ keyword.definition }}</p>
+
+          <app-rule-block
+            *ngFor="let rule of keyword.rules; trackBy: trackByNumber"
+            [rule]="rule"
+          />
+        </ng-container>
+      </article>
+
+      <!-- ---- A glossary term ---- -->
+      <article class="detail-card animate-fade-in" *ngIf="selected?.kind === 'glossary'">
+        <ng-container *ngIf="$any(selected).entry as entry">
+          <div class="detail-eyebrow">Glossary</div>
+          <h2 class="detail-title">{{ entry.term }}</h2>
+          <p class="detail-desc glossary-definition">{{ entry.definition }}</p>
+        </ng-container>
+      </article>
     </main>
   </div>
 
-  <ng-template #loading>
-    <div
-      class="relative z-[1] flex flex-col items-center justify-center flex-1 gap-4 text-parchment-faint font-display text-[11px] tracking-[0.14em] uppercase"
-    >
-      <div class="text-[28px] text-gold animate-pulse-gold">✦</div>
-      <span>Loading rules…</span>
+  <ng-template #notReady>
+    <div class="kb-state">
+      <ng-container *ngIf="loading">
+        <div class="text-[28px] text-gold animate-pulse-gold">✦</div>
+        <span class="kb-state-label">Loading the rules…</span>
+      </ng-container>
+      <ng-container *ngIf="failed">
+        <div class="text-[28px] text-gold-dim opacity-50">✦</div>
+        <span class="kb-state-label">The rules could not be loaded.</span>
+        <button type="button" class="kb-retry" (click)="retry()">Try again</button>
+      </ng-container>
     </div>
   </ng-template>
 </div>

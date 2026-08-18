@@ -1,4 +1,5 @@
 @use '../../../styles/add-controls' as *;
+@use '../../../styles/detail-page' as *;
 
 :host {
   display: flex;
@@ -9,40 +10,16 @@
 }
 
 .mana-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
+  @include drawer-header;
 }
 
 .mana-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
+  // Blue: the colour this panel's own charts and its droplet already carry.
+  @include drawer-title(#60a5fa);
 }
 
 .mana-close {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--text-dim);
-  transition:
-    color 0.15s,
-    background 0.15s;
-  &:hover {
-    color: var(--text-primary);
-    background: var(--bg-raised);
-  }
+  @include drawer-close;
 }
 
 .mana-body {

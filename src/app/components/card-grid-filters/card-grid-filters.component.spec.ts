@@ -1,12 +1,13 @@
 import { ChangeDetectorRef, ElementRef, NgZone } from '@angular/core';
 import { CardGridFiltersComponent } from './card-grid-filters.component';
 import { CardFilters } from '../../models/card-filters';
+import { BreakpointsService } from '../../shared/breakpoints.service';
 
 /**
  * No TestBed: the bar's job is to mutate the caller's CardFilters and say so, which is
  * plain object behaviour. The layout it renders is verified in the browser.
  */
-function make() {
+function make(isPhone = false) {
   const marks = { count: 0 };
   const cdr = { markForCheck: () => marks.count++ } as unknown as ChangeDetectorRef;
   const el = document.createElement('div');
@@ -15,12 +16,66 @@ function make() {
     run: <T>(fn: () => T) => fn(),
     runOutsideAngular: <T>(fn: () => T) => fn(),
   } as unknown as NgZone;
-  const c = new CardGridFiltersComponent(cdr, new ElementRef(el), zone);
+  // Driven, not read from the Karma window: which chips the bar offers depends on it, and
+  // a test that only passes at the runner's happens-to-be width tests nothing.
+  const breakpoints = { isPhone: () => isPhone } as unknown as BreakpointsService;
+  const c = new CardGridFiltersComponent(cdr, new ElementRef(el), zone, breakpoints);
   c.filters = new CardFilters();
   const changes: number[] = [];
   c.filtersChange.subscribe(() => changes.push(1));
   return { c, marks, changes, el };
 }
+
+/** The chip labels the bar is currently offering for card type. */
+function typeLabels(c: CardGridFiltersComponent): string[] {
+  return c.typeChips.map((chip) => chip.label ?? chip.code);
+}
+
+describe('CardGridFiltersComponent type chips', () => {
+  it('offers the seven playable types by default — a deck cannot hold the others', () => {
+    const { c } = make();
+    expect(typeLabels(c)).not.toContain('Token');
+    expect(typeLabels(c)).not.toContain('Other');
+    expect(typeLabels(c).length).toBe(7);
+  });
+
+  it('offers Token and Other to a grid of what you own', () => {
+    // Tokens and art-series cards are real printings with real prices; a collection
+    // holding one could not filter to it while the list stopped at Planeswalker.
+    const { c } = make();
+    c.ownableTypes = true;
+    expect(typeLabels(c)).toContain('Token');
+    expect(typeLabels(c)).toContain('Other');
+  });
+
+  it('offers them on a phone regardless, where the search panel sits one tap away', () => {
+    const { c } = make(true);
+    expect(typeLabels(c)).toContain('Token');
+    expect(typeLabels(c)).toContain('Other');
+  });
+
+  it('narrows chips to what the page holds on a wide screen', () => {
+    const { c } = make();
+    c.available = {
+      colors: new Set(),
+      types: new Set(['Creature']),
+      rarities: new Set(),
+      cmc: new Set(),
+    };
+    expect(typeLabels(c)).toEqual(['Creature']);
+  });
+
+  it('never narrows on a phone — the two blocks there have to match', () => {
+    const { c } = make(true);
+    c.available = {
+      colors: new Set(),
+      types: new Set(['Creature']),
+      rarities: new Set(),
+      cmc: new Set(),
+    };
+    expect(typeLabels(c).length).toBe(9);
+  });
+});
 
 describe('CardGridFiltersComponent', () => {
   it('mutates the filters it was given rather than a copy of them', () => {

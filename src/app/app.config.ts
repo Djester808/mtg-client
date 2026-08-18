@@ -13,9 +13,21 @@ import { DeckEffects } from './store/deck/deck.effects';
 import { ForumEffects } from './store/forum/forum.effects';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { AuthActions } from './store/auth/auth.actions';
+import { KeywordLinkService } from './services/keyword-link.service';
 
 function restoreSession(store: Store) {
   return () => store.dispatch(AuthActions.restoreSession());
+}
+
+/**
+ * `OracleSymbolsPipe` is pure and synchronous, so the keyword terms have to be in place
+ * before the first card renders or its text stays unlinked until something else changes
+ * its input. The request is ~10 KB of static data and the service swallows its own
+ * failures, so a slow or missing API delays boot briefly and then renders plain text
+ * rather than blocking the app.
+ */
+export function loadKeywordLinks(keywords: KeywordLinkService) {
+  return () => keywords.load();
 }
 
 export const appConfig: ApplicationConfig = {
@@ -40,6 +52,12 @@ export const appConfig: ApplicationConfig = {
       provide: APP_INITIALIZER,
       useFactory: restoreSession,
       deps: [Store],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: loadKeywordLinks,
+      deps: [KeywordLinkService],
       multi: true,
     },
   ],

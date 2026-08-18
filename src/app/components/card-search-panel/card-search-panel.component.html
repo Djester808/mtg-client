@@ -1,6 +1,13 @@
 <div class="panel-header">
   <div class="panel-title-wrap">
-    <span class="panel-title">{{ commanderFilter ? 'Find Commander' : 'Add Cards' }}</span>
+    <span class="panel-title">
+      <i
+        class="bi"
+        [class.bi-search]="commanderFilter"
+        [class.bi-plus-circle]="!commanderFilter"
+      ></i>
+      {{ commanderFilter ? 'Find Commander' : 'Add Cards' }}
+    </span>
     <span class="panel-cmdr-badge" *ngIf="commanderFilter">Legendary only</span>
   </div>
   <button class="panel-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
@@ -87,18 +94,29 @@
        picker shares this row rather than holding one of its own, which it looked
        stranded on. -->
   <div class="filter-row filter-row-set">
-    <app-filter-chips
-      [chips]="colorOptions"
-      [active]="selectedColors"
-      (toggled)="toggleColor($event)"
-    ></app-filter-chips>
-    <app-filter-chips
-      [chips]="rarityOptions"
-      [active]="selectedRarities"
-      (toggled)="toggleRarity($any($event))"
-    ></app-filter-chips>
+    <!-- data-chips names each row for the e2e suite. Colours, types, cost and sort all
+         render the same shared chip now, so a class name no longer says which row a chip
+         belongs to; these do, and they do not change when the styling does. -->
+  </div>
 
-    <div class="filter-group filter-group-set">
+  <!-- The shared facet arrangement: colours+rarities / types / CMC. One component, the
+       same one the grid toolbar mounts, so the two cannot drift apart again. -->
+  <app-filter-facets
+    [colors]="colorOptions"
+    [activeColors]="selectedColors"
+    (colorsToggled)="toggleColor($event)"
+    [rarities]="rarityOptions"
+    [activeRarities]="selectedRarities"
+    (raritiesToggled)="toggleRarity($any($event))"
+    [types]="typeChips"
+    [activeTypes]="selectedTypes"
+    (typesToggled)="toggleType($event)"
+    [cmc]="cmcChips"
+    [activeCmc]="activeCmc"
+    (cmcToggled)="toggleCmc($any($event))"
+  >
+    <!-- Set picker rides the CMC line, the same slot the deck bar projects into. -->
+    <div class="filter-group filter-group-set" facetTrail>
       <span class="filter-label">Set</span>
       <div class="set-dropdown-wrap">
         <button class="set-trigger" [class.is-active]="activeSet" (click)="openSetDrop()">
@@ -151,34 +169,19 @@
         </div>
       </div>
     </div>
-  </div>
+  </app-filter-facets>
 
-  <!-- Types, wrapping as needed -->
+  <!-- Order, with Clear at the end of the line -->
   <div class="filter-row">
     <app-filter-chips
-      [chips]="typeChips"
-      [active]="selectedTypes"
-      (toggled)="toggleType($event)"
-    ></app-filter-chips>
-  </div>
-
-  <!-- Cost and order, with Clear at the end of the line -->
-  <div class="filter-row">
-    <app-filter-chips
-      label="CMC"
-      [narrow]="true"
-      [chips]="cmcChips"
-      [active]="activeCmc"
-      (toggled)="toggleCmc($any($event))"
-    ></app-filter-chips>
-
-    <app-filter-chips
+      data-chips="sort"
       label="Sort"
       [chips]="sortChips"
       [active]="activeSort"
       (toggled)="setSortBy($any($event))"
     ></app-filter-chips>
     <app-filter-chips
+      data-chips="sort-dir"
       [narrow]="true"
       [chips]="sortDirChips"
       [active]="noneActive"

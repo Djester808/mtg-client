@@ -1,0 +1,180 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/filter-bar' as *;
+
+// The one place the facet arrangement is defined. Container-queried, not
+// viewport-queried, so the same component is right in a 380px desktop side panel, a
+// full-width phone sheet, and a wide desktop toolbar band without any host CSS.
+
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px 6px;
+  // Fills whatever the host gives it, and the @container rules below decide how the rows
+  // sit at that width. A wide toolbar band gets one flowing line, a 380px side panel gets
+  // the stacked arrangement.
+  //
+  // 100%, not auto: every host wraps this in a centred flex column, where an auto-width
+  // item takes its content width — and a wrapping flex container with `min-width: 0` can
+  // report that as zero, which laid the whole block out one chip per line.
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+// Phone only. Every host hands this block a slightly different inner width (scrollbars,
+// gutters, panel padding), and with natural wrapping those few pixels decided whether the
+// pips and rarities shared a line or broke into two — three screenshots of "the same"
+// block wrapping three ways, which is the whole defect this component exists to kill. At a
+// constant 302px the wrap points are the block's own, so it renders identically in every
+// context by construction (verify-same.js holds that at 0 differing pixels).
+//
+// It is deliberately NOT applied above the breakpoint: a fixed 302px column stranded in
+// the middle of a 1258px desktop bar is the same bug pointing the other way.
+@include upto($bp-phone) {
+  :host {
+    width: 302px;
+    margin-inline: auto;
+    // Own compositor layer. Centring 302px in odd-width hosts lands the block at x.5, and
+    // whether the text then rasterises at the half-pixel or gets snapped depends on which
+    // ancestors happen to composite — the SAME block rendered crisp in two views and soft
+    // in two others (5% of pixels, caught by verify-same.js, invisible until zoomed). A
+    // promoted layer is always snapped to the device grid.
+    transform: translateZ(0);
+  }
+}
+
+// The rows are flex items directly — the component IS the row container.
+app-filter-chips {
+  display: block;
+  min-width: 0;
+}
+
+// (chip-row geometry belongs to filter-chips.component.scss)
+
+// Colours and rarities keep their natural width so they share the first line; types
+// take the full width and wrap into even rows beneath; CMC closes the block.
+.fx-colors,
+.fx-rarities {
+  flex: 0 1 auto;
+}
+
+.fx-types {
+  flex: 1 1 100%;
+}
+
+.fx-cmc {
+  flex: 0 1 auto;
+}
+
+// In a wide toolbar band (desktop grid bar) everything relaxes onto one flowing line —
+// the stacked arrangement is for narrow containers, not a fixed identity.
+@container (min-width: 700px) {
+  .fx-types {
+    flex: 0 1 auto;
+  }
+}
+
+// Narrow-container density. This lives here, not in global.scss: the component owns its
+// arrangement, and the arrangement only works if it also owns the sizes that let colours
+// and rarities share the first line (7 pips + 4 badges at 22px ≈ 300px of 343).
+// Sizing lives in filter-chips.component.scss — the component that owns .color-chip.
+// Reaching in from here needed ::ng-deep and lost a specificity fight silently; the chip
+// sizing itself is also wanted by every other filter bar, not just this arrangement.
+
+// The CMC line, with the host's set picker riding it. One nowrap row so the two can
+// never stack; the slot is empty in hosts that keep their set elsewhere and costs
+// nothing there.
+.fx-last {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+// ---- Collapse pill (phone only) ---------------------------
+// The button is a full-width, invisible row — that is what guarantees the pill gets a
+// line of its own in the flex flow (a flex-basis trick with max-width clamps itself
+// back to content size and re-joins the pips row; been there). The pill LOOK lives on
+// the inner span.
+.fx-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  min-height: 24px;
+
+  &:focus-visible .fx-toggle-pill {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+// Shared with the forum bar's trigger — see styles/_filter-bar.scss.
+.fx-toggle-pill {
+  @include filter-toggle-pill;
+}
+
+.fx-toggle.has-active.is-collapsed .fx-toggle-pill::after {
+  @include filter-active-dot;
+}
+
+@include upto($bp-phone) {
+  .fx-toggle {
+    display: flex;
+    flex: 1 1 100%;
+  }
+
+  // Collapsed: only the pill remains; every chip row goes. Desktop ignores the state
+  // entirely — the pill is hidden there and the rows always show.
+  :host(.is-collapsed) :is(app-filter-chips, .fx-last) {
+    display: none;
+  }
+}
+
+// ---- Desktop arrangement ----------------------------------
+//
+// Above the phone breakpoint the block reproduces exactly what the bar looked like before
+// this component existed, because that is the layout people already use: the type chips on
+// a line of their own, then colours, rarities and CMC sharing the line beneath.
+//
+// The phone arrangement — colours and rarities first, types wrapping under them, CMC last
+// with the set picker riding its line — is the one that fits 375px, and it stays there.
+//
+// Last in the file on purpose: `.fx-last` sets `flex: 1 1 100%` for the phone layout, and
+// at equal specificity the later rule wins. Written higher up, this block lost that fight
+// silently and CMC kept its own line.
+@include from($bp-phone) {
+  :host {
+    // 8px between the two lines, 6px between the groups on one — the band's own spacing
+    // before this component took it over. The phone block runs tighter (5px/6px) because
+    // it has four lines to fit, not two.
+    gap: 8px 6px;
+  }
+
+  .fx-types {
+    order: 0;
+    flex: 1 1 100%;
+  }
+
+  .fx-colors {
+    order: 1;
+  }
+
+  .fx-rarities {
+    order: 2;
+  }
+
+  .fx-last {
+    order: 3;
+    flex: 0 1 auto;
+  }
+}
