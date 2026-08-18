@@ -52,3 +52,7 @@ client-run.log
 
 # Mobile audit output (regenerate with e2e/shoot.js)
 /e2e/screenshots
+
+# Root-level one-off captures — the same throwaway artifacts as /e2e/screenshots
+# above, 5.8 MB of regenerable PNGs that no build reads.
+/screenshots
