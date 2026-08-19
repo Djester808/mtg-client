@@ -1,0 +1,73 @@
+<!-- The three header classes carry the shared drawer chrome from styles/_detail-page.scss.
+     A utility restating one of them is how the other drawers drifted apart. -->
+<div class="rf-header">
+  <span class="rf-title"> <i class="bi bi-wrench-adjustable"></i> Refine Deck </span>
+  <button class="rf-close" (click)="close()" aria-label="Close">
+    <i class="bi bi-x-lg"></i>
+  </button>
+</div>
+
+<div class="rf-body">
+  <p class="rf-error" *ngIf="error">{{ error }}</p>
+
+  <!-- Idle: say plainly that nothing changes until they accept. -->
+  <div class="rf-intro" *ngIf="state === 'idle'">
+    <p class="rf-lead">
+      Looks for cards that are pulling their weight least, and proposes better ones from the legal
+      pool.
+    </p>
+    <p class="rf-note">Nothing is changed until you accept it.</p>
+    <button type="button" class="rf-btn rf-btn-primary" (click)="ask()">
+      Suggest improvements
+    </button>
+  </div>
+
+  <div class="rf-loading" *ngIf="state === 'loading'">
+    <div class="rf-track"><div class="rf-track-fill"></div></div>
+    <p class="rf-note">Reading the deck against the doctrine…</p>
+  </div>
+
+  <ng-container *ngIf="state === 'review' || state === 'applying'">
+    <p class="rf-note rf-empty" *ngIf="!proposals.length">
+      Nothing worth swapping — this deck is already doing what it set out to do.
+    </p>
+
+    <ul class="rf-list" *ngIf="proposals.length">
+      <li class="rf-swap" *ngFor="let row of proposals" [class.is-dropped]="!row.keep">
+        <button
+          type="button"
+          class="rf-keep"
+          [attr.aria-pressed]="row.keep"
+          (click)="toggle(row)"
+          [attr.aria-label]="row.keep ? 'Drop this swap' : 'Keep this swap'"
+        >
+          <i class="bi" [class.bi-check-square]="row.keep" [class.bi-square]="!row.keep"></i>
+        </button>
+        <div class="rf-swap-body">
+          <p class="rf-swap-cards">
+            <span class="rf-out">{{ row.swap.out }}</span>
+            <i class="bi bi-arrow-right"></i>
+            <span class="rf-in">{{ row.swap.in }}</span>
+          </p>
+          <p class="rf-why" *ngIf="row.swap.why">{{ row.swap.why }}</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="rf-note" *ngIf="rejectedSummary">Refused: {{ rejectedSummary }}.</p>
+
+    <div class="rf-actions" *ngIf="proposals.length">
+      <button type="button" class="rf-btn" [disabled]="state === 'applying'" (click)="discard()">
+        Discard
+      </button>
+      <button
+        type="button"
+        class="rf-btn rf-btn-primary"
+        [disabled]="!keptCount || state === 'applying'"
+        (click)="apply()"
+      >
+        {{ state === 'applying' ? 'Applying…' : 'Apply ' + keptCount }}
+      </button>
+    </div>
+  </ng-container>
+</div>

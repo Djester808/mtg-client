@@ -132,3 +132,37 @@ export interface AiBuildResult {
   mainShortfall: number;
   skippedByReason: Record<string, number>;
 }
+
+/** One proposed exchange: a card leaving the deck for one joining it. */
+export interface CardSwap {
+  out: string;
+  in: string;
+  why: string;
+}
+
+export interface AiRefineRequest {
+  bracket: number;
+  priceRange: string;
+  maxSwaps: number;
+  /**
+   * Propose and validate, but write nothing.
+   *
+   * Refine rewrites a saved deck in place and there is no undo, so the panel always asks
+   * for a preview first. What comes back has been through the same validation the server
+   * applies for real, so it is what would land rather than what the model wished for.
+   */
+  preview: boolean;
+}
+
+export interface AiApplySwapsRequest {
+  swaps: CardSwap[];
+  bracket: number;
+}
+
+export interface AiRefineResult {
+  swaps: CardSwap[];
+  /** Proposals the server refused, by reason. Surfaced rather than hidden. */
+  rejectedByReason: Record<string, number>;
+  deckSizeBefore: number;
+  deckSizeAfter: number;
+}

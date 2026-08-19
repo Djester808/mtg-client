@@ -54,6 +54,7 @@ import { CardSideListComponent } from '../../components/card-side-list/card-side
 import { CoverPickerModalComponent } from '../../components/cover-picker-modal/cover-picker-modal.component';
 import { DeckSuggestionsPanelComponent } from '../../components/deck-suggestions-panel/deck-suggestions-panel.component';
 import { ManaSuggestPanelComponent } from '../../components/mana-suggest-panel/mana-suggest-panel.component';
+import { DeckRefinePanelComponent } from '../../components/deck-refine-panel/deck-refine-panel.component';
 import {
   SelectMenuComponent,
   SelectMenuOption,
@@ -99,6 +100,7 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
     CoverPickerModalComponent,
     DeckSuggestionsPanelComponent,
     ManaSuggestPanelComponent,
+    DeckRefinePanelComponent,
     StatsChartComponent,
     SelectMenuComponent,
     CardGridFiltersComponent,
@@ -186,6 +188,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   showSearchPanel = false;
   showSuggestionsPanel = false;
   showManaSuggestPanel = false;
+  showRefinePanel = false;
   showSidePanel = false;
   sideTab: 'stats' | 'commander' = 'stats';
 
@@ -311,7 +314,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   @ViewChild(CardSearchPanelComponent) searchPanel?: CardSearchPanelComponent;
   @ViewChild(CardSideListComponent) sideList?: CardSideListComponent;
 
-  private deckId = '';
+  // Protected rather than private: the refine panel binds it. Angular templates can reach
+  // protected members, and the alternative — a public field or a getter — would widen the
+  // surface further than the one binding needs.
+  protected deckId = '';
   private _rafPending = false;
   private destroy$ = new Subject<void>();
 
@@ -2197,10 +2203,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       (!this.swapMode && this.showSearchPanel) ||
       this.showManaSuggestPanel ||
       this.showSuggestionsPanel ||
+      this.showRefinePanel ||
       this.showSidePanel;
     if (!this.swapMode) this.showSearchPanel = false;
     this.showManaSuggestPanel = false;
     this.showSuggestionsPanel = false;
+    this.showRefinePanel = false;
     this.showSidePanel = false;
     this.cdr.markForCheck();
     const open = () => {
@@ -2308,6 +2316,23 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     });
     this.sideListMemo = { deck, board: this.activeBoard, result };
     return result;
+  }
+
+  toggleRefinePanel(): void {
+    if (this.showRefinePanel) {
+      this.showRefinePanel = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.switchRightPanel(() => {
+      this.showRefinePanel = true;
+      this.cdr.markForCheck();
+    });
+  }
+
+  /** Swaps were written, so the board has to be re-read rather than patched. */
+  onRefineApplied(): void {
+    this.store.dispatch(DeckActions.loadDeck({ id: this.deckId }));
   }
 
   toggleManaSuggestPanel(): void {

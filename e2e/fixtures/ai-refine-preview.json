@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "A canned refine preview, so the proposal list's layout is measured on every capture run",
+    "rather than once by hand. Refine is a live Opus call; the layout worth measuring is the",
+    "drawer at 320px holding long card names, not the model's taste in swaps.",
+    "",
+    "The card names are real and deliberately span the range: a short one, one at the length",
+    "that wraps a 320px drawer, and a double-faced name with a // in it. The reasons are the",
+    "length the prompt asks for — under fifteen words.",
+    "",
+    "Shape matches AiRefineResultDto. rejectedByReason is populated on purpose: the empty",
+    "case was the only one ever rendered, and refusals are surfaced rather than hidden."
+  ],
+  "swaps": [
+    {
+      "out": "Wall of Roots",
+      "in": "Sakura-Tribe Elder",
+      "why": "Blocks, then fetches a land instead of dying for nothing."
+    },
+    {
+      "out": "Grapple with the Past",
+      "in": "Eternal Witness",
+      "why": "A body that returns any card, not just a creature or land."
+    },
+    {
+      "out": "Sylvan Ranger",
+      "in": "Wood Elves",
+      "why": "Fetches a dual rather than a basic, and fixes two colours."
+    },
+    {
+      "out": "Vulturous Zombie",
+      "in": "Tovolar, Dire Overlord // Tovolar, the Midnight Scourge",
+      "why": "Draws on every Wolf connection instead of growing slowly."
+    },
+    {
+      "out": "Nature's Lore",
+      "in": "Three Visits",
+      "why": "The same effect; kept only to show a near-duplicate swap."
+    }
+  ],
+  "rejectedByReason": {
+    "out-card-not-in-deck": 1,
+    "colour-identity": 1
+  },
+  "deckSizeBefore": 99,
+  "deckSizeAfter": 99
+}

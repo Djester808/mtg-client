@@ -23,6 +23,7 @@ const FIXTURES = path.join(__dirname, '..', 'fixtures');
 
 const suggestions = () => fs.readFileSync(path.join(FIXTURES, 'ai-build-suggestions.json'), 'utf8');
 const stream = () => fs.readFileSync(path.join(FIXTURES, 'ai-build-stream.sse'), 'utf8');
+const refine = () => fs.readFileSync(path.join(FIXTURES, 'ai-refine-preview.json'), 'utf8');
 
 /**
  * The page-side stub. Serialised into the browser, so it can only use what is in scope
@@ -43,6 +44,15 @@ const STUB = `
 
     if (url.includes('commander-suggestions')) {
       return Promise.resolve(new Response(window.__aiReplay.suggestions, {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    }
+
+    if (url.includes('ai-refine') && !url.includes('/apply')) {
+      // A canned preview. Refine is a live model call, and the layout worth measuring is
+      // the proposal list — long card names in a 320px drawer — not the model's taste.
+      return Promise.resolve(new Response(window.__aiReplay.refine, {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }));
@@ -98,6 +108,7 @@ async function armAiBuildReplay(driver, opts = {}) {
     JSON.stringify({
       suggestions: suggestions(),
       stream: stream(),
+      refine: refine(),
       chunk: opts.chunk ?? 4096,
       delay: opts.delay ?? 12,
     }) +

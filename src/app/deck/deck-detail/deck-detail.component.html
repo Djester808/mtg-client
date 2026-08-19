@@ -509,6 +509,14 @@
           >
             <i class="bi bi-stars"></i><span>Suggest</span>
           </button>
+          <button
+            class="tool-btn tool-btn--refine"
+            [class.is-active]="showRefinePanel"
+            (click)="toggleRefinePanel()"
+            title="Refine deck"
+          >
+            <i class="bi bi-wrench-adjustable"></i><span>Refine</span>
+          </button>
         </div>
       </div>
 
@@ -1636,6 +1644,16 @@
         (cardRemove)="removeSuggestedCard($event)"
         (panelClose)="showSuggestionsPanel = false"
       ></app-deck-suggestions-panel>
+    </div>
+
+    <!-- Refine panel -->
+    <div class="refine-panel-wrap" [class.is-open]="showRefinePanel">
+      <app-deck-refine-panel
+        *ngIf="showRefinePanel"
+        [deckId]="deckId"
+        (deckChanged)="onRefineApplied()"
+        (panelClose)="showRefinePanel = false"
+      ></app-deck-refine-panel>
     </div>
 
     <!-- Mana suggestions panel -->

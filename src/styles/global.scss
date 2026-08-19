@@ -4034,6 +4034,47 @@ app-deck-detail {
     }
   }
 
+  .refine-panel-wrap {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    transition:
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s;
+    // Zero-width when closed: a transparent 1px border still occupies a column, and
+    // three closed drawers side by side read as a broken seam beside the board.
+    border-left: 0 solid transparent;
+
+    &.is-open {
+      width: 320px;
+      border-left: 1px solid var(--border-dim);
+      overflow-y: hidden;
+
+      // Full-screen sheet on a phone — see the card search panel for the reasoning.
+      @include upto($bp-phone) {
+        position: fixed;
+        inset: 52px 0 0;
+        width: auto;
+        max-width: none;
+        z-index: 400;
+        border-left: none;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    app-deck-refine-panel {
+      width: 320px;
+      height: 100%;
+
+      @include upto($bp-phone) {
+        width: 100%;
+      }
+    }
+  }
+
   // ---- Side panel (collapsible column) ---------------------
 
   .side-panel {

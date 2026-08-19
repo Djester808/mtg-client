@@ -6,6 +6,9 @@ import {
   AiApplyPlanRequest,
   AiBuildPlan,
   AiBuildResult,
+  AiRefineRequest,
+  AiRefineResult,
+  AiApplySwapsRequest,
   CommanderSuggestionRequest,
   CommanderSuggestions,
 } from '../models/ai-builder.models';
@@ -132,5 +135,26 @@ export class AiBuilderApiService {
   /** Writes an accepted plan. The server re-validates every card. */
   applyPlan(deckId: string, request: AiApplyPlanRequest): Observable<AiBuildResult> {
     return this.http.post<AiBuildResult>(`${this.base}/${deckId}/ai-build/apply`, request);
+  }
+
+  /**
+   * Asks what would improve a saved deck.
+   *
+   * Always sent as a preview. Refine writes in place with no undo, and the builder's
+   * standing promise is that nothing is saved until the player accepts it.
+   */
+  previewRefine(
+    deckId: string,
+    request: Omit<AiRefineRequest, 'preview'>,
+  ): Observable<AiRefineResult> {
+    return this.http.post<AiRefineResult>(`${this.base}/${deckId}/ai-refine`, {
+      ...request,
+      preview: true,
+    });
+  }
+
+  /** Writes the swaps the player kept. No model call; the server validates them again. */
+  applyRefineSwaps(deckId: string, request: AiApplySwapsRequest): Observable<AiRefineResult> {
+    return this.http.post<AiRefineResult>(`${this.base}/${deckId}/ai-refine/apply`, request);
   }
 }

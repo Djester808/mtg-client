@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { By, until } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
+const { armAiBuildReplay } = require('./helpers/ai-build-replay');
 const { loginAs } = require('./helpers/auth');
 const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
@@ -110,6 +111,19 @@ const STATES = [
   { id: 'deck-commander', label: 'Deck — Commander panel', run: (d) => openTool(d, 'commander') },
   { id: 'deck-mana', label: 'Deck — Mana analysis', run: (d) => openTool(d, 'mana') },
   { id: 'deck-suggest', label: 'Deck — Suggestions', run: (d) => openTool(d, 'suggest') },
+  { id: 'deck-refine', label: 'Deck — Refine panel', run: (d) => openTool(d, 'refine') },
+  {
+    id: 'deck-refine-review',
+    label: 'Deck — Refine proposals',
+    run: async (d) => {
+      await openTool(d, 'refine');
+      await d.executeScript(
+        "const b = Array.from(document.querySelectorAll('.rf-btn')).filter(function (x) {" +
+          '  return /suggest/i.test(x.textContent); })[0]; if (b) b.click();',
+      );
+      await sleep(1800);
+    },
+  },
   { id: 'deck-filters', label: 'Deck — filter bar', run: (d) => openFilters(d) },
 ];
 
@@ -174,6 +188,9 @@ function parseArgs(argv) {
     const devDir = path.join(outDir, device.id);
     fs.mkdirSync(devDir, { recursive: true });
     const d = await buildDriver({ device, dpr: args.dpr });
+    // Refine is a live model call. The proposal list is stubbed so its layout is
+    // measured on every run rather than once, by hand, on the day it was written.
+    await armAiBuildReplay(d);
     try {
       await loginAs(d);
       await sleep(1200);
