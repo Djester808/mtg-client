@@ -895,6 +895,22 @@ body.is-dragging-card * {
   flex-wrap: nowrap;
 }
 
+// app-select-menu's trigger, measured at 24px on a phone against a stated floor of 44.
+//
+// The rule lives here rather than in the component because the component sizes .asm-btn in
+// an inline styles array, where the breakpoint vocabulary cannot be imported — and a raw
+// media query with a hard-coded 44 is exactly the drift $tap-min exists to prevent. The
+// element qualifier also beats the component's own class rule, which is the same trick the
+// .sort-select-menu block below already relies on.
+//
+// Touch only: with a mouse the compact trigger is a deliberate density choice, and it sits
+// in filter bars where height is shared with everything beside it.
+@include touch {
+  app-select-menu .asm-btn {
+    min-height: $tap-min;
+  }
+}
+
 // Group-by picker (app-select-menu) — blends its button into the .sort-group pill.
 //
 // Qualified by element on purpose: app-select-menu sets `:host { min-width: 0 }`, which is

@@ -183,6 +183,13 @@ const AUDIT = `
     // by a pixel and which nobody can tap anyway.
     const cs = getComputedStyle(el);
     if (cs.pointerEvents === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+    // A checkbox or radio wrapped in a label is not the tap target — the label is, and
+    // tapping anywhere on it works. Measuring the 13x13 glyph inside a 44px label reports
+    // a miss that cannot happen.
+    if ((el.type === 'checkbox' || el.type === 'radio') && el.closest('label')) {
+      const lb = el.closest('label').getBoundingClientRect();
+      if (lb.width >= 44 && lb.height >= 44) continue;
+    }
     const r = el.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
     if (r.width >= 44 && r.height >= 44) continue;

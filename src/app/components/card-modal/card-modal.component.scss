@@ -1172,3 +1172,33 @@
   color: var(--text-dim);
   text-align: center;
 }
+
+// Touch targets on the two controls this modal owns, measured on a phone at 26x22 (close)
+// and 28px tall (the info tabs) against a stated floor of 44.
+//
+// The close button is the only way out of a modal that covers the whole screen, so it is
+// the last control that should be hard to hit. The four info tabs sit side by side, so a
+// miss lands on the neighbouring tab rather than on nothing — the worse kind of miss.
+//
+// Touch only, and one block rather than two: with a mouse the compact chrome is a
+// deliberate density choice, and a second @include touch emits a second @media wrapper
+// this file has no budget for. Only the reachable area grows; the underline stays put.
+@include touch {
+  // Grown by padding rather than min-height and flex centring: one declaration each
+  // instead of six, and this file sits on its 16KB budget.
+  .modal-close-btn {
+    padding: 14px 15px;
+  }
+
+  .modal-info-tab {
+    padding: 14px 12px;
+  }
+
+  // 41x42 measured — short by two or three pixels, which is the most annoying way to miss
+  // a floor, and these step through a card's printings one tap at a time.
+  .carousel-btn {
+    padding: 5px 14px;
+    min-width: $tap-min;
+    min-height: $tap-min;
+  }
+}
