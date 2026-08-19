@@ -50,6 +50,27 @@ import { FlightSource } from '../../shared/fly-card';
 import { CardSearchBase } from '../card-search-base';
 import { COLOR_CHIPS, RARITY_CHIPS } from '../filter-chips/filter-chip-sets';
 
+/** Gap kept between the set menu and the edge of the panel that clips it. */
+const SET_MENU_MARGIN = 8;
+/** Below this there is not enough menu left below the trigger to be worth opening into. */
+const SET_MENU_MIN = 180;
+
+/**
+ * Where the set menu fits inside the panel: how tall it may be, and whether it belongs
+ * above the trigger rather than below. The panel clips its overflow, so the room it leaves
+ * is all the menu has — see the `.set-dropdown` note in global.scss. Pure, so the
+ * arithmetic is tested without a layout.
+ */
+export function setMenuPlacement(
+  panel: { top: number; bottom: number },
+  trigger: { top: number; bottom: number },
+): { up: boolean; max: number } {
+  const below = panel.bottom - trigger.bottom - SET_MENU_MARGIN;
+  const above = trigger.top - panel.top - SET_MENU_MARGIN;
+  const up = below < SET_MENU_MIN && above > below;
+  return { up, max: Math.max(0, Math.round(up ? above : below)) };
+}
+
 @Component({
   selector: 'app-card-search-panel',
   standalone: true,
@@ -221,6 +242,32 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
         this.applyDefaultPrinting(oracleId);
         this.cdr.markForCheck();
       });
+  }
+
+  // ---- Set menu placement -------------------------------------------
+
+  /** Height cap for the open set menu, px. `null` before the first open. */
+  setDropMax: number | null = null;
+  /** The menu opens upward when the room below the trigger is not worth using. */
+  setDropUp = false;
+
+  /**
+   * Measured on open, while the trigger is on screen and the menu is not yet: the panel
+   * clips its overflow, so a menu that ignores the panel's bottom edge is simply cut.
+   */
+  override openSetDrop(): void {
+    super.openSetDrop();
+    const host = this.elRef.nativeElement as HTMLElement;
+    const trigger = host.querySelector('.set-trigger');
+    if (trigger) {
+      const { up, max } = setMenuPlacement(
+        host.getBoundingClientRect(),
+        trigger.getBoundingClientRect(),
+      );
+      this.setDropUp = up;
+      this.setDropMax = max;
+    }
+    this.cdr.markForCheck();
   }
 
   @HostListener('document:click', ['$event'])

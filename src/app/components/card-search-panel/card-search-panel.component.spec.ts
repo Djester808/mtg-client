@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { CardSearchPanelComponent } from './card-search-panel.component';
+import { CardSearchPanelComponent, setMenuPlacement } from './card-search-panel.component';
 import { GameApiService } from '../../services/game-api.service';
 import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
@@ -752,4 +752,72 @@ describe('CardSearchPanelComponent — printing options & history suggestions', 
     expect(component.searchText.value).toBe('goblin king');
     expect(component.histOpen).toBeFalse();
   });
+});
+
+// ── Set menu placement ────────────────────────────────────────────────────────
+//
+// The panel clips its overflow, so the set menu only has the room the panel leaves it.
+// Left-anchored and unbounded, it ran past the panel's right edge (losing the count
+// column) and past its bottom (slicing the last row).
+
+describe('CardSearchPanelComponent — set menu placement', () => {
+  const panel = { top: 200, bottom: 750 };
+
+  it('drops downward, capped at the room between the trigger and the panel floor', () => {
+    expect(setMenuPlacement(panel, { top: 400, bottom: 424 })).toEqual({ up: false, max: 318 });
+  });
+
+  it('flips up when the room below is too small to hold a menu', () => {
+    // A short window: 90px below the trigger, 192px above it.
+    expect(setMenuPlacement({ top: 200, bottom: 550 }, { top: 400, bottom: 452 })).toEqual({
+      up: true,
+      max: 192,
+    });
+  });
+
+  it('stays down when there is little room either way but more of it below', () => {
+    const placement = setMenuPlacement({ top: 200, bottom: 400 }, { top: 250, bottom: 274 });
+    expect(placement.up).toBeFalse();
+    expect(placement.max).toBe(118);
+  });
+
+  it('never reports a negative height when the panel is collapsed around the trigger', () => {
+    expect(setMenuPlacement({ top: 200, bottom: 300 }, { top: 205, bottom: 320 }).max).toBe(0);
+  });
+});
+
+describe('CardSearchPanelComponent — set menu open', () => {
+  let fixture: ComponentFixture<CardSearchPanelComponent>;
+  let component: CardSearchPanelComponent;
+
+  beforeEach(async () => {
+    const { gameApi, printings } = makeSpies();
+    await buildModule(gameApi, printings);
+    fixture = TestBed.createComponent(CardSearchPanelComponent);
+    component = fixture.componentInstance;
+  });
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('opening the menu records a height cap instead of leaving it unbounded', fakeAsync(() => {
+    initComponent(fixture);
+
+    component.openSetDrop();
+
+    expect(component.setDropOpen).toBeTrue();
+    expect(component.setDropMax).not.toBeNull();
+  }));
+
+  it('the open menu is bound to that cap and to its up/down side', fakeAsync(() => {
+    initComponent(fixture);
+
+    component.openSetDrop();
+    component.setDropMax = 140;
+    component.setDropUp = true;
+    fixture.detectChanges();
+
+    const menu = fixture.nativeElement.querySelector('.set-dropdown') as HTMLElement;
+    expect(menu.style.maxHeight).toBe('140px');
+    expect(menu.classList).toContain('is-up');
+  }));
 });

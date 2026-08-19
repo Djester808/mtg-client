@@ -250,16 +250,19 @@
             ></span>
             Card Count {{ totalCount(deck) }}/100
           </span>
+          <!-- The commander is the CARD, not the id. A deck whose commanderOracleId outlived
+               the card it names has no commander in play, and reporting that check green is
+               the same lie the commander panel used to tell under its Remove button. -->
           <span
             class="cp-check"
-            [class.ok]="!!deck.commanderOracleId"
-            [class.bad]="!deck.commanderOracleId"
+            [class.ok]="!!commanderCard(deck)"
+            [class.bad]="!commanderCard(deck)"
           >
             <span class="cp-check-icon"
               ><i
                 class="bi"
-                [class.bi-check-lg]="!!deck.commanderOracleId"
-                [class.bi-x-lg]="!deck.commanderOracleId"
+                [class.bi-check-lg]="!!commanderCard(deck)"
+                [class.bi-x-lg]="!commanderCard(deck)"
               ></i
             ></span>
             Commander
@@ -1245,21 +1248,32 @@
                     (click)="openCommanderSearch(); $event.stopPropagation()"
                     title="Search for commander"
                   >
-                    <div class="cp-no-cmdr">
+                    <!-- Two different empty slots. A deck that never had a commander is
+                         waiting for one; a deck whose commanderOracleId outlived its card is
+                         not waiting, it is wrong — and "click or drop to assign" printed
+                         above a Remove Commander button reads as the app contradicting
+                         itself, which is exactly how it was reported. -->
+                    <div class="cp-no-cmdr" *ngIf="!deck.commanderOracleId">
                       <i class="bi bi-person-plus"></i><br />Click or drop<br />to assign
+                    </div>
+                    <div class="cp-no-cmdr cp-no-cmdr--orphan" *ngIf="deck.commanderOracleId">
+                      <i class="bi bi-exclamation-triangle"></i><br />Commander card<br />is not in
+                      this deck<br /><span class="cp-no-cmdr-hint">Click to pick another</span>
                     </div>
                   </div>
                   <!-- No add button: the placeholder above already opens the search, and two
                        controls for one action read as two different actions. This row shows
                        only for the one thing the placeholder cannot do — clearing an oracle
                        id that outlived its card, which is reachable by deleting the
-                       commander from the deck and is otherwise stuck on it for good. -->
+                       commander from the deck and is otherwise stuck on it for good. It says
+                       "Clear", not "Remove Commander": there is no commander to remove, only
+                       a name the deck is still carrying. -->
                   <div class="cp-empty-actions" *ngIf="deck.commanderOracleId">
                     <button
                       class="cp-add-cmdr-btn cp-clear-stale-btn"
                       (click)="setCommander(null, deck)"
                     >
-                      <i class="bi bi-x-lg"></i> Remove Commander
+                      <i class="bi bi-x-lg"></i> Clear Missing Commander
                     </button>
                   </div>
                 </ng-template>
@@ -1642,6 +1656,7 @@
         [tagSuggestions]="tagHistory"
         (cardAdd)="addSuggestedCard($event)"
         (cardRemove)="removeSuggestedCard($event)"
+        (commanderRequested)="openCommanderSearch()"
         (panelClose)="showSuggestionsPanel = false"
       ></app-deck-suggestions-panel>
     </div>

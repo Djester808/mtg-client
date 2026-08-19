@@ -76,6 +76,14 @@ export class AiBuilderApiService {
     bracket: number,
     priceRange: string,
     token: string | null,
+    /**
+     * What the player asked for, in their own words.
+     *
+     * The build never received this. The brief picked the commander and then vanished, so
+     * "wolf tribal" produced a wolf-ish commander and a deck built knowing nothing about
+     * wolves. The server fences it as a description, never as instructions.
+     */
+    brief: string | null = null,
   ): Observable<BuildStreamEvent> {
     return new Observable<BuildStreamEvent>((subscriber) => {
       const controller = new AbortController();
@@ -98,6 +106,7 @@ export class AiBuilderApiService {
               priceRange,
               includeSideboard: false,
               includeMaybeboard: false,
+              brief,
             }),
             signal: controller.signal,
           });

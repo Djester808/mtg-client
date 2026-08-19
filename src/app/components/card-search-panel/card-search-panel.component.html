@@ -139,7 +139,12 @@
           <i class="bi bi-x"></i>
         </button>
 
-        <div class="set-dropdown" *ngIf="setDropOpen">
+        <div
+          class="set-dropdown"
+          *ngIf="setDropOpen"
+          [class.is-up]="setDropUp"
+          [style.maxHeight.px]="setDropMax"
+        >
           <div class="set-search-wrap">
             <input
               class="set-search-input"

@@ -1,4 +1,5 @@
 @use '../../../styles/add-controls' as *;
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/detail-page' as *;
 
 :host {
@@ -388,6 +389,15 @@
     line-height: 1.5;
     max-width: 260px;
   }
+}
+
+// The commander way out. Its look comes from `.add-btn-primary` in global.scss — the
+// vocabulary every "one action, empty state" button on this page already speaks, and under
+// app-deck-detail that is the same purple as "+ Add Cards" beside it. All this adds is the
+// tap floor, because here it is the only thing on the panel to press.
+.sugg-empty-btn {
+  min-height: $tap-min;
+  padding-inline: 22px;
 }
 
 // ---- Results ------------------------------------------------------

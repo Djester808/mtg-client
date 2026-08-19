@@ -110,7 +110,20 @@ const STATES = [
   { id: 'deck-stats', label: 'Deck — Stats panel', run: (d) => openTool(d, 'stats') },
   { id: 'deck-commander', label: 'Deck — Commander panel', run: (d) => openTool(d, 'commander') },
   { id: 'deck-mana', label: 'Deck — Mana analysis', run: (d) => openTool(d, 'mana') },
-  { id: 'deck-suggest', label: 'Deck — Suggestions', run: (d) => openTool(d, 'suggest') },
+  {
+    id: 'deck-suggest',
+    label: 'Deck — Suggestions',
+    // Waits on the panel by name rather than on a sleep: `app-deck-suggestions-panel` is
+    // what registers this surface with tools/check-ui-states.js, and `.sugg-empty` is the
+    // whole panel until Generate has run — the state this capture is actually of.
+    run: async (d) => {
+      await openTool(d, 'suggest');
+      await d.wait(
+        until.elementLocated(By.css('app-deck-suggestions-panel .sugg-empty, .sugg-results')),
+        10000,
+      );
+    },
+  },
   { id: 'deck-refine', label: 'Deck — Refine panel', run: (d) => openTool(d, 'refine') },
   {
     id: 'deck-refine-review',

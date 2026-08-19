@@ -1297,6 +1297,15 @@ app-card-search-panel {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    // Above the results, so the set menu can paint over them. The menu's own z-index
+    // cannot do that on a phone: app-filter-facets promotes itself to a compositor layer
+    // there (`translateZ(0)`, for text crispness), and a transform is a stacking context —
+    // so the menu's 200 is spent inside the facets and the result rows below it, which are
+    // `position: relative` and later in the DOM, painted straight through the open menu.
+    // Same trap as the phone sheets: the child's z-index is spent in its parent's context,
+    // so raise the parent.
+    position: relative;
+    z-index: 1;
   }
 
   // Each row is one band of chips (or the set picker), centred in the panel — including
@@ -1435,24 +1444,41 @@ app-card-search-panel {
     }
   }
 
+  // Anchored to the trigger's RIGHT edge, and no taller than the room the panel leaves it.
+  // The set picker rides the end of the CMC line, hard against the panel's edge, and the
+  // panel clips its overflow (`overflow: hidden`, for the open/close width transition), so
+  // a left-anchored menu with a 240px floor grew straight through that edge: in a 1564px
+  // window it ran 37px past the panel and the whole count column was simply gone. Height is
+  // the other half of the same clip — the panel's bottom edge is the window's, so on a short
+  // window the list was sliced mid-row with no way to reach the rest. The component measures
+  // the room and sets `max-height` (and `.is-up` when there is more of it above); the list
+  // is a scrolling flex item, so the menu shrinks into that instead of being cut.
   .set-dropdown {
     position: absolute;
     top: calc(100% + 4px);
-    left: 0;
+    left: auto;
     right: 0;
     min-width: 240px;
     max-width: 320px;
+    display: flex;
+    flex-direction: column;
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 200;
     overflow: hidden;
+
+    &.is-up {
+      top: auto;
+      bottom: calc(100% + 4px);
+    }
   }
 
   .set-search-wrap {
     padding: 8px;
     border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
   }
 
   .set-search-input {
@@ -5046,6 +5072,20 @@ app-deck-detail {
     color: var(--text-dim);
     text-align: center;
     line-height: 1.8;
+
+    // The slot for a commander the deck names but no longer holds: a fault, not an
+    // invitation, so it reads in the same orange the violation pills and dots already use.
+    &--orphan {
+      color: #f97316;
+    }
+  }
+
+  .cp-no-cmdr-hint {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
   }
 
   .cp-name {

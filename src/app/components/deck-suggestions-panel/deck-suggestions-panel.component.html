@@ -84,10 +84,26 @@
   <i class="bi bi-exclamation-triangle"></i> {{ error }}
 </div>
 
-<!-- Empty state -->
+<!-- Empty state. Generate lives on the commander bar above, and that bar only exists once
+     the deck has a commander — so without one this told you to click a button that was not
+     on screen. Each case now says what it is actually waiting for. -->
 <div class="sugg-empty" *ngIf="!suggestions && !loading && !error">
   <i class="bi bi-stars"></i>
-  <p>Click <strong>Generate</strong> to get AI-powered card suggestions tailored to your deck.</p>
+  <p *ngIf="commanderCard">
+    Click <strong>Generate</strong> to get AI-powered card suggestions tailored to your deck.
+  </p>
+  <ng-container *ngIf="!commanderCard && isCommanderDeck">
+    <p>Suggestions are built around your commander. Pick one and this fills in.</p>
+    <!-- The page's own primary-action button, the one "+ Add Cards" wears two panels over.
+         A gold sentence-case slab for the same job read as a different app. -->
+    <button class="add-btn-primary sugg-empty-btn" (click)="requestCommander()">
+      Choose a Commander
+    </button>
+  </ng-container>
+  <p *ngIf="!commanderCard && !isCommanderDeck">
+    Suggestions read a deck through its commander, so they are Commander-only. Set this deck's
+    format to Commander to use them.
+  </p>
 </div>
 
 <!-- Results (rendered during streaming too: provisional cards appear before the final event) -->

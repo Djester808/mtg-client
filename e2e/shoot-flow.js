@@ -199,6 +199,20 @@ const DECK_FLOW = {
         await sleep(3000);
       },
     },
+    {
+      id: 'set-menu',
+      label: 'Set menu open over the results',
+      // The menu drops out of the last filter row of a panel that clips its overflow, which
+      // is where it lost its count column off the panel's right edge and its last row off
+      // the bottom. Captured last, with results behind it: those are what it has to paint
+      // over, and on a phone they painted straight through it.
+      async run(d) {
+        const trigger = await findFirst(d, ['app-card-search-panel .set-trigger'], 15000);
+        await tap(d, trigger);
+        await d.wait(until.elementLocated(By.css('app-card-search-panel .set-dropdown')), 10000);
+        await sleep(800);
+      },
+    },
   ],
 };
 

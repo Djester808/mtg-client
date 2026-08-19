@@ -436,42 +436,51 @@ export class AiDeckBuilderComponent implements OnDestroy {
     // interceptor never runs and the header has to be attached by hand.
     const token = localStorage.getItem('auth_token');
 
-    this.api.planBuildStream(deckId, commander.oracleId, this.bracket, 'any', token).subscribe({
-      next: (event) => {
-        if (event.type === 'stage') {
-          this.stageLabel = event.label;
-          this.stageStep = event.step;
-          this.stageTotal = event.total;
-          // The count the server streams off the model's answer. Without reading it the
-          // bar has nothing to measure and never leaves its starting position, which is
-          // exactly how a working stream looked like a dead one.
-          if (event.named !== undefined) this.namedSoFar = event.named;
-        } else if (event.type === 'plan') {
-          // The deck exists; show it while the assessment is still running.
-          this.plan = event.plan;
-          this.step = 'plan';
-        } else if (event.type === 'final') {
-          this.plan = event.plan;
-          this.step = 'plan';
+    this.api
+      .planBuildStream(
+        deckId,
+        commander.oracleId,
+        this.bracket,
+        'any',
+        token,
+        this.brief.trim() || null,
+      )
+      .subscribe({
+        next: (event) => {
+          if (event.type === 'stage') {
+            this.stageLabel = event.label;
+            this.stageStep = event.step;
+            this.stageTotal = event.total;
+            // The count the server streams off the model's answer. Without reading it the
+            // bar has nothing to measure and never leaves its starting position, which is
+            // exactly how a working stream looked like a dead one.
+            if (event.named !== undefined) this.namedSoFar = event.named;
+          } else if (event.type === 'plan') {
+            // The deck exists; show it while the assessment is still running.
+            this.plan = event.plan;
+            this.step = 'plan';
+          } else if (event.type === 'final') {
+            this.plan = event.plan;
+            this.step = 'plan';
+            this.planning = false;
+          } else {
+            this.planning = false;
+            this.error = event.message;
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
           this.planning = false;
-        } else {
+          this.error = describeHttpError(err, 'Could not build a deck for that commander.');
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          // A stream that ends without a final event still has to release the UI.
           this.planning = false;
-          this.error = event.message;
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.planning = false;
-        this.error = describeHttpError(err, 'Could not build a deck for that commander.');
-        this.cdr.markForCheck();
-      },
-      complete: () => {
-        // A stream that ends without a final event still has to release the UI.
-        this.planning = false;
-        this.stopTimer();
-        this.cdr.markForCheck();
-      },
-    });
+          this.stopTimer();
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   // ---- Step 3: accept or discard ------------------------------------------

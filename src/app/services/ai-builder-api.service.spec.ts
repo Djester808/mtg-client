@@ -76,6 +76,39 @@ describe('AiBuilderApiService', () => {
     expect(seen[0]).toEqual({ type: 'stage', label: 'Choosing', step: 2, total: 4 });
   });
 
+  it('sends the brief to the build, not just to the shortlist', async () => {
+    // The build had no brief at all. It picked the commander and then vanished, so a
+    // player typing "wolf tribal" got a wolf-ish commander and a deck built knowing
+    // nothing about wolves.
+    const fetchSpy = spyOn(window, 'fetch').and.resolveTo(
+      streamingResponse('event: final\ndata: {}\n\n'),
+    );
+
+    await new Promise<void>((done) =>
+      service
+        .planBuildStream('deck-1', 'o1', 3, 'any', 'jwt', 'wolf tribal')
+        .subscribe({ complete: () => done() }),
+    );
+
+    const init = fetchSpy.calls.mostRecent().args[1] as RequestInit;
+    expect(JSON.parse(init.body as string).brief).toBe('wolf tribal');
+  });
+
+  it('sends a null brief rather than an empty one', async () => {
+    const fetchSpy = spyOn(window, 'fetch').and.resolveTo(
+      streamingResponse('event: final\ndata: {}\n\n'),
+    );
+
+    await new Promise<void>((done) =>
+      service
+        .planBuildStream('deck-1', 'o1', 3, 'any', 'jwt')
+        .subscribe({ complete: () => done() }),
+    );
+
+    const init = fetchSpy.calls.mostRecent().args[1] as RequestInit;
+    expect(JSON.parse(init.body as string).brief).toBeNull();
+  });
+
   it('sends the bearer token by hand, since fetch bypasses the interceptor', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.resolveTo(
       streamingResponse('event: final\ndata: {}\n\n'),

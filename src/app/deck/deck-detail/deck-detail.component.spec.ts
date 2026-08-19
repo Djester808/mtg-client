@@ -3671,7 +3671,64 @@ describe('DeckDetailComponent — the commander slot controls', () => {
       .toBeTruthy();
     expect(el.querySelector<HTMLButtonElement>('.cp-clear-stale-btn')?.textContent?.trim())
       .withContext('the empty slot must still be able to clear the dangling commander')
-      .toBe('Remove Commander');
+      .toBe('Clear Missing Commander');
+  });
+
+  it('says the card is missing rather than inviting a drop, when the id outlived it', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, {
+      ...makeDeck([], 'commander'),
+      commanderOracleId: 'orphaned-oracle',
+    });
+
+    const el: HTMLElement = fixture.nativeElement;
+    const slot = el.querySelector('.cp-no-cmdr')!;
+    expect(slot.classList)
+      .withContext('a named-but-absent commander is a fault, not an empty slot')
+      .toContain('cp-no-cmdr--orphan');
+    expect(slot.textContent).toContain('is not in this deck');
+    expect(slot.textContent).not.toContain('Click or drop');
+  });
+
+  /** The validation pill labelled exactly "Commander" (the others carry counts). */
+  function commanderPill(el: HTMLElement): HTMLElement {
+    return Array.from(el.querySelectorAll<HTMLElement>('.cp-check')).find(
+      (p) => p.textContent!.trim() === 'Commander',
+    )!;
+  }
+
+  it('the validation bar fails Commander when the named card is not in the deck', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, {
+      ...makeDeck([], 'commander'),
+      commanderOracleId: 'orphaned-oracle',
+    });
+
+    const pill = commanderPill(fixture.nativeElement);
+    expect(pill.classList)
+      .withContext('an oracle id with no card behind it is not a commander')
+      .toContain('bad');
+    expect(pill.classList).not.toContain('ok');
+  });
+
+  it('the validation bar passes Commander when the card is in the deck', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, {
+      ...makeDeck([CMDR], 'commander'),
+      commanderOracleId: 'o-cmdr',
+    });
+
+    expect(commanderPill(fixture.nativeElement).classList).toContain('ok');
+  });
+
+  it('invites a drop, with nothing to clear, when the deck names no commander', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, { ...makeDeck([], 'commander'), commanderOracleId: null });
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.cp-no-cmdr')!.textContent).toContain('Click or drop');
+    expect(el.querySelector('.cp-no-cmdr--orphan')).toBeNull();
+    expect(el.querySelector('.cp-clear-stale-btn')).toBeNull();
   });
 
   it('clearing it dispatches updateDeckMeta with a null commander', async () => {

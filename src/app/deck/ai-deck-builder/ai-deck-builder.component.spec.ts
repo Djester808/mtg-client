@@ -97,7 +97,12 @@ describe('AiDeckBuilderComponent', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Global, so it is cleared whatever the spec did. Clearing it in the body only happens
+    // when nothing above threw, and a leaked token outlives the spec that set it.
+    localStorage.removeItem('auth_token');
+    http.verify();
+  });
 
   function create() {
     const fixture = TestBed.createComponent(AiDeckBuilderComponent);
@@ -210,6 +215,13 @@ describe('AiDeckBuilderComponent', () => {
 
     // Still nothing written.
     http.expectNone((r) => r.url.includes('ai-build/apply'));
+
+    // The screen still owns this deck, so tearing it down deletes it — that is the feature,
+    // not a stray request. Consumed explicitly, because leaving it to the automatic teardown
+    // races the suite's http.verify(): whichever runs first decides whether this spec passes,
+    // and Jasmine shuffles spec order on every run.
+    fixture.destroy();
+    http.expectOne((r) => r.url === '/api/decks/deck-9' && r.method === 'DELETE').flush(null);
   });
 
   it('shows only the commander being built once one is chosen', () => {
@@ -231,6 +243,13 @@ describe('AiDeckBuilderComponent', () => {
     const visible = fixture.componentInstance.visibleCommanders;
     expect(visible.length).toBe(1);
     expect(visible[0].oracleId).toBe('oracle-2');
+
+    // The screen still owns this deck, so tearing it down deletes it — that is the feature,
+    // not a stray request. Consumed explicitly, because leaving it to the automatic teardown
+    // races the suite's http.verify(): whichever runs first decides whether this spec passes,
+    // and Jasmine shuffles spec order on every run.
+    fixture.destroy();
+    http.expectOne((r) => r.url === '/api/decks/d' && r.method === 'DELETE').flush(null);
   });
 
   it('writes only once the player accepts, then opens the deck', () => {
@@ -352,7 +371,6 @@ describe('AiDeckBuilderComponent', () => {
     expect(init.method).toBe('DELETE');
     expect(init.keepalive).withContext('must outlive the page').toBeTrue();
     expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer jwt-1');
-    localStorage.removeItem('auth_token');
 
     // And it must not go a second time when the component is then destroyed.
     fixture.destroy();

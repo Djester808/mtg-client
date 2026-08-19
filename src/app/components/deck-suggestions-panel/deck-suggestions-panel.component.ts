@@ -108,6 +108,21 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }>();
   @Output() cardRemove = new EventEmitter<string>(); // emits oracleId
   @Output() panelClose = new EventEmitter<void>();
+  /** The empty state's way out when the deck has no commander to suggest around yet. */
+  @Output() commanderRequested = new EventEmitter<void>();
+
+  /**
+   * Suggestions are a commander read: `generate()` needs a commander oracle id, and the
+   * Generate button rides the commander bar. On any other format there is nothing to
+   * offer, which the empty state has to say rather than pointing at a missing button.
+   */
+  get isCommanderDeck(): boolean {
+    return this.deck?.format === 'commander';
+  }
+
+  requestCommander(): void {
+    this.commanderRequested.emit();
+  }
 
   suggestions: DeckSuggestionsDto | null = null;
   loading = false;

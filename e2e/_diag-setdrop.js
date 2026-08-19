@@ -26,7 +26,7 @@ const HEIGHT = Number(process.env.H || 900);
     console.log('decks:', JSON.stringify(decks, null, 1));
     await d.executeScript(`
       const cards = Array.from(document.querySelectorAll('.deck-card'));
-      (cards.find(c => c.textContent.includes('Showcase')) || cards[0]).click();
+      (cards.find(c => c.textContent.includes('Chief of the Wild')) || cards[0]).click();
     `);
     await d.wait(async () => /\/deck\/[^/]+$/.test(await d.getCurrentUrl()), 20000);
     await sleep(3000);
@@ -63,14 +63,18 @@ const HEIGHT = Number(process.env.H || 900);
         if (clip.length > 4) break;
       }
       const count = document.querySelector('app-card-search-panel .set-opt-count');
+      const lastOpt = Array.from(document.querySelectorAll('app-card-search-panel .set-option')).slice(-1)[0];
       return { vw: innerWidth, vh: innerHeight, panel: r(panel), panelOverflow: cs && cs.overflow,
                drop: r(drop), trigger: r(trig), wrap: r(wrap), firstCount: r(count), clippers: clip,
-               options: document.querySelectorAll('app-card-search-panel .set-option').length };
+               options: document.querySelectorAll('app-card-search-panel .set-option').length,
+               isUp: drop ? drop.classList.contains('is-up') : null,
+               maxH: drop ? drop.style.maxHeight : null,
+               listH: (() => { const l = document.querySelector('app-card-search-panel .set-list'); return l ? Math.round(l.getBoundingClientRect().height) : null; })() };
     `);
     console.log('SET DROPDOWN:', JSON.stringify(m, null, 1));
     const dir = path.join(__dirname, 'screenshots', 'diag');
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, `setdrop-${WIDTH}.png`), await d.takeScreenshot(), 'base64');
+    fs.writeFileSync(path.join(dir, `setdrop-${WIDTH}x${HEIGHT}.png`), await d.takeScreenshot(), 'base64');
 
     // --- Bug 2: Suggestions panel with / without a commander -------------------------
     await d.executeScript(`
@@ -88,8 +92,8 @@ const HEIGHT = Number(process.env.H || 900);
         buttons: Array.from(p.querySelectorAll('button')).map(b => (b.textContent||'').replace(/\s+/g,' ').trim() || b.className).slice(0, 8),
       };
     `);
-    console.log('SUGGESTIONS (Showcase deck):', JSON.stringify(s, null, 1));
-    fs.writeFileSync(path.join(dir, `suggest-${WIDTH}.png`), await d.takeScreenshot(), 'base64');
+    console.log('SUGGESTIONS:', JSON.stringify(s, null, 1));
+    fs.writeFileSync(path.join(dir, `suggest-${WIDTH}x${HEIGHT}.png`), await d.takeScreenshot(), 'base64');
   } finally {
     await d.quit();
   }
