@@ -214,7 +214,27 @@
     <section class="ab-assess" *ngIf="!assessing && p.assessment as a">
       <p class="ab-verdict" *ngIf="a.verdict">{{ a.verdict }}</p>
 
-      <div class="ab-finding" *ngFor="let f of a.findings" [attr.data-sev]="f.severity">
+      <button
+        type="button"
+        class="ab-assess-toggle"
+        *ngIf="a.findings.length"
+        [attr.aria-expanded]="findingsOpen"
+        (click)="toggleFindings()"
+      >
+        {{ a.findings.length }} finding{{ a.findings.length === 1 ? '' : 's' }}
+        <i
+          class="bi"
+          [class.bi-chevron-down]="!findingsOpen"
+          [class.bi-chevron-up]="findingsOpen"
+        ></i>
+      </button>
+
+      <div
+        class="ab-finding"
+        *ngFor="let f of a.findings"
+        [attr.data-sev]="f.severity"
+        [hidden]="!findingsOpen"
+      >
         <div class="ab-finding-head">
           <span class="ab-finding-area">{{ f.area }}</span>
           <span class="ab-sev" [class]="'ab-sev-' + f.severity">{{ f.severity }}</span>
@@ -267,6 +287,11 @@
             <span class="ab-row-name">{{ row.card.name }}</span>
             <span class="ab-row-count" *ngIf="row.count > 1">×{{ row.count }}</span>
             <span class="ab-row-type">{{ row.card.typeLine }}</span>
+            <app-mana-cost
+              class="ab-row-mana"
+              *ngIf="row.card.manaCost"
+              [cost]="row.card.manaCost"
+            ></app-mana-cost>
           </button>
         </li>
       </ul>

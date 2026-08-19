@@ -15,6 +15,7 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { AiBuilderApiService } from '../../services/ai-builder-api.service';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
+import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { PrintingsService } from '../../services/printings.service';
 import { CardDto, PrintingDto } from '../../models/game.models';
 import { DeckApiService } from '../../services/deck-api.service';
@@ -94,7 +95,14 @@ function stackCards(cards: PlannedCard[]): StackedCard[] {
 @Component({
   selector: 'app-ai-deck-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SelectMenuComponent, CardModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    SelectMenuComponent,
+    CardModalComponent,
+    ManaCostComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ai-deck-builder.component.html',
   styleUrls: ['./ai-deck-builder.component.scss'],
@@ -579,6 +587,20 @@ export class AiDeckBuilderComponent implements OnDestroy {
 
     this.grouped = { cards, result };
     return result;
+  }
+
+  /**
+   * Whether the assessment's findings are expanded.
+   *
+   * Closed by default. Measured at 375px: a 925-character verdict and eleven findings ran
+   * about 2,200px, so the deck the player asked for sat below the critique of it. The
+   * verdict is always visible; the detail is one tap away.
+   */
+  findingsOpen = false;
+
+  toggleFindings(): void {
+    this.findingsOpen = !this.findingsOpen;
+    this.cdr.markForCheck();
   }
 
   /** Which review tab is open. */

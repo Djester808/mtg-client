@@ -428,6 +428,22 @@ describe('AiDeckBuilderComponent', () => {
     expect(groups[0].cards[0].name).toBe('Forest');
   });
 
+  it('keeps the assessment findings closed until asked', () => {
+    // Measured at 375x667: a 925-character verdict and eleven findings ran about 2,200px,
+    // so the deck the player asked for sat below the critique of it. The verdict stays
+    // visible; the findings are one tap away.
+    const fixture = create();
+    const page = fixture.componentInstance;
+
+    expect(page.findingsOpen).toBeFalse();
+
+    page.toggleFindings();
+    expect(page.findingsOpen).toBeTrue();
+
+    page.toggleFindings();
+    expect(page.findingsOpen).toBeFalse();
+  });
+
   it('stacks repeated cards instead of printing a row each', () => {
     // A 99-card deck is mostly basics. Printed one per row, the Lands tab was thirty-six
     // identical lines of "Forest" — unreadable, and impossible to check against the count.

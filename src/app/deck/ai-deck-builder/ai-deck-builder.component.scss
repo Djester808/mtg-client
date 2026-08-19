@@ -1,6 +1,7 @@
 // Three levels to src/ — this component sits at app/deck/ai-deck-builder/.
 @use '../../../styles/breakpoints' as *;
 @use '../../../styles/detail-page' as *;
+@use '../../../styles/filter-bar' as *;
 
 // One column at every width; the review list is long, so the page is a reading column
 // rather than a dashboard. Nothing here needs a wide-only variant.
@@ -254,13 +255,15 @@
     .ab-note:first-of-type {
       margin-left: auto;
     }
-  }
 
-  // A visible break between the two, so they stop running together.
-  .ab-note + .ab-note::before {
-    content: '·';
-    margin-right: 8px;
-    color: var(--text-dim);
+    // A visible break between the two, so they stop running together. Only where they
+    // share a line: once the row wraps, the separator lands alone at the start of the
+    // second note and reads as a stray bullet.
+    .ab-note + .ab-note::before {
+      content: '·';
+      margin-right: 8px;
+      color: var(--text-dim);
+    }
   }
 }
 
@@ -294,6 +297,14 @@
   border: none;
   // Scryfall art_crop is 626x457; matching it crops nothing.
   aspect-ratio: 626 / 457;
+
+  // On a phone the art was half the tile. Measured at 375px: the crop's own ratio makes
+  // it 249px of a 469px tile, so ten commanders became a 4,981px page and you could not
+  // get two candidates on screen to compare them — which is the only thing a shortlist is
+  // for. A wider band keeps the art recognisable and gives the words back their room.
+  @include upto($bp-phone) {
+    aspect-ratio: 16 / 7;
+  }
   background-color: rgba(0, 0, 0, 0.35);
   background-size: cover;
   background-position: center;
@@ -400,6 +411,16 @@
   margin: 0;
   // Commander names are long and the tail is what distinguishes them.
   overflow-wrap: anywhere;
+
+  // Two lines at most on a phone. A double-faced name — "Tovolar, Dire Overlord //
+  // Tovolar, the Midnight Scourge" — took three lines of 16px display type on its own,
+  // which is most of a screen spent on one title.
+  @include upto($bp-phone) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 .ab-cmd-meta {
@@ -443,6 +464,23 @@
   max-height: 11em;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+// On a phone the tile is a thing you scan past, not read in place, and a scrollable box
+// inside a scrolling page is a poor way to reach text anyway. Both prose blocks clamp to
+// two lines; the whole reason is on the commander's own card, one tap away.
+@include upto($bp-phone) {
+  .ab-cmd-reason,
+  .ab-cmd-plan {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ab-cmd-reason {
+    max-height: none;
+  }
 }
 
 .ab-cmd-plan {
@@ -525,6 +563,16 @@
   overflow-wrap: anywhere;
 }
 
+// The mana cost the row already had and never drew. PlannedCard carries it, and roughly
+// 200px of a 323px row sat empty at phone width beside a name that only needed 41 of it.
+// Fixed width like the thumbnail: deck-detail's phone rule learned the same lesson, that
+// only the text column may give (see global.scss, app-deck-detail .card-row).
+.ab-row-mana {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 11px;
+}
+
 // How many copies the deck holds. Sits with the name rather than out at the type line,
 // because it is part of what the row says the card is.
 .ab-row-count {
@@ -535,7 +583,6 @@
 }
 
 .ab-row-type {
-  margin-left: auto;
   font-family: var(--font-body);
   font-size: 11px;
   color: var(--text-dim);
@@ -731,6 +778,16 @@
 }
 
 // ---- Review tabs ----------------------------------------------------------
+
+// The findings collapse behind the shared pill rather than running the length of the
+// page. Measured: a 925-character verdict and eleven findings at 120-190px each put the
+// deck list about 2,200px down, so the thing the player asked for sat below the critique
+// of it. The verdict stays; the detail is one tap away.
+.ab-assess-toggle {
+  @include filter-toggle-pill;
+
+  margin-top: 4px;
+}
 
 .ab-review-tabs {
   display: flex;
