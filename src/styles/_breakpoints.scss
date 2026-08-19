@@ -41,3 +41,15 @@ $tap-min: 44px;
     @content;
   }
 }
+
+/// Devices with no hovering pointer — phones, tablets, the packaged build's target.
+///
+/// Anything a `:hover` rule reveals needs a counterpart in here or it does not exist on
+/// those devices, and tap targets here have to clear `$tap-min`. The commander drawer
+/// paid for both halves of that: its Change/Remove controls were hover-only, so on a
+/// phone they did not exist at all.
+@mixin touch {
+  @media (hover: none) {
+    @content;
+  }
+}

@@ -46,6 +46,15 @@ export const routes: Routes = [
       import('./deck/deck-list/deck-list.component').then((m) => m.DeckListComponent),
     canActivate: [authGuard],
   },
+  // Must precede 'deck/:id', or /deck/build is read as a deck whose id is "build".
+  {
+    path: 'deck/build',
+    loadComponent: () =>
+      import('./deck/ai-deck-builder/ai-deck-builder.component').then(
+        (m) => m.AiDeckBuilderComponent,
+      ),
+    canActivate: [authGuard],
+  },
   {
     path: 'deck/:id',
     loadComponent: () =>

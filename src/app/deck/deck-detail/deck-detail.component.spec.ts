@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -3610,5 +3610,104 @@ describe('DeckDetailComponent — tagHistory', () => {
     localStorage.setItem('mtg-tag-history', 'not-json');
     const { component } = await setup();
     expect(component.tagHistory).toEqual([]);
+  });
+});
+
+// ── The commander slot's controls ────────────────────────────────────────────
+//
+// Two ways the commander became unremovable, both fixed by the controls being ordinary
+// visible layout rather than a hover overlay:
+//
+//   1. The overlay's reveal was `.cp-portrait-wrap:hover &` inside `app-deck-detail {}`,
+//      which compiles to `.cp-portrait-wrap:hover app-deck-detail .cp-portrait-actions` —
+//      it asks for the wrap to contain the component, so it matched nothing on any device
+//      while the invisible box still swallowed every click on the card.
+//   2. The oracle id outlives its card. Delete the commander from the deck and
+//      `commanderCard()` returns null, the portrait falls to the empty slot, and the
+//      Remove button goes with it.
+
+describe('DeckDetailComponent — the commander slot controls', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  function openCommanderPanel(fixture: ComponentFixture<DeckDetailComponent>, deck: DeckDetailDto) {
+    const store = TestBed.inject(MockStore);
+    store.setState({ ...INITIAL_STATE, deck: { ...INITIAL_STATE.deck, activeDeck: deck } });
+    fixture.componentInstance.openSidePanel('commander');
+    fixture.detectChanges();
+  }
+
+  const CMDR = makeDeckCard({
+    id: 'c-cmdr',
+    oracleId: 'o-cmdr',
+    cardDetails: makeCard({ cardTypes: [CardType.Creature], supertypes: ['Legendary'] }),
+  });
+
+  // Deliberately structural only. TestBed hosts the component in a plain <div>, so the
+  // "app-deck-detail .cp-portrait-actions" rules in global.scss never match here, and any
+  // getComputedStyle assertion would pass whatever the stylesheet says. That the controls
+  // are visible without a hover is measured in e2e, which renders the real host tag.
+  it('renders all three portrait controls when a commander is set', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, { ...makeDeck([CMDR], 'commander'), commanderOracleId: 'o-cmdr' });
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.cp-portrait-actions')).toBeTruthy();
+    const labels = Array.from(el.querySelectorAll('.cp-portrait-actions > button')).map((b) =>
+      b.textContent!.trim(),
+    );
+    expect(labels).toEqual(['View Details', 'Change', 'Remove']);
+  });
+
+  it('offers Remove when the id is set but its card has left the deck', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, {
+      ...makeDeck([], 'commander'),
+      commanderOracleId: 'orphaned-oracle',
+    });
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.cp-no-cmdr'))
+      .withContext('the portrait falls back to the empty slot')
+      .toBeTruthy();
+    expect(el.querySelector<HTMLButtonElement>('.cp-clear-stale-btn')?.textContent?.trim())
+      .withContext('the empty slot must still be able to clear the dangling commander')
+      .toBe('Remove Commander');
+  });
+
+  it('clearing it dispatches updateDeckMeta with a null commander', async () => {
+    const { fixture, store } = await setup();
+    openCommanderPanel(fixture, {
+      ...makeDeck([], 'commander'),
+      commanderOracleId: 'orphaned-oracle',
+    });
+    (store.dispatch as jasmine.Spy).calls.reset();
+
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<HTMLButtonElement>('.cp-clear-stale-btn')!.click();
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: null,
+        format: 'commander',
+        commanderOracleId: null,
+        tags: [],
+      }),
+    );
+  });
+
+  // The placeholder is the only way in. A separate 'Add Commander' button beside it was a
+  // second control for the same action, which reads as a second action.
+  it('offers no button at all when no commander is set', async () => {
+    const { fixture } = await setup();
+    openCommanderPanel(fixture, makeDeck([], 'commander'));
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.cp-no-cmdr'))
+      .withContext('the clickable placeholder is what adds a commander')
+      .toBeTruthy();
+    expect(el.querySelector('.cp-empty-actions'))
+      .withContext('and nothing else is offered alongside it')
+      .toBeNull();
   });
 });

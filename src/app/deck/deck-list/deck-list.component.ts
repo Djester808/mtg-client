@@ -13,7 +13,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -27,7 +27,7 @@ import { describeHttpError } from '../../utils/http-error.utils';
 @Component({
   selector: 'app-deck-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, CoverPickerModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, CoverPickerModalComponent],
   templateUrl: './deck-list.component.html',
   styleUrls: ['./deck-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

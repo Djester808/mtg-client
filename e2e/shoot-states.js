@@ -2,7 +2,7 @@
 //
 // Interaction-state capture.
 //
-//   node shoot-states.js [--devices=iphone-se,pixel-8] [--dpr=1]
+//   node shoot-states.js [--devices=iphone-se,pixel-8] [--dpr=1] [--only=id,prefix]
 //
 // shoot.js only ever sees a route's initial paint. Everything a user actually opens —
 // modals, view-mode toggles, scrolled tab strips — is a layout that has never been
@@ -14,7 +14,8 @@ const fs = require('fs');
 const path = require('path');
 const { By, until } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
-const { baseUrl, username } = require('./config');
+const { armAiBuildReplay, paceAiBuildReplay } = require('./helpers/ai-build-replay');
+const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -62,8 +63,139 @@ const AUDIT = `
   };
 `;
 
+/**
+ * Signs in once per driver, if the app is not already holding a token.
+ *
+ * Every other state here is a public route. The AI builder is not, and repeating a login
+ * for each of its five states would spend most of the run on the login form.
+ */
+async function ensureSignedIn(d) {
+  await d.get(baseUrl + '/login');
+  await sleep(600);
+  const token = await d.executeScript("return localStorage.getItem('auth_token')");
+  if (token) return;
+
+  await d.wait(until.elementLocated(By.id('username')), 15000);
+  await d.findElement(By.id('username')).sendKeys(username);
+  await d.findElement(By.id('password')).sendKeys(password);
+  await d.findElement(By.css('.submit-btn')).click();
+  await d.wait(async () => !(await d.getCurrentUrl()).includes('/login'), 15000);
+  await sleep(800);
+}
+
+/**
+ * Drives the builder to its shortlist, from recorded server output.
+ *
+ * See helpers/ai-build-replay.js for why this is replayed rather than run: a live journey
+ * is three Opus 5 calls and about three minutes, to measure a layout the client decides on
+ * its own.
+ */
+async function toSuggestions(d) {
+  await armAiBuildReplay(d);
+  await ensureSignedIn(d);
+  await d.get(baseUrl + '/deck/build');
+  await d.wait(until.elementLocated(By.css('.ab-textarea')), 20000);
+  await sleep(900);
+  await d.findElement(By.css('.ab-textarea')).sendKeys('wolf tribal');
+  await d.executeScript("document.querySelector('.ab-go').click();");
+  await d.wait(until.elementLocated(By.css('.ab-cmd')), 20000);
+  await sleep(900);
+}
+
+/** Shortlist, then build the first commander and wait for the review list. */
+async function toReview(d) {
+  await toSuggestions(d);
+  await d.executeScript("document.querySelector('.ab-cmd .ab-btn-primary').click();");
+  await d.wait(until.elementLocated(By.css('.ab-row-btn')), 30000);
+  await sleep(1200);
+}
+
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
+  {
+    id: 'ai-build-brief',
+    label: 'AI builder — brief form',
+    root: '.ab-card',
+    async drive(d) {
+      await armAiBuildReplay(d);
+      await ensureSignedIn(d);
+      await d.get(baseUrl + '/deck/build');
+      await d.wait(until.elementLocated(By.css('.ab-textarea')), 20000);
+      await sleep(1200);
+    },
+  },
+  {
+    id: 'ai-build-suggestions',
+    label: 'AI builder — commander shortlist (10)',
+    // The whole page: the shortlist's own <section> carries no class, and the audit that
+    // matters here is whether ten tiles overflow 375px, which is a page-level question.
+    root: '.ab-page',
+    // Ten, not the four this screen had only ever been looked at with. The shortlist is
+    // capped at twelve, so ten is the count the layout actually has to survive.
+    extra: `return {
+      commanders: document.querySelectorAll('.ab-cmd').length,
+      firstTileHeight: Math.round((document.querySelector('.ab-cmd') || {getBoundingClientRect:()=>({height:0})}).getBoundingClientRect().height),
+    };`,
+    async drive(d) {
+      await toSuggestions(d);
+    },
+  },
+  {
+    id: 'ai-build-progress',
+    label: 'AI builder — building',
+    root: '.ab-page',
+    extra: `const bar = document.querySelector('.ab-bar, .ab-track > *');
+      const stage = document.querySelector('.ab-stage');
+      return {
+        stage: stage ? stage.textContent.trim() : null,
+        barWidth: bar ? Math.round(bar.getBoundingClientRect().width) : null,
+        indeterminate: bar ? bar.classList.contains('is-indeterminate') : null,
+      };`,
+    async drive(d) {
+      await toSuggestions(d);
+      // Slowed right down, or there is no such moment to photograph: at full speed the
+      // recorded stream lands in about a fifth of a second and the build is over before
+      // the bar has painted.
+      await paceAiBuildReplay(d);
+      await d.executeScript("document.querySelector('.ab-cmd .ab-btn-primary').click();");
+      await sleep(2600);
+      await d.executeScript(
+        "const t = document.querySelector('.ab-track'); if (t) t.scrollIntoView({block:'center'});",
+      );
+      await sleep(400);
+    },
+  },
+  {
+    id: 'ai-build-review',
+    label: 'AI builder — review tabs',
+    root: '.ab-review',
+    extra: `return {
+      tabs: Array.from(document.querySelectorAll('.ab-review-tab')).map(t => t.textContent.trim().replace(/\s+/g, ' ')),
+      rowsInOpenTab: document.querySelectorAll('.ab-row-btn').length,
+    };`,
+    async drive(d) {
+      await toReview(d);
+      // The review block starts ~2,200px down a phone page, so an unscrolled shot is a
+      // picture of the summary and tells you nothing about the list.
+      await d.executeScript(
+        "document.querySelector('.ab-review-tabs').scrollIntoView({block:'start'});",
+      );
+      await sleep(500);
+    },
+  },
+  {
+    id: 'ai-build-card-modal',
+    label: 'AI builder — card modal from a review row',
+    root: '.card-modal',
+    // The real app-card-modal, opened from the plan. A lightbox stood here once and the
+    // difference is not visible in a screenshot of the row.
+    async drive(d) {
+      await toReview(d);
+      await d.executeScript("document.querySelector('.ab-row-btn').click();");
+      await d.wait(until.elementLocated(By.css('.card-modal')), 15000);
+      await sleep(1400);
+    },
+  },
   {
     id: 'card-modal',
     label: 'Card modal',
@@ -398,16 +530,22 @@ const STATES = [
       await sleep(900);
     },
   },
-
 ];
 
 function parseArgs(argv) {
-  const out = { dpr: 1, devices: ['iphone-se', 'pixel-8'] };
+  const out = { dpr: 1, devices: ['iphone-se', 'pixel-8'], only: null };
   for (const a of argv.slice(2)) {
     const m = /^--([a-z]+)=(.*)$/.exec(a);
     if (!m) continue;
     if (m[1] === 'dpr') out.dpr = Number(m[2]);
     if (m[1] === 'devices') out.devices = m[2].split(',').map((s) => s.trim());
+    // Ids or id prefixes. Re-running one state while working on it beat sitting through
+    // the whole sheet, and the whole sheet is what you ran to see one screen.
+    if (m[1] === 'only')
+      out.only = m[2]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
   }
   return out;
 }
@@ -415,6 +553,13 @@ function parseArgs(argv) {
 (async () => {
   const args = parseArgs(process.argv);
   const devices = DEVICES.filter((d) => args.devices.includes(d.id));
+  const states = args.only
+    ? STATES.filter((s) => args.only.some((p) => s.id === p || s.id.startsWith(p)))
+    : STATES;
+  if (!states.length) {
+    console.error(`No states match --only=${args.only.join(',')}`);
+    process.exit(1);
+  }
   const outDir = path.join(__dirname, 'screenshots');
   const results = [];
 
@@ -424,7 +569,7 @@ function parseArgs(argv) {
     fs.mkdirSync(devDir, { recursive: true });
     const d = await buildDriver({ device, dpr: args.dpr });
     try {
-      for (const state of STATES) {
+      for (const state of states) {
         try {
           await state.drive(d);
           const audit = await d.executeScript(AUDIT, state.root);
@@ -472,8 +617,28 @@ function parseArgs(argv) {
     }
   }
 
-  fs.writeFileSync(path.join(outDir, 'states.json'), JSON.stringify(results, null, 2));
-  console.log(`\nWrote ${results.length} states to ${outDir}`);
+  // A filtered run contributes its states and leaves the rest of the file alone. Writing
+  // only what this run measured would tell check-ui-audit that every other state had
+  // stopped working, which is exactly what happened the first time --only was used.
+  const statesFile = path.join(outDir, 'states.json');
+  let merged = results;
+  if (args.only && fs.existsSync(statesFile)) {
+    const measured = new Set(results.map((r) => `${r.device}:${r.state}`));
+    let previous = [];
+    try {
+      previous = JSON.parse(fs.readFileSync(statesFile, 'utf8'));
+    } catch {
+      previous = [];
+    }
+    merged = previous.filter((r) => !measured.has(`${r.device}:${r.state}`)).concat(results);
+  }
+
+  fs.writeFileSync(statesFile, JSON.stringify(merged, null, 2));
+  console.log(
+    `
+Wrote ${results.length} state(s) to ${outDir}` +
+      (args.only ? ` (merged into ${merged.length} total)` : ''),
+  );
 })().catch((e) => {
   console.error(e);
   process.exit(1);

@@ -1241,9 +1241,19 @@
                       <i class="bi bi-person-plus"></i><br />Click or drop<br />to assign
                     </div>
                   </div>
-                  <button class="cp-add-cmdr-btn" (click)="openCommanderSearch()">
-                    <i class="bi bi-search"></i> Add Commander
-                  </button>
+                  <!-- No add button: the placeholder above already opens the search, and two
+                       controls for one action read as two different actions. This row shows
+                       only for the one thing the placeholder cannot do — clearing an oracle
+                       id that outlived its card, which is reachable by deleting the
+                       commander from the deck and is otherwise stuck on it for good. -->
+                  <div class="cp-empty-actions" *ngIf="deck.commanderOracleId">
+                    <button
+                      class="cp-add-cmdr-btn cp-clear-stale-btn"
+                      (click)="setCommander(null, deck)"
+                    >
+                      <i class="bi bi-x-lg"></i> Remove Commander
+                    </button>
+                  </div>
                 </ng-template>
               </div>
 

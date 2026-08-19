@@ -3644,6 +3644,17 @@ app-deck-detail {
       flex: none;
       min-width: unset;
       width: 100%;
+      // The 260px cap on .groups-list.is-visual .cmc-group is a COLUMN cap: it stops a
+      // two-column board stretching its cards absurdly wide. Once the groups are stacked
+      // there are no columns for it to cap, and it leaves every full-width row ending far
+      // short of the board's right edge — measured at 260px inside a 1,210px list, so four
+      // fifths of a desktop screen sat empty.
+      //
+      // This used to be lifted only under $bp-phone, which was the same reasoning stopping
+      // one breakpoint too early: a phone reaches this arrangement because it defaults to
+      // vertical groups, not because it is narrow, and asking for vertical groups on a wide
+      // screen asks for exactly the same thing.
+      max-width: none;
     }
 
     .visual-stack {
@@ -3658,17 +3669,11 @@ app-deck-detail {
       margin-bottom: 0;
     }
 
-    // Phone only — on a wide board the arrangement above is what it has always been, and
-    // the toggle that reaches it there is the user's own choice.
+    // Phone only, and deliberately so. The grid below fills a row exactly, but it only
+    // works because of how the stack is built at this size: tried on a wide board it
+    // produced eight tracks and collapsed seven of them, giving one card the full 1,210px.
+    // The wrapping row above already reaches both edges now that the cap is gone.
     @include upto($bp-phone) {
-      .cmc-group {
-        // The 260px cap on .groups-list.is-visual .cmc-group is a COLUMN cap: it stops a
-        // two-column board stretching its cards absurdly wide. Stacked on a phone the
-        // group is a full-width section, and the cap only ends its header 100px short of
-        // the board's right edge.
-        max-width: none;
-      }
-
       // A grid, not a wrapping flex row: at a fixed 140px a card left 213px of the 353px
       // group empty beside it, and wrapping only ever fills the width by accident. The
       // track is the zoom size as a MINIMUM — as many cards as fit, then they share out
@@ -4753,13 +4758,23 @@ app-deck-detail {
 
   .cp-portrait-wrap {
     position: relative;
-    border-radius: 4.75% / 3.4%;
-    overflow: hidden;
     transition: box-shadow 0.2s;
+
+    // No clip and no radius here any more: both existed to shape the overlay that used to
+    // cover the portrait. The portrait carries its own corners via `card-surface`, and the
+    // actions are now flow content below it, which a clip would shave.
 
     &.is-cmdr-drop-target .cp-portrait {
       outline: 3px solid rgba(167, 139, 250, 0.9);
       box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+    }
+
+    // At full sheet width the card is 371 × 517 and fills a phone screen on its own, which
+    // pushed the controls to y=662 of a 667px viewport. Capped, the label, the card, its
+    // buttons and the notes all land above the fold.
+    @include upto($bp-phone) {
+      max-width: 240px;
+      margin-inline: auto;
     }
   }
 
@@ -4785,23 +4800,34 @@ app-deck-detail {
     }
   }
 
+  // Under the card, always visible, on every device.
+  //
+  // These three were an overlay across the whole portrait, revealed on `:hover`, and that
+  // was wrong twice over. The reveal never fired at all: once the block moved under the
+  // `app-deck-detail` wrapper, `.cp-portrait-wrap:hover &` compiled to
+  // `.cp-portrait-wrap:hover app-deck-detail .cp-portrait-actions` — `&` is the *whole*
+  // parent selector, so the prefix landed in front of the component tag and the rule asked
+  // for the wrap to contain the component. It matched nothing, anywhere, on any device.
+  // And had it worked it still would not exist on touch, where nothing hovers.
+  //
+  // Meanwhile the invisible box kept `pointer-events: auto` over the entire card, so every
+  // click on the art hit a button nobody could see — dead centre was "Change", a few pixels
+  // lower was "Remove". Hence commanders coming off when you meant to look at the card.
+  // A control you cannot see is not a control, so these stopped being a hover affordance.
   .cp-portrait-actions {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    flex-wrap: wrap;
+    align-items: stretch;
     gap: 8px;
-    opacity: 0;
-    transition: opacity 0.2s;
-    background: rgba(0, 0, 0, 0.55);
-    border-radius: 0;
-    padding: 12px;
+    padding: 10px 0 0;
 
-    .cp-portrait-wrap:hover & {
-      opacity: 1;
+    > * {
+      flex: 1 1 100px;
+      min-width: 0;
+
+      @include touch {
+        min-height: $tap-min;
+      }
     }
   }
 
@@ -4818,14 +4844,30 @@ app-deck-detail {
     box-sizing: border-box;
   }
 
+  // The empty slot's controls, side by side: "Add Commander" fills the row on its own,
+  // and splits with "Remove" when the deck still carries a commander whose card has gone.
+  .cp-empty-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+
+    > * {
+      flex: 1 1 0;
+      min-width: 0;
+
+      @include touch {
+        min-height: $tap-min;
+      }
+    }
+  }
+
   .cp-add-cmdr-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     width: 100%;
-    margin-top: 10px;
-    padding: 9px 0;
+    padding: 9px 8px;
     background: rgba(167, 139, 250, 0.1);
     border: 1px solid rgba(167, 139, 250, 0.4);
     border-radius: 8px;
@@ -4843,6 +4885,19 @@ app-deck-detail {
     &:hover {
       background: rgba(124, 58, 237, 0.25);
       border-color: rgba(167, 139, 250, 0.7);
+    }
+  }
+
+  // Same geometry as .cp-add-cmdr-btn, in the destructive palette the portrait's own
+  // Remove wears, so the two removes read as one control rather than two.
+  .cp-clear-stale-btn {
+    background: rgba(185, 28, 28, 0.15);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fca5a5;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.35);
+      border-color: #f87171;
     }
   }
 

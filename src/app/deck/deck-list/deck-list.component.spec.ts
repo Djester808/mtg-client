@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { DeckListComponent } from './deck-list.component';
@@ -32,8 +32,10 @@ async function setup() {
     schemas: [NO_ERRORS_SCHEMA],
     providers: [
       provideMockStore({ initialState: INITIAL_STATE }),
-      { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       provideHttpClient(),
+      // A real test router rather than a navigate-only fake: the header carries a
+      // routerLink now, and RouterLink subscribes to router events and builds URL trees.
+      provideRouter([]),
     ],
   }).compileComponents();
 

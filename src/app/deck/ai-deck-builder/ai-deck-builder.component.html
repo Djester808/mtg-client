@@ -1,0 +1,284 @@
+<div class="ab-page">
+  <header class="ab-header">
+    <h1 class="ab-title">Build with AI</h1>
+    <p class="ab-sub">Describe the deck you want. Nothing is saved until you accept it.</p>
+  </header>
+
+  <!-- Progress -->
+  <ol class="ab-steps" aria-label="Progress">
+    <li class="ab-step" [class.is-active]="step === 'brief'" [class.is-done]="step !== 'brief'">
+      1. Brief
+    </li>
+    <li class="ab-step" [class.is-active]="step === 'commanders'" [class.is-done]="step === 'plan'">
+      2. Commander
+    </li>
+    <li class="ab-step" [class.is-active]="step === 'plan'">3. Review</li>
+  </ol>
+
+  <p class="ab-error" *ngIf="error">{{ error }}</p>
+
+  <!-- The same card modal the deck and collection pages use. -->
+  <app-card-modal
+    *ngIf="modalCard as mc"
+    [card]="mc"
+    [printings]="modalPrintings"
+    [(viewedScryfallId)]="modalViewScryfallId"
+    [(flipped)]="modalFlipped"
+    (closed)="closeCard()"
+  ></app-card-modal>
+
+  <!-- ---- Step 1: the brief ---- -->
+  <section class="ab-card" *ngIf="step === 'brief'">
+    <label class="ab-field">
+      <span class="ab-label">What should the deck do?</span>
+      <textarea
+        class="ab-input ab-textarea"
+        rows="4"
+        [(ngModel)]="brief"
+        [maxlength]="maxBrief"
+        placeholder="Lots of small creatures that all attack at once, and something that pays me off for it."
+      ></textarea>
+      <span class="ab-note">{{ brief.length }}/{{ maxBrief }} — optional</span>
+    </label>
+
+    <div class="ab-field">
+      <span class="ab-label">Colors</span>
+      <div class="ab-colors">
+        <button
+          type="button"
+          class="ab-color"
+          *ngFor="let c of colors"
+          [class.is-on]="chosenColors.has(c.letter)"
+          [attr.aria-pressed]="chosenColors.has(c.letter)"
+          [title]="c.label"
+          (click)="toggleColor(c.letter)"
+        >
+          <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c.letter)"></i>
+        </button>
+      </div>
+      <span class="ab-note">Leave empty to let the commander decide.</span>
+    </div>
+
+    <label class="ab-field">
+      <span class="ab-label">Bracket</span>
+      <app-select-menu
+        class="ab-select"
+        [options]="brackets"
+        [value]="bracket.toString()"
+        (valueChange)="setBracket($event)"
+      ></app-select-menu>
+      <span class="ab-note">Game Changers are only offered at bracket 4 and up.</span>
+    </label>
+
+    <label class="ab-check">
+      <input type="checkbox" [(ngModel)]="ownedOnly" />
+      <span>Only commanders I own</span>
+    </label>
+
+    <button
+      type="button"
+      class="ab-btn ab-btn-primary ab-go"
+      [disabled]="busy"
+      (click)="suggestCommanders()"
+    >
+      {{ suggesting ? 'Thinking…' : 'Suggest commanders' }}
+    </button>
+    <div class="ab-progress" *ngIf="suggesting">
+      <div class="ab-progress-head">
+        <span class="ab-stage">Reading the commander pool</span>
+        <span class="ab-stage-count">{{ elapsed }}s</span>
+      </div>
+      <div class="ab-track">
+        <div class="ab-track-fill is-indeterminate"></div>
+      </div>
+      <span class="ab-note">
+        Weighing every legal commander against what you described. Usually under a minute.
+      </span>
+    </div>
+  </section>
+
+  <!-- ---- Step 2: commanders ---- -->
+  <section *ngIf="step === 'commanders'">
+    <div class="ab-toolbar">
+      <button
+        type="button"
+        class="ab-btn ab-btn-quiet ab-btn-sm"
+        [disabled]="busy"
+        (click)="backToBrief()"
+      >
+        Change the brief
+      </button>
+      <span class="ab-note" *ngIf="suggestions.length">
+        {{ suggestions.length }} commanders — tap an image to see the card
+      </span>
+      <span class="ab-note" *ngIf="discarded > 0">
+        {{ discarded }} proposal{{ discarded === 1 ? '' : 's' }} rejected as not a legal commander.
+      </span>
+    </div>
+
+    <div class="ab-commanders">
+      <article
+        class="ab-cmd"
+        *ngFor="let c of visibleCommanders"
+        [class.is-chosen]="picked?.oracleId === c.oracleId"
+      >
+        <button
+          type="button"
+          class="ab-cmd-art"
+          [title]="'View ' + c.name"
+          [attr.aria-label]="'View ' + c.name"
+          [style.background-image]="c.imageUriArtCrop ? 'url(' + c.imageUriArtCrop + ')' : 'none'"
+          (click)="openCard(c.oracleId, $event)"
+        ></button>
+
+        <div class="ab-cmd-body">
+          <h2 class="ab-cmd-name">{{ c.name }}</h2>
+          <div class="ab-cmd-meta">
+            <span class="ab-cmd-pips">
+              <i
+                class="ms ms-cost ms-shadow"
+                *ngFor="let col of c.colorIdentity"
+                [ngClass]="manaClass(col)"
+              ></i>
+            </span>
+            <span class="ab-tag">{{ c.archetype }}</span>
+            <span class="ab-tag ab-tag-owned" *ngIf="c.owned">Owned</span>
+          </div>
+
+          <p class="ab-cmd-reason">{{ c.reason }}</p>
+          <p class="ab-cmd-plan" *ngIf="c.plan">{{ c.plan }}</p>
+
+          <!-- While this commander is building, the button's slot becomes the progress
+               readout: one place to look instead of a dead button and a bar elsewhere. -->
+          <div
+            class="ab-cmd-progress"
+            *ngIf="planning && picked?.oracleId === c.oracleId; else buildBtn"
+          >
+            <div class="ab-progress-head">
+              <span class="ab-stage">{{ stageLabel || 'Starting' }}</span>
+              <span class="ab-stage-count">{{ elapsed }}s</span>
+            </div>
+            <div class="ab-track">
+              <div
+                class="ab-track-fill"
+                [class.is-indeterminate]="indeterminate"
+                [style.width.%]="indeterminate ? null : progress"
+              ></div>
+            </div>
+            <span class="ab-note">Nothing is saved until you accept it.</span>
+          </div>
+
+          <ng-template #buildBtn>
+            <button
+              type="button"
+              class="ab-btn ab-btn-primary"
+              [disabled]="busy"
+              (click)="buildAround(c)"
+            >
+              Build this deck
+            </button>
+          </ng-template>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ---- Step 3: review ---- -->
+  <section *ngIf="step === 'plan' && plan as p">
+    <div class="ab-summary">
+      <div>
+        <h2 class="ab-cmd-name">{{ p.commanderName }}</h2>
+        <p class="ab-note">
+          {{ p.cards.length }} of {{ p.mainTarget }} slots filled
+          <span *ngIf="p.cardsSkipped > 0">· {{ p.cardsSkipped }} rejected</span>
+        </p>
+      </div>
+    </div>
+
+    <p class="ab-warn" *ngIf="p.mainShortfall > 0">
+      This deck is {{ p.mainShortfall }} card{{ p.mainShortfall === 1 ? '' : 's' }} short of legal.
+      You can still save it and fill the rest by hand.
+      <span class="ab-note" *ngIf="skippedSummary"> Rejected: {{ skippedSummary }}.</span>
+    </p>
+
+    <div class="ab-progress" *ngIf="assessing">
+      <div class="ab-progress-head">
+        <span class="ab-stage">{{ stageLabel }}</span>
+        <span class="ab-stage-count">{{ stageStep }}/{{ stageTotal }} · {{ elapsed }}s</span>
+      </div>
+      <div class="ab-track"><div class="ab-track-fill is-indeterminate"></div></div>
+      <span class="ab-note">Checking the balance of what was built…</span>
+    </div>
+
+    <!-- The judgement: does this deck make THIS commander work -->
+    <section class="ab-assess" *ngIf="!assessing && p.assessment as a">
+      <p class="ab-verdict" *ngIf="a.verdict">{{ a.verdict }}</p>
+
+      <div class="ab-finding" *ngFor="let f of a.findings" [attr.data-sev]="f.severity">
+        <div class="ab-finding-head">
+          <span class="ab-finding-area">{{ f.area }}</span>
+          <span class="ab-sev" [class]="'ab-sev-' + f.severity">{{ f.severity }}</span>
+        </div>
+        <p class="ab-finding-text">{{ f.finding }}</p>
+        <p class="ab-finding-fix" *ngIf="f.fix">{{ f.fix }}</p>
+      </div>
+
+      <!-- Measured facts, stated without a verdict attached. -->
+      <div class="ab-facts" *ngIf="a.facts as facts">
+        <span>{{ facts.lands }} lands</span>
+        <span>{{ facts.ramp }} ramp</span>
+        <span>{{ facts.draw }} draw</span>
+        <span>
+          {{ facts.interaction }} interaction<ng-container *ngIf="facts.interactionOnCreatures > 0">
+            ({{ facts.interactionOnCreatures }} on creatures)</ng-container
+          >
+        </span>
+        <span>{{ facts.manaSources }} mana sources</span>
+        <span>avg MV {{ facts.averageManaValue }}</span>
+        <span>{{ facts.creaturePercentOfNonland }}% creatures</span>
+        <span *ngFor="let c of facts.colorSources">
+          <i class="ms ms-cost ms-shadow" [ngClass]="manaClass(c.color)"></i> {{ c.count }}
+        </span>
+      </div>
+    </section>
+
+    <div class="ab-review">
+      <div class="ab-review-tabs">
+        <button
+          type="button"
+          class="ab-review-tab"
+          *ngFor="let group of planByRole"
+          [class.is-active]="reviewTab === group.role"
+          (click)="setReviewTab(group.role)"
+        >
+          {{ group.role }} <span>{{ group.cards.length }}</span>
+        </button>
+      </div>
+
+      <ul class="ab-list">
+        <li class="ab-row" *ngFor="let row of reviewRows">
+          <button type="button" class="ab-row-btn" (click)="openCard(row.card.oracleId)">
+            <span
+              class="ab-row-art"
+              [style.background-image]="
+                row.card.imageUriArtCrop ? 'url(' + row.card.imageUriArtCrop + ')' : 'none'
+              "
+            ></span>
+            <span class="ab-row-name">{{ row.card.name }}</span>
+            <span class="ab-row-count" *ngIf="row.count > 1">×{{ row.count }}</span>
+            <span class="ab-row-type">{{ row.card.typeLine }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="ab-accept">
+      <button type="button" class="ab-btn ab-btn-quiet" [disabled]="busy" (click)="discardPlan()">
+        Discard
+      </button>
+      <button type="button" class="ab-btn ab-btn-primary" [disabled]="busy" (click)="acceptPlan()">
+        {{ applying ? 'Saving…' : 'Save to deck' }}
+      </button>
+    </div>
+  </section>
+</div>

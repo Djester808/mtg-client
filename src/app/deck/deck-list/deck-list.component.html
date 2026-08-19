@@ -16,6 +16,7 @@
       <button class="import-btn" (click)="openImportModal()">
         <i class="bi bi-download"></i> Import
       </button>
+      <a class="import-btn" routerLink="/deck/build"> <i class="bi bi-stars"></i> Build with AI </a>
       <button class="create-btn" (click)="openCreateForm()">
         <i class="bi bi-plus"></i> New Deck
       </button>
@@ -33,6 +34,7 @@
         <p class="empty-title">No decks yet</p>
         <p class="empty-sub">Build your first deck to start playing.</p>
         <button class="create-btn" (click)="openCreateForm()">+ New Deck</button>
+        <a class="import-btn" routerLink="/deck/build">Or build one with AI</a>
       </div>
 
       <!-- Grid -->

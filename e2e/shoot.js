@@ -52,6 +52,16 @@ const ROUTES = [
     label: 'Account — edit profile',
     ready: '.pe-page .pe-card',
   },
+  // Only the first step is captured. The commander and review steps each sit behind a
+  // minutes-long model call that costs real money, which is not something a capture run
+  // should spend on every invocation.
+  {
+    id: 'ai-builder',
+    path: '/deck/build',
+    auth: true,
+    label: 'Deck — build with AI',
+    ready: '.ab-page .ab-card',
+  },
 ];
 
 // ---- Browser-side audit -------------------------------------------------------------

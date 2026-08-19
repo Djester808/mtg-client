@@ -1,0 +1,792 @@
+// Three levels to src/ — this component sits at app/deck/ai-deck-builder/.
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
+// One column at every width; the review list is long, so the page is a reading column
+// rather than a dashboard. Nothing here needs a wide-only variant.
+:host {
+  display: block;
+}
+
+.ab-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+
+  @include from($bp-phone) {
+    padding: 40px 24px 80px;
+  }
+}
+
+.ab-header {
+  margin-bottom: 18px;
+}
+
+.ab-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  margin: 0;
+
+  @include from($bp-phone) {
+    font-size: 28px;
+  }
+}
+
+.ab-sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+}
+
+// ---- Steps ----------------------------------------------------------------
+
+.ab-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.ab-step {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  &.is-active {
+    color: var(--gold);
+    border-color: rgba(201, 168, 76, 0.5);
+    background: rgba(201, 168, 76, 0.1);
+  }
+
+  &.is-done {
+    color: var(--text-secondary);
+  }
+}
+
+.ab-error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #e06060;
+  margin: 0 0 14px;
+}
+
+.ab-warn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: rgba(201, 168, 76, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+}
+
+// ---- Form -----------------------------------------------------------------
+
+.ab-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 18px 16px;
+}
+
+.ab-field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.ab-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.ab-input {
+  display: block;
+  width: 100%;
+  // Padding inside the width, or a 100% field overflows its card.
+  box-sizing: border-box;
+  min-height: $tap-min;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  // 16px keeps iOS from zooming the page when the field takes focus.
+  font-size: 16px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--gold-dim);
+  }
+}
+
+.ab-textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.ab-note {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 5px;
+}
+
+.ab-check {
+  // Without this the tick paints in the OS accent colour, which is whatever the user set
+  // system-wide — it came out red here, against a gold-and-parchment page.
+  accent-color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: $tap-min;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.ab-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.ab-color {
+  // A tap target in its own right, so it meets the floor rather than being icon-sized.
+  width: $tap-min;
+  height: $tap-min;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+
+  i {
+    font-size: 19px;
+    opacity: 0.45;
+  }
+
+  &.is-on {
+    border-color: var(--gold);
+    background: rgba(201, 168, 76, 0.14);
+
+    i {
+      opacity: 1;
+    }
+  }
+}
+
+// ---- Buttons --------------------------------------------------------------
+
+.ab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: $tap-min;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.ab-btn-primary {
+  background: rgba(201, 168, 76, 0.16);
+  border-color: rgba(201, 168, 76, 0.4);
+  color: var(--gold);
+}
+
+.ab-btn-quiet {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.ab-go {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ab-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+
+  // The notes describe the shortlist, not the button. Sitting hard against it they read as
+  // one run-on sentence — "10 commanders — tap an image to see the card 2 proposals
+  // rejected as not a legal commander." — with the whole right half of the row empty. The
+  // first note takes the slack so the row reads as [action] .......... [status].
+  //
+  // Only once the row actually fits on one line. Below that the toolbar wraps, and pushing
+  // a wrapped note to the right of its own line right-aligned one sentence and left-aligned
+  // the next under a left-aligned button: measured at 375px, the note began 105px in with
+  // nothing beside it.
+  @include from($bp-phone) {
+    .ab-note:first-of-type {
+      margin-left: auto;
+    }
+  }
+
+  // A visible break between the two, so they stop running together.
+  .ab-note + .ab-note::before {
+    content: '·';
+    margin-right: 8px;
+    color: var(--text-dim);
+  }
+}
+
+// ---- Commander cards ------------------------------------------------------
+
+.ab-commanders {
+  display: grid;
+  // One per row on a phone, two once there is room. auto-fit keeps that decision in the
+  // grid rather than in a breakpoint.
+  // Smaller minimum than 280: with ten suggestions the old size meant scrolling past two
+  // per row to see them all. Three or four fit now without the art becoming a stamp.
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  // Every card the same height, so the buttons form a line rather than a staircase.
+  align-items: stretch;
+}
+
+.ab-cmd {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ab-cmd-art {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  // Scryfall art_crop is 626x457; matching it crops nothing.
+  aspect-ratio: 626 / 457;
+  background-color: rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+  // It opens the commander's page, so it has to look like it does something.
+  cursor: pointer;
+  transition: filter 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    filter: brightness(1.12);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.ab-cmd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  // Fill the card so the button below can be pushed to the bottom edge.
+  flex: 1;
+}
+
+// The reasons differ in length by several lines, so without this the buttons sit at a
+// different height in every card and the row reads as broken.
+.ab-cmd-body .ab-btn {
+  margin-top: auto;
+}
+
+.ab-cmd {
+  // The grid drops from several cards to one when a commander is picked; without a
+  // transition the rest vanish and the survivor jumps to full width in a single frame.
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.ab-cmd.is-chosen {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.35);
+  animation: ab-chosen-settle 0.35s ease;
+}
+
+@keyframes ab-chosen-settle {
+  from {
+    transform: scale(0.985);
+    opacity: 0.75;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-cmd.is-chosen {
+    animation: none;
+  }
+}
+
+// The shared select styles itself; it only needs to fill the field width here.
+.ab-select {
+  display: block;
+  width: 100%;
+}
+
+// An indeterminate bar for work whose stages the server does not report. It deliberately
+// does not pretend to know how far along it is — a fake percentage that stalls at 90% is
+// worse than an honest "still going".
+.ab-track-fill.is-indeterminate {
+  width: 35%;
+  animation: ab-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes ab-sweep {
+  0% {
+    margin-left: -35%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-track-fill.is-indeterminate {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
+.ab-cmd-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  // Commander names are long and the tail is what distinguishes them.
+  overflow-wrap: anywhere;
+}
+
+.ab-cmd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ab-cmd-pips i {
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.ab-tag {
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+}
+
+.ab-tag-owned {
+  background: rgba(90, 138, 106, 0.25);
+  color: #9fd3af;
+}
+
+.ab-cmd-reason,
+.ab-cmd-plan {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+// Long reasons scroll inside the card instead of stretching every card in the row to
+// match the wordiest one. Nothing is cut off — it is reachable, just not all at once.
+.ab-cmd-reason {
+  max-height: 11em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ab-cmd-plan {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+// ---- Plan review ----------------------------------------------------------
+
+.ab-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ab-group {
+  margin-bottom: 20px;
+}
+
+.ab-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin: 0 0 8px;
+
+  span {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-dim);
+  }
+}
+
+.ab-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ab-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.ab-row-art {
+  width: 42px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+}
+
+.ab-row-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  // Wraps rather than truncating: a card name is the only thing on this row worth reading.
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// How many copies the deck holds. Sits with the name rather than out at the type line,
+// because it is part of what the row says the card is.
+.ab-row-count {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.ab-row-type {
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: right;
+  // The type line is the first thing that should give way when the row is tight.
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @include upto($bp-phone) {
+    display: none;
+  }
+}
+
+// ---- Accept bar -----------------------------------------------------------
+
+.ab-accept {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 10px 0;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg-base, #0a0a0c) 70%, transparent);
+
+  @include upto($bp-phone) {
+    // Discard and Save are the only two things on this bar and they are the outcomes of
+    // the whole screen, so they take equal halves of it rather than sitting hard right at
+    // two different widths with the rest of the bar empty.
+    > button {
+      flex: 1 1 0;
+    }
+  }
+}
+
+// ---- Assessment -----------------------------------------------------------
+
+.ab-assess {
+  margin-bottom: 22px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ab-verdict {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.ab-finding {
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ab-finding-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ab-finding-area {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.ab-sev {
+  font-family: var(--font-body);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+}
+
+// Only "critical" is coloured. If everything is highlighted, nothing is.
+.ab-sev-critical {
+  background: rgba(224, 96, 96, 0.18);
+  color: #e88;
+}
+
+.ab-finding-text {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ab-finding-fix {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 4px 0 0;
+}
+
+.ab-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+
+  i {
+    font-size: 11px;
+  }
+}
+
+// ---- Progress -------------------------------------------------------------
+
+.ab-progress {
+  margin: 14px 0 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.22);
+}
+
+.ab-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ab-stage {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  // The label changes as the server reports each step, so it must not shift the layout.
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ab-stage-count {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.ab-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.ab-track-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.9), rgba(201, 168, 76, 0.55));
+  transition: width 0.4s ease;
+
+  // The stages are minutes apart, so the bar is the only thing moving. Respect a user
+  // who has asked for less of that.
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+// A smaller variant so the toolbar reads as one row of controls rather than a stack.
+.ab-btn-sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+
+  @include touch {
+    // Its one caller is "Change the brief", the only way back out of the shortlist. A
+    // compact button is a reasonable density choice with a mouse; on a phone it is the
+    // exit and it measured 34px against a floor of 44.
+    min-height: $tap-min;
+  }
+}
+
+// ---- Review tabs ----------------------------------------------------------
+
+.ab-review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  // The navbar is fixed, so anything scrolled to the top of the viewport lands underneath
+  // it. Without this the tab strip is the part that disappears.
+  scroll-margin-top: 64px;
+}
+
+.ab-review-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: $tap-min;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  span {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  &.is-active {
+    color: var(--gold);
+    border-color: rgba(201, 168, 76, 0.5);
+    background: rgba(201, 168, 76, 0.12);
+  }
+}
+
+// The whole row opens the card, so it is a button filling the row rather than a link on
+// the name alone — a 40px-tall target instead of a few characters of text.
+.ab-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: $tap-min;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}

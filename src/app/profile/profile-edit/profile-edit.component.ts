@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { UserAvatarComponent } from '../../components/user-avatar/user-avatar.component';
+import {
+  SelectMenuComponent,
+  SelectMenuOption,
+} from '../../components/select-menu/select-menu.component';
 import { ProfileApiService } from '../../services/profile-api.service';
 import { ToastService } from '../../services/toast.service';
 import { AvatarLimits, CommanderBrief, MyProfile } from '../../models/profile.models';
@@ -33,13 +37,19 @@ const FORMATS = [
 @Component({
   selector: 'app-profile-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, UserAvatarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, UserAvatarComponent, SelectMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile-edit.component.html',
   styleUrls: ['./profile-edit.component.scss'],
 })
 export class ProfileEditComponent implements OnInit {
   readonly formats = FORMATS;
+
+  /** The same list, shaped for the shared select. Empty value = no preference. */
+  readonly formatOptions: SelectMenuOption[] = [
+    { value: '', label: 'No preference' },
+    ...FORMATS.map((f) => ({ value: f, label: f })),
+  ];
 
   /** Caps mirrored from the DTO's DataAnnotations; the server enforces them regardless. */
   readonly maxes = { displayName: 64, tagline: 120, bio: 2000 };

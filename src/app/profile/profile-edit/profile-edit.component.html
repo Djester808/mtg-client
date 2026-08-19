@@ -102,11 +102,14 @@
       </label>
 
       <label class="pe-field">
-        <span class="pe-label">Favourite format</span>
-        <select class="pe-input pe-select" [(ngModel)]="favoriteFormat">
-          <option value="">No preference</option>
-          <option *ngFor="let f of formats" [value]="f">{{ f }}</option>
-        </select>
+        <span class="pe-label">Favorite format</span>
+        <app-select-menu
+          class="pe-select"
+          [options]="formatOptions"
+          [value]="favoriteFormat"
+          placeholder="No preference"
+          (valueChange)="favoriteFormat = $event"
+        ></app-select-menu>
       </label>
     </section>
 
