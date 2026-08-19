@@ -177,6 +177,12 @@ const AUDIT = `
   const small = [];
   for (const el of document.querySelectorAll('a,button,input,select,textarea,[role="button"]')) {
     if (el.disabled) continue;
+    // Untappable by construction, so not a tap target. pointer-events:none, opacity:0 and
+    // visibility:hidden are how a custom file picker hides its <input> behind a styled
+    // label — the avatar upload does exactly that at 1x1, which the width<1 guard misses
+    // by a pixel and which nobody can tap anyway.
+    const cs = getComputedStyle(el);
+    if (cs.pointerEvents === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
     if (r.width >= 44 && r.height >= 44) continue;
@@ -203,6 +209,10 @@ const AUDIT = `
     pageScrollers,
     causes,
     smallTargets: small.length,
+    // Distinct kinds, which is what the ratchet reads. The instance count tracks how much
+    // data the account happens to hold — one undersized menu button per deck tile made the
+    // deck route swing 26 -> 68 -> 29 across a session while the layout never changed.
+    smallSelectors: [...new Set(small.map((s) => s.sel))].length,
     smallSample: small.slice(0, 8),
     scrollH: document.documentElement.scrollHeight,
     title: document.title,

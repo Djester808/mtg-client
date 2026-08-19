@@ -42,6 +42,12 @@ const AUDIT = `
   const small = [];
   for (const el of root.querySelectorAll('a,button,input,select,textarea,[role="button"]')) {
     if (el.disabled) continue;
+    // Untappable by construction, so not a tap target. pointer-events:none, opacity:0 and
+    // visibility:hidden are how a custom file picker hides its <input> behind a styled
+    // label — the avatar upload does exactly that at 1x1, which the width<1 guard misses
+    // by a pixel and which nobody can tap anyway.
+    const cs = getComputedStyle(el);
+    if (cs.pointerEvents === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
     const b = el.getBoundingClientRect();
     if (b.width < 1 || b.height < 1) continue;
     if (b.width >= 44 && b.height >= 44) continue;
@@ -59,6 +65,8 @@ const AUDIT = `
     overflowsY: pinned && (r.bottom > vh + 1 || r.top < -1),
     offscreenChildren: off,
     smallTargets: small.length,
+    // Distinct kinds — see the note in shoot.js.
+    smallSelectors: [...new Set(small.map((s) => s.sel))].length,
     smallSample: small.slice(0, 5),
   };
 `;

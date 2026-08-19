@@ -49,6 +49,7 @@ function measurements() {
     out[`route:${r.device}:${r.route ?? r.id}`] = {
       overflows: Boolean(audit.overflows ?? audit.overflowsX),
       smallTargets: Number(audit.smallTargets ?? 0),
+      smallSelectors: Number(audit.smallSelectors ?? 0),
     };
   }
 
@@ -57,6 +58,7 @@ function measurements() {
     out[`state:${s.device}:${s.state}`] = {
       overflows: Boolean(s.overflowsX),
       smallTargets: Number(s.smallTargets ?? 0),
+      smallSelectors: Number(s.smallSelectors ?? 0),
       // Names the layout had to cut. Ellipsis is the last resort in the standard, after
       // giving the text the width, so a rise here is a regression even when nothing
       // overflows.
@@ -97,8 +99,19 @@ for (const [key, now] of Object.entries(current)) {
   if (now.overflows && !was.overflows) {
     problems.push(`${key}: now overflows the viewport (it did not before)`);
   }
-  if (now.smallTargets > was.smallTargets) {
-    problems.push(`${key}: tap targets under 44px went ${was.smallTargets} -> ${now.smallTargets}`);
+  // Kinds, not instances. The instance count tracks how much data the test account
+  // happens to hold: one undersized menu button per deck tile swung the deck route
+  // 26 -> 68 -> 29 across a single session, entirely on deck count, while the layout never
+  // moved. A ratchet that cries wolf on data is one people learn to re-record without
+  // reading, which is the failure it exists to prevent.
+  //
+  // smallTargets is still recorded, because the instance count is the thing to look at
+  // once a kind has actually appeared.
+  if ((now.smallSelectors ?? 0) > (was.smallSelectors ?? 0)) {
+    problems.push(
+      `${key}: kinds of tap target under 44px went ${was.smallSelectors ?? 0} -> ${now.smallSelectors}` +
+        ` (${now.smallTargets} instance(s))`,
+    );
   }
   if ((now.truncated ?? 0) > (was.truncated ?? 0)) {
     problems.push(`${key}: names cut off went ${was.truncated ?? 0} -> ${now.truncated}`);

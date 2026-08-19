@@ -1,372 +1,542 @@
 {
   "route:iphone-se:home": {
     "overflows": false,
-    "smallTargets": 37
+    "smallTargets": 37,
+    "smallSelectors": 15
   },
   "route:iphone-se:login": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:iphone-se:register": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:iphone-se:kb": {
     "overflows": false,
-    "smallTargets": 3
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:iphone-se:forum": {
     "overflows": false,
-    "smallTargets": 446
+    "smallTargets": 446,
+    "smallSelectors": 6
   },
   "route:iphone-se:commanders": {
     "overflows": false,
-    "smallTargets": 13
+    "smallTargets": 13,
+    "smallSelectors": 5
   },
   "route:iphone-se:players": {
     "overflows": false,
-    "smallTargets": 5
+    "smallTargets": 5,
+    "smallSelectors": 4
   },
   "route:iphone-se:collection": {
     "overflows": false,
-    "smallTargets": 45
+    "smallTargets": 45,
+    "smallSelectors": 4
   },
   "route:iphone-se:deck": {
     "overflows": false,
-    "smallTargets": 26
+    "smallTargets": 29,
+    "smallSelectors": 6
   },
   "route:iphone-se:profile": {
     "overflows": false,
-    "smallTargets": 1
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:iphone-se:account": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
+  },
+  "route:iphone-se:ai-builder": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:iphone-15-pro:home": {
     "overflows": false,
-    "smallTargets": 37
+    "smallTargets": 37,
+    "smallSelectors": 15
   },
   "route:iphone-15-pro:login": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:iphone-15-pro:register": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:iphone-15-pro:kb": {
     "overflows": false,
-    "smallTargets": 3
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:iphone-15-pro:forum": {
     "overflows": false,
-    "smallTargets": 446
+    "smallTargets": 446,
+    "smallSelectors": 6
   },
   "route:iphone-15-pro:commanders": {
     "overflows": false,
-    "smallTargets": 13
+    "smallTargets": 13,
+    "smallSelectors": 5
   },
   "route:iphone-15-pro:players": {
     "overflows": false,
-    "smallTargets": 5
+    "smallTargets": 5,
+    "smallSelectors": 4
   },
   "route:iphone-15-pro:collection": {
     "overflows": false,
-    "smallTargets": 45
+    "smallTargets": 45,
+    "smallSelectors": 4
   },
   "route:iphone-15-pro:deck": {
     "overflows": false,
-    "smallTargets": 26
+    "smallTargets": 29,
+    "smallSelectors": 6
   },
   "route:iphone-15-pro:profile": {
     "overflows": false,
-    "smallTargets": 1
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:iphone-15-pro:account": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
+  },
+  "route:iphone-15-pro:ai-builder": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:pixel-8:home": {
     "overflows": false,
-    "smallTargets": 37
+    "smallTargets": 37,
+    "smallSelectors": 15
   },
   "route:pixel-8:login": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:pixel-8:register": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:pixel-8:kb": {
     "overflows": false,
-    "smallTargets": 3
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:pixel-8:forum": {
     "overflows": false,
-    "smallTargets": 446
+    "smallTargets": 446,
+    "smallSelectors": 6
   },
   "route:pixel-8:commanders": {
     "overflows": false,
-    "smallTargets": 13
+    "smallTargets": 13,
+    "smallSelectors": 5
   },
   "route:pixel-8:players": {
     "overflows": false,
-    "smallTargets": 5
+    "smallTargets": 5,
+    "smallSelectors": 4
   },
   "route:pixel-8:collection": {
     "overflows": false,
-    "smallTargets": 45
+    "smallTargets": 45,
+    "smallSelectors": 4
   },
   "route:pixel-8:deck": {
     "overflows": false,
-    "smallTargets": 26
+    "smallTargets": 29,
+    "smallSelectors": 6
   },
   "route:pixel-8:profile": {
     "overflows": false,
-    "smallTargets": 1
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:pixel-8:account": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
+  },
+  "route:pixel-8:ai-builder": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:ipad-mini:home": {
     "overflows": false,
-    "smallTargets": 35
+    "smallTargets": 35,
+    "smallSelectors": 13
   },
   "route:ipad-mini:login": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:ipad-mini:register": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
   },
   "route:ipad-mini:kb": {
     "overflows": false,
-    "smallTargets": 3
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:ipad-mini:forum": {
     "overflows": false,
-    "smallTargets": 463
+    "smallTargets": 463,
+    "smallSelectors": 11
   },
   "route:ipad-mini:commanders": {
     "overflows": false,
-    "smallTargets": 13
+    "smallTargets": 13,
+    "smallSelectors": 5
   },
   "route:ipad-mini:players": {
     "overflows": false,
-    "smallTargets": 5
+    "smallTargets": 5,
+    "smallSelectors": 4
   },
   "route:ipad-mini:collection": {
     "overflows": false,
-    "smallTargets": 45
+    "smallTargets": 45,
+    "smallSelectors": 4
   },
   "route:ipad-mini:deck": {
     "overflows": false,
-    "smallTargets": 26
+    "smallTargets": 26,
+    "smallSelectors": 3
   },
   "route:ipad-mini:profile": {
     "overflows": false,
-    "smallTargets": 1
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:ipad-mini:account": {
     "overflows": false,
-    "smallTargets": 2
+    "smallTargets": 2,
+    "smallSelectors": 2
+  },
+  "route:ipad-mini:ai-builder": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3
   },
   "route:desktop:home": {
     "overflows": false,
-    "smallTargets": 41
+    "smallTargets": 41,
+    "smallSelectors": 15
   },
   "route:desktop:login": {
     "overflows": false,
-    "smallTargets": 8
+    "smallTargets": 8,
+    "smallSelectors": 4
   },
   "route:desktop:register": {
     "overflows": false,
-    "smallTargets": 8
+    "smallTargets": 8,
+    "smallSelectors": 4
   },
   "route:desktop:kb": {
     "overflows": false,
-    "smallTargets": 9
+    "smallTargets": 9,
+    "smallSelectors": 5
   },
   "route:desktop:forum": {
     "overflows": false,
-    "smallTargets": 469
+    "smallTargets": 469,
+    "smallSelectors": 13
   },
   "route:desktop:commanders": {
     "overflows": false,
-    "smallTargets": 19
+    "smallTargets": 19,
+    "smallSelectors": 7
   },
   "route:desktop:players": {
     "overflows": false,
-    "smallTargets": 11
+    "smallTargets": 11,
+    "smallSelectors": 6
   },
   "route:desktop:collection": {
     "overflows": false,
-    "smallTargets": 51
+    "smallTargets": 51,
+    "smallSelectors": 6
   },
   "route:desktop:deck": {
     "overflows": false,
-    "smallTargets": 32
+    "smallTargets": 35,
+    "smallSelectors": 8
   },
   "route:desktop:profile": {
     "overflows": false,
-    "smallTargets": 7
+    "smallTargets": 7,
+    "smallSelectors": 3
   },
   "route:desktop:account": {
     "overflows": false,
-    "smallTargets": 8
+    "smallTargets": 8,
+    "smallSelectors": 4
+  },
+  "route:desktop:ai-builder": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 5
+  },
+  "state:iphone-se:ai-build-brief": {
+    "overflows": false,
+    "smallTargets": 2,
+    "smallSelectors": 2,
+    "truncated": 0
+  },
+  "state:iphone-se:ai-build-suggestions": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:ai-build-progress": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:ai-build-review": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:ai-build-card-modal": {
+    "overflows": false,
+    "smallTargets": 6,
+    "smallSelectors": 4,
+    "truncated": 0
   },
   "state:iphone-se:card-modal": {
     "overflows": false,
-    "smallTargets": 5,
+    "smallTargets": 6,
+    "smallSelectors": 4,
     "truncated": 0
   },
   "state:iphone-se:forum-filters-collapsed": {
     "overflows": false,
     "smallTargets": 2,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:iphone-se:forum-filters-open": {
     "overflows": false,
     "smallTargets": 20,
+    "smallSelectors": 8,
     "truncated": 0
   },
   "state:iphone-se:forum-list-view": {
     "overflows": false,
     "smallTargets": 442,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:iphone-se:forum-grid-view": {
     "overflows": false,
     "smallTargets": 442,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:iphone-se:community-tabs-players": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:kb-keywords": {
     "overflows": false,
     "smallTargets": 1,
+    "smallSelectors": 1,
     "truncated": 0
   },
   "state:iphone-se:kb-glossary": {
     "overflows": false,
     "smallTargets": 1,
+    "smallSelectors": 1,
     "truncated": 0
   },
   "state:iphone-se:kb-search": {
     "overflows": false,
     "smallTargets": 2,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:iphone-se:kb-rule-group": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:kb-keyword": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:keyword-sheet": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:players-grid": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:profile-decks": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:profile-comments": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:ai-build-brief": {
+    "overflows": false,
+    "smallTargets": 2,
+    "smallSelectors": 2,
+    "truncated": 0
+  },
+  "state:pixel-8:ai-build-suggestions": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:ai-build-progress": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:ai-build-review": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:ai-build-card-modal": {
+    "overflows": false,
+    "smallTargets": 6,
+    "smallSelectors": 4,
     "truncated": 0
   },
   "state:pixel-8:card-modal": {
     "overflows": false,
-    "smallTargets": 5,
+    "smallTargets": 6,
+    "smallSelectors": 4,
     "truncated": 0
   },
   "state:pixel-8:forum-filters-collapsed": {
     "overflows": false,
     "smallTargets": 2,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:pixel-8:forum-filters-open": {
     "overflows": false,
     "smallTargets": 20,
+    "smallSelectors": 8,
     "truncated": 0
   },
   "state:pixel-8:forum-list-view": {
     "overflows": false,
     "smallTargets": 442,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:pixel-8:forum-grid-view": {
     "overflows": false,
     "smallTargets": 442,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:pixel-8:community-tabs-players": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:kb-keywords": {
     "overflows": false,
     "smallTargets": 1,
+    "smallSelectors": 1,
     "truncated": 0
   },
   "state:pixel-8:kb-glossary": {
     "overflows": false,
     "smallTargets": 1,
+    "smallSelectors": 1,
     "truncated": 0
   },
   "state:pixel-8:kb-search": {
     "overflows": false,
     "smallTargets": 2,
+    "smallSelectors": 2,
     "truncated": 0
   },
   "state:pixel-8:kb-rule-group": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:kb-keyword": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:keyword-sheet": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:players-grid": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:profile-decks": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:profile-comments": {
     "overflows": false,
     "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   }
 }
