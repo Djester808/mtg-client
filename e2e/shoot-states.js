@@ -163,6 +163,55 @@ const STATES = [
     },
   },
   {
+    id: 'game-board-aiming',
+    label: 'Game board — attacker aimed at a planeswalker',
+    // The badge under an attacking creature carries the name of what it is aimed at, and a
+    // planeswalker's name is the longest thing that can land there ("Chandra, Torch of
+    // Defiance"). On a 375px row that badge is the widest new element on the board, so it is
+    // the one that has to be measured rather than reasoned about.
+    root: '.gb-root',
+    extra: `return {
+      hint: (document.querySelector('.gb-hint') || {}).textContent || null,
+      // The badge is an arrow and the target's short name. Empty here means the two taps did
+      // not land, which is the one way this capture could pass while proving nothing.
+      aimed: Array.from(document.querySelectorAll('.gb-permanent-note'))
+        .map((n) => (n.textContent || '').trim())
+        .filter((t) => t.startsWith('→')),
+      underAttack: Array.from(document.querySelectorAll('.is-under-attack')).map((n) =>
+        (n.textContent || '').trim(),
+      ),
+      // The badge shrinks to its card rather than widening it: a battlefield whose columns
+      // move as you pick targets is worse than a short name.
+      badgeOverflows: Array.from(document.querySelectorAll('.gb-permanent')).some(
+        (card) => card.scrollWidth > card.clientWidth + 1,
+      ),
+    };`,
+    async drive(d) {
+      await armGameReplay(d, { currentStep: 'DeclareAttackers' });
+      await ensureSignedIn(d);
+      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
+      await d.wait(until.elementLocated(By.css('.gb-actions button')), 20000);
+      await sleep(1500);
+
+      // Two taps on an untapped creature of the viewer's: the first sends it at the player,
+      // the second aims it at the only planeswalker the defender controls (CR 508.1b).
+      // A creature, not just any permanent: only creatures show their power and toughness, and
+      // a land is no longer selectable — the first version of this drive picked the Forest and
+      // captured a board declaring a land as an attacker.
+      const mine = await d.findElements(
+        By.css(
+          '.gb-field-half:last-child .gb-permanent:not(.is-tapped):not(.is-sick):has(.gb-permanent-stats)',
+        ),
+      );
+      if (mine.length > 0) {
+        await mine[0].click();
+        await mine[0].click();
+      }
+
+      await sleep(600);
+    },
+  },
+  {
     id: 'game-board',
     label: 'Game board — mid-turn, stack of two',
     // The whole board: what matters at 375 is whether the column of strips, two battlefields

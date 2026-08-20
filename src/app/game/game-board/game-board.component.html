@@ -59,7 +59,11 @@
         >
           <span class="gb-permanent-name">{{ card.name }}</span>
           <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+          <span class="gb-permanent-stats is-loyalty" *ngIf="loyalty(card) as l">{{ l }}</span>
           <span class="gb-permanent-note" *ngIf="isAttacking(card)">attacking</span>
+          <span class="gb-permanent-note is-under-attack" *ngIf="attackersAimedAt(card) as n">
+            under attack ({{ n }})
+          </span>
         </button>
         <p class="gb-empty" *ngIf="b.theirs.length === 0">Nothing on their side.</p>
       </div>
@@ -81,8 +85,11 @@
         >
           <span class="gb-permanent-name">{{ card.name }}</span>
           <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+          <span class="gb-permanent-stats is-loyalty" *ngIf="loyalty(card) as l">{{ l }}</span>
           <span class="gb-permanent-note" *ngIf="isAttacking(card)">attacking</span>
-          <span class="gb-permanent-note" *ngIf="chosenAttackers.has(card.id)">will attack</span>
+          <span class="gb-permanent-note" *ngIf="attackTargetName(card) as target">
+            → {{ target }}
+          </span>
           <span class="gb-permanent-note" *ngIf="blockedBy(card)">will block</span>
         </button>
         <p class="gb-empty" *ngIf="b.mine.length === 0">Nothing on your side yet.</p>
@@ -182,6 +189,10 @@
       </button>
     </div>
   </div>
+
+  <p class="gb-hint" *ngIf="isDeclaringAttackers && attackableWalkers.length > 0">
+    Tap a creature again to aim it at a planeswalker.
+  </p>
 
   <div class="gb-actions">
     <button

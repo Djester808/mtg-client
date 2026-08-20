@@ -11,7 +11,13 @@ import { ScrollEdgesDirective } from '../../directives/scroll-edges.directive';
 import { ActivatedRoute } from '@angular/router';
 import { BoardLayoutService } from '../board-layout.service';
 import { PlayHubService } from '../play-hub.service';
-import { ChoiceView, ObjectView, PlayerView, TargetDto } from '../../models/play.models';
+import {
+  AttackTarget,
+  ChoiceView,
+  ObjectView,
+  PlayerView,
+  TargetDto,
+} from '../../models/play.models';
 
 /**
  * The game board.
@@ -53,8 +59,8 @@ export class GameBoardComponent implements OnInit, OnDestroy {
   /** Picks made so far against the pending choice, in order. */
   picks: string[] = [];
 
-  /** Attackers chosen this combat, before they are declared. */
-  chosenAttackers = new Set<string>();
+  /** Attackers chosen this combat, and what each is aimed at, before they are declared. */
+  chosenAttackers = new Map<string, AttackTarget>();
 
   /** Blocker → the attacker it is being assigned to. */
   chosenBlocks = new Map<string, string>();
@@ -81,6 +87,11 @@ export class GameBoardComponent implements OnInit, OnDestroy {
   /** Printed power and toughness with counters applied; see the service for why "printed". */
   stats(card: ObjectView): string | null {
     return this.layoutService.printedStats(card);
+  }
+
+  /** A planeswalker's loyalty, shown where a creature shows its power and toughness. */
+  loyalty(card: ObjectView): string | null {
+    return this.layoutService.loyalty(card);
   }
 
   isLand(card: ObjectView): boolean {
@@ -236,24 +247,81 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     return !!board && !board.isMyTurn && this.stepIs('DeclareBlockers');
   }
 
-  toggleAttacker(card: ObjectView): void {
-    if (this.chosenAttackers.has(card.id)) {
-      this.chosenAttackers.delete(card.id);
-    } else {
-      this.chosenAttackers.add(card.id);
+  /**
+   * Every planeswalker the defending player controls (CR 508.1b), in board order.
+   *
+   * Only the defender's: a planeswalker you control is not something you can attack, and
+   * offering it would produce a move the engine refuses.
+   */
+  get attackableWalkers(): ObjectView[] {
+    const defender = this.board()?.opponents[0]?.playerId;
+    if (!defender) {
+      return [];
     }
+
+    return (this.hub.view()?.battlefield ?? []).filter(
+      (card) => card.controllerId === defender && card.isPlaneswalker,
+    );
   }
 
-  declareAttackers(): void {
-    const board = this.board();
-    if (!board) {
+  /**
+   * Cycles a creature through what it can attack: the player, then each planeswalker, then
+   * nothing.
+   *
+   * Aiming is the same tap that chooses the attacker, rather than a second control, because
+   * there is no room on a phone for a target picker per creature and a drag is the interaction
+   * this repo has already had die on touch. With no planeswalkers out it is exactly the toggle
+   * it was, which is the common case.
+   */
+  toggleAttacker(card: ObjectView): void {
+    const defender = this.board()?.opponents[0]?.playerId;
+    // Only a creature attacks (CR 508.1a). Without this the board happily marked a Forest as
+    // an attacker and let the player press the button, and the only thing that said otherwise
+    // was the server's refusal a moment later.
+    if (!defender || !card.isCreature) {
       return;
     }
 
-    const defender = board.opponents[0]?.playerId;
-    const attackers: Record<string, string> = {};
-    for (const id of this.chosenAttackers) {
-      attackers[id] = defender;
+    const walkers = this.attackableWalkers;
+    const current = this.chosenAttackers.get(card.id);
+
+    if (!current) {
+      this.chosenAttackers.set(card.id, { defendingPlayer: defender, planeswalker: null });
+      return;
+    }
+
+    const at = current.planeswalker ? walkers.findIndex((w) => w.id === current.planeswalker) : -1;
+    const next = walkers[at + 1];
+
+    if (next) {
+      this.chosenAttackers.set(card.id, { defendingPlayer: defender, planeswalker: next.id });
+    } else {
+      this.chosenAttackers.delete(card.id);
+    }
+  }
+
+  /**
+   * What a chosen attacker is aimed at, for the badge on its card.
+   *
+   * A planeswalker is named the way players name it — "Chandra", not "Chandra, Torch of
+   * Defiance". The badge sits on a card that is a third of a 375px row, and the full name only
+   * ever reached the screen as "Chandra, Torch of…", which tells a player less than the first
+   * word does and costs the row its shape.
+   */
+  attackTargetName(card: ObjectView): string | null {
+    const chosen = this.chosenAttackers.get(card.id);
+    if (!chosen) {
+      return null;
+    }
+
+    const walker = this.attackableWalkers.find((w) => w.id === chosen.planeswalker);
+    return walker ? walker.name.split(',')[0].trim() : (this.board()?.opponents[0]?.name ?? null);
+  }
+
+  declareAttackers(): void {
+    const attackers: Record<string, AttackTarget> = {};
+    for (const [id, target] of this.chosenAttackers) {
+      attackers[id] = target;
     }
 
     this.chosenAttackers.clear();
@@ -333,6 +401,19 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     if (this.isDeclaringBlockers && this.isAttacking(card)) {
       this.blockFor(card);
     }
+  }
+
+  /**
+   * How many declared attackers are aimed at this permanent (CR 508.1b).
+   *
+   * Zero rather than null, so the template's `as` binding drops the badge on its own — a
+   * planeswalker nobody is attacking should say nothing, not "under attack (0)".
+   */
+  attackersAimedAt(card: ObjectView): number {
+    const declared = Object.values(this.hub.view()?.attackers ?? {});
+    const choosing = [...this.chosenAttackers.values()];
+
+    return [...declared, ...choosing].filter((target) => target.planeswalker === card.id).length;
   }
 
   /** Whether this creature is attacking right now (CR 508.1k). */

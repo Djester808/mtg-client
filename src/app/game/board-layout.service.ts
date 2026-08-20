@@ -84,6 +84,24 @@ export class BoardLayoutService {
     return `${card.printedPower + delta}/${card.printedToughness + delta}`;
   }
 
+  /**
+   * A planeswalker's loyalty, for the slot power and toughness use on a creature (CR 306.5b).
+   *
+   * A planeswalker with no number on it is a permanent whose only interesting quantity is
+   * invisible: attacking one is a decision about how much loyalty it has left, and the board
+   * was asking players to make it blind.
+   */
+  loyalty(card: ObjectView): string | null {
+    if (!card.isPlaneswalker) {
+      return null;
+    }
+
+    // Absent rather than zero when it has none: a planeswalker at zero loyalty is already on
+    // its way to the graveyard (CR 704.5i), so there is no board state where "0" is the answer.
+    const counters = card.counters?.['loyalty'];
+    return counters === undefined ? null : String(counters);
+  }
+
   /** Whether a card in hand is a land, which decides whether it is played or cast. */
   isLand(card: ObjectView): boolean {
     return (card.typeLine ?? '').includes('Land');

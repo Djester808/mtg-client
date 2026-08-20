@@ -38,6 +38,21 @@ const STUB = `
   window.__gameReplayView = __VIEW__;
   window.__gameReplayLog = __LOG__;
 
+  // A session, so the route guard lets the board render.
+  //
+  // Every byte these states measure comes from the stub below — there is no server behind this
+  // route during a capture — so requiring a real sign-in first made the whole game section
+  // uncapturable on any machine without E2E_USERNAME set, which is how it has been. The guard
+  // reads these two keys and nothing else (store/auth/auth.reducer.ts), so this is the entire
+  // login as far as the client is concerned.
+  //
+  // Only when there is no session already: a run with real credentials signs in for real, and
+  // this must not overwrite that token with one the API would reject.
+  if (!localStorage.getItem('auth_token')) {
+    localStorage.setItem('auth_token', 'capture-harness-token');
+    localStorage.setItem('auth_username', 'Alice');
+  }
+
   if (window.__gameReplayArmed) return;
   window.__gameReplayArmed = true;
 
@@ -51,6 +66,23 @@ const STUB = `
   window.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     window.__gameReplayHits.push(url);
+
+    // The one call that decides whether the seeded session survives.
+    //
+    // The navbar asks for the signed-in profile on boot. Against the real API the harness's
+    // token is not a session, so it comes back 401, the interceptor treats that as an expired
+    // session and dispatches logout, and the route guard bounces the board to /login — which
+    // is exactly what happened, and it looks like the board failing to render rather than the
+    // session being thrown away underneath it.
+    //
+    // Answered as small as the navbar reads it (username, display name, avatar), rather than
+    // as a whole MyProfile: a fuller fixture here would be a second copy of a DTO this file
+    // has no business tracking.
+    if (url.indexOf('/api/profile/me') !== -1) {
+      return Promise.resolve(json(JSON.stringify({
+        profile: { username: 'Alice', displayName: 'Alice', avatarUrl: null },
+      })));
+    }
 
     // The lobby. Its own decks and invitations, so the phone audit measures a lobby with
     // something in it rather than the empty state it would otherwise always capture.

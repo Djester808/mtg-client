@@ -7,6 +7,18 @@
  * server side, and copying the shape faithfully is what keeps it true on this side — a client
  * model with a `library` field would invite someone to start populating it.
  */
+/**
+ * What a creature is attacking: a player, or a planeswalker that player controls (CR 508.1b).
+ *
+ * The defending player is carried either way — trample past a planeswalker, and a planeswalker
+ * that leaves combat, both need to know whose it was.
+ */
+export interface AttackTarget {
+  defendingPlayer: string;
+  /** Absent or null when the player is being attacked directly. */
+  planeswalker?: string | null;
+}
+
 export interface GameView {
   gameId: string;
   /** The player this view was built for. */
@@ -20,8 +32,8 @@ export interface GameView {
    * (CR 508.1), so "my turn and I have priority" does not identify the moment.
    */
   currentStep: string;
-  /** Attacking creature id → the player it is attacking. */
-  attackers: Record<string, string>;
+  /** Attacking creature id → what it is attacking (CR 508.1b). */
+  attackers: Record<string, AttackTarget>;
   /** Attacker id → the creatures blocking it. */
   blockers: Record<string, string[]>;
   players: PlayerView[];
@@ -105,6 +117,15 @@ export interface ObjectView {
   controllerId: string;
   manaCost: string | null;
   typeLine: string | null;
+  /** Whether it is a planeswalker, and so something that can be attacked (CR 508.1b). */
+  isPlaneswalker: boolean;
+  /**
+   * Whether it is a creature (CR 508.1a).
+   *
+   * Not a claim that it can attack — tapped status, summoning sickness and the card's own
+   * restrictions are the engine's to judge. It is enough to stop the board offering a land.
+   */
+  isCreature: boolean;
   printedPower: number | null;
   printedToughness: number | null;
   isTapped: boolean | null;

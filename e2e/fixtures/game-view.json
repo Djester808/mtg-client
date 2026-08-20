@@ -39,7 +39,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         },
         {
           "id": "h2",
@@ -53,7 +55,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": true
         },
         {
           "id": "h3",
@@ -67,7 +71,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         },
         {
           "id": "h4",
@@ -81,7 +87,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         },
         {
           "id": "h5",
@@ -95,7 +103,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": true
         },
         {
           "id": "h6",
@@ -109,7 +119,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         },
         {
           "id": "h7",
@@ -123,7 +135,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         }
       ],
       "graveyard": [
@@ -139,7 +153,9 @@
           "isTapped": null,
           "hasSummoningSickness": null,
           "damageMarked": null,
-          "counters": null
+          "counters": null,
+          "isPlaneswalker": false,
+          "isCreature": false
         }
       ],
       "hasLost": false,
@@ -158,7 +174,9 @@
       "graveyard": [],
       "hasLost": false,
       "landsPlayedThisTurn": 0,
-      "commanderDamage": { "Tovolar, Dire Overlord": 14 },
+      "commanderDamage": {
+        "Tovolar, Dire Overlord": 14
+      },
       "commanderName": null
     }
   ],
@@ -175,7 +193,9 @@
       "isTapped": true,
       "hasSummoningSickness": false,
       "damageMarked": 0,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": true
     },
     {
       "id": "p2",
@@ -189,7 +209,27 @@
       "isTapped": false,
       "hasSummoningSickness": true,
       "damageMarked": 0,
-      "counters": { "+1/+1": 4 }
+      "counters": {
+        "+1/+1": 4
+      },
+      "isPlaneswalker": false,
+      "isCreature": true
+    },
+    {
+      "id": "p7",
+      "name": "Grizzly Bears",
+      "oracleId": "o-bears",
+      "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
+      "manaCost": "{1}{G}",
+      "typeLine": "Creature — Bear",
+      "isPlaneswalker": false,
+      "isCreature": true,
+      "printedPower": 2,
+      "printedToughness": 2,
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": null
     },
     {
       "id": "p3",
@@ -203,7 +243,9 @@
       "isTapped": false,
       "hasSummoningSickness": false,
       "damageMarked": 0,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": false
     },
     {
       "id": "p4",
@@ -217,7 +259,9 @@
       "isTapped": false,
       "hasSummoningSickness": false,
       "damageMarked": 2,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": true
     },
     {
       "id": "p5",
@@ -231,7 +275,27 @@
       "isTapped": true,
       "hasSummoningSickness": false,
       "damageMarked": 0,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": true
+    },
+    {
+      "id": "pw1",
+      "name": "Chandra, Torch of Defiance",
+      "oracleId": "o-chandra",
+      "controllerId": "bbbbbbbb-0000-0000-0000-000000000002",
+      "manaCost": "{2}{R}{R}",
+      "typeLine": "Legendary Planeswalker — Chandra",
+      "isPlaneswalker": true,
+      "printedPower": null,
+      "printedToughness": null,
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "loyalty": 4
+      },
+      "isCreature": false
     }
   ],
   "stack": [
@@ -247,7 +311,9 @@
       "isTapped": null,
       "hasSummoningSickness": null,
       "damageMarked": null,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": false
     },
     {
       "id": "s2",
@@ -261,7 +327,9 @@
       "isTapped": null,
       "hasSummoningSickness": null,
       "damageMarked": null,
-      "counters": null
+      "counters": null,
+      "isPlaneswalker": false,
+      "isCreature": false
     }
   ],
   "exile": [],

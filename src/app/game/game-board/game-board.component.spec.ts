@@ -41,6 +41,8 @@ describe('GameBoardComponent', () => {
     controllerId: ME,
     manaCost: '{1}{G}',
     typeLine: 'Creature — Bear',
+    isPlaneswalker: false,
+    isCreature: true,
     printedPower: 2,
     printedToughness: 2,
     isTapped: false,
@@ -436,7 +438,114 @@ describe('GameBoardComponent', () => {
     page.tapMine(card({ id: 'ox' }));
     page.declareAttackers();
 
-    expect(hub.declareAttackers).toHaveBeenCalledWith({ bear: THEM });
+    expect(hub.declareAttackers).toHaveBeenCalledWith({
+      bear: { defendingPlayer: THEM, planeswalker: null },
+    });
+  });
+
+  it('does not let a land be declared as an attacker', () => {
+    // CR 508.1a. The board used to mark a Forest as an attacker and let the player press the
+    // button; the only thing that said otherwise was the server's refusal a moment later.
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers' }));
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.tapMine(
+      card({ id: 'forest', name: 'Forest', typeLine: 'Basic Land — Forest', isCreature: false }),
+    );
+
+    expect(page.chosenAttackers.size).toBe(0);
+  });
+
+  it('aims an attacker at a planeswalker on the second tap', () => {
+    // CR 508.1b. The second tap is the whole feature: there is no room on a phone for a target
+    // picker per creature, so the tap that chooses the attacker also aims it.
+    const walker = card({
+      id: 'chandra',
+      name: 'Chandra',
+      controllerId: THEM,
+      typeLine: 'Legendary Planeswalker — Chandra',
+      isPlaneswalker: true,
+      isCreature: false,
+    });
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers', battlefield: [walker] }));
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.tapMine(card({ id: 'bear' }));
+    page.tapMine(card({ id: 'bear' }));
+    page.declareAttackers();
+
+    expect(hub.declareAttackers).toHaveBeenCalledWith({
+      bear: { defendingPlayer: THEM, planeswalker: 'chandra' },
+    });
+  });
+
+  it('takes a creature out of combat once it has been past every planeswalker', () => {
+    // Otherwise a misfire is unrecoverable: with no way back to "not attacking", a tap you
+    // meant for another creature costs you the one you hit.
+    const walker = card({
+      id: 'chandra',
+      controllerId: THEM,
+      typeLine: 'Legendary Planeswalker — Chandra',
+      isPlaneswalker: true,
+      isCreature: false,
+    });
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers', battlefield: [walker] }));
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.tapMine(card({ id: 'bear' }));
+    page.tapMine(card({ id: 'bear' }));
+    page.tapMine(card({ id: 'bear' }));
+
+    expect(page.chosenAttackers.size).toBe(0);
+  });
+
+  it('does not offer a planeswalker the defender does not control', () => {
+    // CR 508.1b: only the defending player's. Offering your own would build a declaration the
+    // engine refuses, and the player would have no way to see why.
+    const mine = card({
+      id: 'my-walker',
+      controllerId: ME,
+      typeLine: 'Legendary Planeswalker — Chandra',
+      isPlaneswalker: true,
+      isCreature: false,
+    });
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers', battlefield: [mine] }));
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    expect(page.attackableWalkers).toEqual([]);
+
+    page.tapMine(card({ id: 'bear' }));
+    page.tapMine(card({ id: 'bear' }));
+
+    expect(page.chosenAttackers.size).toBe(0);
+  });
+
+  it('counts the attackers aimed at a planeswalker', () => {
+    const fixture = create();
+    hub.view.set(
+      view({
+        currentStep: 'DeclareBlockers',
+        activePlayerId: THEM,
+        attackers: {
+          one: { defendingPlayer: ME, planeswalker: 'walker' },
+          two: { defendingPlayer: ME, planeswalker: 'walker' },
+          three: { defendingPlayer: ME, planeswalker: null },
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    expect(page.attackersAimedAt(card({ id: 'walker' }))).toBe(2);
+    expect(page.attackersAimedAt(card({ id: 'elsewhere' }))).toBe(0);
   });
 
   it('declares no attackers, which is itself a declaration', () => {
@@ -455,7 +564,7 @@ describe('GameBoardComponent', () => {
       view({
         currentStep: 'DeclareBlockers',
         activePlayerId: THEM,
-        attackers: { attacker: ME },
+        attackers: { attacker: { defendingPlayer: ME, planeswalker: null } },
       }),
     );
     fixture.detectChanges();

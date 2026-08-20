@@ -2,7 +2,7 @@ import { Injectable, NgZone, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { firstValueFrom } from 'rxjs';
 import { PlayApiService } from './play-api.service';
-import { GameView, TargetDto } from '../models/play.models';
+import { AttackTarget, GameView, TargetDto } from '../models/play.models';
 
 /** Whether the client is talking to the server, for the board to say so. */
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed';
@@ -139,7 +139,7 @@ export class PlayHubService {
     return this.send('ActivateAbility', sourceId, abilityId, targets);
   }
 
-  declareAttackers(attackers: Record<string, string>): Promise<void> {
+  declareAttackers(attackers: Record<string, AttackTarget>): Promise<void> {
     return this.send('DeclareAttackers', attackers);
   }
 

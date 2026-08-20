@@ -21,6 +21,8 @@ describe('BoardLayoutService', () => {
     controllerId: ME,
     manaCost: '{1}{G}',
     typeLine: 'Creature — Bear',
+    isPlaneswalker: false,
+    isCreature: true,
     printedPower: 2,
     printedToughness: 2,
     isTapped: false,
@@ -124,5 +126,27 @@ describe('BoardLayoutService', () => {
     expect(service.isLand(card({ typeLine: 'Basic Land — Forest' }))).toBeTrue();
     expect(service.isLand(card({ typeLine: 'Creature — Bear' }))).toBeFalse();
     expect(service.isLand(card({ typeLine: null }))).toBeFalse();
+  });
+
+  describe('loyalty', () => {
+    it('reads the loyalty counters on a planeswalker', () => {
+      // CR 306.5b. A planeswalker with no number on it asks the player to decide whether to
+      // attack it blind, which is the one decision a planeswalker exists to present.
+      const walker = card({ isPlaneswalker: true, isCreature: false, counters: { loyalty: 4 } });
+
+      expect(service.loyalty(walker)).toBe('4');
+    });
+
+    it('says nothing for a creature', () => {
+      expect(service.loyalty(card({ counters: { '+1/+1': 2 } }))).toBeNull();
+    });
+
+    it('says nothing for a planeswalker with no loyalty left', () => {
+      // Absent rather than zero: at zero it is already on its way to the graveyard (CR 704.5i),
+      // so there is no board state where a zero is the honest answer.
+      const walker = card({ isPlaneswalker: true, isCreature: false, counters: {} });
+
+      expect(service.loyalty(walker)).toBeNull();
+    });
   });
 });

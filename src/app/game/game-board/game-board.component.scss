@@ -428,6 +428,13 @@
 
 // ---- Combat and targeting affordances ------------------------------------------------------
 
+// Loyalty reads as the planeswalker's own number rather than as a creature's stats, which
+// share this slot.
+.gb-permanent-stats.is-loyalty {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .gb-permanent-note {
   font-family: var(--font-body);
   font-size: 9.5px;
@@ -435,6 +442,29 @@
   text-transform: uppercase;
   color: var(--gold);
   opacity: 0.8;
+
+  // The name of what a creature is aimed at can be long ("Chandra, Torch of Defiance"), and the
+  // card it sits on is a fraction of a 375px row. It shrinks to the card rather than widening
+  // it, because a battlefield whose columns move as you pick targets is worse than a short name.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+// A permanent being attacked reads as a warning, not as one of the player's own choices.
+.gb-permanent-note.is-under-attack {
+  color: var(--red-accent);
+  opacity: 1;
+}
+
+.gb-hint {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.7;
+  text-align: center;
 }
 
 .gb-permanent.is-chosen,

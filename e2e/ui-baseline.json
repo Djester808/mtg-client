@@ -311,6 +311,12 @@
     "smallSelectors": 0,
     "truncated": 0
   },
+  "state:iphone-se:game-board-aiming": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:iphone-se:game-board": {
     "overflows": false,
     "smallTargets": 0,
@@ -444,6 +450,12 @@
     "truncated": 0
   },
   "state:pixel-8:game-board-combat": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:game-board-aiming": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,

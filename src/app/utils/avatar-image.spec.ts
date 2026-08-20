@@ -56,12 +56,23 @@ describe('prepareAvatar', () => {
     );
   });
 
-  it('rejects when no quality step can reach the byte cap', async () => {
-    // One byte is unreachable at any quality, which is the shape of the real failure: a
-    // huge noisy photograph that will not compress. Saying so beats uploading something
-    // the server is about to refuse.
-    await expectAsync(prepareAvatar(await pngFile(400, 400), 256, 1)).toBeRejectedWithError(
-      /too detailed/,
-    );
-  });
+  // This is the only spec here that walks every quality step, because it is the one that can
+  // never succeed — so it pays for a JPEG encode per step. Under Jasmine's 5s default it crossed
+  // the line intermittently once the suite grew, and reported as an expectation resolving after
+  // its spec had finished, which reads like a bug in the code under test rather than a spec that
+  // ran out of time.
+  const ENCODES_EVERY_QUALITY_STEP = 20_000;
+
+  it(
+    'rejects when no quality step can reach the byte cap',
+    async () => {
+      // One byte is unreachable at any quality, which is the shape of the real failure: a
+      // huge noisy photograph that will not compress. Saying so beats uploading something
+      // the server is about to refuse.
+      await expectAsync(prepareAvatar(await pngFile(400, 400), 256, 1)).toBeRejectedWithError(
+        /too detailed/,
+      );
+    },
+    ENCODES_EVERY_QUALITY_STEP,
+  );
 });
