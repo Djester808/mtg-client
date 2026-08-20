@@ -41,6 +41,8 @@ describe('BoardLayoutService', () => {
     graveyard: [],
     hasLost: false,
     landsPlayedThisTurn: 0,
+    commanderDamage: {},
+    commanderName: null,
     ...over,
   });
 

@@ -11,7 +11,7 @@ import { ScrollEdgesDirective } from '../../directives/scroll-edges.directive';
 import { ActivatedRoute } from '@angular/router';
 import { BoardLayoutService } from '../board-layout.service';
 import { PlayHubService } from '../play-hub.service';
-import { ChoiceView, ObjectView, TargetDto } from '../../models/play.models';
+import { ChoiceView, ObjectView, PlayerView, TargetDto } from '../../models/play.models';
 
 /**
  * The game board.
@@ -113,9 +113,43 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     return this.picks.indexOf(optionId) + 1;
   }
 
+  /** How much has been assigned to an option, for a division (CR 510.1c). */
+  assigned(optionId: string): number {
+    return this.picks.filter((p) => p === optionId).length;
+  }
+
+  /** How much of a division is still unassigned. */
+  get leftToDivide(): number {
+    const choice = this.choice;
+    return choice ? Math.max(0, choice.maxPicks - this.picks.length) : 0;
+  }
+
+  /** Clears the picks, so a division can be started over without leaving the prompt. */
+  clearPicks(): void {
+    this.picks = [];
+  }
+
+  /** Commander damage this player has taken, for the strip (CR 903.10a). */
+  commanderDamage(player: PlayerView): { name: string; amount: number }[] {
+    return Object.entries(player.commanderDamage ?? {}).map(([name, amount]) => ({
+      name,
+      amount,
+    }));
+  }
+
   togglePick(optionId: string): void {
     const choice = this.choice;
     if (!choice) {
+      return;
+    }
+
+    // A division is answered by picking an option once per point (CR 510.1c), so tapping the
+    // same blocker again means "and another point to it" rather than "undo".
+    if (choice.isDivision) {
+      if (this.picks.length < choice.maxPicks) {
+        this.picks.push(optionId);
+      }
+
       return;
     }
 

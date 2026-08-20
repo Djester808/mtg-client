@@ -143,7 +143,9 @@
         }
       ],
       "hasLost": false,
-      "landsPlayedThisTurn": 1
+      "landsPlayedThisTurn": 1,
+      "commanderDamage": {},
+      "commanderName": "Tovolar, Dire Overlord"
     },
     {
       "playerId": "bbbbbbbb-0000-0000-0000-000000000002",
@@ -155,7 +157,9 @@
       "hand": null,
       "graveyard": [],
       "hasLost": false,
-      "landsPlayedThisTurn": 0
+      "landsPlayedThisTurn": 0,
+      "commanderDamage": { "Tovolar, Dire Overlord": 14 },
+      "commanderName": null
     }
   ],
   "battlefield": [

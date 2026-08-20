@@ -46,6 +46,8 @@ export class BoardLayoutService {
         graveyard: [],
         hasLost: false,
         landsPlayedThisTurn: 0,
+        commanderDamage: {},
+        commanderName: null,
       } satisfies PlayerView);
 
     const result: BoardLayout = {

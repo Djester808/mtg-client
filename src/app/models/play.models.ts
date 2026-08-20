@@ -50,6 +50,15 @@ export interface ChoiceView {
   maxPicks: number;
   /** True when the order of the picks is the answer (CR 603.3b, 616.1). */
   isOrdering: boolean;
+  /**
+   * True when the answer is an amount per option rather than a selection (CR 510.1c).
+   *
+   * Dividing combat damage is answered by picking a blocker once per point, so the same option
+   * is picked repeatedly — which is a mistake everywhere else and the whole mechanism here.
+   */
+  isDivision: boolean;
+  /** How much is being divided, for a division. */
+  totalToDivide: number;
   options: ChoiceOptionView[] | null;
 }
 
@@ -71,6 +80,15 @@ export interface PlayerView {
   graveyard: ObjectView[];
   hasLost: boolean;
   landsPlayedThisTurn: number;
+  /**
+   * Combat damage taken from each commander, by that commander's name (CR 903.10a).
+   *
+   * Public on purpose: everyone at the table needs to know how close a commander is to
+   * twenty-one, because it changes every block.
+   */
+  commanderDamage: Record<string, number>;
+  /** This player's commander, if the game has them (CR 903.3). */
+  commanderName: string | null;
 }
 
 /**

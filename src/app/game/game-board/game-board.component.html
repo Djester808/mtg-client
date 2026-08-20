@@ -8,6 +8,9 @@
     >
       <span class="gb-player-name">{{ opponent.name }}</span>
       <span class="gb-life" [class.is-low]="opponent.life <= 5">{{ opponent.life }}</span>
+      <span class="gb-cmdr" *ngFor="let taken of commanderDamage(opponent)" [title]="taken.name">
+        <i class="bi bi-shield-slash"></i>{{ taken.amount }}
+      </span>
       <span class="gb-counts">
         <span title="Cards in hand"><i class="bi bi-hand-index"></i>{{ opponent.handCount }}</span>
         <span title="Cards in library"><i class="bi bi-stack"></i>{{ opponent.libraryCount }}</span>
@@ -91,6 +94,9 @@
   <div class="gb-me">
     <span class="gb-player-name">{{ b.me.name }}</span>
     <span class="gb-life" [class.is-low]="b.me.life <= 5">{{ b.me.life }}</span>
+    <span class="gb-cmdr" *ngFor="let taken of commanderDamage(b.me)" [title]="taken.name">
+      <i class="bi bi-shield-slash"></i>{{ taken.amount }}
+    </span>
     <span class="gb-counts">
       <span title="Cards in library"><i class="bi bi-stack"></i>{{ b.me.libraryCount }}</span>
       <span title="Cards in graveyard"
@@ -146,25 +152,35 @@
       <button
         class="gb-btn"
         *ngFor="let option of c.options; trackBy: trackByOption"
-        [class.is-picked]="pickOrder(option.id) > 0"
+        [class.is-picked]="c.isDivision ? assigned(option.id) > 0 : pickOrder(option.id) > 0"
         (click)="togglePick(option.id)"
         type="button"
       >
         <span class="gb-pick-order" *ngIf="c.isOrdering && pickOrder(option.id) > 0">{{
           pickOrder(option.id)
         }}</span>
+        <span class="gb-pick-order" *ngIf="c.isDivision && assigned(option.id) > 0">{{
+          assigned(option.id)
+        }}</span>
         {{ option.label }}
       </button>
     </div>
-    <button
-      class="gb-btn gb-btn-primary"
-      *ngIf="isMyChoice && c.maxPicks > 1"
-      [disabled]="!canSubmitChoice"
-      (click)="submitChoice()"
-      type="button"
-    >
-      Confirm
-    </button>
+    <p class="gb-prompt-text" *ngIf="isMyChoice && c.isDivision">
+      {{ leftToDivide }} damage left to assign.
+    </p>
+    <div class="gb-prompt-actions" *ngIf="isMyChoice && c.maxPicks > 1">
+      <button
+        class="gb-btn gb-btn-primary"
+        [disabled]="!canSubmitChoice"
+        (click)="submitChoice()"
+        type="button"
+      >
+        Confirm
+      </button>
+      <button class="gb-btn" *ngIf="c.isDivision" (click)="clearPicks()" type="button">
+        Start over
+      </button>
+    </div>
   </div>
 
   <div class="gb-actions">

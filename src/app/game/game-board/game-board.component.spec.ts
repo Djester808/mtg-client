@@ -61,6 +61,8 @@ describe('GameBoardComponent', () => {
     graveyard: [],
     hasLost: false,
     landsPlayedThisTurn: 0,
+    commanderDamage: {},
+    commanderName: null,
     ...over,
   });
 
@@ -298,6 +300,8 @@ describe('GameBoardComponent', () => {
           minPicks: 1,
           maxPicks: 1,
           isOrdering: false,
+          isDivision: false,
+          totalToDivide: 0,
           options: [
             { id: 'keep', label: 'Keep' },
             { id: 'mulligan', label: 'Mulligan' },
@@ -326,6 +330,8 @@ describe('GameBoardComponent', () => {
           minPicks: 1,
           maxPicks: 1,
           isOrdering: false,
+          isDivision: false,
+          totalToDivide: 0,
           options: null,
         },
       }),
@@ -349,6 +355,8 @@ describe('GameBoardComponent', () => {
           minPicks: 1,
           maxPicks: 1,
           isOrdering: false,
+          isDivision: false,
+          totalToDivide: 0,
           options: [
             { id: 'keep', label: 'Keep' },
             { id: 'mulligan', label: 'Mulligan' },
@@ -379,6 +387,8 @@ describe('GameBoardComponent', () => {
           minPicks: 2,
           maxPicks: 2,
           isOrdering: true,
+          isDivision: false,
+          totalToDivide: 0,
           options: [
             { id: 'a', label: 'First ability' },
             { id: 'b', label: 'Second ability' },
@@ -456,6 +466,98 @@ describe('GameBoardComponent', () => {
     page.declareBlockers();
 
     expect(hub.declareBlockers).toHaveBeenCalledWith({ attacker: ['blocker'] });
+  });
+
+  it('adds a point each time a blocker is tapped, for a division', () => {
+    // CR 510.1c is answered by picking a blocker once per point of damage, so tapping the same
+    // one again means "and another point to it". Everywhere else a repeat means undo, and a
+    // board that treated it that way here would make most divisions unsayable.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'DivideCombatDamage',
+          prompt: 'Divide 4 damage.',
+          minPicks: 4,
+          maxPicks: 4,
+          isOrdering: false,
+          isDivision: true,
+          totalToDivide: 4,
+          options: [
+            { id: 'first', label: 'First' },
+            { id: 'second', label: 'Second' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('first');
+    page.togglePick('first');
+    page.togglePick('second');
+    page.togglePick('second');
+
+    expect(page.assigned('first')).toBe(2);
+    expect(page.assigned('second')).toBe(2);
+    expect(page.leftToDivide).toBe(0);
+
+    page.submitChoice();
+    expect(hub.choose).toHaveBeenCalledWith(['first', 'first', 'second', 'second']);
+  });
+
+  it('will not assign more than there is to divide', () => {
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'DivideCombatDamage',
+          prompt: 'Divide 2 damage.',
+          minPicks: 2,
+          maxPicks: 2,
+          isOrdering: false,
+          isDivision: true,
+          totalToDivide: 2,
+          options: [{ id: 'first', label: 'First' }],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('first');
+    page.togglePick('first');
+    page.togglePick('first');
+
+    expect(page.assigned('first')).toBe(2);
+  });
+
+  it('shows commander damage beside the life total', () => {
+    // CR 903.10a: twenty-one from one commander is a second life total, and a player who cannot
+    // see it is blocking blind.
+    const fixture = create();
+    hub.view.set(
+      view({
+        players: [
+          player(),
+          player({
+            playerId: THEM,
+            name: 'Bob',
+            hand: null,
+            commanderDamage: { Tovolar: 14 },
+          }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.gb-cmdr')?.textContent).toContain('14');
+    expect(el.querySelector('.gb-cmdr')?.getAttribute('title')).toBe('Tovolar');
   });
 
   it('selects a card and then plays it', () => {

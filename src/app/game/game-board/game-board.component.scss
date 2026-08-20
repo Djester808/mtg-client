@@ -454,3 +454,18 @@
   outline: 1px dashed rgba(201, 168, 76, 0.55);
   outline-offset: 1px;
 }
+
+// Commander damage sits beside the life total, because twenty-one from one commander is a
+// second life total and a player who cannot see it is blocking blind (CR 903.10a).
+.gb-cmdr {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: #dc9a5a;
+
+  i {
+    font-size: 10px;
+  }
+}
