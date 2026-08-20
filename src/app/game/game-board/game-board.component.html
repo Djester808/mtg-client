@@ -1,0 +1,124 @@
+<div class="gb-root" *ngIf="board() as b; else waiting">
+  <!-- Opponent: one strip, because on a phone their board is context and yours is the game. -->
+  <div class="gb-opponents">
+    <div class="gb-player" *ngFor="let opponent of b.opponents; trackBy: trackByLine">
+      <span class="gb-player-name">{{ opponent.name }}</span>
+      <span class="gb-life" [class.is-low]="opponent.life <= 5">{{ opponent.life }}</span>
+      <span class="gb-counts">
+        <span title="Cards in hand"><i class="bi bi-hand-index"></i>{{ opponent.handCount }}</span>
+        <span title="Cards in library"><i class="bi bi-stack"></i>{{ opponent.libraryCount }}</span>
+        <span title="Cards in graveyard"
+          ><i class="bi bi-trash3"></i>{{ opponent.graveyard.length }}</span
+        >
+      </span>
+    </div>
+  </div>
+
+  <div class="gb-turn">
+    <span class="gb-turn-number"
+      >Turn {{ b.me.landsPlayedThisTurn >= 0 ? '' : '' }}{{ hub.view()!.turnNumber }}</span
+    >
+    <span class="gb-whose" [class.is-mine]="b.isMyTurn">{{
+      b.isMyTurn ? 'Your turn' : 'Their turn'
+    }}</span>
+    <span class="gb-connection" *ngIf="hub.connection$() !== 'connected'">{{
+      hub.connection$()
+    }}</span>
+  </div>
+
+  <!-- The stack, top first, so the thing that resolves next reads first. -->
+  <div class="gb-stack" *ngIf="b.stack.length > 0">
+    <div class="gb-stack-label">Stack</div>
+    <ol class="gb-stack-list">
+      <li class="gb-stack-item" *ngFor="let item of b.stack; trackBy: trackById">
+        {{ item.name }}
+      </li>
+    </ol>
+  </div>
+
+  <div class="gb-field">
+    <div class="gb-field-half">
+      <div class="gb-field-label">Theirs</div>
+      <div class="gb-permanents">
+        <button
+          class="gb-permanent"
+          *ngFor="let card of b.theirs; trackBy: trackById"
+          [class.is-tapped]="card.isTapped"
+          type="button"
+        >
+          <span class="gb-permanent-name">{{ card.name }}</span>
+          <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+        </button>
+        <p class="gb-empty" *ngIf="b.theirs.length === 0">Nothing on their side.</p>
+      </div>
+    </div>
+
+    <div class="gb-field-half">
+      <div class="gb-field-label">Yours</div>
+      <div class="gb-permanents">
+        <button
+          class="gb-permanent"
+          *ngFor="let card of b.mine; trackBy: trackById"
+          [class.is-tapped]="card.isTapped"
+          [class.is-sick]="card.hasSummoningSickness"
+          (click)="activate(card)"
+          type="button"
+        >
+          <span class="gb-permanent-name">{{ card.name }}</span>
+          <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+        </button>
+        <p class="gb-empty" *ngIf="b.mine.length === 0">Nothing on your side yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- The player's own strip, at the bottom where a thumb reaches. -->
+  <div class="gb-me">
+    <span class="gb-player-name">{{ b.me.name }}</span>
+    <span class="gb-life" [class.is-low]="b.me.life <= 5">{{ b.me.life }}</span>
+    <span class="gb-counts">
+      <span title="Cards in library"><i class="bi bi-stack"></i>{{ b.me.libraryCount }}</span>
+      <span title="Cards in graveyard"
+        ><i class="bi bi-trash3"></i>{{ b.me.graveyard.length }}</span
+      >
+    </span>
+  </div>
+
+  <!-- A hand pans rather than reflowing: the order is the player's, not the app's. -->
+  <div class="gb-hand" appScrollEdges>
+    <button
+      class="gb-card"
+      *ngFor="let card of b.hand; trackBy: trackById"
+      [class.is-selected]="selectedCardId === card.id"
+      (click)="select(card)"
+      type="button"
+    >
+      <span class="gb-card-name">{{ card.name }}</span>
+      <span class="gb-card-cost" *ngIf="card.manaCost">{{ card.manaCost }}</span>
+      <span class="gb-card-type">{{ card.typeLine }}</span>
+      <span
+        class="gb-card-play"
+        *ngIf="selectedCardId === card.id"
+        (click)="play(card); $event.stopPropagation()"
+      >
+        {{ isLand(card) ? 'Play' : 'Cast' }}
+      </span>
+    </button>
+    <p class="gb-empty" *ngIf="b.hand.length === 0">Your hand is empty.</p>
+  </div>
+
+  <div class="gb-actions">
+    <button class="gb-pass" (click)="pass()" type="button">Pass priority</button>
+  </div>
+
+  <div class="gb-refusal" *ngIf="hub.refusal() as refusal" (click)="dismissRefusal()">
+    {{ refusal }}
+  </div>
+</div>
+
+<ng-template #waiting>
+  <div class="gb-waiting">
+    <i class="bi bi-hourglass-split empty-icon"></i>
+    <p class="empty-sub">Joining the game…</p>
+  </div>
+</ng-template>

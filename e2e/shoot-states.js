@@ -15,6 +15,7 @@ const path = require('path');
 const { By, until } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
 const { armAiBuildReplay, paceAiBuildReplay } = require('./helpers/ai-build-replay');
+const { armGameReplay } = require('./helpers/game-replay');
 const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
 
@@ -127,6 +128,32 @@ async function toReview(d) {
 
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
+  {
+    id: 'game-board',
+    label: 'Game board — mid-turn, stack of two',
+    // The whole board: what matters at 375 is whether the column of strips, two battlefields
+    // and a panning hand all fit the viewport at once, which is a page-level question.
+    root: '.gb-root',
+    extra: `return {
+      handCards: document.querySelectorAll('.gb-card').length,
+      stackDepth: document.querySelectorAll('.gb-stack-item').length,
+      permanents: document.querySelectorAll('.gb-permanent').length,
+      handPans: (() => {
+        const hand = document.querySelector('.gb-hand');
+        return hand ? hand.scrollWidth > hand.clientWidth : false;
+      })(),
+      // The audit's own leak check: the opponent's hand is null in the fixture, so any card
+      // element beyond the viewer's seven would mean the board invented one.
+      opponentHandShown: document.querySelectorAll('.gb-opponents .gb-card').length,
+    };`,
+    async drive(d) {
+      await armGameReplay(d);
+      await ensureSignedIn(d);
+      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
+      await d.wait(until.elementLocated(By.css('.gb-root')), 20000);
+      await sleep(900);
+    },
+  },
   {
     id: 'ai-build-brief',
     label: 'AI builder — brief form',

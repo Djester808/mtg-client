@@ -41,7 +41,7 @@
   },
   "route:iphone-se:deck": {
     "overflows": false,
-    "smallTargets": 29,
+    "smallTargets": 35,
     "smallSelectors": 6
   },
   "route:iphone-se:profile": {
@@ -51,13 +51,13 @@
   },
   "route:iphone-se:account": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:iphone-se:ai-builder": {
     "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 3
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:iphone-15-pro:home": {
     "overflows": false,
@@ -101,7 +101,7 @@
   },
   "route:iphone-15-pro:deck": {
     "overflows": false,
-    "smallTargets": 29,
+    "smallTargets": 35,
     "smallSelectors": 6
   },
   "route:iphone-15-pro:profile": {
@@ -111,13 +111,13 @@
   },
   "route:iphone-15-pro:account": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:iphone-15-pro:ai-builder": {
     "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 3
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:pixel-8:home": {
     "overflows": false,
@@ -161,7 +161,7 @@
   },
   "route:pixel-8:deck": {
     "overflows": false,
-    "smallTargets": 29,
+    "smallTargets": 35,
     "smallSelectors": 6
   },
   "route:pixel-8:profile": {
@@ -171,13 +171,13 @@
   },
   "route:pixel-8:account": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:pixel-8:ai-builder": {
     "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 3
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:ipad-mini:home": {
     "overflows": false,
@@ -221,7 +221,7 @@
   },
   "route:ipad-mini:deck": {
     "overflows": false,
-    "smallTargets": 26,
+    "smallTargets": 32,
     "smallSelectors": 3
   },
   "route:ipad-mini:profile": {
@@ -231,13 +231,13 @@
   },
   "route:ipad-mini:account": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:ipad-mini:ai-builder": {
     "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 3
+    "smallTargets": 1,
+    "smallSelectors": 1
   },
   "route:desktop:home": {
     "overflows": false,
@@ -281,7 +281,7 @@
   },
   "route:desktop:deck": {
     "overflows": false,
-    "smallTargets": 35,
+    "smallTargets": 41,
     "smallSelectors": 8
   },
   "route:desktop:profile": {
@@ -296,13 +296,19 @@
   },
   "route:desktop:ai-builder": {
     "overflows": false,
-    "smallTargets": 9,
-    "smallSelectors": 5
+    "smallTargets": 8,
+    "smallSelectors": 4
+  },
+  "state:iphone-se:game-board": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
   },
   "state:iphone-se:ai-build-brief": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:ai-build-suggestions": {
@@ -325,14 +331,14 @@
   },
   "state:iphone-se:ai-build-card-modal": {
     "overflows": false,
-    "smallTargets": 6,
-    "smallSelectors": 4,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:card-modal": {
     "overflows": false,
-    "smallTargets": 6,
-    "smallSelectors": 4,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:iphone-se:forum-filters-collapsed": {
@@ -419,10 +425,16 @@
     "smallSelectors": 0,
     "truncated": 0
   },
+  "state:pixel-8:game-board": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:pixel-8:ai-build-brief": {
     "overflows": false,
-    "smallTargets": 2,
-    "smallSelectors": 2,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:ai-build-suggestions": {
@@ -445,14 +457,14 @@
   },
   "state:pixel-8:ai-build-card-modal": {
     "overflows": false,
-    "smallTargets": 6,
-    "smallSelectors": 4,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:card-modal": {
     "overflows": false,
-    "smallTargets": 6,
-    "smallSelectors": 4,
+    "smallTargets": 0,
+    "smallSelectors": 0,
     "truncated": 0
   },
   "state:pixel-8:forum-filters-collapsed": {

@@ -1,0 +1,347 @@
+// Three levels to src/ — this component sits at app/game/game-board/.
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
+// Narrow first. At 375 the board is a column: opponent, turn, stack, the two battlefields,
+// your strip, your hand, the action bar. Nothing is positioned absolutely, so it grows into a
+// wider screen instead of needing a second layout.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+}
+
+.gb-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+// ---- Players -----------------------------------------------------------------------
+
+// The opponents are a stack of strips; the player's own strip is one of those strips, not a
+// stack of one. Listing .gb-me in both left it with flex-direction: column from this rule and
+// the row treatment from the next, so it laid its name, life and counts out vertically and
+// stood three times taller than the opponent's. The capture is what showed it.
+.gb-opponents {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gb-me {
+  flex-shrink: 0;
+}
+
+.gb-player,
+.gb-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: $tap-min;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+.gb-player-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  // The name gives up its width before anything else does; a life total that wrapped would
+  // be unreadable and a truncated name still tells you who it is.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gb-life {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+
+  &.is-low {
+    color: #dc5a5a;
+  }
+}
+
+.gb-counts {
+  display: flex;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--text-dim);
+
+  i {
+    margin-right: 3px;
+  }
+}
+
+// ---- Turn and connection -------------------------------------------------------------
+
+.gb-turn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.gb-whose.is-mine {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.gb-connection {
+  margin-left: auto;
+  color: #dc9a5a;
+  text-transform: capitalize;
+}
+
+// ---- Stack -----------------------------------------------------------------------------
+
+.gb-stack {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 8px;
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.gb-stack-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.gb-stack-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gb-stack-item {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text-primary);
+  padding: 2px 0;
+}
+
+// ---- Battlefield ------------------------------------------------------------------------
+
+.gb-field {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.gb-field-half {
+  flex: 1;
+  min-height: 0;
+}
+
+.gb-field-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+// A battlefield is not a layout the player arranged, so it reflows to fit rather than panning.
+.gb-permanents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.gb-permanent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: $tap-min;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  text-align: left;
+  cursor: pointer;
+
+  &.is-tapped {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+
+  // Summoning sickness is shown because it decides whether a creature can attack or tap, and
+  // a player who cannot see it is left guessing why the game refused them.
+  &.is-sick .gb-permanent-name::after {
+    content: ' zzz';
+    color: var(--text-dim);
+    font-size: 9px;
+  }
+}
+
+.gb-permanent-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.gb-permanent-stats {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--gold);
+}
+
+// ---- Hand ------------------------------------------------------------------------------
+
+// The hand pans. Its order is the player's, and reflowing it would rearrange something they
+// arranged — the same reason the deck's free view pans rather than reflowing.
+.gb-hand {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.gb-card {
+  flex: 0 0 auto;
+  width: 108px;
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  text-align: left;
+  cursor: pointer;
+
+  &.is-selected {
+    border-color: var(--gold);
+    background: rgba(201, 168, 76, 0.12);
+  }
+}
+
+.gb-card-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.gb-card-cost {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  color: var(--gold);
+}
+
+.gb-card-type {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gb-card-play {
+  margin-top: auto;
+  align-self: stretch;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+// ---- Actions ---------------------------------------------------------------------------
+
+.gb-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+}
+
+.gb-pass {
+  flex: 1;
+  min-height: $tap-min;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 168, 76, 0.5);
+  background: rgba(201, 168, 76, 0.14);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+// ---- Refusals and waiting ----------------------------------------------------------------
+
+// A refusal is the rules saying no, which is a normal answer and not an error, so it reads as
+// a note the player dismisses rather than as a failure.
+.gb-refusal {
+  position: sticky;
+  bottom: 0;
+  flex-shrink: 0;
+  min-height: $tap-min;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 154, 90, 0.5);
+  background: rgba(220, 154, 90, 0.14);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.gb-empty {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+// The shared empty state, not another copy of it. Its padding is written for a full page and
+// this is a board that fills the viewport, so the padding is the one thing overridden.
+.gb-waiting {
+  @include empty-state;
+  padding: 48px 24px;
+}
