@@ -58,6 +58,13 @@
   text-align: center;
 }
 
+// The shared empty state, not a fourth hand-rolled copy of it. Its vertical padding is
+// written for a full page, and this is a drawer, so the panel supplies its own.
+.rf-empty-state {
+  @include empty-state;
+  padding: 48px 24px;
+}
+
 .rf-error {
   margin: 0;
   padding: 10px 12px;

@@ -10,8 +10,16 @@
 <div class="rf-body">
   <p class="rf-error" *ngIf="error">{{ error }}</p>
 
+  <!-- Nothing in the deck yet. Said before anything is asked, the way the mana panel
+       says it, rather than after a round trip that returns no swaps and reads as a
+       verdict. -->
+  <div class="rf-empty-state" *ngIf="state === 'idle' && nothingToRefine">
+    <i class="bi bi-wrench-adjustable empty-icon"></i>
+    <p class="empty-sub">Add cards to this deck and Refine can look for improvements.</p>
+  </div>
+
   <!-- Idle: say plainly that nothing changes until they accept. -->
-  <div class="rf-intro" *ngIf="state === 'idle'">
+  <div class="rf-intro" *ngIf="state === 'idle' && !nothingToRefine">
     <p class="rf-lead">
       Looks for cards that are pulling their weight least, and proposes better ones from the legal
       pool.
@@ -28,7 +36,11 @@
   </div>
 
   <ng-container *ngIf="state === 'review' || state === 'applying'">
-    <p class="rf-note rf-empty" *ngIf="!proposals.length">
+    <p class="rf-note rf-empty" *ngIf="!proposals.length && !hadCards">
+      Add cards to this deck first — there is nothing here to improve yet.
+    </p>
+
+    <p class="rf-note rf-empty" *ngIf="!proposals.length && hadCards">
       Nothing worth swapping — this deck is already doing what it set out to do.
     </p>
 

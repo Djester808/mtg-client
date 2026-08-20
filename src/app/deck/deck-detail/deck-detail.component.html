@@ -1646,12 +1646,15 @@
 
     <!-- Refine panel -->
     <div class="refine-panel-wrap" [class.is-open]="showRefinePanel">
-      <app-deck-refine-panel
-        *ngIf="showRefinePanel"
-        [deckId]="deckId"
-        (deckChanged)="onRefineApplied()"
-        (panelClose)="showRefinePanel = false"
-      ></app-deck-refine-panel>
+      <ng-container *ngIf="deck$ | async as deck">
+        <app-deck-refine-panel
+          *ngIf="showRefinePanel"
+          [deckId]="deckId"
+          [mainCount]="boardCount(deck, 'main')"
+          (deckChanged)="onRefineApplied()"
+          (panelClose)="showRefinePanel = false"
+        ></app-deck-refine-panel>
+      </ng-container>
     </div>
 
     <!-- Mana suggestions panel -->

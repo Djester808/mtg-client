@@ -26,9 +26,10 @@ describe('DeckRefinePanelComponent', () => {
     ...over,
   });
 
-  function create(): ComponentFixture<DeckRefinePanelComponent> {
+  function create(mainCount = 99): ComponentFixture<DeckRefinePanelComponent> {
     const fixture = TestBed.createComponent(DeckRefinePanelComponent);
     fixture.componentRef.setInput('deckId', 'deck-1');
+    fixture.componentRef.setInput('mainCount', mainCount);
     fixture.detectChanges();
     return fixture;
   }
@@ -132,6 +133,55 @@ describe('DeckRefinePanelComponent', () => {
     expect(page.state).toBe('review');
     expect(page.proposals).toEqual([]);
     expect(page.keptCount).toBe(0);
+  });
+
+  it('says there is nothing to refine before asking, when the deck is empty', () => {
+    // The tool button stays visible whatever the deck holds — the mana panel set that
+    // precedent, and a tool that vanishes is a tool nobody finds. So the panel is what has
+    // to be honest, and it says so up front rather than after a round trip.
+    const fixture = create(0);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(fixture.componentInstance.nothingToRefine).toBeTrue();
+    expect(el.querySelector('.rf-empty-state')).toBeTruthy();
+    expect(el.querySelector('.rf-intro'))
+      .withContext('no invitation to ask for something that cannot be answered')
+      .toBeNull();
+    http.expectNone(() => true);
+  });
+
+  it('invites the ask once the deck has cards', () => {
+    const fixture = create(99);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(fixture.componentInstance.nothingToRefine).toBeFalse();
+    expect(el.querySelector('.rf-empty-state')).toBeNull();
+    expect(el.querySelector('.rf-intro')).toBeTruthy();
+  });
+
+  it('does not claim a verdict on a deck with nothing in it', () => {
+    // The server returns no swaps for an empty deck without calling the model, so
+    // "nothing worth swapping" would be a verdict it never formed. deckSizeBefore of 1 is
+    // the commander alone.
+    const fixture = create();
+    const page = fixture.componentInstance;
+    page.ask();
+    http
+      .expectOne('/api/decks/deck-1/ai-refine')
+      .flush(result({ swaps: [], deckSizeBefore: 1, deckSizeAfter: 1 }));
+
+    expect(page.hadCards).toBeFalse();
+  });
+
+  it('does claim one when the deck had cards and none were worth swapping', () => {
+    const fixture = create();
+    const page = fixture.componentInstance;
+    page.ask();
+    http
+      .expectOne('/api/decks/deck-1/ai-refine')
+      .flush(result({ swaps: [], deckSizeBefore: 99, deckSizeAfter: 99 }));
+
+    expect(page.hadCards).toBeTrue();
   });
 
   it('surfaces what the server refused rather than hiding it', () => {

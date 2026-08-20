@@ -37,6 +37,15 @@ interface KeptSwap {
 export class DeckRefinePanelComponent {
   @Input({ required: true }) deckId!: string;
   @Input() bracket = 3;
+
+  /**
+   * Cards on the main board, so the panel can say there is nothing to do before asking.
+   *
+   * The tool button stays visible whatever the deck holds — the mana panel set that
+   * precedent and a tool that vanishes is a tool nobody finds — so the panel is the thing
+   * that has to be honest about an empty deck.
+   */
+  @Input() mainCount = 0;
   @Input() priceRange = 'any';
 
   @Output() panelClose = new EventEmitter<void>();
@@ -49,6 +58,20 @@ export class DeckRefinePanelComponent {
 
   proposals: KeptSwap[] = [];
   rejected: Record<string, number> = {};
+
+  /**
+   * Whether the deck held anything to work with.
+   *
+   * The server returns no swaps for an empty deck without calling the model, so "nothing
+   * worth swapping" would be a verdict it never formed. The board can also empty while
+   * this panel is open, which the hidden tool button does not cover.
+   */
+  hadCards = true;
+
+  /** True when there is nothing in the deck to work with, before anything is asked. */
+  get nothingToRefine(): boolean {
+    return this.mainCount <= 0;
+  }
 
   constructor(
     private api: AiBuilderApiService,
@@ -82,6 +105,8 @@ export class DeckRefinePanelComponent {
       })
       .subscribe({
         next: (result) => {
+          // One card is the commander, which is never swappable.
+          this.hadCards = result.deckSizeBefore > 1;
           this.proposals = result.swaps.map((swap) => ({ swap, keep: true }));
           this.rejected = result.rejectedByReason ?? {};
           this.state = 'review';

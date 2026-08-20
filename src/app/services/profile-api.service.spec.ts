@@ -30,7 +30,9 @@ describe('ProfileApiService', () => {
     service.getProfile('a b/c').subscribe();
 
     // Unescaped, the slash would address /api/users/a b/c — a different route entirely.
-    http.expectOne('/api/users/a%20b%2Fc').flush({} as UserProfile);
+    const req = http.expectOne('/api/users/a%20b%2Fc');
+    expect(req.request.url).toBe('/api/users/a%20b%2Fc');
+    req.flush({} as UserProfile);
   });
 
   it('sends paging as query parameters on the comment history', () => {

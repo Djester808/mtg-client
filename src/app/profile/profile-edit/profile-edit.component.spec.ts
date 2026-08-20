@@ -181,6 +181,9 @@ describe('ProfileEditComponent', () => {
     fixture.componentInstance.removeAvatar();
 
     http.expectNone((r) => r.method === 'DELETE');
+    expect(http.match((r) => r.method === 'DELETE').length)
+      .withContext('nothing to delete, so nothing is sent')
+      .toBe(0);
   });
 
   it('falls back to the documented limits when the limits call fails', () => {

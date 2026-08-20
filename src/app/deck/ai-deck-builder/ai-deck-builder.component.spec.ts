@@ -350,7 +350,9 @@ describe('AiDeckBuilderComponent', () => {
 
     fixture.destroy();
 
-    http.expectOne((r) => r.url === '/api/decks/deck-9' && r.method === 'DELETE').flush(null);
+    const cleanup = http.expectOne((r) => r.url === '/api/decks/deck-9' && r.method === 'DELETE');
+    expect(cleanup.request.method).withContext('the abandoned deck is deleted').toBe('DELETE');
+    cleanup.flush(null);
   });
 
   it('cleans up on a hard unload, which ngOnDestroy never sees', () => {
@@ -405,6 +407,9 @@ describe('AiDeckBuilderComponent', () => {
     // From here the deck is the player's, so leaving must not delete it.
     fixture.destroy();
     http.expectNone((r) => r.method === 'DELETE');
+    expect(http.match((r) => r.method === 'DELETE').length)
+      .withContext('an accepted deck is never cleaned up')
+      .toBe(0);
   });
 
   it('can still clean up after a failed save', () => {
@@ -420,7 +425,9 @@ describe('AiDeckBuilderComponent', () => {
       .flush({ detail: 'nope' }, { status: 500, statusText: 'Server Error' });
 
     fixture.componentInstance.discardPlan();
-    http.expectOne((r) => r.url === '/api/decks/deck-9' && r.method === 'DELETE').flush(null);
+    const cleanup = http.expectOne((r) => r.url === '/api/decks/deck-9' && r.method === 'DELETE');
+    expect(cleanup.request.method).withContext('the orphan is still deleted').toBe('DELETE');
+    cleanup.flush(null);
   });
 
   it('groups the plan into lands, creatures and spells', () => {

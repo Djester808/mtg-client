@@ -3658,6 +3658,29 @@ describe('DeckDetailComponent — the commander slot controls', () => {
     expect(labels).toEqual(['View Details', 'Change', 'Remove']);
   });
 
+  // Removing the stale-clear button took the only spec that dispatched a null commander
+  // with it, leaving this control — the one a player actually reaches — uncovered. It is
+  // the same `setCommander(null, deck)` call, so it is the one worth keeping under test.
+  it('Remove dispatches updateDeckMeta with a null commander', async () => {
+    const { fixture, store } = await setup();
+    openCommanderPanel(fixture, { ...makeDeck([CMDR], 'commander'), commanderOracleId: 'o-cmdr' });
+    (store.dispatch as jasmine.Spy).calls.reset();
+
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<HTMLButtonElement>('.cp-clear-btn-overlay')!.click();
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateDeckMeta({
+        id: 'deck-1',
+        name: 'Test Deck',
+        coverUri: null,
+        format: 'commander',
+        commanderOracleId: null,
+        tags: [],
+      }),
+    );
+  });
+
   // Reported, and right: a slot showing no commander must not offer to remove one. A
   // `commanderOracleId` pointing at a card the deck no longer holds is stale data, not a
   // commander, and it is replaced by picking a new one through the placeholder.

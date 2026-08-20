@@ -163,8 +163,9 @@ and a loading state were written out by hand next to the `empty-state` and `load
 mixins that already existed. Every gate stayed green throughout.
 
 All three ratchet rather than judge. The repo's debt is recorded in `tools/baselines/`
-(43 hand-written treatments, 2 unregistered screens) and in `e2e/ui-baseline.json` (42
-surfaces, one of which reports 442 undersized tap targets). That is not approval — it is
+(43 hand-written treatments, 2 unregistered screens) and in `e2e/ui-baseline.json` (100
+surfaces, 80 of which carry an undersized tap target; the forum's `a.author-link` is 73×15
+and repeats once per post, which is most of the 442 on that route). That is not approval — it is
 what was already true, written down, so that only something *new* fails a build. Pay a
 line down and re-record with `--update`.
 
