@@ -4927,63 +4927,6 @@ app-deck-detail {
     box-sizing: border-box;
   }
 
-  // The empty slot's controls, side by side: "Add Commander" fills the row on its own,
-  // and splits with "Remove" when the deck still carries a commander whose card has gone.
-  .cp-empty-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-
-    > * {
-      flex: 1 1 0;
-      min-width: 0;
-
-      @include touch {
-        min-height: $tap-min;
-      }
-    }
-  }
-
-  .cp-add-cmdr-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    padding: 9px 8px;
-    background: rgba(167, 139, 250, 0.1);
-    border: 1px solid rgba(167, 139, 250, 0.4);
-    border-radius: 8px;
-    color: #a78bfa;
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition:
-      background 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      background: rgba(124, 58, 237, 0.25);
-      border-color: rgba(167, 139, 250, 0.7);
-    }
-  }
-
-  // Same geometry as .cp-add-cmdr-btn, in the destructive palette the portrait's own
-  // Remove wears, so the two removes read as one control rather than two.
-  .cp-clear-stale-btn {
-    background: rgba(185, 28, 28, 0.15);
-    border-color: rgba(248, 113, 113, 0.4);
-    color: #fca5a5;
-
-    &:hover {
-      background: rgba(220, 38, 38, 0.35);
-      border-color: #f87171;
-    }
-  }
-
   .cp-search-btn {
     background: rgba(0, 0, 0, 0.75);
     border: 1px solid rgba(167, 139, 250, 0.5);
@@ -5072,20 +5015,6 @@ app-deck-detail {
     color: var(--text-dim);
     text-align: center;
     line-height: 1.8;
-
-    // The slot for a commander the deck names but no longer holds: a fault, not an
-    // invitation, so it reads in the same orange the violation pills and dots already use.
-    &--orphan {
-      color: #f97316;
-    }
-  }
-
-  .cp-no-cmdr-hint {
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
   }
 
   .cp-name {

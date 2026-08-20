@@ -1248,34 +1248,17 @@
                     (click)="openCommanderSearch(); $event.stopPropagation()"
                     title="Search for commander"
                   >
-                    <!-- Two different empty slots. A deck that never had a commander is
-                         waiting for one; a deck whose commanderOracleId outlived its card is
-                         not waiting, it is wrong — and "click or drop to assign" printed
-                         above a Remove Commander button reads as the app contradicting
-                         itself, which is exactly how it was reported. -->
-                    <div class="cp-no-cmdr" *ngIf="!deck.commanderOracleId">
+                    <div class="cp-no-cmdr">
                       <i class="bi bi-person-plus"></i><br />Click or drop<br />to assign
                     </div>
-                    <div class="cp-no-cmdr cp-no-cmdr--orphan" *ngIf="deck.commanderOracleId">
-                      <i class="bi bi-exclamation-triangle"></i><br />Commander card<br />is not in
-                      this deck<br /><span class="cp-no-cmdr-hint">Click to pick another</span>
-                    </div>
                   </div>
-                  <!-- No add button: the placeholder above already opens the search, and two
-                       controls for one action read as two different actions. This row shows
-                       only for the one thing the placeholder cannot do — clearing an oracle
-                       id that outlived its card, which is reachable by deleting the
-                       commander from the deck and is otherwise stuck on it for good. It says
-                       "Clear", not "Remove Commander": there is no commander to remove, only
-                       a name the deck is still carrying. -->
-                  <div class="cp-empty-actions" *ngIf="deck.commanderOracleId">
-                    <button
-                      class="cp-add-cmdr-btn cp-clear-stale-btn"
-                      (click)="setCommander(null, deck)"
-                    >
-                      <i class="bi bi-x-lg"></i> Clear Missing Commander
-                    </button>
-                  </div>
+                  <!-- No controls here at all. There is no commander in this slot, so there is
+                       nothing to remove, and a button that says otherwise is the app claiming
+                       something the picture beside it denies. A `commanderOracleId` left
+                       pointing at a card the deck no longer holds is not a commander either:
+                       it is stale data, and it is cleared by assigning a new one (which the
+                       placeholder above opens) rather than by a control that only exists to
+                       admit the deck is in a broken state. -->
                 </ng-template>
               </div>
 
