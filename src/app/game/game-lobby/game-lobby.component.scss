@@ -1,0 +1,152 @@
+// Three levels to src/ — this component sits at app/game/game-lobby/.
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
+// Narrow first: one column of stacked sections, each filling the width. Nothing here needs a
+// second layout at a wider size — the fields simply get longer.
+.gl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 640px;
+}
+
+.gl-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.gl-note {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.gl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+.gl-heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gl-label {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.gl-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.85;
+}
+
+.gl-select {
+  width: 100%;
+  min-height: $tap-min;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  // 16px so iOS does not zoom the page when the field takes focus, which on a phone throws the
+  // whole layout out and does not come back on blur.
+  font-size: 16px;
+}
+
+.gl-invite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.gl-invite-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+
+.gl-invite-life {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.gl-btn {
+  min-height: $tap-min;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.gl-btn-primary {
+  border-color: rgba(201, 168, 76, 0.5);
+  background: rgba(201, 168, 76, 0.14);
+  color: var(--gold);
+}
+
+// The refusal names the cards the engine cannot play, so it needs room to be a list rather
+// than a one-liner that trails off.
+.gl-refusal {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 154, 90, 0.5);
+  background: rgba(220, 154, 90, 0.12);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.gl-loading,
+.gl-empty {
+  @include empty-state;
+  padding: 40px 16px;
+}

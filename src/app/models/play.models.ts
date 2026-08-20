@@ -13,12 +13,49 @@ export interface GameView {
   viewer: string;
   turnNumber: number;
   activePlayerId: string;
+  /**
+   * Where in the turn the game is (CR 500.1).
+   *
+   * The board needs it because declaring attackers happens before anyone has priority
+   * (CR 508.1), so "my turn and I have priority" does not identify the moment.
+   */
+  currentStep: string;
+  /** Attacking creature id → the player it is attacking. */
+  attackers: Record<string, string>;
+  /** Attacker id → the creatures blocking it. */
+  blockers: Record<string, string[]>;
   players: PlayerView[];
   battlefield: ObjectView[];
   /** Index 0 is the top of the stack — the next thing to resolve. */
   stack: ObjectView[];
   exile: ObjectView[];
   command: ObjectView[];
+  /** Set while the game is waiting on a decision; nothing else may happen until it is made. */
+  choice: ChoiceView | null;
+}
+
+/**
+ * A decision the game is waiting on.
+ *
+ * Everyone is told the game has stopped and on whom — a board that freezes with no explanation
+ * is the worst thing to show. `options` is populated only for the player being asked, because
+ * the options can be hidden information: bottoming after a mulligan lists that player's hand.
+ */
+export interface ChoiceView {
+  id: string;
+  playerId: string;
+  kind: string;
+  prompt: string;
+  minPicks: number;
+  maxPicks: number;
+  /** True when the order of the picks is the answer (CR 603.3b, 616.1). */
+  isOrdering: boolean;
+  options: ChoiceOptionView[] | null;
+}
+
+export interface ChoiceOptionView {
+  id: string;
+  label: string;
 }
 
 export interface PlayerView {
@@ -65,9 +102,29 @@ export interface TargetDto {
   playerId: string | null;
 }
 
-export interface CreateGameRequest {
+/** A deck the caller can bring to a game. */
+export interface PlayableDeck {
+  id: string;
+  name: string;
+  cardCount: number;
+}
+
+/**
+ * An invitation to a game.
+ *
+ * Each player names their own deck — the inviter here, the opponent when they accept — because
+ * a deck list is not public and no endpoint hands out somebody else's.
+ */
+export interface GameInvite {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  startingLife: number;
+  createdUtc: string;
+}
+
+export interface CreateInviteRequest {
   deckId: string;
   opponentUserId: string;
-  opponentDeckId: string;
   startingLife: number;
 }

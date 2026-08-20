@@ -34,6 +34,11 @@ export class PlayHubService {
 
   readonly connection$ = signal<ConnectionState>('idle');
 
+  /** Where in the turn the game is, or null before the first view. */
+  step(): string | null {
+    return this.view()?.currentStep ?? null;
+  }
+
   private readonly api = inject(PlayApiService);
 
   constructor(private zone: NgZone) {}
@@ -144,6 +149,11 @@ export class PlayHubService {
 
   discard(cardId: string): Promise<void> {
     return this.send('Discard', cardId);
+  }
+
+  /** Answers the decision the game is waiting on. Order matters for an ordering choice. */
+  choose(picks: string[]): Promise<void> {
+    return this.send('Choose', picks);
   }
 
   /**

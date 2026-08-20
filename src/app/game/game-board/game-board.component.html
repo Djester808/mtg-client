@@ -1,7 +1,11 @@
 <div class="gb-root" *ngIf="board() as b; else waiting">
   <!-- Opponent: one strip, because on a phone their board is context and yours is the game. -->
   <div class="gb-opponents">
-    <div class="gb-player" *ngFor="let opponent of b.opponents; trackBy: trackByLine">
+    <div
+      class="gb-player"
+      *ngFor="let opponent of b.opponents; trackBy: trackByLine"
+      [class.is-targetable]="targetingCardId"
+    >
       <span class="gb-player-name">{{ opponent.name }}</span>
       <span class="gb-life" [class.is-low]="opponent.life <= 5">{{ opponent.life }}</span>
       <span class="gb-counts">
@@ -44,10 +48,15 @@
           class="gb-permanent"
           *ngFor="let card of b.theirs; trackBy: trackById"
           [class.is-tapped]="card.isTapped"
+          [class.is-attacking]="isAttacking(card)"
+          [class.is-blocking-target]="blockingFor === card.id"
+          [class.is-targetable]="targetingCardId"
+          (click)="tapTheirs(card)"
           type="button"
         >
           <span class="gb-permanent-name">{{ card.name }}</span>
           <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+          <span class="gb-permanent-note" *ngIf="isAttacking(card)">attacking</span>
         </button>
         <p class="gb-empty" *ngIf="b.theirs.length === 0">Nothing on their side.</p>
       </div>
@@ -61,11 +70,17 @@
           *ngFor="let card of b.mine; trackBy: trackById"
           [class.is-tapped]="card.isTapped"
           [class.is-sick]="card.hasSummoningSickness"
-          (click)="activate(card)"
+          [class.is-chosen]="chosenAttackers.has(card.id) || blockedBy(card)"
+          [class.is-attacking]="isAttacking(card)"
+          [class.is-targetable]="targetingCardId"
+          (click)="tapMine(card)"
           type="button"
         >
           <span class="gb-permanent-name">{{ card.name }}</span>
           <span class="gb-permanent-stats" *ngIf="stats(card) as pt">{{ pt }}</span>
+          <span class="gb-permanent-note" *ngIf="isAttacking(card)">attacking</span>
+          <span class="gb-permanent-note" *ngIf="chosenAttackers.has(card.id)">will attack</span>
+          <span class="gb-permanent-note" *ngIf="blockedBy(card)">will block</span>
         </button>
         <p class="gb-empty" *ngIf="b.mine.length === 0">Nothing on your side yet.</p>
       </div>
@@ -107,8 +122,78 @@
     <p class="gb-empty" *ngIf="b.hand.length === 0">Your hand is empty.</p>
   </div>
 
+  <!-- Targeting: cast is held until a target is picked, because a spell that needs one is
+       refused without it and a refusal after the fact teaches nothing. -->
+  <div class="gb-prompt" *ngIf="targetingCardId">
+    <p class="gb-prompt-text">Choose a target, or cast it with none.</p>
+    <div class="gb-prompt-actions">
+      <button class="gb-btn" (click)="targetPlayer(b.opponents[0].playerId)" type="button">
+        {{ b.opponents[0].name }}
+      </button>
+      <button class="gb-btn" (click)="targetPlayer(b.me.playerId)" type="button">You</button>
+      <button class="gb-btn" (click)="castAt(null)" type="button">No target</button>
+      <button class="gb-btn" (click)="cancelTargeting()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- The decision the game is waiting on. Shown to everyone; only the player being asked is
+       sent options, so the others see who is thinking rather than a frozen board. -->
+  <div class="gb-prompt" *ngIf="choice as c">
+    <p class="gb-prompt-text">
+      {{ isMyChoice ? c.prompt : 'Waiting for the other player to decide.' }}
+    </p>
+    <div class="gb-prompt-actions" *ngIf="isMyChoice && c.options">
+      <button
+        class="gb-btn"
+        *ngFor="let option of c.options; trackBy: trackByOption"
+        [class.is-picked]="pickOrder(option.id) > 0"
+        (click)="togglePick(option.id)"
+        type="button"
+      >
+        <span class="gb-pick-order" *ngIf="c.isOrdering && pickOrder(option.id) > 0">{{
+          pickOrder(option.id)
+        }}</span>
+        {{ option.label }}
+      </button>
+    </div>
+    <button
+      class="gb-btn gb-btn-primary"
+      *ngIf="isMyChoice && c.maxPicks > 1"
+      [disabled]="!canSubmitChoice"
+      (click)="submitChoice()"
+      type="button"
+    >
+      Confirm
+    </button>
+  </div>
+
   <div class="gb-actions">
-    <button class="gb-pass" (click)="pass()" type="button">Pass priority</button>
+    <button
+      class="gb-btn gb-btn-primary"
+      *ngIf="isDeclaringAttackers"
+      (click)="declareAttackers()"
+      type="button"
+    >
+      {{
+        chosenAttackers.size === 0 ? 'Attack with nothing' : 'Attack with ' + chosenAttackers.size
+      }}
+    </button>
+    <button
+      class="gb-btn gb-btn-primary"
+      *ngIf="isDeclaringBlockers"
+      (click)="declareBlockers()"
+      type="button"
+    >
+      {{ chosenBlocks.size === 0 ? 'Block with nothing' : 'Block with ' + chosenBlocks.size }}
+    </button>
+    <button
+      class="gb-pass"
+      *ngIf="!isDeclaringAttackers && !isDeclaringBlockers && !choice"
+      (click)="pass()"
+      type="button"
+    >
+      Pass priority
+    </button>
   </div>
 
   <div class="gb-refusal" *ngIf="hub.refusal() as refusal" (click)="dismissRefusal()">

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CreateGameRequest, GameView } from '../models/play.models';
+import { CreateInviteRequest, GameInvite, GameView, PlayableDeck } from '../models/play.models';
 
 /**
  * The parts of a game that are a request rather than a conversation.
@@ -18,8 +18,39 @@ export class PlayApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/games';
 
-  create(request: CreateGameRequest): Observable<{ gameId: string }> {
-    return this.http.post<{ gameId: string }>(this.base, request);
+  /** The caller's own decks. There is deliberately no endpoint for anyone else's. */
+  decks(): Observable<PlayableDeck[]> {
+    return this.http.get<PlayableDeck[]>(`${this.base}/decks`);
+  }
+
+  /** Community members who could be invited. */
+  players(): Observable<{ userId: string; username: string }[]> {
+    return this.http.get<{ userId: string; username: string }[]>('/api/users?limit=100');
+  }
+
+  invite(request: CreateInviteRequest): Observable<GameInvite> {
+    return this.http.post<GameInvite>(`${this.base}/invites`, request);
+  }
+
+  /** Invitations waiting for the caller to answer. */
+  invites(): Observable<GameInvite[]> {
+    return this.http.get<GameInvite[]>(`${this.base}/invites`);
+  }
+
+  /** Invitations the caller has sent and nobody has answered. */
+  sentInvites(): Observable<GameInvite[]> {
+    return this.http.get<GameInvite[]>(`${this.base}/invites/sent`);
+  }
+
+  /** Accepting starts the game and returns its id. */
+  accept(inviteId: string, deckId: string): Observable<{ gameId: string }> {
+    return this.http.post<{ gameId: string }>(`${this.base}/invites/${inviteId}/accept`, {
+      deckId,
+    });
+  }
+
+  withdraw(inviteId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/invites/${inviteId}`);
   }
 
   view(gameId: string): Observable<GameView> {

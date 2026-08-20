@@ -113,6 +113,13 @@ export const routes: Routes = [
       import('./profile/profile-edit/profile-edit.component').then((m) => m.ProfileEditComponent),
     canActivate: [authGuard],
   },
+  // Starting a game: your decks, who to invite, and who has invited you.
+  {
+    path: 'play',
+    loadComponent: () =>
+      import('./game/game-lobby/game-lobby.component').then((m) => m.GameLobbyComponent),
+    canActivate: [authGuard],
+  },
   // Playing a game. The board joins the SignalR hub on init and leaves on destroy, so the
   // route is the whole lifecycle of a connection.
   {

@@ -13,6 +13,10 @@
   "gameId": "11111111-2222-3333-4444-555555555555",
   "viewer": "aaaaaaaa-0000-0000-0000-000000000001",
   "turnNumber": 6,
+  "currentStep": "PrecombatMain",
+  "attackers": {},
+  "blockers": {},
+  "choice": null,
   "activePlayerId": "aaaaaaaa-0000-0000-0000-000000000001",
   "players": [
     {

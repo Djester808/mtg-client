@@ -129,6 +129,40 @@ async function toReview(d) {
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
   {
+    id: 'game-lobby',
+    label: 'Play — start a game',
+    root: '.gl-page',
+    extra: `return {
+      decks: document.querySelectorAll('.gl-select option').length,
+      invites: document.querySelectorAll('.gl-invite').length,
+    };`,
+    async drive(d) {
+      await armGameReplay(d);
+      await ensureSignedIn(d);
+      await d.get(baseUrl + '/play');
+      await d.wait(until.elementLocated(By.css('.gl-page')), 20000);
+      await sleep(900);
+    },
+  },
+  {
+    id: 'game-board-combat',
+    label: 'Game board — declaring attackers',
+    root: '.gb-root',
+    extra: `return {
+      attackButton: !!Array.from(document.querySelectorAll('.gb-btn-primary'))
+        .find((b) => /attack/i.test(b.textContent || '')),
+    };`,
+    async drive(d) {
+      await armGameReplay(d, { currentStep: 'DeclareAttackers' });
+      await ensureSignedIn(d);
+      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
+      // The board seeds from REST and then waits on a socket that will not connect, so the
+      // action bar settles a beat after .gb-root appears. 900ms caught it mid-render once.
+      await d.wait(until.elementLocated(By.css('.gb-actions button')), 20000);
+      await sleep(1500);
+    },
+  },
+  {
     id: 'game-board',
     label: 'Game board — mid-turn, stack of two',
     // The whole board: what matters at 375 is whether the column of strips, two battlefields

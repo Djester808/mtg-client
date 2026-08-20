@@ -31,14 +31,19 @@ const LOG = JSON.stringify([
 
 const STUB = `
 (function () {
+  // The fixture is refreshed on every arm, and only the fetch override is installed once.
+  // Guarding the whole thing meant that on a run capturing several states, the first arm won
+  // and every later state was silently measured against the first state's fixture — which is
+  // how a board that was supposed to be mid-combat kept capturing a main phase.
+  window.__gameReplayView = __VIEW__;
+  window.__gameReplayLog = __LOG__;
+
   if (window.__gameReplayArmed) return;
   window.__gameReplayArmed = true;
 
   const real = window.fetch.bind(window);
   // What the stub was asked for, so a run that renders nothing can say which call went wrong.
   window.__gameReplayHits = [];
-  const VIEW = __VIEW__;
-  const LOG = __LOG__;
 
   const json = (body) =>
     new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -47,12 +52,44 @@ const STUB = `
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     window.__gameReplayHits.push(url);
 
+    // The lobby. Its own decks and invitations, so the phone audit measures a lobby with
+    // something in it rather than the empty state it would otherwise always capture.
+    if (url.indexOf('/api/games/decks') !== -1) {
+      return Promise.resolve(json(JSON.stringify([
+        { id: 'deck-1', name: 'Elves of Llanowar', cardCount: 60 },
+        { id: 'deck-2', name: 'Mono-Red Aggro', cardCount: 60 },
+      ])));
+    }
+
+    if (url.indexOf('/api/games/invites/sent') !== -1) {
+      return Promise.resolve(json('[]'));
+    }
+
+    if (url.indexOf('/api/games/invites') !== -1) {
+      return Promise.resolve(json(JSON.stringify([
+        {
+          id: 'invite-1',
+          fromUserId: 'bbbbbbbb-0000-0000-0000-000000000002',
+          fromUserName: 'Bob',
+          startingLife: 40,
+          createdUtc: '2026-08-20T00:00:00Z',
+        },
+      ])));
+    }
+
+    if (url.indexOf('/api/users') !== -1) {
+      return Promise.resolve(json(JSON.stringify([
+        { userId: 'bbbbbbbb-0000-0000-0000-000000000002', username: 'Bob' },
+        { userId: 'cccccccc-0000-0000-0000-000000000003', username: 'Carol' },
+      ])));
+    }
+
     if (/\\/api\\/games\\/[^/]+\\/log$/.test(url)) {
-      return Promise.resolve(json(JSON.stringify(LOG)));
+      return Promise.resolve(json(JSON.stringify(window.__gameReplayLog)));
     }
 
     if (/\\/api\\/games\\/[^/?]+$/.test(url)) {
-      return Promise.resolve(json(JSON.stringify(VIEW)));
+      return Promise.resolve(json(JSON.stringify(window.__gameReplayView)));
     }
 
     // The hub's negotiate call. Refused deliberately: there is no socket to give it, and the
@@ -67,8 +104,10 @@ const STUB = `
 `;
 
 /** Installs the stub so it runs before the app bootstraps on the next navigation. */
-async function armGameReplay(driver) {
-  const script = STUB.replace('__VIEW__', view()).replace('__LOG__', LOG);
+async function armGameReplay(driver, overrides = {}) {
+  const fixture = JSON.parse(view());
+  Object.assign(fixture, overrides);
+  const script = STUB.replace('__VIEW__', JSON.stringify(fixture)).replace('__LOG__', LOG);
   await driver.sendDevToolsCommand('Page.addScriptToEvaluateOnNewDocument', { source: script });
 }
 

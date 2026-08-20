@@ -1,0 +1,107 @@
+<div class="gl-page">
+  <h1 class="gl-title">Play</h1>
+
+  <p class="gl-note">
+    The engine plays the cards it implements and refuses a deck holding anything else, by name. That
+    list is short today; a deck of basic lands and vanilla creatures will play.
+  </p>
+
+  <div class="gl-loading" *ngIf="loading()">
+    <i class="bi bi-hourglass-split empty-icon"></i>
+    <p class="empty-sub">Loading your decks…</p>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+    <!-- Invitations waiting on you come first: somebody is already sitting there. -->
+    <section class="gl-section" *ngIf="invites().length > 0">
+      <h2 class="gl-heading">Waiting for you</h2>
+
+      <label class="gl-field">
+        <span class="gl-label">Your deck</span>
+        <select class="gl-select" [(ngModel)]="acceptWithDeckId" name="acceptDeck">
+          <option value="">Choose a deck…</option>
+          <option *ngFor="let deck of decks(); trackBy: trackById" [value]="deck.id">
+            {{ deck.name }} ({{ deck.cardCount }})
+          </option>
+        </select>
+      </label>
+
+      <div class="gl-invite" *ngFor="let invite of invites(); trackBy: trackById">
+        <div class="gl-invite-who">
+          <strong>{{ invite.fromUserName }}</strong>
+          <span class="gl-invite-life">{{ invite.startingLife }} life</span>
+        </div>
+        <button
+          class="gl-btn gl-btn-primary"
+          [disabled]="!acceptWithDeckId || busy()"
+          (click)="accept(invite)"
+          type="button"
+        >
+          Accept
+        </button>
+      </div>
+    </section>
+
+    <section class="gl-section">
+      <h2 class="gl-heading">Invite someone</h2>
+
+      <label class="gl-field">
+        <span class="gl-label">Your deck</span>
+        <select class="gl-select" [(ngModel)]="myDeckId" name="myDeck">
+          <option value="">Choose a deck…</option>
+          <option *ngFor="let deck of decks(); trackBy: trackById" [value]="deck.id">
+            {{ deck.name }} ({{ deck.cardCount }})
+          </option>
+        </select>
+      </label>
+
+      <label class="gl-field">
+        <span class="gl-label">Opponent</span>
+        <select class="gl-select" [(ngModel)]="opponentId" name="opponent">
+          <option value="">Choose a player…</option>
+          <option *ngFor="let player of players()" [value]="player.userId">
+            {{ player.username }}
+          </option>
+        </select>
+        <span class="gl-hint">They choose their own deck when they accept.</span>
+      </label>
+
+      <label class="gl-field">
+        <span class="gl-label">Starting life</span>
+        <select class="gl-select" [(ngModel)]="startingLife" name="life">
+          <option [ngValue]="20">20 — duel</option>
+          <option [ngValue]="40">40 — Commander</option>
+        </select>
+      </label>
+
+      <button
+        class="gl-btn gl-btn-primary"
+        [disabled]="!canInvite"
+        (click)="invite()"
+        type="button"
+      >
+        Send invitation
+      </button>
+    </section>
+
+    <section class="gl-section" *ngIf="sent().length > 0">
+      <h2 class="gl-heading">Sent</h2>
+      <div class="gl-invite" *ngFor="let invite of sent(); trackBy: trackById">
+        <div class="gl-invite-who">
+          <span>Waiting for a reply</span>
+          <span class="gl-invite-life">{{ invite.startingLife }} life</span>
+        </div>
+        <button class="gl-btn" (click)="withdraw(invite)" type="button">Withdraw</button>
+      </div>
+    </section>
+
+    <div class="gl-empty" *ngIf="decks().length === 0">
+      <i class="bi bi-collection empty-icon"></i>
+      <p class="empty-sub">Build a deck first — there is nothing to bring to a game yet.</p>
+    </div>
+  </ng-container>
+
+  <!-- The server names the cards it cannot play. Saying "could not start" instead would throw
+       away the only part of the answer a player can act on. -->
+  <div class="gl-refusal" *ngIf="refusal() as message">{{ message }}</div>
+</div>

@@ -50,10 +50,14 @@ describe('BoardLayoutService', () => {
     turnNumber: 1,
     activePlayerId: ME,
     players: [player(), player({ playerId: THEM, name: 'Bob', hand: null })],
+    currentStep: 'PrecombatMain',
+    attackers: {},
+    blockers: {},
     battlefield: [],
     stack: [],
     exile: [],
     command: [],
+    choice: null,
     ...over,
   });
 

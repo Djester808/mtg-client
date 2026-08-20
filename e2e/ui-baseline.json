@@ -299,6 +299,18 @@
     "smallTargets": 8,
     "smallSelectors": 4
   },
+  "state:iphone-se:game-lobby": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:game-board-combat": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:iphone-se:game-board": {
     "overflows": false,
     "smallTargets": 0,
@@ -420,6 +432,18 @@
     "truncated": 0
   },
   "state:iphone-se:profile-comments": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:game-lobby": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:game-board-combat": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,

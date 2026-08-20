@@ -28,6 +28,10 @@ describe('GameBoardComponent', () => {
     castSpell: jasmine.Spy;
     activateAbility: jasmine.Spy;
     acknowledge: jasmine.Spy;
+    choose: jasmine.Spy;
+    declareAttackers: jasmine.Spy;
+    declareBlockers: jasmine.Spy;
+    step: () => string | null;
   };
 
   const card = (over: Partial<ObjectView> = {}): ObjectView => ({
@@ -66,10 +70,14 @@ describe('GameBoardComponent', () => {
     turnNumber: 3,
     activePlayerId: ME,
     players: [player(), player({ playerId: THEM, name: 'Bob', hand: null, life: 12 })],
+    currentStep: 'PrecombatMain',
+    attackers: {},
+    blockers: {},
     battlefield: [],
     stack: [],
     exile: [],
     command: [],
+    choice: null,
     ...over,
   });
 
@@ -92,6 +100,10 @@ describe('GameBoardComponent', () => {
       castSpell: jasmine.createSpy('castSpell').and.resolveTo(undefined),
       activateAbility: jasmine.createSpy('activateAbility').and.resolveTo(undefined),
       acknowledge: jasmine.createSpy('acknowledge'),
+      choose: jasmine.createSpy('choose').and.resolveTo(undefined),
+      declareAttackers: jasmine.createSpy('declareAttackers').and.resolveTo(undefined),
+      declareBlockers: jasmine.createSpy('declareBlockers').and.resolveTo(undefined),
+      step: () => hub.view()?.currentStep ?? null,
     };
 
     TestBed.configureTestingModule({
@@ -189,16 +201,16 @@ describe('GameBoardComponent', () => {
     expect(halves[1].textContent).toContain('Mine');
   });
 
-  it('plays a land and casts everything else', () => {
-    // CR 305.1: a land is played, not cast. Getting this wrong is a refusal every time.
+  it('plays a land immediately, because a land has nothing to target', () => {
+    // CR 305.1: a land is played, not cast, and it never targets — so it goes straight through
+    // while everything else stops to ask.
     const fixture = create();
     const page = fixture.componentInstance;
 
     page.play(card({ id: 'forest', typeLine: 'Basic Land — Forest' }));
-    expect(hub.playLand).toHaveBeenCalledWith('forest');
 
-    page.play(card({ id: 'bear' }));
-    expect(hub.castSpell).toHaveBeenCalledWith('bear');
+    expect(hub.playLand).toHaveBeenCalledWith('forest');
+    expect(page.targetingCardId).toBeNull();
   });
 
   it('asks the server to pass priority rather than deciding anything itself', () => {
@@ -233,6 +245,217 @@ describe('GameBoardComponent', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.gb-connection')?.textContent,
     ).toContain('reconnecting');
+  });
+
+  it('waits for a target instead of casting a spell that would be refused', () => {
+    // A targeted spell cast with no target is refused every time. Sending it anyway and showing
+    // the refusal teaches the player nothing they could have acted on.
+    const fixture = create();
+    hub.view.set(view());
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.play(card({ id: 'bolt', typeLine: 'Instant' }));
+
+    expect(hub.castSpell).not.toHaveBeenCalled();
+    expect(page.targetingCardId).toBe('bolt');
+  });
+
+  it('casts at the target that was picked', () => {
+    const fixture = create();
+    hub.view.set(view());
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.play(card({ id: 'bolt', typeLine: 'Instant' }));
+    page.targetPlayer(THEM);
+
+    expect(hub.castSpell).toHaveBeenCalledWith('bolt', [
+      { kind: 'player', objectId: null, playerId: THEM },
+    ]);
+    expect(page.targetingCardId).toBeNull();
+  });
+
+  it('can cast with no target, for a spell that needs none', () => {
+    const fixture = create();
+    const page = fixture.componentInstance;
+
+    page.play(card({ id: 'divination', typeLine: 'Sorcery' }));
+    page.castAt(null);
+
+    expect(hub.castSpell).toHaveBeenCalledWith('divination', []);
+  });
+
+  it('shows the prompt when the decision belongs to the viewer', () => {
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'Mulligan',
+          prompt: 'Keep this hand, or take a mulligan?',
+          minPicks: 1,
+          maxPicks: 1,
+          isOrdering: false,
+          options: [
+            { id: 'keep', label: 'Keep' },
+            { id: 'mulligan', label: 'Mulligan' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('Keep this hand');
+    expect(el.querySelectorAll('.gb-prompt-actions .gb-btn').length).toBe(2);
+  });
+
+  it('says who is thinking rather than freezing, when the decision belongs to someone else', () => {
+    // The other player is sent no options at all, so a board that only reacted to its own
+    // choices would simply stop with nothing on screen explaining why.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: THEM,
+          kind: 'Mulligan',
+          prompt: 'Keep this hand, or take a mulligan?',
+          minPicks: 1,
+          maxPicks: 1,
+          isOrdering: false,
+          options: null,
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('Waiting for the other player');
+    expect(el.querySelectorAll('.gb-prompt-actions .gb-btn').length).toBe(0);
+  });
+
+  it('sends a single-pick answer as soon as it is confirmed', () => {
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'Mulligan',
+          prompt: 'Keep?',
+          minPicks: 1,
+          maxPicks: 1,
+          isOrdering: false,
+          options: [
+            { id: 'keep', label: 'Keep' },
+            { id: 'mulligan', label: 'Mulligan' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('mulligan');
+    page.submitChoice();
+
+    expect(hub.choose).toHaveBeenCalledWith(['mulligan']);
+  });
+
+  it('keeps the order of picks, because the order is the answer', () => {
+    // CR 603.3b: which trigger the player puts on last is the one that resolves first, so the
+    // order has to survive to the server rather than being sorted or set-ified on the way.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'OrderTriggers',
+          prompt: 'Order your triggers.',
+          minPicks: 2,
+          maxPicks: 2,
+          isOrdering: true,
+          options: [
+            { id: 'a', label: 'First ability' },
+            { id: 'b', label: 'Second ability' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('b');
+    page.togglePick('a');
+    expect(page.pickOrder('b')).toBe(1);
+    expect(page.pickOrder('a')).toBe(2);
+
+    page.submitChoice();
+    expect(hub.choose).toHaveBeenCalledWith(['b', 'a']);
+  });
+
+  it('offers an attack only in the declare attackers step of your own turn', () => {
+    // CR 508.1: declaring attackers happens before anyone has priority, so "my turn and I have
+    // priority" is not the moment — the step is.
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'PrecombatMain' }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.isDeclaringAttackers).toBeFalse();
+
+    hub.view.set(view({ currentStep: 'DeclareAttackers' }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.isDeclaringAttackers).toBeTrue();
+
+    hub.view.set(view({ currentStep: 'DeclareAttackers', activePlayerId: THEM }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.isDeclaringAttackers).toBeFalse();
+  });
+
+  it('declares the attackers that were chosen', () => {
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers' }));
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.tapMine(card({ id: 'bear' }));
+    page.tapMine(card({ id: 'ox' }));
+    page.tapMine(card({ id: 'ox' }));
+    page.declareAttackers();
+
+    expect(hub.declareAttackers).toHaveBeenCalledWith({ bear: THEM });
+  });
+
+  it('declares no attackers, which is itself a declaration', () => {
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers' }));
+    fixture.detectChanges();
+
+    fixture.componentInstance.declareAttackers();
+
+    expect(hub.declareAttackers).toHaveBeenCalledWith({});
+  });
+
+  it('assigns a blocker to the attacker it was pointed at', () => {
+    const fixture = create();
+    hub.view.set(
+      view({
+        currentStep: 'DeclareBlockers',
+        activePlayerId: THEM,
+        attackers: { attacker: ME },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.tapTheirs(card({ id: 'attacker', controllerId: THEM }));
+    page.tapMine(card({ id: 'blocker' }));
+    page.declareBlockers();
+
+    expect(hub.declareBlockers).toHaveBeenCalledWith({ attacker: ['blocker'] });
   });
 
   it('selects a card and then plays it', () => {
