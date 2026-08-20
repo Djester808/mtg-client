@@ -38,19 +38,38 @@ const STUB = `
   window.__gameReplayView = __VIEW__;
   window.__gameReplayLog = __LOG__;
 
-  // A session, so the route guard lets the board render.
+  // A session, so the route guard lets the board render — and only while the board is on
+  // screen.
   //
-  // Every byte these states measure comes from the stub below — there is no server behind this
-  // route during a capture — so requiring a real sign-in first made the whole game section
-  // uncapturable on any machine without E2E_USERNAME set, which is how it has been. The guard
-  // reads these two keys and nothing else (store/auth/auth.reducer.ts), so this is the entire
-  // login as far as the client is concerned.
+  // Every byte these states measure comes from the stub below, so requiring a real sign-in first
+  // made the whole game section uncapturable on a machine without E2E_USERNAME. The guard reads
+  // these two keys and nothing else (store/auth/auth.reducer.ts), so this is the entire login as
+  // far as the client is concerned.
   //
-  // Only when there is no session already: a run with real credentials signs in for real, and
-  // this must not overwrite that token with one the API would reject.
-  if (!localStorage.getItem('auth_token')) {
-    localStorage.setItem('auth_token', 'capture-harness-token');
-    localStorage.setItem('auth_username', 'Alice');
+  // The confinement to /play is the important half, and it was learned the hard way. This script
+  // is installed with Page.addScriptToEvaluateOnNewDocument, which persists for the whole driver,
+  // and the driver is shared by every state in a run. A token seeded here therefore outlived the
+  // game states: later screens sent it to the real API, got a 401, and the interceptor logged the
+  // browser out mid-run — surfacing as an unrelated screen failing to render several states
+  // later, with nothing on it to say why.
+  //
+  // So it is set only on a game route, and taken away again anywhere else. A real session is
+  // never touched: the seed only fills an empty slot, and only ever removes its own token.
+  // Written without a regex on purpose: this whole script is a template literal, where a
+  // backslash escape is eaten before the browser ever sees it, and the pattern it left behind
+  // was a syntax error that killed the stub silently.
+  var here = location.pathname;
+  var onGameRoute = here === '/play' || here.indexOf('/play/') === 0;
+  var seeded = 'capture-harness-token';
+
+  if (onGameRoute) {
+    if (!localStorage.getItem('auth_token')) {
+      localStorage.setItem('auth_token', seeded);
+      localStorage.setItem('auth_username', 'Alice');
+    }
+  } else if (localStorage.getItem('auth_token') === seeded) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_username');
   }
 
   if (window.__gameReplayArmed) return;

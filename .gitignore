@@ -47,6 +47,11 @@ Thumbs.db
 e2e/.env
 e2e/node_modules/
 
+# _verify-restart.js leaves a snapshot of the game it played, carrying both players' bearer
+# tokens, and its two phases write logs. All regenerable, none of it belongs in the history.
+e2e/.restart-snapshot.json
+e2e/*.log
+
 # Dev-server log written by local ng serve runs
 client-run.log
 

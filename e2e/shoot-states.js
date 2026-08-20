@@ -100,6 +100,25 @@ async function ensureSignedIn(d) {
 }
 
 /**
+ * Signs in if this machine has credentials, and shrugs if it does not.
+ *
+ * The game states use this rather than ensureSignedIn because they have a second way in: the
+ * replay helper seeds a session of its own. A real sign-in has to be attempted first — the seed
+ * only fills an empty slot, and a fake token that outlives the game states logs the browser out
+ * of everything that follows — but it must not be the thing that stops the state running.
+ */
+async function trySignIn(d) {
+  if (!username || !password) return false;
+  try {
+    await ensureSignedIn(d);
+    return true;
+  } catch {
+    console.log('  (no session: sign-in failed, falling back to the replay stub)');
+    return false;
+  }
+}
+
+/**
  * Drives the builder to its shortlist, from recorded server output.
  *
  * See helpers/ai-build-replay.js for why this is replayed rather than run: a live journey
@@ -137,8 +156,8 @@ const STATES = [
       invites: document.querySelectorAll('.gl-invite').length,
     };`,
     async drive(d) {
+      await trySignIn(d);
       await armGameReplay(d);
-      await ensureSignedIn(d);
       await d.get(baseUrl + '/play');
       await d.wait(until.elementLocated(By.css('.gl-page')), 20000);
       await sleep(900);
@@ -153,8 +172,8 @@ const STATES = [
         .find((b) => /attack/i.test(b.textContent || '')),
     };`,
     async drive(d) {
+      await trySignIn(d);
       await armGameReplay(d, { currentStep: 'DeclareAttackers' });
-      await ensureSignedIn(d);
       await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
       // The board seeds from REST and then waits on a socket that will not connect, so the
       // action bar settles a beat after .gb-root appears. 900ms caught it mid-render once.
@@ -187,8 +206,8 @@ const STATES = [
       ),
     };`,
     async drive(d) {
+      await trySignIn(d);
       await armGameReplay(d, { currentStep: 'DeclareAttackers' });
-      await ensureSignedIn(d);
       await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
       await d.wait(until.elementLocated(By.css('.gb-actions button')), 20000);
       await sleep(1500);
@@ -230,8 +249,8 @@ const STATES = [
       opponentHandShown: document.querySelectorAll('.gb-opponents .gb-card').length,
     };`,
     async drive(d) {
+      await trySignIn(d);
       await armGameReplay(d);
-      await ensureSignedIn(d);
       await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
       await d.wait(until.elementLocated(By.css('.gb-root')), 20000);
       await sleep(900);
@@ -339,7 +358,17 @@ const STATES = [
         By.css('a[href*="/commanders/"], .commander-card, .cl-card'),
       );
       await d.executeScript('arguments[0].click();', first);
-      await sleep(3500);
+
+      // Wait for the detail page rather than sleeping at it. The 3.5s guess held while this
+      // state ran early in a short run; once the run grew it started clicking whatever was
+      // still on screen from the list, and the modal never opened.
+      await d.wait(until.elementLocated(By.css('.commander-detail-page')), 20000);
+      await d.wait(
+        until.elementLocated(By.css('.card-tile, .cd-card, img[src*="scryfall"], .card-img')),
+        20000,
+      );
+      await sleep(800);
+
       // Any card image on the commander page opens the modal.
       const card = await d.findElement(
         By.css('.card-tile, .cd-card, img[src*="scryfall"], .card-img'),
