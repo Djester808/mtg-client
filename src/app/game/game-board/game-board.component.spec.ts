@@ -76,6 +76,8 @@ describe('GameBoardComponent', () => {
     players: [player(), player({ playerId: THEM, name: 'Bob', hand: null, life: 12 })],
     currentStep: 'PrecombatMain',
     attackers: {},
+    attackersDeclared: false,
+    blockersDeclared: false,
     blockers: {},
     battlefield: [],
     stack: [],
@@ -441,6 +443,87 @@ describe('GameBoardComponent', () => {
     expect(hub.declareAttackers).toHaveBeenCalledWith({
       bear: { defendingPlayer: THEM, planeswalker: null },
     });
+  });
+
+  it('stops offering the attack button once attackers have been declared', () => {
+    // Priority is granted inside the declare-attackers step, after the declaration (CR 508.2),
+    // and the board hides Pass while a declaration is pending. So a board that thought the
+    // declaration was still to come left the player holding priority with nothing to press but
+    // an attack button the engine now refuses — the game could not be continued from the UI.
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers', attackersDeclared: true }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isDeclaringAttackers).toBeFalse();
+  });
+
+  it('offers the attack button before attackers have been declared', () => {
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareAttackers', attackersDeclared: false }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isDeclaringAttackers).toBeTrue();
+  });
+
+  it('answers a single-pick choice on the tap', () => {
+    // The bug this exists to stop coming back: the template only renders a Confirm when
+    // maxPicks > 1, so a single-pick choice had no way to be submitted at all. Every game opens
+    // on the mulligan, which is single-pick, so the board could be opened and never played.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'mull-1',
+          playerId: ME,
+          kind: 'Mulligan',
+          prompt: 'Keep this hand, or take a mulligan?',
+          minPicks: 1,
+          maxPicks: 1,
+          isOrdering: false,
+          isDivision: false,
+          totalToDivide: 0,
+          options: [
+            { id: 'keep', label: 'Keep' },
+            { id: 'mulligan', label: 'Mulligan' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    fixture.componentInstance.togglePick('keep');
+
+    expect(hub.choose).toHaveBeenCalledWith(['keep']);
+  });
+
+  it('still waits for Confirm when a choice takes several picks', () => {
+    // The other half: an ordering choice (CR 603.3b) is not answered by its first tap, or the
+    // player could never say what order they meant.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'order-1',
+          playerId: ME,
+          kind: 'OrderTriggers',
+          prompt: 'Put them on the stack in an order.',
+          minPicks: 2,
+          maxPicks: 2,
+          isOrdering: true,
+          isDivision: false,
+          totalToDivide: 0,
+          options: [
+            { id: 'a', label: 'First' },
+            { id: 'b', label: 'Second' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+
+    fixture.componentInstance.togglePick('a');
+
+    expect(hub.choose).not.toHaveBeenCalled();
   });
 
   it('does not let a land be declared as an attacker', () => {

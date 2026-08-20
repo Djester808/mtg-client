@@ -170,10 +170,16 @@ export class GameBoardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // A choice that takes one answer replaces rather than refusing the tap: tapping a second
-    // option plainly means "that one instead".
+    // A choice that takes one answer is answered by the tap.
+    //
+    // Nothing renders a Confirm for it — the template only offers one when maxPicks > 1 — so
+    // recording the pick and waiting was waiting for a button that does not exist. Every game
+    // opens on the mulligan, which is a single-pick choice, so the board could be opened and
+    // then never played: the tap registered, nothing was sent, and the next action came back
+    // "the game is waiting on a decision".
     if (choice.maxPicks === 1) {
       this.picks = [optionId];
+      this.submitChoice();
       return;
     }
 
@@ -235,16 +241,33 @@ export class GameBoardComponent implements OnInit, OnDestroy {
 
   // ---- Combat ----------------------------------------------------------------------------
 
-  /** True while the active player is choosing attackers (CR 508.1). */
+  /**
+   * True while the active player is still choosing attackers (CR 508.1).
+   *
+   * It has to stop being true once they have declared. Priority is given inside this same step
+   * afterwards (CR 508.2), and the board hides Pass while a declaration is pending — so a board
+   * that kept saying "still choosing" left the player holding priority with nothing to press
+   * but an attack button the engine now refuses.
+   */
   get isDeclaringAttackers(): boolean {
     const board = this.board();
-    return !!board && board.isMyTurn && this.stepIs('DeclareAttackers');
+    return (
+      !!board &&
+      board.isMyTurn &&
+      this.stepIs('DeclareAttackers') &&
+      !this.hub.view()?.attackersDeclared
+    );
   }
 
-  /** True while the defending player is choosing blockers (CR 509.1). */
+  /** True while the defending player is still choosing blockers (CR 509.1). */
   get isDeclaringBlockers(): boolean {
     const board = this.board();
-    return !!board && !board.isMyTurn && this.stepIs('DeclareBlockers');
+    return (
+      !!board &&
+      !board.isMyTurn &&
+      this.stepIs('DeclareBlockers') &&
+      !this.hub.view()?.blockersDeclared
+    );
   }
 
   /**

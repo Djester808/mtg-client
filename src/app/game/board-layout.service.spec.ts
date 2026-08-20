@@ -56,6 +56,8 @@ describe('BoardLayoutService', () => {
     players: [player(), player({ playerId: THEM, name: 'Bob', hand: null })],
     currentStep: 'PrecombatMain',
     attackers: {},
+    attackersDeclared: false,
+    blockersDeclared: false,
     blockers: {},
     battlefield: [],
     stack: [],

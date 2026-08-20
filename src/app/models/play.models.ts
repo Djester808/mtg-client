@@ -34,6 +34,15 @@ export interface GameView {
   currentStep: string;
   /** Attacking creature id → what it is attacking (CR 508.1b). */
   attackers: Record<string, AttackTarget>;
+  /**
+   * Whether attackers have been declared this combat (CR 508.1).
+   *
+   * Not the same question as "are there any attackers": declaring none is a declaration, and
+   * leaves `attackers` as empty as not having declared yet.
+   */
+  attackersDeclared: boolean;
+  /** Whether blockers have been declared this combat (CR 509.1). */
+  blockersDeclared: boolean;
   /** Attacker id → the creatures blocking it. */
   blockers: Record<string, string[]>;
   players: PlayerView[];
