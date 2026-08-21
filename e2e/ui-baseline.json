@@ -299,6 +299,12 @@
     "smallTargets": 8,
     "smallSelectors": 4
   },
+  "state:iphone-se:nav-drawer": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:iphone-se:game-lobby": {
     "overflows": false,
     "smallTargets": 0,
@@ -444,6 +450,12 @@
     "truncated": 0
   },
   "state:iphone-se:profile-comments": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:nav-drawer": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,

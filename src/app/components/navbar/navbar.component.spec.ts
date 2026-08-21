@@ -96,6 +96,16 @@ describe('NavbarComponent', () => {
     expect(rules).withContext('nav must reach /kb').toBeDefined();
     expect(rules!.label).toBe('Rules');
   });
+
+  it('offers playing a game as a destination', () => {
+    // The game shipped with routes and no way in. /play was reachable only by typing it, which
+    // is not a feature anybody finds.
+    const fixture = TestBed.createComponent(NavbarComponent);
+    const play = fixture.componentInstance.navLinks.find((l) => l.path === '/play');
+
+    expect(play).withContext('nav must reach /play').toBeDefined();
+    expect(play!.label).toBe('Play');
+  });
 });
 
 describe('NavbarComponent avatar', () => {

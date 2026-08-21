@@ -148,6 +148,28 @@ async function toReview(d) {
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
   {
+    id: 'nav-drawer',
+    label: 'Navigation drawer',
+    // Where a phone finds anything at all. It had no state of its own, which is how the game
+    // came to have routes and no way in: nothing captured the one surface that would have
+    // shown a destination missing.
+    root: '.mobile-nav',
+    extra: `return {
+      destinations: [...document.querySelectorAll('.mobile-nav-link')].map((a) =>
+        (a.textContent || '').trim(),
+      ),
+    };`,
+    async drive(d) {
+      await trySignIn(d);
+      await d.get(baseUrl + '/');
+      await d.wait(until.elementLocated(By.css('.nav-toggle')), 20000);
+      await sleep(600);
+      await d.executeScript(`document.querySelector('.nav-toggle').click();`);
+      await d.wait(until.elementLocated(By.css('.mobile-nav')), 10000);
+      await sleep(700);
+    },
+  },
+  {
     id: 'game-lobby',
     label: 'Play — start a game',
     root: '.gl-page',

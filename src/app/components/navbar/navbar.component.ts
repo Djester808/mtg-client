@@ -77,6 +77,10 @@ export class NavbarComponent {
    */
   readonly navLinks: readonly NavLink[] = [
     { path: '/', label: 'Home', exact: true },
+    // The game had routes and no way in but typing the URL. It is behind authGuard like
+    // Collection and Decks, and is listed the same way they are: the guard sends a signed-out
+    // visitor to sign in, which is a better answer than pretending the feature is not there.
+    { path: '/play', label: 'Play', exact: false },
     { path: '/collection', label: 'Collection', exact: false },
     { path: '/deck', label: 'Decks', exact: false },
     { path: '/community', label: 'Community', exact: false },
