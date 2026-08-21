@@ -445,6 +445,28 @@ describe('GameBoardComponent', () => {
     });
   });
 
+  it('offers the block button to the defending player', () => {
+    // CR 509.1: blockers are the defending player's to declare, so this is the one combat
+    // control that appears on the turn that is not yours.
+    const fixture = create();
+    hub.view.set(
+      view({ currentStep: 'DeclareBlockers', activePlayerId: THEM, blockersDeclared: false }),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isDeclaringBlockers).toBeTrue();
+  });
+
+  it('stops offering the block button once blockers have been declared', () => {
+    const fixture = create();
+    hub.view.set(
+      view({ currentStep: 'DeclareBlockers', activePlayerId: THEM, blockersDeclared: true }),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isDeclaringBlockers).toBeFalse();
+  });
+
   it('stops offering the attack button once attackers have been declared', () => {
     // Priority is granted inside the declare-attackers step, after the declaration (CR 508.2),
     // and the board hides Pass while a declaration is pending. So a board that thought the

@@ -148,11 +148,14 @@ async function opponent(token, gameId) {
           v.activePlayerId === me &&
           !v.attackersDeclared
         ) {
+          // One attacker, not the whole board. Swinging with everything is a fine way to play
+          // and a terrible way to be a fixture: the opponent snowballed to twenty-odd creatures
+          // and killed this player through two hundred life before the harness had arranged
+          // anything, and every combat control downstream reported "never reached".
           const them = v.players.find((p) => p.playerId !== me);
           const attackers = {};
-          for (const c of ready(v)) {
-            attackers[c.id] = { defendingPlayer: them.playerId, planeswalker: null };
-          }
+          const first = ready(v)[0];
+          if (first) attackers[first.id] = { defendingPlayer: them.playerId, planeswalker: null };
           await connection.invoke('DeclareAttackers', gameId, attackers);
           continue;
         }
@@ -184,7 +187,10 @@ async function opponent(token, gameId) {
             continue;
           }
 
-          const creature = hand.find((c) => c.name === 'Grizzly Bears');
+          // Three is enough: one to attack with, two to block with (CR 510.1c wants two on one
+          // attacker before it asks anybody to divide damage).
+          const onBoard = v.battlefield.filter((c) => c.controllerId === me && c.isCreature).length;
+          const creature = onBoard >= 3 ? undefined : hand.find((c) => c.name === 'Grizzly Bears');
           const untapped = v.battlefield.filter(
             (c) => c.controllerId === me && /Forest|Mountain/.test(c.name) && !c.isTapped,
           );
@@ -408,7 +414,21 @@ async function advanceTo(d, token, gameId, wanted, { minTurn = 0, mine = true } 
  * closing the window it had been asked to stop at, and reported turn after turn of never
  * finding it. This reads the screen instead of the step name, which is what a player has.
  */
-async function nudge(d, { hold = 'none' } = {}) {
+async function nudge(d, { hold = 'none', view = null } = {}) {
+  // The block window is recognised from the view rather than from the buttons on screen. A
+  // pushed view and the render that follows it are not the same instant, so a gate that reads
+  // the DOM can miss a window that is genuinely open — and then this presses Pass and closes
+  // it. The game waits for the defending player, so holding on the server's word is safe: it
+  // will still be that step when the next press lands.
+  if (
+    hold === 'blockers' &&
+    view &&
+    view.currentStep === 'DeclareBlockers' &&
+    !view.blockersDeclared
+  ) {
+    return 'held';
+  }
+
   const s = await board(d);
 
   // A prompt stops everything until it is answered. The division is left alone when it is the
@@ -506,6 +526,8 @@ async function step(d, token, gameId, name, expect, fn) {
     // Far more life than a game needs, because this script spends turns getting into position
     // and takes an unblocked attack every one of them. At 20 the opponent killed it before the
     // later flows were reached, and 'the game is over' looks exactly like a broken button.
+    // 200 is the API's own cap. With the opponent attacking one creature at a time that
+    // is a hundred turns of headroom, which is far more than this needs.
     startingLife: 200,
   });
   const gameId = (
@@ -673,29 +695,54 @@ async function step(d, token, gameId, name, expect, fn) {
     /**
      * Casts a creature, so this player has something to block and attack with.
      *
-     * Each attempt waits for a <em>later</em> turn than the last. Without that the loop spins
-     * inside one main phase — advanceTo returns straight away when it is already there — so it
-     * burns every iteration on a turn where the two mana were never going to arrive.
+     * Written as one loop that re-reads the game every pass, rather than as a sequence of
+     * advanceTo() calls with turn arithmetic. The arithmetic version failed for six runs in a
+     * row and reported "never reached" for every control downstream of it; a diagnostic that
+     * did nothing but try to cast a creature showed the app was fine — turn 1 is correctly
+     * refused for mana ({1}{R} off one Mountain), turn 3 resolves — and that the fault was the
+     * choreography. This is that diagnostic's loop.
      */
     async function ensureCreature() {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 60; i++) {
         if ((await board(d)).mine.includes(MY_CREATURE)) return true;
 
-        const next = (await turnNow(tokenA, gameId)) + (i === 0 ? 0 : 1);
-        if (!(await advanceTo(d, tokenA, gameId, 'PrecombatMain', { minTurn: next }))) return false;
+        const view = await api(tokenA, 'GET', '/api/games/' + gameId);
+
+        if (view.choice) {
+          if (view.choice.isDivision) return false;
+          await clickInExcept(d, '.gb-prompt-actions .gb-btn', 'confirm|start over');
+          await sleep(250);
+          await clickIn(d, '.gb-prompt-actions .gb-btn', 'confirm');
+          await sleep(400);
+          continue;
+        }
+
+        if (view.currentStep !== 'PrecombatMain' || view.activePlayerId !== view.viewer) {
+          await clickIn(d, '.gb-btn-primary', 'attack with|block with');
+          await clickIn(d, '.gb-pass');
+          await sleep(300);
+          continue;
+        }
 
         await playALand(d);
         await tapLands(d);
-        if (await playFromHand(d, MY_CREATURE)) {
-          await sleep(800);
-          await clickIn(d, '.gb-prompt-actions .gb-btn', 'no target');
-          // The spell has to resolve before it is a permanent: both players pass (CR 608.1).
-          await sleep(600);
-          for (let n = 0; n < 6; n++) {
-            if ((await board(d)).mine.includes(MY_CREATURE)) return true;
-            await clickIn(d, '.gb-pass');
-            await sleep(500);
-          }
+
+        if (!(await board(d)).hand.includes(MY_CREATURE)) {
+          await clickIn(d, '.gb-pass');
+          await sleep(400);
+          continue;
+        }
+
+        await playFromHand(d, MY_CREATURE);
+        await sleep(700);
+        await clickIn(d, '.gb-prompt-actions .gb-btn', 'no target');
+        await sleep(800);
+
+        // It is a spell until it resolves (CR 608.1), so both players have to pass.
+        for (let n = 0; n < 8; n++) {
+          if ((await board(d)).mine.includes(MY_CREATURE)) return true;
+          await clickIn(d, '.gb-pass');
+          await sleep(450);
         }
       }
       return (await board(d)).mine.includes(MY_CREATURE);
@@ -707,21 +754,53 @@ async function step(d, token, gameId, name, expect, fn) {
       // Summoning sickness does not stop a creature blocking (CR 302.6), so this can be the
       // very turn it arrived — it only has to be untapped.
       for (let i = 0; i < 500; i++) {
-        const state = await nudge(d, { hold: 'blockers' });
+        const view = await api(tokenA, 'GET', '/api/games/' + gameId);
+        const state = await nudge(d, { hold: 'blockers', view });
         if (state !== 'held') {
+          if (i > 0 && i % 50 === 0) {
+            const v = view;
+            const b = await board(d);
+            const attacking = await d.executeScript(
+              "return document.querySelectorAll('.gb-field-half:first-child .gb-permanent.is-attacking').length;",
+            );
+            console.log(
+              '      blockers wait: nudge=' +
+                state +
+                ' step=' +
+                v.currentStep +
+                (v.activePlayerId === v.viewer ? ' mine' : ' theirs') +
+                ' declared=' +
+                v.blockersDeclared +
+                ' attacking=' +
+                attacking +
+                ' buttons=' +
+                JSON.stringify(b.actionButtons) +
+                ' mine=' +
+                JSON.stringify(b.mine),
+            );
+          }
           await sleep(300);
           continue;
         }
 
         const s = await board(d);
-        if (s.theirs.length === 0 || !s.mine.includes(MY_CREATURE)) {
+        if (!s.mine.includes(MY_CREATURE)) {
           await clickIn(d, '.gb-btn-primary', 'block with');
           await sleep(300);
           continue;
         }
 
-        // Point at an attacker, then assign a blocker to it.
-        if (!(await clickPermanent(d, 'theirs', THEIR_CREATURE))) continue;
+        // The attacker, not just any creature of theirs. blockFor() only answers a tap on a
+        // creature that is attacking (CR 509.1a), and the opponent keeps three but swings with
+        // one — so tapping the first Grizzly Bears on the board pointed at nothing, the blocker
+        // assignment silently did nothing, and no "Block with 1" button ever appeared.
+        const pointed = await clickIn(d, '.gb-field-half:first-child .gb-permanent.is-attacking');
+        if (!pointed) {
+          await clickIn(d, '.gb-btn-primary', 'block with');
+          await sleep(300);
+          continue;
+        }
+
         await sleep(400);
         if (!(await clickPermanent(d, 'mine', MY_CREATURE))) continue;
         await sleep(400);
@@ -840,6 +919,9 @@ function report() {
   const failed = steps.filter((s) => s.result !== 'as expected');
   if (failed.length > 0) {
     console.log('\n' + failed.length + ' of ' + steps.length + ' control(s) did not behave.');
+    process.exitCode = 1;
+  } else if (steps.length === 0) {
+    console.log('nothing ran: the game never started.');
     process.exitCode = 1;
   } else {
     console.log('\nall ' + steps.length + ' controls behaved.');
