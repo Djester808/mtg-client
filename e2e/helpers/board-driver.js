@@ -10,6 +10,7 @@
 // which is constantly with an opponent acting: half the early failures in these harnesses were
 // StaleElementReference rather than anything about the app.
 
+const signalR = require('@microsoft/signalr');
 const { baseUrl } = require('../config');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -187,6 +188,128 @@ async function tapLands(d, names = 'Mountain|Forest') {
   return 8;
 }
 
+/**
+ * One seat at a game, driven over the wire.
+ *
+ * Every method is a single action taken when called — no loop, no timer — so a harness using
+ * two of these controls exactly when the game moves. That is what makes a window stay open
+ * long enough to be pressed in a browser.
+ *
+ * It reads its own view over HTTP rather than trusting the last socket push. A push arrives
+ * when it arrives, and deciding what to do from a view one action out of date is how a seat
+ * ends up trying to play a land while it does not hold priority.
+ */
+async function seat(token, gameId) {
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl(baseUrl + '/hubs/game', { accessTokenFactory: () => token })
+    .build();
+
+  const me = userIdFromToken(token);
+  const refusals = [];
+  connection.on('State', () => {});
+  connection.on('Refused', (why) => refusals.push(why));
+  connection.on('Log', () => {});
+  await connection.start();
+  await connection.invoke('Join', gameId);
+
+  let view = null;
+  const refresh = async () => {
+    view = await api(token, 'GET', '/api/games/' + gameId);
+    return view;
+  };
+  await refresh();
+
+  const send = async (method, ...args) => {
+    try {
+      await connection.invoke(method, gameId, ...args);
+    } catch {
+      /* a refusal is a normal answer to an intent */
+    }
+    await sleep(120);
+  };
+
+  const mine = (predicate) =>
+    (view?.battlefield ?? []).filter((c) => c.controllerId === me && predicate(c));
+  const hand = () => view?.players?.find((p) => p.playerId === me)?.hand ?? [];
+
+  return {
+    id: me,
+    refusals,
+    view: () => view,
+    refresh,
+    hand,
+    creatures: () => mine((c) => c.isCreature),
+    ready: () => mine((c) => c.isCreature && !c.isTapped && !c.hasSummoningSickness),
+    untappedLands: (re) => mine((c) => re.test(c.name) && !c.isTapped),
+
+    pass: () => send('PassPriority'),
+
+    async answerChoice() {
+      await refresh();
+      const choice = view?.choice;
+      if (!choice || choice.playerId !== me) return false;
+      const options = (choice.options || []).map((o) => o.id);
+      const picks =
+        choice.maxPicks > 1 && options.length
+          ? Array.from({ length: choice.maxPicks }, () => options[0])
+          : options.length
+            ? [options[0]]
+            : ['keep'];
+      await send('Choose', picks);
+      return true;
+    },
+
+    /** Plays the first land in hand matching `re`, if none has been played this turn. */
+    async playLand(re) {
+      await refresh();
+      const seatView = view.players.find((p) => p.playerId === me);
+      const land = hand().find((c) => re.test(c.name));
+      if (!land || seatView.landsPlayedThisTurn > 0) return false;
+      await send('PlayLand', land.id);
+      return true;
+    },
+
+    /** Taps `count` untapped lands for mana and casts the named card. */
+    async cast(name, landRe, count) {
+      await refresh();
+      const card = hand().find((c) => c.name === name);
+      const lands = mine((c) => landRe.test(c.name) && !c.isTapped);
+      if (!card || lands.length < count) return false;
+      for (const land of lands.slice(0, count)) await send('ActivateAbility', land.id, 'mana', []);
+      await send('CastSpell', card.id, [], 0);
+      return true;
+    },
+
+    /** Attacks the opponent with `count` ready creatures, or declares none. */
+    async attack(count) {
+      await refresh();
+      const them = view.players.find((p) => p.playerId !== me);
+      const attackers = {};
+      for (const c of mine((x) => x.isCreature && !x.isTapped && !x.hasSummoningSickness).slice(
+        0,
+        count,
+      )) {
+        attackers[c.id] = { defendingPlayer: them.playerId, planeswalker: null };
+      }
+      await send('DeclareAttackers', attackers);
+    },
+
+    /** Blocks the first attacker with `count` creatures, or declares none. */
+    async block(count) {
+      await refresh();
+      const attackerIds = Object.keys(view.attackers ?? {});
+      const available = mine((c) => c.isCreature && !c.isTapped);
+      const blocks = {};
+      if (count > 0 && attackerIds.length > 0 && available.length >= count) {
+        blocks[attackerIds[0]] = available.slice(0, count).map((c) => c.id);
+      }
+      await send('DeclareBlockers', blocks);
+    },
+
+    stop: () => connection.stop().catch(() => {}),
+  };
+}
+
 /** Signs a real account in through the real login form. */
 async function signInThroughTheForm(d, { By, until }, player) {
   await d.get(baseUrl + '/login');
@@ -211,4 +334,5 @@ module.exports = {
   playFromHand,
   tapLands,
   signInThroughTheForm,
+  seat,
 };

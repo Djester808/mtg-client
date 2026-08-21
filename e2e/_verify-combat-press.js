@@ -1,13 +1,18 @@
 // The three combat controls the other harness could never reach, pressed for real.
 //
-// Its opponent acted on a timer, which meant every window this needed was a race — and the
-// races were lost so consistently that "never reached" started to look like a verdict on the
-// app. It was not: the engine waits at declare-blockers, and the board offers the button. The
-// harness was simply moving the game on before the press landed.
+// The difference here is what does the waiting. Driving a whole game through the browser meant
+// hundreds of Selenium round trips to reach one window, and the runs were still going when the
+// machine reclaimed them — so the presses under test were never reached, which reads exactly
+// like a broken button and is not one.
 //
-// So this opponent does nothing on its own. It acts when told, one action at a time, and the
-// game therefore advances only when this script says so. A window that opens stays open, and
-// there is nothing left to race.
+// So the game is arranged over the wire, from both seats, and the browser is used only for the
+// presses being verified. Both seats act when this script says so and never on a timer, which is
+// what makes a window stay open: the engine waits at declare-blockers for the defending player,
+// and nothing else here is going to answer for them.
+//
+// Passing priority and playing lands go over the wire on purpose. They are not what this file
+// verifies — _verify-board-actions.js already presses both — and doing them by click only buys
+// minutes of wall clock.
 //
 //   node _verify-combat-press.js
 //
@@ -15,7 +20,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const signalR = require('@microsoft/signalr');
 const { By, until } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
 const { baseUrl } = require('./config');
@@ -31,169 +35,22 @@ const {
   clickIn,
   clickInExcept,
   clickPermanent,
-  playFromHand,
-  tapLands,
   signInThroughTheForm,
+  seat,
 } = require('./helpers/board-driver');
 
 const device = DEVICES.find((d) => d.id === 'iphone-se');
 const SHOTS = path.join(__dirname, 'screenshots', 'combat-press');
+const NL = String.fromCharCode(10);
 
 const A = { username: 'restart-check-a', password: 'restart-check-a-pw' };
 const B = { username: 'restart-check-b', password: 'restart-check-b-pw' };
-const NL = String.fromCharCode(10);
 
-const DECK_A = ['40 Mountain', '20 Goblin Piker', '20 Lightning Bolt'].join(NL);
-const DECK_B = ['40 Forest', '40 Grizzly Bears'].join(NL);
-const MY_CREATURE = 'Goblin Piker';
-
-/**
- * The opponent, on a leash.
- *
- * No loop, no timer: every method is one action, taken when this script calls it. Refusals are
- * swallowed, because "that was not yours to do" is a normal answer to an intent and the caller
- * is asking the game to move, not asserting that it will.
- */
-async function opponent(token, gameId) {
-  const connection = new signalR.HubConnectionBuilder()
-    .withUrl(baseUrl + '/hubs/game', { accessTokenFactory: () => token })
-    .build();
-
-  const me = userIdFromToken(token);
-  let view = null;
-  connection.on('State', (v) => {
-    view = v;
-  });
-  connection.on('Refused', (why) => {
-    if (process.env.DIAG) console.log('    [opponent] refused: ' + why);
-  });
-  connection.on('Log', () => {});
-  await connection.start();
-  await connection.invoke('Join', gameId);
-  await sleep(400);
-
-  /**
-   * Re-reads this player's own view over HTTP.
-   *
-   * The socket view is a push, and a push arrives when it arrives. Every method below decides
-   * what to do from the state it can see, so deciding from a view that is one action out of
-   * date meant the opponent sat through its own main phase doing nothing — it saw the previous
-   * step. This asks the server instead, at the moment of asking.
-   */
-  const refresh = async () => {
-    view = await api(token, 'GET', '/api/games/' + gameId);
-    return view;
-  };
-
-  const send = async (method, ...args) => {
-    try {
-      await connection.invoke(method, gameId, ...args);
-    } catch {
-      /* not the opponent's to do */
-    }
-    await sleep(150);
-  };
-
-  const ready = () =>
-    (view?.battlefield ?? []).filter(
-      (c) => c.controllerId === me && c.isCreature && !c.isTapped && !c.hasSummoningSickness,
-    );
-
-  return {
-    id: me,
-    view: () => view,
-    refresh,
-    ready,
-    pass: () => send('PassPriority'),
-
-    async answer() {
-      const choice = (await refresh()).choice;
-      if (!choice || choice.playerId !== me) return false;
-      const options = (choice.options || []).map((o) => o.id);
-      const picks =
-        choice.maxPicks > 1 && options.length
-          ? Array.from({ length: choice.maxPicks }, () => options[0])
-          : options.length
-            ? [options[0]]
-            : ['keep'];
-      await send('Choose', picks);
-      return true;
-    },
-
-    /** Attacks with one creature, or with none. */
-    async attack(withOne) {
-      await refresh();
-      const them = (view?.players ?? []).find((p) => p.playerId !== me);
-      const first = ready()[0];
-      const attackers = {};
-      if (withOne && first && them) {
-        attackers[first.id] = { defendingPlayer: them.playerId, planeswalker: null };
-      }
-      await send('DeclareAttackers', attackers);
-    },
-
-    /** Blocks the first attacker with `count` creatures, if it has that many. */
-    async block(count) {
-      await refresh();
-      const attackerIds = Object.keys(view?.attackers ?? {});
-      const mine = ready();
-      const blocks = {};
-      if (attackerIds.length > 0 && mine.length >= count && count > 0) {
-        blocks[attackerIds[0]] = mine.slice(0, count).map((c) => c.id);
-      }
-      await send('DeclareBlockers', blocks);
-    },
-
-    /** A land and a creature, so it has a board to attack and block with. */
-    async develop() {
-      await refresh();
-      if (!view || view.currentStep !== 'PrecombatMain' || view.activePlayerId !== me) return;
-
-      const seat = view.players.find((p) => p.playerId === me);
-      const hand = seat?.hand ?? [];
-
-      const land = hand.find((c) => /Forest/.test(c.name));
-      if (process.env.DIAG) {
-        console.log(
-          '    [opponent] main: hand=' +
-            hand.length +
-            ' land=' +
-            (land ? land.name : 'none') +
-            ' played=' +
-            seat?.landsPlayedThisTurn +
-            ' board=' +
-            view.battlefield.filter((c) => c.controllerId === me).length,
-        );
-      }
-      // A land and then a spell in the same visit. Returning after the land meant one action
-      // per turn, so it took four of its own turns to field a single creature and the script
-      // ran out of budget before it ever had a board to attack with.
-      if (land && seat.landsPlayedThisTurn === 0) {
-        await send('PlayLand', land.id);
-        await refresh();
-      }
-
-      // Three creatures is enough: one to attack with, two to block one attacker with — which
-      // is what makes the game ask the attacker to divide damage (CR 510.1c).
-      const onBoard = view.battlefield.filter((c) => c.controllerId === me && c.isCreature).length;
-      if (onBoard >= 3) return;
-
-      const seatNow = view.players.find((p) => p.playerId === me);
-      const creature = (seatNow?.hand ?? []).find((c) => c.name === 'Grizzly Bears');
-      const untapped = view.battlefield.filter(
-        (c) => c.controllerId === me && /Forest/.test(c.name) && !c.isTapped,
-      );
-      if (creature && untapped.length >= 2) {
-        for (const l of untapped.slice(0, 2)) await send('ActivateAbility', l.id, 'mana', []);
-        await send('CastSpell', creature.id, [], 0);
-      }
-    },
-
-    stop: () => connection.stop().catch(() => {}),
-  };
-}
-
-// ---- results ---------------------------------------------------------------------------------
+// Mono-coloured decks, so the land drawn is never the wrong one for the spell held.
+const DECK_A = ['40 Mountain', '30 Goblin Piker'].join(NL);
+const DECK_B = ['40 Forest', '30 Grizzly Bears'].join(NL);
+const MINE = 'Goblin Piker';
+const THEIRS = 'Grizzly Bears';
 
 const steps = [];
 
@@ -202,7 +59,8 @@ async function shot(d, name) {
   fs.writeFileSync(path.join(SHOTS, name + '.png'), await d.takeScreenshot(), 'base64');
 }
 
-async function step(d, token, gameId, name, expect, fn) {
+/** Runs one press and records whether it did what the step said it would. */
+async function press(d, token, gameId, name, expect, fn) {
   let before = await logLines(token, gameId);
   const mark = async () => {
     await clickIn(d, '.gb-refusal');
@@ -224,7 +82,7 @@ async function step(d, token, gameId, name, expect, fn) {
     return false;
   }
 
-  await sleep(1300);
+  await sleep(1200);
   const after = await logLines(token, gameId);
   const state = await board(d);
   await shot(d, String(steps.length + 1).padStart(2, '0') + '-' + name);
@@ -252,93 +110,6 @@ async function step(d, token, gameId, name, expect, fn) {
   return ok;
 }
 
-// ---- the driver ------------------------------------------------------------------------------
-
-/**
- * Moves the game exactly one notch, and says what it is waiting on this player for.
- *
- * Everything the opponent does happens here, when called. Nothing happens between calls, so a
- * window this reports stays open until the browser has acted on it.
- */
-async function tick(d, tokenA, gameId, bot, policy) {
-  const v = await api(tokenA, 'GET', '/api/games/' + gameId);
-
-  if (v.choice) {
-    if (v.choice.playerId === v.viewer) return { wants: 'choice', v };
-    await bot.answer();
-    return { wants: 'ticked', v };
-  }
-
-  const mine = v.activePlayerId === v.viewer;
-
-  if (v.currentStep === 'DeclareAttackers' && !v.attackersDeclared) {
-    if (mine) return { wants: 'attack', v };
-    await bot.attack(policy.opponentAttacks);
-    return { wants: 'ticked', v };
-  }
-
-  if (v.currentStep === 'DeclareBlockers' && !v.blockersDeclared) {
-    // Blockers belong to whoever is not the active player (CR 509.1).
-    if (mine) {
-      await bot.block(policy.opponentBlocksWith);
-      return { wants: 'ticked', v };
-    }
-    return { wants: 'block', v };
-  }
-
-  if (mine && v.currentStep === 'PrecombatMain') return { wants: 'main', v };
-
-  // Order matters, and this one cost several runs: the opponent has to be given priority before
-  // it can do anything with it. Developing first meant every land it tried to play came back
-  // "You do not have priority (CR 117.1)", so it never had a board, never attacked, and every
-  // combat window this script was waiting for never opened.
-  await clickIn(d, '.gb-pass');
-  await bot.develop();
-  await bot.pass();
-  return { wants: 'ticked', v };
-}
-
-/**
- * Ticks until the game wants one of `whats` from this player, or gives up.
- *
- * Everything it is *not* waiting for has to be answered here, not ignored. Leaving a pending
- * choice unanswered stops the game dead — a discard at cleanup will do it — and then nothing
- * else happens either: in one run this loop spun three hundred times while the opponent got two
- * turns, because a prompt nobody would answer was holding the whole game still.
- */
-async function until_(d, tokenA, gameId, bot, policy, whats, limit = 300) {
-  for (let i = 0; i < limit; i++) {
-    const t = await tick(d, tokenA, gameId, bot, policy);
-    if (whats.includes(t.wants)) return t;
-
-    switch (t.wants) {
-      case 'choice':
-        await clickInExcept(d, '.gb-prompt-actions .gb-btn', 'confirm|start over');
-        await sleep(250);
-        await clickIn(d, '.gb-prompt-actions .gb-btn', 'confirm');
-        break;
-
-      case 'attack':
-        await clickIn(d, '.gb-btn-primary', 'attack with nothing');
-        break;
-
-      case 'block':
-        await clickIn(d, '.gb-btn-primary', 'block with nothing');
-        break;
-
-      case 'main':
-        await clickIn(d, '.gb-pass');
-        break;
-
-      default:
-        break;
-    }
-
-    await sleep(120);
-  }
-  return null;
-}
-
 (async () => {
   const tokenA = await signIn(A);
   const tokenB = await signIn(B);
@@ -355,115 +126,132 @@ async function until_(d, tokenA, gameId, bot, policy, whats, limit = 300) {
   ).gameId;
   console.log('game: ' + gameId);
 
-  const bot = await opponent(tokenB, gameId);
+  // Both seats on the wire. The browser joins as a third connection for the same player as
+  // `alice`, which the hub is happy with — it authorises by token, and a player watching their
+  // own game from two places is not a rules question.
+  const alice = await seat(tokenA, gameId);
+  const bob = await seat(tokenB, gameId);
+  const who = (id) => (id === alice.id ? alice : bob);
+
   const d = await buildDriver({ device, dpr: 1 });
-  const policy = { opponentAttacks: true, opponentBlocksWith: 2 };
 
   try {
     await signInThroughTheForm(d, { By, until }, A);
     await d.get(baseUrl + '/play/' + gameId);
     await d.wait(until.elementLocated(By.css('.gb-root')), 25000);
-    await sleep(2500);
-    console.log('board opened as ' + A.username + NL);
+    await sleep(2000);
+    console.log('board open as ' + A.username);
 
-    // Keep the opening hand, from both seats.
-    for (let i = 0; i < 30; i++) {
-      const v = await api(tokenA, 'GET', '/api/games/' + gameId);
-      if (!v.choice) break;
-      if (v.choice.playerId === v.viewer) {
-        await clickIn(d, '.gb-prompt-actions .gb-btn', 'keep');
-      } else {
-        await bot.answer();
-      }
-      await sleep(500);
-    }
+    /**
+     * Moves the game over the wire until `stop` is true.
+     *
+     * `hold` names the one thing this will not do for itself, because it is about to be done by
+     * hand in the browser.
+     */
+    async function drive(
+      stop,
+      { hold = null, attackWith = 0, blockWith = 0, develop = null } = {},
+    ) {
+      for (let i = 0; i < 400; i++) {
+        const v = await alice.refresh();
+        if (stop(v)) return v;
 
-    /** Gets a creature onto this player's battlefield, one turn at a time. */
-    async function ensureCreature() {
-      for (let i = 0; i < 40; i++) {
-        if ((await board(d)).mine.includes(MY_CREATURE)) return true;
-
-        const t = await until_(d, tokenA, gameId, bot, policy, ['main', 'block'], 60);
-        if (!t) return false;
-        if (t.wants === 'block') {
-          await clickIn(d, '.gb-btn-primary', 'block with');
-          await sleep(300);
+        if (v.choice) {
+          if (hold === 'choice' && v.choice.playerId === alice.id) return v;
+          await who(v.choice.playerId).answerChoice();
           continue;
         }
 
-        const s = await board(d);
-        if (s.hand.includes('Mountain')) {
-          await playFromHand(d, 'Mountain');
-          await sleep(800);
+        if (v.currentStep === 'DeclareAttackers' && !v.attackersDeclared) {
+          if (hold === 'attack' && v.activePlayerId === alice.id) return v;
+          await who(v.activePlayerId).attack(attackWith);
+          continue;
         }
-        await tapLands(d, 'Mountain');
 
-        if ((await board(d)).hand.includes(MY_CREATURE)) {
-          await playFromHand(d, MY_CREATURE);
-          await sleep(700);
-          await clickIn(d, '.gb-prompt-actions .gb-btn', 'no target');
-          await sleep(700);
-          for (let n = 0; n < 6; n++) {
-            if ((await board(d)).mine.includes(MY_CREATURE)) return true;
-            await clickIn(d, '.gb-pass');
-            await bot.pass();
-            await sleep(350);
-          }
+        if (v.currentStep === 'DeclareBlockers' && !v.blockersDeclared) {
+          const defender = v.activePlayerId === alice.id ? bob : alice;
+          if (hold === 'block' && defender.id === alice.id) return v;
+          await defender.block(blockWith);
+          continue;
         }
-        await clickIn(d, '.gb-pass');
-        await bot.pass();
-        await sleep(300);
+
+        if (develop) await develop(v);
+
+        // The active player has priority first (CR 117.3a), so it passes first.
+        await who(v.activePlayerId).pass();
+        await (v.activePlayerId === alice.id ? bob : alice).pass();
       }
-      return (await board(d)).mine.includes(MY_CREATURE);
+      return null;
     }
 
-    const haveCreature = await ensureCreature();
-    console.log('creature on the board: ' + haveCreature + NL);
+    /** A land and, when it can, a creature — for whichever seat is in its own main phase. */
+    const developBoth = async (v) => {
+      if (v.currentStep !== 'PrecombatMain') return;
+      const active = who(v.activePlayerId);
+      const isAlice = active.id === alice.id;
+      await active.playLand(isAlice ? /Mountain/ : /Forest/);
+      await active.cast(isAlice ? MINE : THEIRS, isAlice ? /Mountain/ : /Forest/, 2);
+    };
 
-    // ---- blocking ---------------------------------------------------------------------------
-    await step(d, tokenA, gameId, 'declare-blockers', 'moves', async (mark) => {
-      const t = await until_(d, tokenA, gameId, bot, policy, ['block'], 900);
-      if (!t) return false;
+    const creaturesOf = (v, id) =>
+      v.battlefield.filter((c) => c.controllerId === id && c.isCreature).length;
 
-      // The window is open and nothing will close it: the engine waits for this player, and the
-      // opponent only acts when this script tells it to.
-      await sleep(600);
+    // ---- give both sides a board ---------------------------------------------------------------
+    const built = await drive((v) => creaturesOf(v, alice.id) >= 1 && creaturesOf(v, bob.id) >= 2, {
+      develop: developBoth,
+    });
+    console.log(
+      'boards built: ' +
+        (built
+          ? 'mine=' + creaturesOf(built, alice.id) + ' theirs=' + creaturesOf(built, bob.id)
+          : 'no') +
+        NL,
+    );
+
+    // ---- blocking, by hand ----------------------------------------------------------------------
+    await press(d, tokenA, gameId, 'declare-blockers', 'moves', async (mark) => {
+      // The opponent attacks with one, and then the game waits for this player. Nothing else
+      // here will answer for them, so the window stays open for as long as the press takes.
+      const at = await drive(
+        (v) =>
+          v.currentStep === 'DeclareBlockers' && !v.blockersDeclared && v.activePlayerId === bob.id,
+        { hold: 'block', attackWith: 1, develop: developBoth },
+      );
+      if (!at) return false;
+
+      await sleep(900);
       const s = await board(d);
-      if (s.attacking === 0 || !s.mine.includes(MY_CREATURE)) return false;
+      if (s.attacking === 0 || !s.mine.includes(MINE)) return false;
 
       // Point at the attacker, then assign a blocker to it (CR 509.1a).
       if (!(await clickIn(d, '.gb-field-half:first-child .gb-permanent.is-attacking')))
         return false;
       await sleep(500);
-      if (!(await clickPermanent(d, 'mine', MY_CREATURE))) return false;
+      if (!(await clickPermanent(d, 'mine', MINE))) return false;
       await sleep(500);
       await mark();
       return clickIn(d, '.gb-btn-primary', 'block with [1-9]');
     });
 
-    // ---- dividing damage among two blockers ---------------------------------------------------
-    await step(d, tokenA, gameId, 'division-start-over', 'no-change', async (mark) => {
-      if (!(await ensureCreature())) return false;
+    // ---- dividing damage between two blockers, by hand -------------------------------------------
+    await press(d, tokenA, gameId, 'division-start-over', 'no-change', async (mark) => {
+      // This player attacks and the opponent blocks with two, which is what makes the game ask
+      // for a division (CR 510.1c) — the only route to Confirm and Start over.
+      const asked = await drive(
+        (v) => !!v.choice && v.choice.playerId === alice.id && v.choice.isDivision,
+        { hold: 'choice', attackWith: 1, blockWith: 2, develop: developBoth },
+      );
+      if (!asked || !asked.choice || !asked.choice.isDivision) return false;
 
-      const t = await until_(d, tokenA, gameId, bot, policy, ['attack'], 400);
-      if (!t) return false;
-
-      if (!(await clickPermanent(d, 'mine', MY_CREATURE))) return false;
-      await sleep(400);
-      if (!(await clickIn(d, '.gb-btn-primary', 'attack with [1-9]'))) return false;
-
-      // The opponent blocks it with two, and the game asks this player to divide the damage.
-      const asked = await until_(d, tokenA, gameId, bot, policy, ['choice'], 60);
-      if (!asked || !asked.v.choice.isDivision) return false;
-
+      await sleep(900);
       await clickInExcept(d, '.gb-prompt-actions .gb-btn', 'confirm|start over');
       await sleep(400);
       await mark();
       return clickIn(d, '.gb-prompt-actions .gb-btn', 'start over');
     });
 
-    await step(d, tokenA, gameId, 'division-confirm', 'moves', async (mark) => {
-      const v = await api(tokenA, 'GET', '/api/games/' + gameId);
+    await press(d, tokenA, gameId, 'division-confirm', 'moves', async (mark) => {
+      const v = await alice.refresh();
       if (!v.choice || !v.choice.isDivision) return false;
 
       // Confirm stays disabled until every point has been assigned.
@@ -482,7 +270,8 @@ async function until_(d, tokenA, gameId, bot, policy, whats, limit = 300) {
     await shot(d, '99-final');
     console.log(NL + 'final board: ' + JSON.stringify(await board(d)));
   } finally {
-    await bot.stop();
+    await alice.stop();
+    await bob.stop();
     try {
       await d.quit();
     } catch {
@@ -494,11 +283,11 @@ async function until_(d, tokenA, gameId, bot, policy, whats, limit = 300) {
       console.log('  ' + s.name.padEnd(22) + (s.expect + ':').padEnd(12) + s.result),
     );
     const failed = steps.filter((s) => s.result !== 'as expected');
-    if (failed.length > 0) {
-      console.log(NL + failed.length + ' of ' + steps.length + ' did not behave.');
-      process.exitCode = 1;
-    } else if (steps.length === 0) {
+    if (steps.length === 0) {
       console.log('nothing ran.');
+      process.exitCode = 1;
+    } else if (failed.length > 0) {
+      console.log(NL + failed.length + ' of ' + steps.length + ' did not behave.');
       process.exitCode = 1;
     } else {
       console.log(NL + 'all ' + steps.length + ' behaved.');

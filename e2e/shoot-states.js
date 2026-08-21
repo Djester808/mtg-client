@@ -231,6 +231,55 @@ const STATES = [
     },
   },
   {
+    id: 'game-board-division',
+    label: 'Game board — dividing combat damage',
+    // The tallest thing the board ever shows: a prompt with an option per blocker, a running
+    // count and two buttons. It is worth a state of its own because it is what squeezes the
+    // battlefield — the halves used to be shrunk under their own contents and printed over each
+    // other, two rows of cards on top of one another, and the audit had no surface that would
+    // have shown it.
+    root: '.gb-root',
+    extra: `return {
+      prompt: (document.querySelector('.gb-prompt-text') || {}).textContent || null,
+      options: document.querySelectorAll('.gb-prompt-actions .gb-btn').length,
+      // Each half has to be at least as tall as what is inside it, or the permanents print over
+      // the half below.
+      halvesSpill: [...document.querySelectorAll('.gb-field-half')].some(
+        (h) => h.scrollHeight > Math.ceil(h.getBoundingClientRect().height) + 1,
+      ),
+      fieldScrolls: (() => {
+        const f = document.querySelector('.gb-field');
+        return f ? f.scrollHeight > f.clientHeight + 1 : false;
+      })(),
+    };`,
+    async drive(d) {
+      await trySignIn(d);
+      await armGameReplay(d, {
+        currentStep: 'CombatDamage',
+        choice: {
+          id: 'divide:1',
+          playerId: 'aaaaaaaa-0000-0000-0000-000000000001',
+          kind: 'DivideCombatDamage',
+          prompt:
+            "Divide Goblin Piker's 2 damage among the 2 creatures blocking it. Pick a creature " +
+            'once per point; a creature can only take more than lethal once the others have lethal.',
+          minPicks: 2,
+          maxPicks: 2,
+          isOrdering: false,
+          isDivision: true,
+          totalToDivide: 2,
+          options: [
+            { id: 'b1', label: 'Grizzly Bears' },
+            { id: 'b2', label: 'Grizzly Bears' },
+          ],
+        },
+      });
+      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
+      await d.wait(until.elementLocated(By.css('.gb-prompt-actions .gb-btn')), 20000);
+      await sleep(1500);
+    },
+  },
+  {
     id: 'game-board',
     label: 'Game board — mid-turn, stack of two',
     // The whole board: what matters at 375 is whether the column of strips, two battlefields

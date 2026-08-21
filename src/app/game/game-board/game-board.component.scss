@@ -155,9 +155,15 @@
   overflow-y: auto;
 }
 
+// Grows to share the space, never shrinks below what is in it.
+//
+// `flex: 1` with `min-height: 0` let each half be squashed under its own contents, and a
+// battlefield has nothing to clip with — so the permanents simply printed over the half below.
+// With a damage-division prompt open at 375x667 the field is 51px and the top half was printing
+// 53px into the bottom one, which is two rows of cards on top of each other. The field already
+// scrolls; that is the right answer when there is not enough room, and this is what lets it.
 .gb-field-half {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
 }
 
 .gb-field-label {
