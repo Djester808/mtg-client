@@ -722,6 +722,79 @@ describe('GameBoardComponent', () => {
     expect(hub.choose).toHaveBeenCalledWith(['first', 'first', 'second', 'second']);
   });
 
+  it('starts a division over without sending anything', () => {
+    // Start over is one of two controls on this board whose whole job is to send nothing (the
+    // other is Cancel while targeting). A version that quietly submitted the half-finished
+    // division would pass any check that only asks whether something happened, and would hand
+    // the game an assignment the player was in the middle of changing their mind about.
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'DivideCombatDamage',
+          prompt: 'Divide 4 damage.',
+          minPicks: 4,
+          maxPicks: 4,
+          isOrdering: false,
+          isDivision: true,
+          totalToDivide: 4,
+          options: [
+            { id: 'first', label: 'First' },
+            { id: 'second', label: 'Second' },
+          ],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('first');
+    page.togglePick('first');
+    page.togglePick('second');
+    expect(page.assigned('first')).toBe(2);
+
+    page.clearPicks();
+
+    expect(page.assigned('first')).toBe(0);
+    expect(page.assigned('second')).toBe(0);
+    expect(page.leftToDivide).toBe(4);
+    expect(hub.choose).not.toHaveBeenCalled();
+  });
+
+  it('will not confirm a division that is not finished', () => {
+    // Confirm is disabled until every point is assigned, and the guard is in the component as
+    // well as the template: a half-assigned division is not an answer the engine can take
+    // (CR 510.1c wants one pick per point).
+    const fixture = create();
+    hub.view.set(
+      view({
+        choice: {
+          id: 'c1',
+          playerId: ME,
+          kind: 'DivideCombatDamage',
+          prompt: 'Divide 4 damage.',
+          minPicks: 4,
+          maxPicks: 4,
+          isOrdering: false,
+          isDivision: true,
+          totalToDivide: 4,
+          options: [{ id: 'first', label: 'First' }],
+        },
+      }),
+    );
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.togglePick('first');
+    expect(page.canSubmitChoice).toBeFalse();
+
+    page.submitChoice();
+
+    expect(hub.choose).not.toHaveBeenCalled();
+  });
+
   it('will not assign more than there is to divide', () => {
     const fixture = create();
     hub.view.set(
