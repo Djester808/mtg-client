@@ -64,7 +64,7 @@ export class GameLobbyComponent implements OnInit {
       error: () => this.loading.set(false),
     });
 
-    this.api.players().subscribe({
+    this.api.opponents().subscribe({
       next: (players) => this.players.set(players),
       error: () => this.players.set([]),
     });

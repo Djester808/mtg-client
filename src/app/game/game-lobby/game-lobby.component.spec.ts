@@ -24,7 +24,7 @@ describe('GameLobbyComponent', () => {
   /** Answers the three calls the lobby makes on load. */
   function settle(decks = [{ id: 'deck-1', name: 'Elves', cardCount: 60 }]) {
     http.expectOne('/api/games/decks').flush(decks);
-    http.expectOne('/api/users?limit=100').flush([{ userId: 'bob', username: 'Bob' }]);
+    http.expectOne('/api/games/opponents').flush([{ userId: 'bob-id', username: 'Bob' }]);
     http.expectOne('/api/games/invites').flush([]);
     http.expectOne('/api/games/invites/sent').flush([]);
   }
@@ -62,6 +62,40 @@ describe('GameLobbyComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Elves');
   });
 
+  it('asks the endpoint that carries a user id', () => {
+    // This is the bug this spec exists for, and the reason it survived. The lobby read the
+    // public community directory at /api/users, which deliberately carries no user id, and
+    // bound player.userId from it — so every option in the picker was worth undefined and no
+    // invitation could be addressed. The old spec flushed that URL with a userId the endpoint
+    // has never returned, which made the fabrication look like a contract.
+    const fixture = create();
+    http.expectOne('/api/games/decks').flush([]);
+
+    const request = http.expectOne('/api/games/opponents');
+    expect(request.request.method).toBe('GET');
+
+    request.flush([{ userId: 'bob-id', username: 'Bob' }]);
+    http.expectOne('/api/games/invites').flush([]);
+    http.expectOne('/api/games/invites/sent').flush([]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.players()).toEqual([{ userId: 'bob-id', username: 'Bob' }]);
+  });
+
+  it('puts a real id on every option in the opponent picker', () => {
+    // An option whose value is undefined looks perfectly fine on screen.
+    const fixture = create();
+    settle();
+    fixture.detectChanges();
+
+    const values = Array.from(
+      fixture.nativeElement.querySelectorAll('select[name="opponent"] option'),
+    ).map((o) => (o as HTMLOptionElement).value);
+
+    // The first is the "Choose a player…" placeholder, which is empty on purpose.
+    expect(values.slice(1).every((v) => !!v && v !== 'undefined')).toBeTrue();
+  });
+
   it('will not invite until a deck and an opponent are chosen', () => {
     const fixture = create();
     settle();
@@ -97,7 +131,7 @@ describe('GameLobbyComponent', () => {
   it('accepting brings the accepter own deck and opens the board', () => {
     const fixture = create();
     http.expectOne('/api/games/decks').flush([{ id: 'deck-2', name: 'Goblins', cardCount: 60 }]);
-    http.expectOne('/api/users?limit=100').flush([]);
+    http.expectOne('/api/games/opponents').flush([]);
     http.expectOne('/api/games/invites').flush([
       {
         id: 'invite-1',
@@ -157,7 +191,7 @@ describe('GameLobbyComponent', () => {
   it('withdrawing an invitation refreshes what is on screen', () => {
     const fixture = create();
     http.expectOne('/api/games/decks').flush([]);
-    http.expectOne('/api/users?limit=100').flush([]);
+    http.expectOne('/api/games/opponents').flush([]);
     http.expectOne('/api/games/invites').flush([]);
     http.expectOne('/api/games/invites/sent').flush([
       {

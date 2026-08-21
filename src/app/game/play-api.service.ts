@@ -24,8 +24,17 @@ export class PlayApiService {
   }
 
   /** Community members who could be invited. */
-  players(): Observable<{ userId: string; username: string }[]> {
-    return this.http.get<{ userId: string; username: string }[]>('/api/users?limit=100');
+  /**
+   * The players the caller could invite.
+   *
+   * `/api/games/opponents`, not the community directory at `/api/users`: that one is public and
+   * anonymous and carries no user id, which is deliberate. This read it anyway and bound
+   * `player.userId` from it, so every option in the picker was worth `undefined`, every
+   * invitation went out with no opponent, and the page answered "one or more validation errors
+   * occurred" without naming a field.
+   */
+  opponents(): Observable<{ userId: string; username: string }[]> {
+    return this.http.get<{ userId: string; username: string }[]>(`${this.base}/opponents`);
   }
 
   invite(request: CreateInviteRequest): Observable<GameInvite> {

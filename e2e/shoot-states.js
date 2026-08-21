@@ -176,6 +176,15 @@ const STATES = [
     extra: `return {
       decks: document.querySelectorAll('.gl-select option').length,
       invites: document.querySelectorAll('.gl-invite').length,
+      // An option whose value is empty looks perfectly fine on screen and addresses nobody.
+      // The picker read the public directory, which carries no user id, so every option here
+      // was worth undefined and no invitation could be sent at all.
+      opponentsWithoutAnId: (() => {
+        const select = document.querySelector('select[name="opponent"]');
+        if (!select) return null;
+        // The first option is the "Choose a player…" placeholder, empty on purpose.
+        return [...select.options].slice(1).filter((o) => !o.value || o.value === 'undefined').length;
+      })(),
     };`,
     async drive(d) {
       await trySignIn(d);

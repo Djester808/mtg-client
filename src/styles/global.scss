@@ -13,6 +13,16 @@
 
 // ---- Design Tokens ----------------------------------------
 :root {
+  // The app is dark, and this is the only way to tell the browser so.
+  //
+  // A native control's popup is drawn by the operating system, not by the page: a <select>'s
+  // option list came up white with a blue highlight over a dark app no matter what CSS the
+  // element carried, because none of it reaches that surface. Styling `option` helps where a
+  // browser honours it and cannot help there at all. This is the switch — it also darkens
+  // scrollbars, spinners, date pickers and every other piece of browser chrome, which is the
+  // rest of the same complaint.
+  color-scheme: dark;
+
   // Backgrounds
   --bg-void: #080808;
   --bg-deep: #0e0e0f;
