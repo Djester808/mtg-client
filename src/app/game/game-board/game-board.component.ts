@@ -89,6 +89,11 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     return this.layoutService.printedStats(card);
   }
 
+  /** Where in the turn the game is, in words (CR 500.1). */
+  get stepLabel(): string | null {
+    return this.layoutService.stepLabel(this.hub.step());
+  }
+
   /** A planeswalker's loyalty, shown where a creature shows its power and toughness. */
   loyalty(card: ObjectView): string | null {
     return this.layoutService.loyalty(card);

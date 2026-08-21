@@ -22,12 +22,11 @@
   </div>
 
   <div class="gb-turn">
-    <span class="gb-turn-number"
-      >Turn {{ b.me.landsPlayedThisTurn >= 0 ? '' : '' }}{{ hub.view()!.turnNumber }}</span
-    >
+    <span class="gb-turn-number">Turn {{ hub.view()!.turnNumber }}</span>
     <span class="gb-whose" [class.is-mine]="b.isMyTurn">{{
       b.isMyTurn ? 'Your turn' : 'Their turn'
     }}</span>
+    <span class="gb-step" *ngIf="stepLabel as label">{{ label }}</span>
     <span class="gb-connection" *ngIf="hub.connection$() !== 'connected'">{{
       hub.connection$()
     }}</span>

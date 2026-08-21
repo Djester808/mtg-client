@@ -151,4 +151,47 @@ describe('BoardLayoutService', () => {
       expect(service.loyalty(walker)).toBeNull();
     });
   });
+
+  describe('stepLabel', () => {
+    it('names every step the server can send', () => {
+      // The board used to say whose turn it was and nothing more, so the only way to learn
+      // where in the turn you were was to press something and read the refusal. Every step the
+      // engine has is named here, because the one that is missing is the one a player meets.
+      const steps = [
+        'Untap',
+        'Upkeep',
+        'Draw',
+        'PrecombatMain',
+        'BeginningOfCombat',
+        'DeclareAttackers',
+        'DeclareBlockers',
+        'CombatDamage',
+        'EndOfCombat',
+        'PostcombatMain',
+        'End',
+        'Cleanup',
+      ];
+
+      for (const step of steps) {
+        const label = service.stepLabel(step) ?? '';
+        expect(label).toBeTruthy();
+        // A step that fell through still reads as an identifier — 'PrecombatMain' rather than
+        // 'Main phase'. Some steps are already a word (Untap, Draw, Cleanup) and keep it, so
+        // the test is that no label has a camelCase seam, not that every one changed.
+        expect(/[a-z][A-Z]/.test(label))
+          .withContext(step + ' -> ' + label)
+          .toBeFalse();
+      }
+    });
+
+    it('reads as words rather than as an enum', () => {
+      expect(service.stepLabel('PrecombatMain')).toBe('Main phase');
+      expect(service.stepLabel('DeclareBlockers')).toBe('Declare blockers');
+      expect(service.stepLabel('PostcombatMain')).toBe('Second main');
+    });
+
+    it('says nothing when the game has not told us where it is', () => {
+      expect(service.stepLabel(null)).toBeNull();
+    });
+  });
 });

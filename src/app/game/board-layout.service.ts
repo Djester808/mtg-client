@@ -102,6 +102,49 @@ export class BoardLayoutService {
     return counters === undefined ? null : String(counters);
   }
 
+  /**
+   * The step, in words a player reads (CR 500.1).
+   *
+   * The board said whose turn it was and nothing more, so the only way to find out where in the
+   * turn you were was to press something and read the refusal — "a land is played during your
+   * main phase with an empty stack" is a fine explanation and a poor way to learn the game is in
+   * combat. Every harness written against this board had to ask the server for the step, which
+   * is a tell: a player has no such option.
+   *
+   * Short on purpose. It sits beside the turn number in a strip that has to fit 375px, and the
+   * longest of these is "Declare blockers".
+   */
+  stepLabel(step: string | null): string | null {
+    switch (step) {
+      case 'Untap':
+        return 'Untap';
+      case 'Upkeep':
+        return 'Upkeep';
+      case 'Draw':
+        return 'Draw';
+      case 'PrecombatMain':
+        return 'Main phase';
+      case 'BeginningOfCombat':
+        return 'Combat';
+      case 'DeclareAttackers':
+        return 'Declare attackers';
+      case 'DeclareBlockers':
+        return 'Declare blockers';
+      case 'CombatDamage':
+        return 'Combat damage';
+      case 'EndOfCombat':
+        return 'End of combat';
+      case 'PostcombatMain':
+        return 'Second main';
+      case 'End':
+        return 'End step';
+      case 'Cleanup':
+        return 'Cleanup';
+      default:
+        return step;
+    }
+  }
+
   /** Whether a card in hand is a land, which decides whether it is played or cast. */
   isLand(card: ObjectView): boolean {
     return (card.typeLine ?? '').includes('Land');

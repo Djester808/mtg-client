@@ -445,6 +445,17 @@ describe('GameBoardComponent', () => {
     });
   });
 
+  it('shows where in the turn the game is', () => {
+    // Without this a player presses and finds out from the refusal. Every harness written
+    // against this board had to ask the server for the step, which is the tell.
+    const fixture = create();
+    hub.view.set(view({ currentStep: 'DeclareBlockers' }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.stepLabel).toBe('Declare blockers');
+    expect(fixture.nativeElement.textContent).toContain('Declare blockers');
+  });
+
   it('offers the block button to the defending player', () => {
     // CR 509.1: blockers are the defending player's to declare, so this is the one combat
     // control that appears on the turn that is not yours.

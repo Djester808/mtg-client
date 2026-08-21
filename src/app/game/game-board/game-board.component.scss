@@ -106,6 +106,14 @@
   font-weight: 600;
 }
 
+// Quieter than whose turn it is: the step is a fact you glance at, not the headline.
+.gb-step {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .gb-connection {
   margin-left: auto;
   color: #dc9a5a;
