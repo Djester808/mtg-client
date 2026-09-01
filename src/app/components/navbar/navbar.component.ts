@@ -80,10 +80,14 @@ export class NavbarComponent {
     // The game had routes and no way in but typing the URL. It is behind authGuard like
     // Collection and Decks, and is listed the same way they are: the guard sends a signed-out
     // visitor to sign in, which is a better answer than pretending the feature is not there.
-    { path: '/play', label: 'Play', exact: false },
+    { path: '/lobby', label: 'Play', exact: false },
     { path: '/collection', label: 'Collection', exact: false },
     { path: '/deck', label: 'Decks', exact: false },
     { path: '/community', label: 'Community', exact: false },
+    // Not behind authGuard, unlike its neighbours: the life counter is for a table that may
+    // have nobody signed in at all, and a guard would put a login form in front of a screen
+    // whose whole job is to work without one.
+    { path: '/tools', label: 'Tools', exact: false },
     { path: '/kb', label: 'Rules', exact: false },
   ];
 

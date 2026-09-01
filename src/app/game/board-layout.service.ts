@@ -13,6 +13,12 @@ export interface BoardLayout {
   stack: ObjectView[];
   hand: ObjectView[];
   isMyTurn: boolean;
+  /** Ids of creatures currently attacking (CR 508.1). */
+  attackingIds: ReadonlySet<string>;
+  /** Ids of creatures currently blocking something (CR 509.1). */
+  blockingIds: ReadonlySet<string>;
+  /** Exile is one shared zone in the view, so its size is a board-level number. */
+  exileCount: number;
 }
 
 /**
@@ -48,6 +54,7 @@ export class BoardLayoutService {
         landsPlayedThisTurn: 0,
         commanderDamage: {},
         commanderName: null,
+        manaPool: {},
       } satisfies PlayerView);
 
     const result: BoardLayout = {
@@ -58,6 +65,9 @@ export class BoardLayoutService {
       stack: view.stack,
       hand: me.hand ?? [],
       isMyTurn: view.activePlayerId === view.viewer,
+      attackingIds: new Set(Object.keys(view.attackers ?? {})),
+      blockingIds: new Set(Object.values(view.blockers ?? {}).flat()),
+      exileCount: view.exile.length,
     };
 
     this.lastView = view;
@@ -148,5 +158,21 @@ export class BoardLayoutService {
   /** Whether a card in hand is a land, which decides whether it is played or cast. */
   isLand(card: ObjectView): boolean {
     return (card.typeLine ?? '').includes('Land');
+  }
+
+  /**
+   * Whether casting this needs the board to ask for a target (CR 601.2c).
+   *
+   * Read off the card, because the card is where it is written: a spell that targets says
+   * "target" in its rules text. Without this the board stopped on every cast — a Goblin Piker
+   * asked "choose a target, or cast it with none", which is a question about a creature spell
+   * that has no answer and no purpose.
+   *
+   * A heuristic, and the safe direction: a spell whose text does not say "target" is cast
+   * straight away, and if the engine disagrees it refuses and says so. Modal and keyworded
+   * targeting that never spells the word will fall through to that refusal.
+   */
+  needsATarget(card: ObjectView): boolean {
+    return /\btargets?\b/i.test(card.oracleText ?? '');
   }
 }

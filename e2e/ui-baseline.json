@@ -311,30 +311,6 @@
     "smallSelectors": 0,
     "truncated": 0
   },
-  "state:iphone-se:game-board-combat": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:game-board-aiming": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:game-board-division": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:game-board": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
   "state:iphone-se:ai-build-brief": {
     "overflows": false,
     "smallTargets": 0,
@@ -467,30 +443,6 @@
     "smallSelectors": 0,
     "truncated": 0
   },
-  "state:pixel-8:game-board-combat": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:game-board-aiming": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:game-board-division": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:game-board": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
   "state:pixel-8:ai-build-brief": {
     "overflows": false,
     "smallTargets": 0,
@@ -610,5 +562,160 @@
     "smallTargets": 0,
     "smallSelectors": 0,
     "truncated": 0
+  },
+  "route:iphone-se:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
+  },
+  "route:iphone-15-pro:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
+  },
+  "route:pixel-8:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
+  },
+  "route:ipad-mini:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
+  },
+  "route:desktop:lobby": {
+    "overflows": false,
+    "smallTargets": 10,
+    "smallSelectors": 4
+  },
+  "route:iphone-se:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-se:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:desktop:tools": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "route:desktop:life-counter": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "state:iphone-se:life-counter-8": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-2": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-setup": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-seat-sheet": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-commander-damage": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-backdrop": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "state:iphone-se:tools-hub": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-8": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-2": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-setup": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-seat-sheet": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-commander-damage": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-backdrop": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "state:pixel-8:tools-hub": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:iphone-se:life-counter-seat-tab": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
+  },
+  "state:pixel-8:life-counter-seat-tab": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0
   }
 }

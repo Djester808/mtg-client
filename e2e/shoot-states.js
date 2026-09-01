@@ -88,8 +88,29 @@ const AUDIT = `
 async function ensureSignedIn(d) {
   await d.get(baseUrl + '/login');
   await sleep(600);
-  const token = await d.executeScript("return localStorage.getItem('auth_token')");
-  if (token) return;
+
+  // A token that is present is not the same as a token that works. This returned as soon as it
+  // found one, so a stale or seeded value was treated as a session — and the first authenticated
+  // call of the next state got a 401, the interceptor logged the browser out, and the screen
+  // being captured emptied halfway through with nothing on it to say why. That is what had the
+  // profile's comment tab failing on every run since it was written.
+  const usable = await d.executeAsyncScript(
+    [
+      'var done = arguments[arguments.length - 1];',
+      "var token = localStorage.getItem('auth_token');",
+      'if (!token) return done(false);',
+      "fetch('/api/profile/me', { headers: { Authorization: 'Bearer ' + token } })",
+      '  .then(function (r) { done(r.ok); })',
+      '  .catch(function () { done(false); });',
+    ].join(''),
+  );
+  if (usable) return;
+
+  await d.executeScript(
+    "localStorage.removeItem('auth_token'); localStorage.removeItem('auth_username');",
+  );
+  await d.get(baseUrl + '/login');
+  await sleep(400);
 
   await d.wait(until.elementLocated(By.id('username')), 15000);
   await d.findElement(By.id('username')).sendKeys(username);
@@ -145,6 +166,57 @@ async function toReview(d) {
   await sleep(1200);
 }
 
+/**
+ * Deals a fresh life-counter table of `count` seats.
+ *
+ * The clear-and-reload is the point. The counter keeps its table in localStorage, so a run
+ * that captured one state opens the *next* one straight onto that table with no setup form
+ * in sight — which is the counter working, and the reason four of these states failed the
+ * first time they were driven.
+ */
+async function dealTable(d, count = 4) {
+  await d.get(baseUrl + '/tools/life-counter');
+  await d.executeScript(
+    // Only the counter's own keys. `localStorage.clear()` also takes `auth_token`, which
+    // signs the browser out — and the state after this one then captures a logged-out screen
+    // with nothing on it to say why.
+    "Object.keys(localStorage).filter((k) => k.startsWith('mtg.life-counter'))" +
+      '.forEach((k) => localStorage.removeItem(k));',
+  );
+  await d.get(baseUrl + '/tools/life-counter');
+  await d.wait(until.elementLocated(By.css('.setup')), 20000);
+  await sleep(300);
+
+  await d.executeScript(
+    `
+    const groups = [...document.querySelectorAll('.setup-group')];
+    const byText = (group, text) => [...group.querySelectorAll('.pick')]
+      .find((b) => b.textContent.trim() === text);
+    byText(groups[0], String(arguments[0])).click();
+    byText(groups[1], '40').click();
+  `,
+    count,
+  );
+  await sleep(200);
+
+  await d.executeScript(`document.querySelector('.setup-actions .primary-btn').click();`);
+  await d.wait(until.elementLocated(By.css('.lc-grid')), 10000);
+  await sleep(600);
+}
+
+/** Deals a table and opens the first seat's sheet on the named tab. */
+async function openSeatSheet(d, tab = 'Counters') {
+  await dealTable(d, 4);
+  await d.executeScript(`document.querySelector('.seat-menu').click();`);
+  await d.wait(until.elementLocated(By.css('.sheet')), 10000);
+  await d.executeScript(
+    `[...document.querySelectorAll('.sheet-tab')]
+       .find((b) => b.textContent.trim() === arguments[0]).click();`,
+    tab,
+  );
+  await sleep(600);
+}
+
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
   {
@@ -169,6 +241,144 @@ const STATES = [
       await sleep(700);
     },
   },
+  // ---- Life counter ---------------------------------------------------------------------
+  //
+  // The table is the one layout in the app whose height is divided rather than scrolled, so
+  // the audit's usual "taller than the screen is fine" does not apply: at eight seats every
+  // panel has to hold a life total, a name and a row of chips inside about 150px, and the
+  // only way to know it does is to photograph it.
+  //
+  // Driven through the UI rather than seeded into storage — the setup form is how a table
+  // actually gets dealt, and a state that skipped it would stop covering it.
+  {
+    id: 'life-counter-8',
+    label: 'Life counter — eight players',
+    root: '.lc-grid',
+    extra: `return {
+      panels: document.querySelectorAll('app-player-panel').length,
+      flipped: document.querySelectorAll('.panel.is-flipped').length,
+      // The number the whole panel is built around. If it has been squeezed under about
+      // 26px at eight seats, the layout has stopped working even though nothing overflowed.
+      smallestLife: Math.min(...[...document.querySelectorAll('.life')].map(
+        (el) => Math.round(parseFloat(getComputedStyle(el).fontSize)))),
+    };`,
+    async drive(d) {
+      await dealTable(d, 8);
+    },
+  },
+  {
+    id: 'life-counter-2',
+    label: 'Life counter — a duel',
+    root: '.lc-grid',
+    extra: `return {
+      panels: document.querySelectorAll('app-player-panel').length,
+      // One column, and the top seat turned to face the player across the table.
+      columns: getComputedStyle(document.querySelector('.lc-grid')).gridTemplateColumns.split(' ').length,
+      flipped: document.querySelectorAll('.panel.is-flipped').length,
+    };`,
+    async drive(d) {
+      await dealTable(d, 2);
+    },
+  },
+  {
+    id: 'life-counter-setup',
+    label: 'Life counter — setup',
+    root: '.setup',
+    async drive(d) {
+      await d.get(baseUrl + '/tools/life-counter');
+      await d.executeScript(
+        // Only the counter's own keys. `localStorage.clear()` also takes `auth_token`, which
+        // signs the browser out — and the state after this one then captures a logged-out screen
+        // with nothing on it to say why.
+        "Object.keys(localStorage).filter((k) => k.startsWith('mtg.life-counter'))" +
+          '.forEach((k) => localStorage.removeItem(k));',
+      );
+      await d.get(baseUrl + '/tools/life-counter');
+      await d.wait(until.elementLocated(By.css('.setup')), 20000);
+      await sleep(500);
+    },
+  },
+  {
+    id: 'life-counter-seat-sheet',
+    label: 'Life counter — seat sheet',
+    root: '.sheet',
+    extra: `return {
+      tabs: [...document.querySelectorAll('.sheet-tab')].map((b) => b.textContent.trim()),
+      counterRows: document.querySelectorAll('.sheet-body .row').length,
+    };`,
+    async drive(d) {
+      await openSeatSheet(d, 'Counters');
+    },
+  },
+  {
+    id: 'life-counter-commander-damage',
+    label: 'Life counter — commander damage',
+    root: '.sheet',
+    extra: `return {
+      // One row per opponent commander, not per opponent (CR 702.124d). Three other seats
+      // with one commander each, plus the partners toggle, is four rows.
+      rows: document.querySelectorAll('.sheet-body .row').length,
+    };`,
+    async drive(d) {
+      await openSeatSheet(d, 'Commander');
+    },
+  },
+  {
+    id: 'life-counter-seat-tab',
+    label: 'Life counter — seat, signed in',
+    root: '.sheet',
+    extra: `return {
+      // Present only once a seat has signed in; absent on a machine with no credentials,
+      // which is a legitimate capture of the same tab rather than a failure.
+      recordCells: [...document.querySelectorAll('.record-cell dt')].map((d) => d.textContent.trim()),
+      signedIn: !!document.querySelector('.signin-block .row-name'),
+    };`,
+    async drive(d) {
+      await openSeatSheet(d, 'Seat');
+
+      // The record block only exists for a signed-in seat, and signing in at a seat is its
+      // own act — the app's session does not confer it, which is the whole point.
+      if (!username || !password) return;
+
+      await d.executeScript(`
+        const b = [...document.querySelectorAll('.link-btn')]
+          .find((x) => /Sign in at this seat/.test(x.textContent));
+        if (b) b.click();
+      `);
+      await sleep(400);
+      const form = await d.findElements(By.css('.signin-form input[name="username"]'));
+      if (form.length === 0) return;
+
+      await form[0].sendKeys(username);
+      await d.findElement(By.css('.signin-form input[name="password"]')).sendKeys(password);
+      await d.executeScript(`document.querySelector('.signin-form .primary-btn').click();`);
+      await sleep(1600);
+    },
+  },
+  {
+    id: 'life-counter-backdrop',
+    label: 'Life counter — backdrop picker',
+    root: '.picker',
+    async drive(d) {
+      await openSeatSheet(d, 'Seat');
+      await d.executeScript(`
+        [...document.querySelectorAll('.link-btn')]
+          .find((b) => /picture/i.test(b.textContent)).click();
+      `);
+      await d.wait(until.elementLocated(By.css('.picker')), 10000);
+      await sleep(600);
+    },
+  },
+  {
+    id: 'tools-hub',
+    label: 'Tools hub',
+    root: '.tools',
+    async drive(d) {
+      await d.get(baseUrl + '/tools');
+      await d.wait(until.elementLocated(By.css('.tool-card')), 20000);
+      await sleep(500);
+    },
+  },
   {
     id: 'game-lobby',
     label: 'Play — start a game',
@@ -191,148 +401,6 @@ const STATES = [
       await armGameReplay(d);
       await d.get(baseUrl + '/play');
       await d.wait(until.elementLocated(By.css('.gl-page')), 20000);
-      await sleep(900);
-    },
-  },
-  {
-    id: 'game-board-combat',
-    label: 'Game board — declaring attackers',
-    root: '.gb-root',
-    extra: `return {
-      attackButton: !!Array.from(document.querySelectorAll('.gb-btn-primary'))
-        .find((b) => /attack/i.test(b.textContent || '')),
-    };`,
-    async drive(d) {
-      await trySignIn(d);
-      await armGameReplay(d, { currentStep: 'DeclareAttackers' });
-      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
-      // The board seeds from REST and then waits on a socket that will not connect, so the
-      // action bar settles a beat after .gb-root appears. 900ms caught it mid-render once.
-      await d.wait(until.elementLocated(By.css('.gb-actions button')), 20000);
-      await sleep(1500);
-    },
-  },
-  {
-    id: 'game-board-aiming',
-    label: 'Game board — attacker aimed at a planeswalker',
-    // The badge under an attacking creature carries the name of what it is aimed at, and a
-    // planeswalker's name is the longest thing that can land there ("Chandra, Torch of
-    // Defiance"). On a 375px row that badge is the widest new element on the board, so it is
-    // the one that has to be measured rather than reasoned about.
-    root: '.gb-root',
-    extra: `return {
-      hint: (document.querySelector('.gb-hint') || {}).textContent || null,
-      // The badge is an arrow and the target's short name. Empty here means the two taps did
-      // not land, which is the one way this capture could pass while proving nothing.
-      aimed: Array.from(document.querySelectorAll('.gb-permanent-note'))
-        .map((n) => (n.textContent || '').trim())
-        .filter((t) => t.startsWith('→')),
-      underAttack: Array.from(document.querySelectorAll('.is-under-attack')).map((n) =>
-        (n.textContent || '').trim(),
-      ),
-      // The badge shrinks to its card rather than widening it: a battlefield whose columns
-      // move as you pick targets is worse than a short name.
-      badgeOverflows: Array.from(document.querySelectorAll('.gb-permanent')).some(
-        (card) => card.scrollWidth > card.clientWidth + 1,
-      ),
-    };`,
-    async drive(d) {
-      await trySignIn(d);
-      await armGameReplay(d, { currentStep: 'DeclareAttackers' });
-      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
-      await d.wait(until.elementLocated(By.css('.gb-actions button')), 20000);
-      await sleep(1500);
-
-      // Two taps on an untapped creature of the viewer's: the first sends it at the player,
-      // the second aims it at the only planeswalker the defender controls (CR 508.1b).
-      // A creature, not just any permanent: only creatures show their power and toughness, and
-      // a land is no longer selectable — the first version of this drive picked the Forest and
-      // captured a board declaring a land as an attacker.
-      const mine = await d.findElements(
-        By.css(
-          '.gb-field-half:last-child .gb-permanent:not(.is-tapped):not(.is-sick):has(.gb-permanent-stats)',
-        ),
-      );
-      if (mine.length > 0) {
-        await mine[0].click();
-        await mine[0].click();
-      }
-
-      await sleep(600);
-    },
-  },
-  {
-    id: 'game-board-division',
-    label: 'Game board — dividing combat damage',
-    // The tallest thing the board ever shows: a prompt with an option per blocker, a running
-    // count and two buttons. It is worth a state of its own because it is what squeezes the
-    // battlefield — the halves used to be shrunk under their own contents and printed over each
-    // other, two rows of cards on top of one another, and the audit had no surface that would
-    // have shown it.
-    root: '.gb-root',
-    extra: `return {
-      prompt: (document.querySelector('.gb-prompt-text') || {}).textContent || null,
-      options: document.querySelectorAll('.gb-prompt-actions .gb-btn').length,
-      // Each half has to be at least as tall as what is inside it, or the permanents print over
-      // the half below.
-      halvesSpill: [...document.querySelectorAll('.gb-field-half')].some(
-        (h) => h.scrollHeight > Math.ceil(h.getBoundingClientRect().height) + 1,
-      ),
-      fieldScrolls: (() => {
-        const f = document.querySelector('.gb-field');
-        return f ? f.scrollHeight > f.clientHeight + 1 : false;
-      })(),
-    };`,
-    async drive(d) {
-      await trySignIn(d);
-      await armGameReplay(d, {
-        currentStep: 'CombatDamage',
-        choice: {
-          id: 'divide:1',
-          playerId: 'aaaaaaaa-0000-0000-0000-000000000001',
-          kind: 'DivideCombatDamage',
-          prompt:
-            "Divide Goblin Piker's 2 damage among the 2 creatures blocking it. Pick a creature " +
-            'once per point; a creature can only take more than lethal once the others have lethal.',
-          minPicks: 2,
-          maxPicks: 2,
-          isOrdering: false,
-          isDivision: true,
-          totalToDivide: 2,
-          options: [
-            { id: 'b1', label: 'Grizzly Bears' },
-            { id: 'b2', label: 'Grizzly Bears' },
-          ],
-        },
-      });
-      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
-      await d.wait(until.elementLocated(By.css('.gb-prompt-actions .gb-btn')), 20000);
-      await sleep(1500);
-    },
-  },
-  {
-    id: 'game-board',
-    label: 'Game board — mid-turn, stack of two',
-    // The whole board: what matters at 375 is whether the column of strips, two battlefields
-    // and a panning hand all fit the viewport at once, which is a page-level question.
-    root: '.gb-root',
-    extra: `return {
-      handCards: document.querySelectorAll('.gb-card').length,
-      stackDepth: document.querySelectorAll('.gb-stack-item').length,
-      permanents: document.querySelectorAll('.gb-permanent').length,
-      handPans: (() => {
-        const hand = document.querySelector('.gb-hand');
-        return hand ? hand.scrollWidth > hand.clientWidth : false;
-      })(),
-      // The audit's own leak check: the opponent's hand is null in the fixture, so any card
-      // element beyond the viewer's seven would mean the board invented one.
-      opponentHandShown: document.querySelectorAll('.gb-opponents .gb-card').length,
-    };`,
-    async drive(d) {
-      await trySignIn(d);
-      await armGameReplay(d);
-      await d.get(baseUrl + '/play/11111111-2222-3333-4444-555555555555');
-      await d.wait(until.elementLocated(By.css('.gb-root')), 20000);
       await sleep(900);
     },
   },
@@ -733,7 +801,18 @@ const STATES = [
     label: 'Profile — stats and decks tab',
     root: '.up-page',
     async drive(d) {
-      await d.get(baseUrl + '/u/' + (username || 'unknown'));
+      // Sign in first, and then look at *that* account's profile.
+      //
+      // This state never did either: it went straight to /u/<username from .env>, which is
+      // empty on a machine without credentials, so every run opened /u/unknown — a profile with
+      // no tabs on it — and then waited eight seconds for a panel that could not appear. It has
+      // failed on every capture run since it was written.
+      const signedIn = await trySignIn(d);
+      const who = await d.executeScript('return localStorage.getItem("auth_username");');
+      console.log(
+        '    (profile-comments: signedIn=' + signedIn + ' who=' + JSON.stringify(who) + ')',
+      );
+      await d.get(baseUrl + '/u/' + (who || username || 'unknown'));
       await d.wait(until.elementLocated(By.css('.up-tabs')), 12000);
       await sleep(1400);
     },
@@ -758,8 +837,21 @@ const STATES = [
       await d.get(baseUrl + '/u/' + (username || 'unknown'));
       await d.wait(until.elementLocated(By.css('.up-tabs')), 12000);
       await sleep(1200);
-      const tabs = await d.findElements(By.css('.up-tab'));
-      await d.executeScript('arguments[0].click();', tabs[1]);
+      // By its label, not its position: the index assumed a tab order, and when the click
+      // landed on the wrong one this waited eight seconds for a panel that was never going to
+      // open. The tab renders its panel whether or not there are any comments in it.
+      const clicked = await d.executeScript(
+        [
+          'var tab = [].slice.call(document.querySelectorAll(".up-tab"))',
+          '  .filter(function (t) { return /comment/i.test(t.textContent); })[0];',
+          'if (!tab) return null;',
+          'tab.click();',
+          'return tab.textContent.trim().replace(/\s+/g, " ");',
+        ].join(''),
+      );
+      if (!clicked) {
+        throw new Error('no Comments tab on this profile');
+      }
       await d.wait(until.elementLocated(By.css('.up-comments')), 8000);
       await sleep(900);
     },

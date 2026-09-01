@@ -76,6 +76,24 @@ const STUB = `
   window.__gameReplayArmed = true;
 
   const real = window.fetch.bind(window);
+
+  // Every arm below answers for a game that is not running. Off a game route none of them mean
+  // anything, and one of them — the /api/users arm, left over from when the opponent picker read
+  // the public directory — matches the profile page's own request for a user. That handed the
+  // profile a list where a profile should be, so it rendered "Joined Invalid Date" with no tabs
+  // on it, and the state that opens its comment tab failed on every run since it was written.
+  //
+  // Checked per call rather than once at document start: this is a single-page app, and the
+  // driver walks it from screen to screen without reloading.
+  const onAGameRoute = function () {
+    const here = window.location.pathname;
+    return (
+      here === '/play' ||
+      here.indexOf('/play/') === 0 ||
+      here === '/lobby' ||
+      here.indexOf('/game/') === 0
+    );
+  };
   // What the stub was asked for, so a run that renders nothing can say which call went wrong.
   window.__gameReplayHits = [];
 
@@ -97,6 +115,10 @@ const STUB = `
     // Answered as small as the navbar reads it (username, display name, avatar), rather than
     // as a whole MyProfile: a fuller fixture here would be a second copy of a DTO this file
     // has no business tracking.
+    if (!onAGameRoute()) {
+      return real(input, init);
+    }
+
     if (url.indexOf('/api/profile/me') !== -1) {
       return Promise.resolve(json(JSON.stringify({
         profile: { username: 'Alice', displayName: 'Alice', avatarUrl: null },

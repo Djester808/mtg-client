@@ -1,0 +1,268 @@
+<div class="sheet-scrim" (click)="closed.emit()"></div>
+
+<section class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="seat.name + ' options'">
+  <header class="sheet-header">
+    <h2 class="sheet-title"><i aria-hidden="true">◆</i>{{ seat.name }}</h2>
+    <button type="button" class="sheet-close" (click)="closed.emit()" aria-label="Close">✕</button>
+  </header>
+
+  <nav class="sheet-tabs" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="sheet-tab"
+      [class.active]="section === 'counters'"
+      [attr.aria-selected]="section === 'counters'"
+      (click)="section = 'counters'"
+    >
+      Counters
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="sheet-tab"
+      [class.active]="section === 'commander'"
+      [attr.aria-selected]="section === 'commander'"
+      (click)="section = 'commander'"
+    >
+      Commander
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="sheet-tab"
+      [class.active]="section === 'seat'"
+      [attr.aria-selected]="section === 'seat'"
+      (click)="section = 'seat'"
+    >
+      Seat
+    </button>
+  </nav>
+
+  <div class="sheet-body">
+    <!-- ---- Counters ------------------------------------------------------------------ -->
+    <ng-container *ngIf="section === 'counters'">
+      <div class="row" *ngFor="let spec of counterSpecs" [class.is-lethal]="isLethal(spec)">
+        <div class="row-text">
+          <p class="row-name">
+            {{ spec.label }} <span class="row-rule">{{ spec.rule }}</span>
+          </p>
+          <p class="row-note">{{ spec.note }}</p>
+        </div>
+        <div class="stepper">
+          <button
+            type="button"
+            class="step step-down"
+            (click)="adjustCounter(spec.kind, -1)"
+            [attr.aria-label]="'Remove one ' + spec.label + ' counter'"
+          >
+            −
+          </button>
+          <span class="step-value" aria-live="polite">{{ counterValue(spec.kind) }}</span>
+          <button
+            type="button"
+            class="step step-up"
+            (click)="adjustCounter(spec.kind, 1)"
+            [attr.aria-label]="'Add one ' + spec.label + ' counter'"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ---- Commander damage ---------------------------------------------------------- -->
+    <ng-container *ngIf="section === 'commander'">
+      <p class="section-note">
+        Combat damage from a commander comes off the life total as well — tapping here does both.
+        Twenty-one from any one of them and this player is out (CR 903.10a).
+      </p>
+
+      <div class="row" *ngFor="let source of commanderSources" [class.is-lethal]="source.lethal">
+        <div class="row-text">
+          <p class="row-name">{{ source.label }}</p>
+          <p class="row-note">{{ source.damage }} of {{ lethalCommanderDamage }}</p>
+        </div>
+        <div class="stepper">
+          <button
+            type="button"
+            class="step step-down"
+            (click)="adjustCommanderDamage(source.key, -1)"
+            [attr.aria-label]="'Take back 1 damage from ' + source.label"
+          >
+            −
+          </button>
+          <span class="step-value" aria-live="polite">{{ source.damage }}</span>
+          <button
+            type="button"
+            class="step step-up"
+            (click)="adjustCommanderDamage(source.key, 1)"
+            [attr.aria-label]="'1 commander damage from ' + source.label"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <p class="empty-line" *ngIf="commanderSources.length === 0">
+        Nobody else is at the table yet.
+      </p>
+
+      <div class="row row-toggle">
+        <div class="row-text">
+          <p class="row-name">This player has partners</p>
+          <p class="row-note">Two commanders, counted separately towards 21 (CR 702.124d).</p>
+        </div>
+        <div class="segmented">
+          <button
+            type="button"
+            [class.active]="seat.commanders === 1"
+            (click)="setCommanderCount(1)"
+          >
+            One
+          </button>
+          <button
+            type="button"
+            [class.active]="seat.commanders === 2"
+            (click)="setCommanderCount(2)"
+          >
+            Two
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ---- The seat ------------------------------------------------------------------- -->
+    <ng-container *ngIf="section === 'seat'">
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input
+          class="field-input"
+          type="text"
+          maxlength="40"
+          [ngModel]="seat.name"
+          (ngModelChange)="rename($event)"
+          name="seatName"
+        />
+      </label>
+
+      <!-- Backdrop -->
+      <div class="art-block">
+        <div
+          class="art-preview"
+          [style.backgroundImage]="seat.art ? 'url(' + seat.art + ')' : 'none'"
+          [class.is-empty]="!seat.art"
+          aria-hidden="true"
+        ></div>
+        <div class="art-text">
+          <p class="row-name">Backdrop</p>
+          <p class="row-note">{{ seat.artLabel || 'Nothing behind this seat yet' }}</p>
+          <button type="button" class="link-btn" (click)="pickingArt = true">
+            {{ seat.art ? 'Change picture' : 'Choose a picture' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Sign in -->
+      <div class="signin-block">
+        <ng-container *ngIf="seat.account; else notSignedIn">
+          <p class="row-name">Signed in as {{ seat.account.username }}</p>
+          <p class="row-note">This game will count towards their record.</p>
+
+          <dl class="record" *ngIf="record as r">
+            <div class="record-cell">
+              <dt>Played</dt>
+              <dd>{{ r.played }}</dd>
+            </div>
+            <div class="record-cell">
+              <dt>Won</dt>
+              <dd>{{ r.wins }}</dd>
+            </div>
+            <div class="record-cell">
+              <dt>Lost</dt>
+              <dd>{{ r.losses }}</dd>
+            </div>
+            <div class="record-cell" *ngIf="r.played > 0">
+              <dt>Rate</dt>
+              <dd>{{ r.winRate * 100 | number: '1.0-0' }}%</dd>
+            </div>
+          </dl>
+
+          <button type="button" class="link-btn" (click)="signOut()">Sign out of this seat</button>
+        </ng-container>
+
+        <ng-template #notSignedIn>
+          <p class="row-name">Not signed in</p>
+          <p class="row-note">
+            Sign in to have this game counted towards a win/loss record. Nothing is recorded for a
+            seat that stays a guest, and signing in here does not change whose account the app is
+            using.
+          </p>
+
+          <button type="button" class="link-btn" *ngIf="!signInOpen" (click)="signInOpen = true">
+            Sign in at this seat
+          </button>
+
+          <form class="signin-form" *ngIf="signInOpen" (ngSubmit)="submitSignIn()">
+            <input
+              class="field-input"
+              type="text"
+              name="username"
+              autocomplete="username"
+              placeholder="Username or email"
+              [(ngModel)]="username"
+            />
+            <input
+              class="field-input"
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="Password"
+              [(ngModel)]="password"
+            />
+            <p class="form-error" *ngIf="signInError">{{ signInError }}</p>
+            <div class="form-actions">
+              <button type="button" class="ghost-btn" (click)="signInOpen = false">Cancel</button>
+              <button type="submit" class="primary-btn" [disabled]="signingIn">
+                {{ signingIn ? 'Signing in…' : 'Sign in' }}
+              </button>
+            </div>
+          </form>
+        </ng-template>
+      </div>
+
+      <!-- Out of the game -->
+      <div class="out-block">
+        <p class="row-name">Out of the game</p>
+        <p class="row-note">
+          Life, poison and commander damage take a player out on their own. These are the reasons
+          the counter cannot see.
+        </p>
+
+        <div class="out-actions" *ngIf="!declaredOut">
+          <button
+            type="button"
+            class="ghost-btn"
+            *ngFor="let choice of manualLossReasons"
+            (click)="declareOut(choice.reason)"
+          >
+            {{ choice.label }}
+            <span class="btn-rule">{{ choice.rule }}</span>
+          </button>
+        </div>
+
+        <button type="button" class="ghost-btn" *ngIf="declaredOut" (click)="rejoin()">
+          Back in the game
+        </button>
+      </div>
+    </ng-container>
+  </div>
+</section>
+
+<app-background-picker
+  *ngIf="pickingArt"
+  [current]="seat.art"
+  [currentLabel]="seat.artLabel"
+  (chosen)="onArtChosen($event)"
+  (cancelled)="pickingArt = false"
+></app-background-picker>

@@ -32,8 +32,28 @@ const ROUTES = [
   { id: 'forum', path: '/community/forum', auth: false, label: 'Community — forum' },
   { id: 'commanders', path: '/community/commanders', auth: false, label: 'Community — commanders' },
   { id: 'players', path: '/community/players', auth: false, label: 'Community — players' },
+  // Both tools routes are anonymous on purpose: the life counter's whole point is a table
+  // where nobody has signed in, so it has to be measured without credentials too.
+  { id: 'tools', path: '/tools', auth: false, label: 'Tools hub', ready: '.tool-card' },
+  {
+    id: 'life-counter',
+    path: '/tools/life-counter',
+    auth: false,
+    label: 'Life counter — setup',
+    ready: '.setup',
+  },
   { id: 'collection', path: '/collection', auth: true, label: 'Collection list' },
   { id: 'deck', path: '/deck', auth: true, label: 'Deck list' },
+  // The lobby, restored with the board. It is a real screen with a layout of its own — two
+  // name fields, a grid of deck presets and a primary action — and it renders without a game
+  // behind it, so the audit can measure it on every run.
+  {
+    id: 'lobby',
+    path: '/lobby',
+    auth: true,
+    label: 'Play — start a game',
+    ready: '.lobby-card',
+  },
   // A public profile needs a real user to point at, so it rides on the same credentials
   // the auth routes use — not because the page needs a login (it does not), but because
   // that is the one username this harness knows exists. `auth: true` is what makes it get

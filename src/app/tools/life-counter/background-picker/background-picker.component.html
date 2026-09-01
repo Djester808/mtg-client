@@ -1,0 +1,69 @@
+<div class="picker-scrim" (click)="cancelled.emit()"></div>
+
+<section class="picker" role="dialog" aria-modal="true" aria-label="Choose a backdrop">
+  <header class="picker-header">
+    <h2 class="picker-title"><i aria-hidden="true">◆</i>Backdrop</h2>
+    <button type="button" class="picker-close" (click)="cancelled.emit()" aria-label="Close">
+      ✕
+    </button>
+  </header>
+
+  <div class="picker-body">
+    <!-- From the device. Always available: it needs no account and no network. -->
+    <label class="upload">
+      <input type="file" accept="image/*" (change)="onFile($event)" hidden />
+      <span class="upload-glyph" aria-hidden="true">⬆</span>
+      <span class="upload-text">
+        <span class="upload-title">{{
+          preparing ? 'Shrinking…' : 'Use a picture from this device'
+        }}</span>
+        <span class="upload-note">Scaled down before it is saved, so eight of them still fit.</span>
+      </span>
+    </label>
+
+    <button type="button" class="clear-btn" *ngIf="current" (click)="clear()">
+      Remove {{ currentLabel || 'the current picture' }}
+    </button>
+
+    <p class="picker-error" *ngIf="error">{{ error }}</p>
+
+    <!-- From the card database. -->
+    <div class="card-search">
+      <h3 class="group-title">Card art</h3>
+
+      <ng-container *ngIf="canSearchCards(); else signedOut">
+        <app-search-input
+          placeholder="Search cards for art…"
+          (debouncedChange)="onQuery($event)"
+        ></app-search-input>
+
+        <p class="picker-hint" *ngIf="!searched && !searching">
+          Type a card name — the art is used, not the whole card.
+        </p>
+        <p class="picker-hint" *ngIf="searching">Searching…</p>
+        <p class="picker-hint" *ngIf="searched && !searching && results.length === 0">
+          Nothing matched.
+        </p>
+
+        <div class="art-grid" *ngIf="results.length > 0">
+          <button
+            type="button"
+            class="art-tile"
+            *ngFor="let card of results"
+            [style.backgroundImage]="artOf(card) ? 'url(' + artOf(card) + ')' : 'none'"
+            [attr.aria-label]="'Use the art from ' + card.name"
+            (click)="chooseCard(card)"
+          >
+            <span class="art-name">{{ card.name }}</span>
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-template #signedOut>
+        <p class="picker-hint">
+          Searching card art needs a signed-in account. A picture from this device works either way.
+        </p>
+      </ng-template>
+    </div>
+  </div>
+</section>

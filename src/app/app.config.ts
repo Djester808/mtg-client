@@ -1,3 +1,4 @@
+import { GameEffects } from './store/game/game.effects';
 import { ApplicationConfig, APP_INITIALIZER, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
@@ -36,7 +37,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimations(),
     provideStore(appReducers),
-    provideEffects([CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
+    provideEffects([GameEffects, CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
     // Dev builds only: devtools keeps 50 deep state snapshots and re-enters the
     // zone per message — none of which belongs in production.
     ...(isDevMode()

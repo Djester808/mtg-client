@@ -1,11 +1,16 @@
 /**
- * Preparing a chosen photo for upload: downscale it, flatten it, and encode it small
- * enough that the server will take it.
+ * Preparing a chosen photo for somewhere small: downscale it, flatten it, and encode it
+ * under a byte cap.
  *
- * A phone camera roll image is 3–12 MB and 4000px on its longest edge; the avatar renders
- * at 96px. Uploading the original would spend a user's data allowance on pixels that are
- * thrown away, and the server refuses anything over its cap anyway — so the shrink happens
- * here, where the picture already is.
+ * A phone camera roll image is 3–12 MB and 4000px on its longest edge; an avatar renders at
+ * 96px and a life-counter backdrop at a few hundred. Keeping the original would spend a
+ * user's data allowance on pixels that are thrown away — so the shrink happens here, where
+ * the picture already is.
+ *
+ * Two callers, and the destination is the only thing that differs between them. The avatar
+ * goes to the server, which refuses anything over its own cap; the life counter's backdrop
+ * goes to localStorage, which has a few megabytes for the whole table. Both want exactly
+ * this, so it takes its limits as arguments and belongs to neither.
  *
  * None of this is a security control. The server re-sniffs the bytes it receives
  * (`AvatarImage.cs`) because anything sent from a browser can be sent by something else.
@@ -32,7 +37,7 @@ export function fitWithin(
 /** Quality ladder for the JPEG re-encode, tried in order until one fits the byte cap. */
 const QUALITY_STEPS = [0.9, 0.8, 0.7, 0.55, 0.4];
 
-export interface PreparedAvatar {
+export interface PreparedImage {
   blob: Blob;
   width: number;
   height: number;
@@ -44,11 +49,11 @@ export interface PreparedAvatar {
  *
  * Rejects with a message written for the user — the caller shows it as-is.
  */
-export async function prepareAvatar(
+export async function prepareImage(
   file: File,
   maxDimension: number,
   maxBytes: number,
-): Promise<PreparedAvatar> {
+): Promise<PreparedImage> {
   if (!file.type.startsWith('image/')) {
     throw new Error('Choose an image file.');
   }

@@ -1,0 +1,894 @@
+{
+  "gameId": "11111111-2222-3333-4444-555555555555",
+  "turn": 6,
+  "activePlayerId": "p1",
+  "priorityPlayerId": "p1",
+  "currentPhase": "PreCombatMain",
+  "currentStep": "Main",
+  "result": "InProgress",
+  "combat": null,
+  "players": [
+    {
+      "playerId": "p1",
+      "name": "Alice",
+      "life": 20,
+      "poisonCounters": 0,
+      "manaPool": {
+        "amounts": {
+          "R": 2
+        },
+        "total": 2
+      },
+      "handCount": 5,
+      "libraryCount": 48,
+      "graveyardCount": 1,
+      "exileCount": 0,
+      "hand": [
+        {
+          "cardId": "m90",
+          "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+          "name": "Mountain",
+          "manaCost": "",
+          "manaValue": 0,
+          "cardTypes": [
+            "Land"
+          ],
+          "subtypes": [
+            "Mountain"
+          ],
+          "supertypes": [],
+          "oracleText": "{T}: Add {R}.",
+          "power": null,
+          "toughness": null,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        },
+        {
+          "cardId": "g91",
+          "oracleId": "a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be",
+          "name": "Goblin Piker",
+          "manaCost": "1R",
+          "manaValue": 2,
+          "cardTypes": [
+            "Creature"
+          ],
+          "subtypes": [
+            "Goblin",
+            "Warrior"
+          ],
+          "supertypes": [],
+          "oracleText": "",
+          "power": 2,
+          "toughness": 1,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        },
+        {
+          "cardId": "lb92",
+          "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
+          "name": "Lightning Bolt",
+          "manaCost": "R",
+          "manaValue": 1,
+          "cardTypes": [
+            "Instant"
+          ],
+          "subtypes": [],
+          "supertypes": [],
+          "oracleText": "Lightning Bolt deals 3 damage to any target.",
+          "power": null,
+          "toughness": null,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        },
+        {
+          "cardId": "g93",
+          "oracleId": "a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be",
+          "name": "Goblin Piker",
+          "manaCost": "1R",
+          "manaValue": 2,
+          "cardTypes": [
+            "Creature"
+          ],
+          "subtypes": [
+            "Goblin",
+            "Warrior"
+          ],
+          "supertypes": [],
+          "oracleText": "",
+          "power": 2,
+          "toughness": 1,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        },
+        {
+          "cardId": "m94",
+          "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+          "name": "Mountain",
+          "manaCost": "",
+          "manaValue": 0,
+          "cardTypes": [
+            "Land"
+          ],
+          "subtypes": [
+            "Mountain"
+          ],
+          "supertypes": [],
+          "oracleText": "{T}: Add {R}.",
+          "power": null,
+          "toughness": null,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        }
+      ],
+      "graveyard": [
+        {
+          "cardId": "lb95",
+          "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
+          "name": "Lightning Bolt",
+          "manaCost": "R",
+          "manaValue": 1,
+          "cardTypes": [
+            "Instant"
+          ],
+          "subtypes": [],
+          "supertypes": [],
+          "oracleText": "Lightning Bolt deals 3 damage to any target.",
+          "power": null,
+          "toughness": null,
+          "startingLoyalty": null,
+          "keywords": [],
+          "imageUriNormal": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriLarge": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriNormalBack": null,
+          "imageUriSmall": "https://cards.scryfall.io/normal/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/4/4/4457ed35-7c10-48c8-9776-456485fdf070.jpg",
+          "colorIdentity": [
+            "R"
+          ],
+          "ownerId": "p1",
+          "flavorText": null,
+          "artist": null
+        }
+      ],
+      "exile": [],
+      "hasLandPlayedThisTurn": false
+    },
+    {
+      "playerId": "p2",
+      "name": "Bob",
+      "life": 17,
+      "poisonCounters": 0,
+      "manaPool": {
+        "amounts": {},
+        "total": 0
+      },
+      "handCount": 4,
+      "libraryCount": 51,
+      "graveyardCount": 0,
+      "exileCount": 0,
+      "hand": [],
+      "graveyard": [],
+      "exile": [],
+      "hasLandPlayedThisTurn": true
+    }
+  ],
+  "battlefield": [
+    {
+      "permanentId": "bp0",
+      "sourceCard": {
+        "cardId": "b0",
+        "oracleId": "d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed",
+        "name": "Grizzly Bears",
+        "manaCost": "1G",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Bear"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 2,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 2
+    },
+    {
+      "permanentId": "bp1",
+      "sourceCard": {
+        "cardId": "b1",
+        "oracleId": "d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed",
+        "name": "Grizzly Bears",
+        "manaCost": "1G",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Bear"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 2,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 2
+    },
+    {
+      "permanentId": "bp2",
+      "sourceCard": {
+        "cardId": "b2",
+        "oracleId": "d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed",
+        "name": "Grizzly Bears",
+        "manaCost": "1G",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Bear"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 2,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/d/7/d7e0a8dd-9a63-4ff8-a1e5-3e0dd1a3c6ed.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 2
+    },
+    {
+      "permanentId": "fp0",
+      "sourceCard": {
+        "cardId": "f0",
+        "oracleId": "b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a",
+        "name": "Forest",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Forest"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {G}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": true,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "fp1",
+      "sourceCard": {
+        "cardId": "f1",
+        "oracleId": "b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a",
+        "name": "Forest",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Forest"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {G}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": true,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "fp2",
+      "sourceCard": {
+        "cardId": "f2",
+        "oracleId": "b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a",
+        "name": "Forest",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Forest"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {G}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "fp3",
+      "sourceCard": {
+        "cardId": "f3",
+        "oracleId": "b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a",
+        "name": "Forest",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Forest"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {G}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/b/7/b7b2b6d0-2e2c-4d7a-9a24-4b1b0e0f1a1a.jpg",
+        "colorIdentity": [
+          "G"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p2",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "gp0",
+      "sourceCard": {
+        "cardId": "g0",
+        "oracleId": "a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be",
+        "name": "Goblin Piker",
+        "manaCost": "1R",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Goblin",
+          "Warrior"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 1,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 1
+    },
+    {
+      "permanentId": "gp1",
+      "sourceCard": {
+        "cardId": "g1",
+        "oracleId": "a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be",
+        "name": "Goblin Piker",
+        "manaCost": "1R",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Goblin",
+          "Warrior"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 1,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 1
+    },
+    {
+      "permanentId": "gp2",
+      "sourceCard": {
+        "cardId": "g2",
+        "oracleId": "a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be",
+        "name": "Goblin Piker",
+        "manaCost": "1R",
+        "manaValue": 2,
+        "cardTypes": [
+          "Creature"
+        ],
+        "subtypes": [
+          "Goblin",
+          "Warrior"
+        ],
+        "supertypes": [],
+        "oracleText": "",
+        "power": 2,
+        "toughness": 1,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/5/a5b6bb51-8bee-4f77-a45a-eb1b0a4bd0be.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": false,
+      "hasSummoningSickness": true,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": 2,
+      "effectiveToughness": 1
+    },
+    {
+      "permanentId": "mp0",
+      "sourceCard": {
+        "cardId": "m0",
+        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+        "name": "Mountain",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Mountain"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {R}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": true,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "mp1",
+      "sourceCard": {
+        "cardId": "m1",
+        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+        "name": "Mountain",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Mountain"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {R}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": true,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "mp2",
+      "sourceCard": {
+        "cardId": "m2",
+        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+        "name": "Mountain",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Mountain"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {R}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    },
+    {
+      "permanentId": "mp3",
+      "sourceCard": {
+        "cardId": "m3",
+        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+        "name": "Mountain",
+        "manaCost": "",
+        "manaValue": 0,
+        "cardTypes": [
+          "Land"
+        ],
+        "subtypes": [
+          "Mountain"
+        ],
+        "supertypes": [],
+        "oracleText": "{T}: Add {R}.",
+        "power": null,
+        "toughness": null,
+        "startingLoyalty": null,
+        "keywords": [],
+        "imageUriNormal": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriLarge": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriNormalBack": null,
+        "imageUriSmall": "https://cards.scryfall.io/normal/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "imageUriArtCrop": "https://cards.scryfall.io/art_crop/front/a/3/a3fb7228-e76b-4e96-a40e-20b5fed75685.jpg",
+        "colorIdentity": [
+          "R"
+        ],
+        "ownerId": "p1",
+        "flavorText": null,
+        "artist": null
+      },
+      "controllerId": "p1",
+      "isTapped": false,
+      "hasSummoningSickness": false,
+      "damageMarked": 0,
+      "counters": {
+        "PlusOnePlusOne": 0,
+        "MinusOneMinusOne": 0,
+        "Loyalty": 0,
+        "Charge": 0,
+        "Poison": 0
+      },
+      "attachments": [],
+      "effectivePower": null,
+      "effectiveToughness": null
+    }
+  ],
+  "stack": []
+}

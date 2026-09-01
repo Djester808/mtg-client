@@ -1,0 +1,257 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.lc {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-void);
+}
+
+// ---- Setup -------------------------------------------------------------------------------
+
+.setup {
+  @include detail-shell;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.setup-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.back-link {
+  @include back-btn;
+  align-self: flex-start;
+  // The shared mixin lands at 38px tall, which the phone audit counts as an undersized
+  // target. It is the only way off this screen on a phone, so it clears the floor here
+  // rather than going into the baseline as one more to fix later.
+  display: inline-flex;
+  align-items: center;
+  min-height: $tap-min;
+}
+
+.setup-title {
+  @include header-name;
+  margin: 0;
+}
+
+.setup-sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.setup-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setup-legend {
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/*
+ * auto-fit rather than a wrapped fixed width: eight number chips have to fill 343px of a
+ * phone and 528px of the dialog without leaving a ragged gutter at either.
+ */
+.chip-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 6px;
+}
+
+.pick {
+  min-height: $tap-min;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #0e0c08;
+  }
+}
+
+.setup-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.setup-privacy {
+  margin-top: 4px;
+}
+
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+// ---- The bar over the table --------------------------------------------------------------
+
+.lc-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+
+.bar-spacer {
+  flex: 1;
+}
+
+.bar-btn {
+  min-height: 34px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+/*
+ * A deliberate density exception, and the only one on this screen: the bar sits above a
+ * grid that wants every pixel of height, and these are chrome that a player touches between
+ * games rather than during one. Everything inside a panel clears $tap-min.
+ */
+.bar-toggle.active {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.lc-warning {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #f0c674;
+  background: rgb(240 198 116 / 0.1);
+  border-bottom: 1px solid rgb(240 198 116 / 0.25);
+}
+
+// ---- The grid of players -------------------------------------------------------------------
+
+.lc-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  // `auto-fit` on the rows would collapse them; the row count follows from the column count
+  // and the child count, and every row shares the height equally.
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 6px;
+  padding: 6px;
+}
+
+// ---- The result ------------------------------------------------------------------------------
+
+.lc-result {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.result-line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.result-name {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.result-note {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+// ---- Buttons ------------------------------------------------------------------------------------
+
+.primary-btn {
+  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgb(201 168 76 / 0.3));
+  min-height: $tap-min;
+}
+
+.ghost-btn {
+  min-height: $tap-min;
+  padding: 8px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+}

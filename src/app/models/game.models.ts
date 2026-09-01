@@ -2,7 +2,15 @@
 export * from './enums';
 export * from './collection.models';
 
-import { ManaColor, CardType } from './enums';
+import {
+  ManaColor,
+  CounterType,
+  StackObjectType,
+  Phase,
+  Step,
+  GameResult,
+  CardType,
+} from './enums';
 import { CardPricesDto } from './collection.models';
 
 export interface RulingDto {
@@ -74,4 +82,144 @@ export interface CardDto {
   gameChanger: boolean;
   /** Prices of the printing this card object reflects; optional for pre-prices literals. */
   prices?: CardPricesDto | null;
+}
+
+// ---- Game state ---------------------------------------------------------------
+//
+// Restored exactly as they were before the engine UI was removed in 0bb19e9. These are
+// the shapes the board, the lobby and the NgRx game slice are written against.
+
+/** One thing a permanent can be asked to do (CR 602.1). */
+export interface PermanentAbilityDto {
+  id: string;
+  text: string;
+  requiresTap: boolean;
+  targetCount: number;
+  isManaAbility: boolean;
+}
+
+export interface PermanentDto {
+  permanentId: string;
+  /**
+   * What this permanent can be asked to do.
+   *
+   * The board used to assume: the only ability it could reach was one called "mana", and only
+   * on a land. That made a Sol Ring untappable and a Prodigal Pyromancer unplayable — both
+   * abilities existed in the engine and neither had a way in.
+   */
+  abilities: PermanentAbilityDto[];
+  sourceCard: CardDto;
+  controllerId: string;
+  isTapped: boolean;
+  hasSummoningSickness: boolean;
+  damageMarked: number;
+  counters: Record<CounterType, number>;
+  attachments: string[];
+  effectivePower: number | null;
+  effectiveToughness: number | null;
+}
+
+// ---- Stack DTOs -------------------------------------------
+
+export interface StackObjectDto {
+  stackObjectId: string;
+  type: StackObjectType;
+  controllerId: string;
+  description: string;
+  sourceCardName: string;
+  targets: TargetDto[];
+}
+
+export interface TargetDto {
+  type: 'Permanent' | 'Player' | 'Card' | 'StackObject';
+  id: string;
+}
+
+// ---- Player / Game State DTOs -----------------------------
+
+export interface ManaPoolDto {
+  amounts: Partial<Record<ManaColor, number>>;
+  total: number;
+}
+
+export interface PlayerStateDto {
+  playerId: string;
+  name: string;
+  life: number;
+  poisonCounters: number;
+  manaPool: ManaPoolDto;
+  handCount: number;
+  libraryCount: number;
+  graveyardCount: number;
+  exileCount: number;
+  hand: CardDto[]; // only populated for the local player
+  graveyard: CardDto[]; // public
+  exile: CardDto[]; // public
+  hasLandPlayedThisTurn: boolean;
+}
+
+export interface CombatStateDto {
+  attackers: string[]; // permanentIds
+  attackersToBlockers: Record<string, string[]>; // attackerId -> blockerIds
+  attackersDeclared: boolean;
+  blockersDeclared: boolean;
+}
+
+/**
+ * A decision the game has stopped for.
+ *
+ * The engine this board was written against never asked anything — it resolved everything
+ * itself, which is part of why it was wrong. The rebuilt one stops and asks: whether to keep an
+ * opening hand (CR 103.4), how to divide combat damage among blockers (CR 510.1c), what order
+ * to put simultaneous triggers on the stack (CR 603.3b).
+ *
+ * `options` is filled in only for the player being asked, because the options can themselves be
+ * hidden information — bottoming after a mulligan lists that player's hand. Everyone else is
+ * told the game is waiting and on whom, which is the difference between a board that has
+ * stopped and a board that has frozen.
+ */
+export interface ChoiceDto {
+  id: string;
+  playerId: string;
+  kind: string;
+  prompt: string;
+  minPicks: number;
+  maxPicks: number;
+  /** True when the order of the picks is the answer (CR 603.3b, 616.1). */
+  isOrdering: boolean;
+  /** True when the answer is an amount per option rather than a selection (CR 510.1c). */
+  isDivision: boolean;
+  /** How much is being divided, for a division. */
+  totalToDivide: number;
+  options: { id: string; label: string }[] | null;
+}
+
+export interface GameStateDto {
+  gameId: string;
+  players: PlayerStateDto[];
+  battlefield: PermanentDto[];
+  stack: StackObjectDto[];
+  turn: number;
+  activePlayerId: string;
+  priorityPlayerId: string;
+  currentPhase: Phase;
+  currentStep: Step;
+  result: GameResult;
+  combat: CombatStateDto | null;
+  /** Set while the game is waiting on a decision; nothing else may happen until it is made. */
+  choice: ChoiceDto | null;
+}
+
+// ---- SignalR message shapes --------------------------------
+
+export interface GameStateDiffDto {
+  changedPermanents: PermanentDto[];
+  removedPermanentIds: string[];
+  stack: StackObjectDto[];
+  priorityPlayerId: string;
+  currentPhase: Phase;
+  currentStep: Step;
+  playerUpdates: Partial<PlayerStateDto>[];
+  result: GameResult;
+  combat: CombatStateDto | null;
 }

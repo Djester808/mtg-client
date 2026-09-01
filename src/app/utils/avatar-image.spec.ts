@@ -1,4 +1,4 @@
-import { fitWithin, prepareAvatar } from './avatar-image';
+import { fitWithin, prepareImage } from './avatar-image';
 
 describe('fitWithin', () => {
   it('scales the longest edge down to the cap and keeps the aspect ratio', () => {
@@ -25,7 +25,7 @@ describe('fitWithin', () => {
   });
 });
 
-describe('prepareAvatar', () => {
+describe('prepareImage', () => {
   /** A real PNG, drawn here so the test exercises the decode path rather than a stub. */
   async function pngFile(width: number, height: number): Promise<File> {
     const canvas = document.createElement('canvas');
@@ -40,7 +40,7 @@ describe('prepareAvatar', () => {
   }
 
   it('shrinks an oversized photo to the dimension cap and encodes it as JPEG', async () => {
-    const prepared = await prepareAvatar(await pngFile(1600, 1200), 256, 512 * 1024);
+    const prepared = await prepareImage(await pngFile(1600, 1200), 256, 512 * 1024);
 
     expect(prepared.width).toBe(256);
     expect(prepared.height).toBe(192);
@@ -51,7 +51,7 @@ describe('prepareAvatar', () => {
   it('rejects a file that is not an image', async () => {
     const notAnImage = new File(['hello'], 'notes.txt', { type: 'text/plain' });
 
-    await expectAsync(prepareAvatar(notAnImage, 256, 512 * 1024)).toBeRejectedWithError(
+    await expectAsync(prepareImage(notAnImage, 256, 512 * 1024)).toBeRejectedWithError(
       /Choose an image file/,
     );
   });
@@ -69,7 +69,7 @@ describe('prepareAvatar', () => {
       // One byte is unreachable at any quality, which is the shape of the real failure: a
       // huge noisy photograph that will not compress. Saying so beats uploading something
       // the server is about to refuse.
-      await expectAsync(prepareAvatar(await pngFile(400, 400), 256, 1)).toBeRejectedWithError(
+      await expectAsync(prepareImage(await pngFile(400, 400), 256, 1)).toBeRejectedWithError(
         /too detailed/,
       );
     },

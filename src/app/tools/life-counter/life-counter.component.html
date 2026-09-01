@@ -1,0 +1,139 @@
+<div class="lc">
+  <!-- ---- Setup ------------------------------------------------------------------------- -->
+  <section class="setup" *ngIf="showSetup(); else table">
+    <header class="setup-head">
+      <a class="back-link" routerLink="/tools">← Tools</a>
+      <h1 class="setup-title">Life counter</h1>
+      <p class="setup-sub">
+        Life, poison, commander damage and the rest — for up to {{ maxPlayers }} people around one
+        table.
+      </p>
+    </header>
+
+    <fieldset class="setup-group">
+      <legend class="setup-legend">Players</legend>
+      <div class="chip-row">
+        <button
+          type="button"
+          class="pick"
+          *ngFor="let n of playerCounts"
+          [class.active]="setupCount === n"
+          (click)="setupCount = n"
+        >
+          {{ n }}
+        </button>
+      </div>
+    </fieldset>
+
+    <fieldset class="setup-group">
+      <legend class="setup-legend">Starting life</legend>
+      <div class="chip-row">
+        <button
+          type="button"
+          class="pick"
+          *ngFor="let life of lifePresets"
+          [class.active]="setupLife === life"
+          (click)="setupLife = life"
+        >
+          {{ life }}
+        </button>
+      </div>
+      <p class="setup-note">
+        Commander starts at 40 (CR 903.7); a two-player game starts at 20 (CR 103.3).
+      </p>
+    </fieldset>
+
+    <div class="setup-actions">
+      <button type="button" class="primary-btn" (click)="startGame()">Start</button>
+      <button type="button" class="ghost-btn" *ngIf="seats().length > 0" (click)="cancelSetup()">
+        Back to the game
+      </button>
+    </div>
+
+    <p class="setup-note setup-privacy">
+      Nothing here needs an account. Players who want a win/loss record can sign in at their own
+      seat once the game starts.
+    </p>
+  </section>
+
+  <!-- ---- The table --------------------------------------------------------------------- -->
+  <ng-template #table>
+    <header class="lc-bar">
+      <button type="button" class="bar-btn" (click)="openSetup()">New game</button>
+      <button type="button" class="bar-btn" [disabled]="!canUndo()" (click)="undo()">Undo</button>
+      <span class="bar-spacer"></span>
+      <button
+        type="button"
+        class="bar-btn bar-toggle"
+        [class.active]="flipAcross()"
+        (click)="flipAcross.set(!flipAcross())"
+        title="Turn the far side of the table to face the players sitting there"
+      >
+        Face across
+      </button>
+      <a class="bar-btn" routerLink="/tools">Tools</a>
+    </header>
+
+    <p class="lc-warning" *ngIf="storageWarning()">{{ storageWarning() }}</p>
+
+    <div class="lc-grid" [style.--cols]="columns()">
+      <!--
+        trackBy is load-bearing here, not an optimisation. The service replaces a seat
+        object on every change, so with the default identity tracking ngFor tears the panel
+        down and builds a new one on each tap — losing the running delta, the animation and
+        the hold-to-repeat timer with it. The life total still moved, which is why this
+        looked fine until someone tapped a real one.
+      -->
+      <app-player-panel
+        *ngFor="let seat of seats(); let i = index; trackBy: trackSeat"
+        [seat]="seat"
+        [flipped]="isFlipped(i)"
+        [dense]="dense()"
+        (lifeChange)="adjustLife(seat, $event)"
+        (openSeat)="openSeatId.set(seat.id)"
+      ></app-player-panel>
+    </div>
+
+    <!-- The result, once there is one. -->
+    <footer class="lc-result" *ngIf="over()">
+      <p class="result-line">
+        <ng-container *ngIf="winner(); else drawn">
+          <span class="result-name">{{ winner()!.name }}</span> wins.
+        </ng-container>
+        <ng-template #drawn>Everyone is out — the game is a draw.</ng-template>
+      </p>
+
+      <div class="result-actions">
+        <button type="button" class="ghost-btn" (click)="rematch()">Play again</button>
+
+        <!--
+          Offered on the strength of the seats alone. The device itself does not have to be
+          signed in — a seat's own token authenticates the call, which is the point of
+          signing in at a seat in the first place.
+        -->
+        <button
+          type="button"
+          class="primary-btn"
+          *ngIf="hasAccounts() && !recorded()"
+          [disabled]="filing()"
+          (click)="recordResult()"
+        >
+          {{ filing() ? 'Recording…' : 'Record result' }}
+        </button>
+
+        <span class="result-note" *ngIf="recorded()">Recorded.</span>
+
+        <span class="result-note" *ngIf="!hasAccounts()">
+          Nobody signed in at a seat, so there is no record to write.
+        </span>
+      </div>
+    </footer>
+  </ng-template>
+
+  <app-seat-sheet
+    *ngIf="openSeat() as seat"
+    [seat]="seat"
+    [allSeats]="seats()"
+    (closed)="openSeatId.set(null)"
+  ></app-seat-sheet>
+</div>

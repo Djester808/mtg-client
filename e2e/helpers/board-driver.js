@@ -15,18 +15,40 @@ const { baseUrl } = require('../config');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * One API call, retried when the connection itself fails.
+ *
+ * A dropped socket to localhost is not an answer about the app, but it used to end whole runs:
+ * `fetch failed` threw out of a seat's refresh seven minutes into a walk, and the finding that
+ * run was chasing was lost with it. An HTTP status is a real answer and is never retried —
+ * only the transport is.
+ */
 async function api(token, method, url, body) {
-  const res = await fetch(baseUrl + url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: 'Bearer ' + token } : {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(method + ' ' + url + ' -> ' + res.status + ' ' + text.slice(0, 240));
-  return text ? JSON.parse(text) : null;
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let res;
+    try {
+      res = await fetch(baseUrl + url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (e) {
+      lastError = e;
+      await sleep(400 * attempt);
+      continue;
+    }
+
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(method + ' ' + url + ' -> ' + res.status + ' ' + text.slice(0, 240));
+    }
+    return text ? JSON.parse(text) : null;
+  }
+  throw lastError;
 }
 
 /** Signs in, registering the account the first time it is used on a machine. */
@@ -70,19 +92,54 @@ const logLines = async (token, gameId) =>
   (await api(token, 'GET', '/api/games/' + gameId + '/log')).length;
 
 /** What the board is showing, as a player would read it. */
+/**
+ * Everything the board is currently saying, read from the rendered page.
+ *
+ * The selectors here were re-found from a running board (`_diag-board-dom.js`). The set this
+ * replaced spoke a `gb-*` vocabulary that no element on the page has carried for a long time,
+ * so every read came back empty and every script that used it timed out on `.gb-root` before
+ * reaching a single assertion. Nothing said so: an empty read and a board with nothing on it
+ * look the same from here, which is why it survived.
+ */
 function board(d) {
   return d.executeScript(`
-    const text = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim().replace(/\\s+/g,' ') : null; };
+    const text = (sel) => (document.querySelector(sel)?.textContent || '').trim();
+    const names = (sel) =>
+      [...document.querySelectorAll(sel)].map((n) => (n.textContent || '').trim()).filter(Boolean);
+
+    // "Turn 3 | Alice's Turn" - the badge is one string and both halves are wanted.
+    const badge = text('.turn-badge');
+    const turnMatch = badge.match(/Turn\\s+(\\d+)/i);
+    const whoseMatch = badge.match(/\\|\\s*(.+?)'s Turn/i);
+
+    const buttons = [...document.querySelectorAll('.status-actions .action-btn')]
+      .filter((b) => !b.disabled)
+      .map((b) => (b.textContent || '').trim());
+
     return {
-      prompt: text('.gb-prompt-text'),
-      promptButtons: [...document.querySelectorAll('.gb-prompt-actions .gb-btn')].map(b => b.textContent.trim()),
-      actionButtons: [...document.querySelectorAll('.gb-actions button')].map(b => b.textContent.trim()),
-      hand: [...document.querySelectorAll('.gb-hand .gb-card .gb-card-name')].map(n => n.textContent.trim()),
-      mine: [...document.querySelectorAll('.gb-field-half:last-child .gb-permanent .gb-permanent-name')].map(n => n.textContent.trim()),
-      theirs: [...document.querySelectorAll('.gb-field-half:first-child .gb-permanent .gb-permanent-name')].map(n => n.textContent.trim()),
-      attacking: document.querySelectorAll('.gb-field-half:first-child .gb-permanent.is-attacking').length,
-      refusal: text('.gb-refusal'),
-      overflows: document.documentElement.scrollWidth > window.innerWidth,
+      ready: !!document.querySelector('.board'),
+      turn: turnMatch ? Number(turnMatch[1]) : 0,
+      whose: whoseMatch ? whoseMatch[1].trim() : '',
+      step: text('.phase-pip.active .pip-label'),
+      status: text('.status-message'),
+      myLife: Number(text('.self-sidebar .life-number') || '0'),
+      theirLife: Number(text('.opponent-sidebar .life-number') || '0'),
+      myLibrary: Number(text('.self-sidebar .library .zone-num') || '0'),
+      buttons,
+      hand: names('app-hand .card .card-name'),
+      mine: names('.self-field .card .card-name'),
+      theirs: names('.opponent-field .card .card-name'),
+      myLands: names('.self-field .lands-row .card .card-name'),
+      untappedLands: [...document.querySelectorAll('.self-field .lands-row .card')]
+        .filter((c) => !c.classList.contains('tapped')).length,
+      // Creatures, separately from everything on the field: a land is a permanent and cannot
+      // attack, and combat mode entered with nothing able to attack is a loop that cancels
+      // itself forever without ever passing priority.
+      myCreatures: document.querySelectorAll('.self-field .permanents-row .card').length,
+      myReadyCreatures: [...document.querySelectorAll('.self-field .permanents-row .card')]
+        .filter((c) => !c.classList.contains('tapped')).length,
+      attacking: document.querySelectorAll('.self-field .card.attacking').length,
+      incoming: document.querySelectorAll('.opponent-field .card.attacking').length,
     };
   `);
 }
@@ -127,9 +184,12 @@ function clickInExcept(d, selector, pattern) {
 function clickPermanent(d, side, name) {
   return d.executeScript(
     `
-    const half = arguments[0] === 'mine' ? ':last-child' : ':first-child';
-    const els = [...document.querySelectorAll('.gb-field-half' + half + ' .gb-permanent')];
-    const el = els.find((e) => (e.textContent || '').includes(arguments[1]));
+    const field = arguments[0] === 'mine' ? '.self-field' : '.opponent-field';
+    const els = [...document.querySelectorAll(field + ' .card')];
+    const el = els.find((e) => {
+      const n = e.querySelector('.card-name');
+      return n && n.textContent.trim() === arguments[1];
+    });
     if (!el) return false;
     el.scrollIntoView({ block: 'center' });
     el.click();
@@ -140,13 +200,20 @@ function clickPermanent(d, side, name) {
   );
 }
 
-/** Selects a card in hand by name and presses its Play/Cast affordance. */
+/**
+ * Plays a card from hand by name.
+ *
+ * A double-click is the affordance: single-click selects a card and double-click plays or casts
+ * it (`onCardDblClick`). The helper this replaced looked for a `.gb-card-play` button, which the
+ * board has not had in a long time - so every attempt to play anything selected the card and
+ * then pressed nothing.
+ */
 async function playFromHand(d, name, mark) {
   const selected = await d.executeScript(
     `
-    const cards = [...document.querySelectorAll('.gb-hand .gb-card')];
+    const cards = [...document.querySelectorAll('app-hand .card')];
     const el = cards.find((c) => {
-      const n = c.querySelector('.gb-card-name');
+      const n = c.querySelector('.card-name');
       return n && n.textContent.trim() === arguments[0];
     });
     if (!el) return false;
@@ -160,22 +227,40 @@ async function playFromHand(d, name, mark) {
 
   await sleep(450);
   if (mark) await mark();
-  return d.executeScript(`
-    const el = document.querySelector('.gb-card-play');
+
+  return d.executeScript(
+    `
+    const cards = [...document.querySelectorAll('app-hand .card')];
+    const el = cards.find((c) => {
+      const n = c.querySelector('.card-name');
+      return n && n.textContent.trim() === arguments[0];
+    });
     if (!el) return false;
-    el.click();
+    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     return true;
-  `);
+  `,
+    name,
+  );
 }
 
-/** Taps every untapped land of the given names, one at a time. */
+/**
+ * Taps every untapped land of the given names, one at a time.
+ *
+ * A single click: a permanent on the battlefield binds `(clicked)` and activates its ready
+ * ability, and only a card in hand wants the double-click that plays it. Dispatching dblclick
+ * here produced no mana at all, so every creature spell was refused for want of it and the
+ * harness cast the same Goblin Piker on a loop.
+ */
 async function tapLands(d, names = 'Mountain|Forest') {
   for (let i = 0; i < 8; i++) {
     const tapped = await d.executeScript(
       `
-      const els = [...document.querySelectorAll('.gb-field-half:last-child .gb-permanent')];
+      const els = [...document.querySelectorAll('.self-field .card')];
       const re = new RegExp(arguments[0]);
-      const el = els.find((e) => re.test(e.textContent || '') && !e.className.includes('is-tapped'));
+      const el = els.find((e) => {
+        const n = e.querySelector('.card-name');
+        return n && re.test(n.textContent) && !e.classList.contains('tapped');
+      });
       if (!el) return false;
       el.click();
       return true;
@@ -310,14 +395,34 @@ async function seat(token, gameId) {
   };
 }
 
-/** Signs a real account in through the real login form. */
+/**
+ * Signs a real account in through the real login form.
+ *
+ * Every element is looked up again immediately before it is used. Angular re-renders the form
+ * as it settles, so a reference taken a moment earlier can be detached by the time it is typed
+ * into — which surfaces as StaleElementReferenceError and throws away the whole run before the
+ * first check. Retrying the step is correct here: the page is arriving, not broken.
+ */
 async function signInThroughTheForm(d, { By, until }, player) {
-  await d.get(baseUrl + '/login');
-  await d.wait(until.elementLocated(By.id('username')), 20000);
-  await d.findElement(By.id('username')).sendKeys(player.username);
-  await d.findElement(By.id('password')).sendKeys(player.password);
-  await d.findElement(By.css('.submit-btn')).click();
-  await d.wait(async () => !(await d.getCurrentUrl()).includes('/login'), 20000);
+  const stale = (e) => /stale element|not attached|element not found/i.test(String(e && e.message));
+
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await d.get(baseUrl + '/login');
+      await d.wait(until.elementLocated(By.id('username')), 20000);
+      await sleep(250); // let the form finish settling before touching it
+
+      await (await d.findElement(By.id('username'))).sendKeys(player.username);
+      await (await d.findElement(By.id('password'))).sendKeys(player.password);
+      await (await d.findElement(By.css('.submit-btn'))).click();
+
+      await d.wait(async () => !(await d.getCurrentUrl()).includes('/login'), 20000);
+      return;
+    } catch (e) {
+      if (attempt >= 3 || !stale(e)) throw e;
+      await sleep(600);
+    }
+  }
 }
 
 module.exports = {

@@ -8,7 +8,7 @@
     "printed stats have to be adjusted. A capture of an empty board proves nothing.",
     "",
     "The opponent's hand is null and neither library appears at all, because that is what the",
-    "server actually sends — a fixture that included them would let a leak pass the audit."
+    "server actually sends \u2014 a fixture that included them would let a leak pass the audit."
   ],
   "gameId": "11111111-2222-3333-4444-555555555555",
   "viewer": "aaaaaaaa-0000-0000-0000-000000000001",
@@ -41,7 +41,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": false,
+          "colors": []
         },
         {
           "id": "h2",
@@ -49,7 +51,7 @@
           "oracleId": "o-tovolar",
           "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
           "manaCost": "{1}{R}{G}",
-          "typeLine": "Legendary Creature — Human Werewolf",
+          "typeLine": "Legendary Creature \u2014 Human Werewolf",
           "printedPower": 3,
           "printedToughness": 3,
           "isTapped": null,
@@ -57,7 +59,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": true
+          "isCreature": true,
+          "isLand": false,
+          "colors": []
         },
         {
           "id": "h3",
@@ -65,7 +69,7 @@
           "oracleId": "o-forest",
           "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
           "manaCost": null,
-          "typeLine": "Basic Land — Forest",
+          "typeLine": "Basic Land \u2014 Forest",
           "printedPower": null,
           "printedToughness": null,
           "isTapped": null,
@@ -73,7 +77,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": true,
+          "colors": []
         },
         {
           "id": "h4",
@@ -89,7 +95,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": false,
+          "colors": []
         },
         {
           "id": "h5",
@@ -97,7 +105,7 @@
           "oracleId": "o-archdruid",
           "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
           "manaCost": "{1}{G}{G}",
-          "typeLine": "Creature — Elf Druid",
+          "typeLine": "Creature \u2014 Elf Druid",
           "printedPower": 2,
           "printedToughness": 2,
           "isTapped": null,
@@ -105,7 +113,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": true
+          "isCreature": true,
+          "isLand": false,
+          "colors": []
         },
         {
           "id": "h6",
@@ -121,7 +131,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": false,
+          "colors": []
         },
         {
           "id": "h7",
@@ -137,7 +149,9 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": false,
+          "colors": []
         }
       ],
       "graveyard": [
@@ -155,13 +169,19 @@
           "damageMarked": null,
           "counters": null,
           "isPlaneswalker": false,
-          "isCreature": false
+          "isCreature": false,
+          "isLand": false,
+          "colors": []
         }
       ],
       "hasLost": false,
       "landsPlayedThisTurn": 1,
       "commanderDamage": {},
-      "commanderName": "Tovolar, Dire Overlord"
+      "commanderName": "Tovolar, Dire Overlord",
+      "manaPool": {
+        "G": 2,
+        "R": 1
+      }
     },
     {
       "playerId": "bbbbbbbb-0000-0000-0000-000000000002",
@@ -177,7 +197,8 @@
       "commanderDamage": {
         "Tovolar, Dire Overlord": 14
       },
-      "commanderName": null
+      "commanderName": null,
+      "manaPool": {}
     }
   ],
   "battlefield": [
@@ -187,7 +208,7 @@
       "oracleId": "o-llanowar",
       "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
       "manaCost": "{G}",
-      "typeLine": "Creature — Elf Druid",
+      "typeLine": "Creature \u2014 Elf Druid",
       "printedPower": 1,
       "printedToughness": 1,
       "isTapped": true,
@@ -195,7 +216,9 @@
       "damageMarked": 0,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": true
+      "isCreature": true,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "p2",
@@ -203,7 +226,7 @@
       "oracleId": "o-hydra",
       "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
       "manaCost": "{2}{G}{G}",
-      "typeLine": "Creature — Hydra",
+      "typeLine": "Creature \u2014 Hydra",
       "printedPower": 0,
       "printedToughness": 0,
       "isTapped": false,
@@ -213,7 +236,9 @@
         "+1/+1": 4
       },
       "isPlaneswalker": false,
-      "isCreature": true
+      "isCreature": true,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "p7",
@@ -221,7 +246,7 @@
       "oracleId": "o-bears",
       "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
       "manaCost": "{1}{G}",
-      "typeLine": "Creature — Bear",
+      "typeLine": "Creature \u2014 Bear",
       "isPlaneswalker": false,
       "isCreature": true,
       "printedPower": 2,
@@ -229,7 +254,9 @@
       "isTapped": false,
       "hasSummoningSickness": false,
       "damageMarked": 0,
-      "counters": null
+      "counters": null,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "p3",
@@ -237,7 +264,7 @@
       "oracleId": "o-forest",
       "controllerId": "aaaaaaaa-0000-0000-0000-000000000001",
       "manaCost": null,
-      "typeLine": "Basic Land — Forest",
+      "typeLine": "Basic Land \u2014 Forest",
       "printedPower": null,
       "printedToughness": null,
       "isTapped": false,
@@ -245,7 +272,9 @@
       "damageMarked": 0,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": false
+      "isCreature": false,
+      "isLand": true,
+      "colors": []
     },
     {
       "id": "p4",
@@ -253,7 +282,7 @@
       "oracleId": "o-wall",
       "controllerId": "bbbbbbbb-0000-0000-0000-000000000002",
       "manaCost": "{1}{G}",
-      "typeLine": "Creature — Plant Wall",
+      "typeLine": "Creature \u2014 Plant Wall",
       "printedPower": 0,
       "printedToughness": 4,
       "isTapped": false,
@@ -261,7 +290,9 @@
       "damageMarked": 2,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": true
+      "isCreature": true,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "p5",
@@ -269,7 +300,7 @@
       "oracleId": "o-pyromancer",
       "controllerId": "bbbbbbbb-0000-0000-0000-000000000002",
       "manaCost": "{2}{R}",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "printedPower": 1,
       "printedToughness": 1,
       "isTapped": true,
@@ -277,7 +308,9 @@
       "damageMarked": 0,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": true
+      "isCreature": true,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "pw1",
@@ -285,7 +318,7 @@
       "oracleId": "o-chandra",
       "controllerId": "bbbbbbbb-0000-0000-0000-000000000002",
       "manaCost": "{2}{R}{R}",
-      "typeLine": "Legendary Planeswalker — Chandra",
+      "typeLine": "Legendary Planeswalker \u2014 Chandra",
       "isPlaneswalker": true,
       "printedPower": null,
       "printedToughness": null,
@@ -295,7 +328,9 @@
       "counters": {
         "loyalty": 4
       },
-      "isCreature": false
+      "isCreature": false,
+      "isLand": false,
+      "colors": []
     }
   ],
   "stack": [
@@ -313,7 +348,9 @@
       "damageMarked": null,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": false
+      "isCreature": false,
+      "isLand": false,
+      "colors": []
     },
     {
       "id": "s2",
@@ -329,9 +366,12 @@
       "damageMarked": null,
       "counters": null,
       "isPlaneswalker": false,
-      "isCreature": false
+      "isCreature": false,
+      "isLand": false,
+      "colors": []
     }
   ],
   "exile": [],
-  "command": []
+  "command": [],
+  "priorityPlayerId": "aaaaaaaa-0000-0000-0000-000000000001"
 }

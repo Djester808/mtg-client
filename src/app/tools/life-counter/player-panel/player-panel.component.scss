@@ -1,0 +1,405 @@
+@use '../../../../styles/breakpoints' as *;
+@use '../../../../styles/detail-page' as *;
+
+:host {
+  display: block;
+  min-height: 0;
+  min-width: 0;
+}
+
+.panel {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  background: hsl(var(--seat-hue, 42) 22% 11%);
+  border: 1px solid hsl(var(--seat-hue, 42) 40% 30% / 0.4);
+  // Colour is transitioned, not the border-width: a width change on a grid item reflows
+  // every other panel, which at eight seats is the whole screen.
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.panel-art,
+.panel-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.panel-art {
+  background-size: cover;
+  background-position: center;
+}
+
+/*
+ * The art is a backdrop, not a picture: a life total has to stay readable over somebody's
+ * holiday photo, so the wash is opaque enough to guarantee contrast rather than tuned to
+ * look nice over one image.
+ */
+.panel-wash {
+  background:
+    radial-gradient(120% 90% at 50% 40%, rgb(0 0 0 / 0.35) 0%, rgb(0 0 0 / 0.72) 100%),
+    linear-gradient(hsl(var(--seat-hue, 42) 30% 8% / 0.5), hsl(var(--seat-hue, 42) 30% 6% / 0.7));
+}
+
+// ---- The two halves that count -------------------------------------------------------
+
+.tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  // Held down repeatedly on a phone; without this the browser selects text, shows the
+  // callout menu, and fires a 300ms synthetic click on top of the pointer events.
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  z-index: 1;
+}
+
+.tap-down {
+  left: 0;
+}
+
+.tap-up {
+  right: 0;
+}
+
+.tap-hint {
+  position: absolute;
+  bottom: 6px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.tap-down .tap-hint {
+  left: 10px;
+}
+
+.tap-up .tap-hint {
+  right: 10px;
+}
+
+.tap-zone:active .tap-hint {
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+.tap-zone:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -3px;
+}
+
+// ---- What sits on top -----------------------------------------------------------------
+
+/*
+ * `pointer-events: none` on the face and back on for its own controls. The face covers the
+ * tap zones, and without this the middle of every panel — where the life total is — would
+ * be the one place tapping did nothing.
+ */
+.panel-face {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 6px 8px 8px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.seat-name {
+  @include header-count;
+  // Two deliberate departures from the shared caption: it is read over somebody's photograph
+  // rather than a flat surface, so it needs the brighter of the two greys; and at eight
+  // seats it has about 150px, where 0.12em tracking costs a whole character of the name.
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.seat-account {
+  font-size: 9px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.life-block {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.life {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 9vmin, 76px);
+  line-height: 1;
+  color: var(--text-primary);
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.is-dense .life {
+  font-size: clamp(26px, 6vmin, 46px);
+}
+
+// ---- The delta ---------------------------------------------------------------------------
+
+.delta {
+  position: absolute;
+  left: 50%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(15px, 3.4vmin, 26px);
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.8);
+  pointer-events: none;
+}
+
+/* The running total, pinned above the life number while the finger is still going. */
+.delta-pending {
+  top: -2px;
+  transform: translate(-50%, -100%);
+}
+
+.delta-flying {
+  top: -2px;
+  animation: delta-fly 780ms cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+
+.mood-gain .delta {
+  color: #6ee7a8;
+}
+
+.mood-loss .delta {
+  color: #ff8a7a;
+}
+
+/* The panel itself answers, so a change is visible from across the table. */
+.mood-gain {
+  border-color: rgb(110 231 168 / 0.7);
+  box-shadow:
+    0 0 0 1px rgb(110 231 168 / 0.35),
+    0 0 26px rgb(110 231 168 / 0.22) inset;
+}
+
+.mood-loss {
+  border-color: rgb(255 138 122 / 0.75);
+  box-shadow:
+    0 0 0 1px rgb(255 138 122 / 0.4),
+    0 0 26px rgb(255 138 122 / 0.25) inset;
+}
+
+// ---- Chips ---------------------------------------------------------------------------------
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 16px;
+}
+
+.chip {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.chip.is-zero {
+  opacity: 0.45;
+}
+
+.chip.is-lethal {
+  background: rgb(192 57 43 / 0.85);
+  border-color: #ff8a7a;
+  color: #fff;
+  opacity: 1;
+}
+
+.chip-cmd {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+// ---- Out of the game --------------------------------------------------------------------------
+
+.is-out .panel-face {
+  // Not `opacity` on the panel: that would fade the art and the wash with it, and the wash
+  // is what keeps the remaining text legible.
+  opacity: 0.62;
+}
+
+.is-out {
+  border-color: rgb(255 255 255 / 0.14);
+}
+
+.is-out .panel-wash {
+  background: linear-gradient(rgb(0 0 0 / 0.82), rgb(0 0 0 / 0.88));
+}
+
+.out-banner {
+  position: absolute;
+  inset: auto 0 34px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+
+.out-word {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #ff8a7a;
+}
+
+.out-why {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+// ---- The one button ----------------------------------------------------------------------------
+
+.seat-menu {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  pointer-events: auto;
+  min-width: $tap-min;
+  min-height: $tap-min;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 10px;
+  z-index: 3;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--text-primary);
+    background: rgb(0 0 0 / 0.5);
+  }
+}
+
+// ---- Sitting across the table ---------------------------------------------------------------------
+
+/*
+ * Everything inside turns, the panel's own box does not. The tap zones turn with the
+ * content, so the half nearest each player's left hand still takes life away.
+ */
+.is-flipped .panel-face,
+.is-flipped .tap-zone {
+  transform: rotate(180deg);
+}
+
+.is-flipped .tap-down {
+  left: auto;
+  right: 0;
+}
+
+.is-flipped .tap-up {
+  right: auto;
+  left: 0;
+}
+
+// ---- Animation ----------------------------------------------------------------------------------------
+
+/*
+ * Two identical keyframes under different names. Re-assigning the same animation does not
+ * replay it, and the alternative — strip the class, force a reflow, re-add it — is a
+ * synchronous layout on a surface being tapped several times a second.
+ */
+@keyframes life-bump-a {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.13);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes life-bump-b {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.13);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes delta-fly {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260%) scale(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .life.bump-a {
+    animation: life-bump-a 260ms ease-out;
+  }
+
+  .life.bump-b {
+    animation: life-bump-b 260ms ease-out;
+  }
+}
+
+/*
+ * Reduced motion keeps the information and drops the movement: the delta still appears and
+ * still fades, it just does not travel or grow.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .delta-flying {
+    animation: none;
+    opacity: 0.85;
+    transform: translate(-50%, -100%);
+  }
+}

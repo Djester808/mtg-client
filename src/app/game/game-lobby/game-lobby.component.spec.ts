@@ -152,7 +152,10 @@ describe('GameLobbyComponent', () => {
     expect(req.request.body).toEqual({ deckId: 'deck-2' });
     req.flush({ gameId: 'game-9' });
 
-    expect(navigated).toEqual([['/play', 'game-9']]);
+    // /game/:gameId is where the board is. This asserted ['/play', id] for as long as the
+    // board was unreachable from here: '/play' is this lobby and has no :gameId child, so
+    // accepting an invitation navigated to a route that matches nothing.
+    expect(navigated).toEqual([['/game', 'game-9']]);
   });
 
   it('shows the cards the engine cannot play, in the server own words', () => {

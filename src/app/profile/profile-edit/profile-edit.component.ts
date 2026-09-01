@@ -10,7 +10,7 @@ import {
 import { ProfileApiService } from '../../services/profile-api.service';
 import { ToastService } from '../../services/toast.service';
 import { AvatarLimits, CommanderBrief, MyProfile } from '../../models/profile.models';
-import { prepareAvatar } from '../../utils/avatar-image';
+import { prepareImage } from '../../utils/avatar-image';
 import { describeHttpError } from '../../utils/http-error.utils';
 
 /** Offered as a picker rather than free text, so the profile stat groups cleanly. */
@@ -199,7 +199,7 @@ export class ProfileEditComponent implements OnInit {
     this.cdr.markForCheck();
 
     try {
-      const prepared = await prepareAvatar(file, limits.maxDimension, limits.maxBytes);
+      const prepared = await prepareImage(file, limits.maxDimension, limits.maxBytes);
       this.api.uploadAvatar(prepared.blob).subscribe({
         next: (me) => {
           this.apply(me);
@@ -214,7 +214,7 @@ export class ProfileEditComponent implements OnInit {
         },
       });
     } catch (err) {
-      // prepareAvatar rejects with a message written for the user.
+      // prepareImage rejects with a message written for the user.
       this.uploading = false;
       this.toast.error(err instanceof Error ? err.message : 'Could not read that image.');
       this.cdr.markForCheck();

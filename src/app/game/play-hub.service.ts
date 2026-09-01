@@ -135,8 +135,13 @@ export class PlayHubService {
     return this.send('CastSpell', cardId, targets, variableValue);
   }
 
-  activateAbility(sourceId: string, abilityId: string, targets: TargetDto[] = []): Promise<void> {
-    return this.send('ActivateAbility', sourceId, abilityId, targets);
+  activateAbility(
+    sourceId: string,
+    abilityId: string,
+    targets: TargetDto[] = [],
+    variableValue = 0,
+  ): Promise<void> {
+    return this.send('ActivateAbility', sourceId, abilityId, targets, variableValue);
   }
 
   declareAttackers(attackers: Record<string, AttackTarget>): Promise<void> {

@@ -13,11 +13,37 @@ nav {
   height: 52px;
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  gap: 32px;
+  //
+  // Spacing here is deliberately two-valued, and the reason is arithmetic rather than taste.
+  //
+  // $bp-nav (900px) is the width the bar collapses at, and _breakpoints.scss says it was
+  // measured against "logo, four links, account cluster". There are seven destinations now.
+  // At the old spacing the signed-out bar — which carries a Create Account button, so it is
+  // the wide case — needed 1048px, meaning that from 900 to 1047 the links ran underneath
+  // that button with nothing on screen to say so.
+  //
+  // Moving $bp-nav was the wrong lever: community, card-modal and kb all hang layouts off
+  // it, and shifting a shared number to fix one component's content is how a breakpoint
+  // stops meaning anything. So the bar tightens instead, and $bp-wide — a number this
+  // vocabulary already has — is where it relaxes back to exactly what it looked like
+  // before. Above 1200px these are the original values, so the common desktop widths are
+  // pixel-identical to what shipped.
+  //
+  // It repays an older debt on the way: even with six links the signed-out bar wanted 980px,
+  // so it did not fit between 900 and 979 either. Measured at the exact collapse point it now
+  // needs 876, and there is no width above $bp-nav where the links do not fit. Do not loosen
+  // these back without re-measuring — the gap between what the bar collapses at and what the
+  // bar needs is the whole defect.
+  padding: 0 16px;
+  gap: 8px;
   background: rgba(8, 8, 8, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-dim);
+
+  @include from($bp-wide) {
+    padding: 0 24px;
+    gap: 32px;
+  }
   // The bar's own gutter tightens below the breakpoint, which moved the logo 8px left in
   // a single frame — a visible hop next to the cross-fade the rest of the bar is doing.
   // Both are animatable, so the logo glides to its new gutter instead.
@@ -277,8 +303,15 @@ $nav-morph: 160ms;
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
+  // Shrink rather than shove: without this the row keeps its content width and pushes the
+  // account cluster off the right edge instead of getting narrower.
+  min-width: 0;
+
+  @include from($bp-wide) {
+    gap: 4px;
+  }
   // Fades and lifts on the way out, against the toggle fading in over the same 160ms —
   // see .nav-toggle for why `display` is in the transition.
   transition:
@@ -307,7 +340,14 @@ $nav-morph: 160ms;
 }
 
 .nav-link {
-  padding: 6px 12px;
+  // See the note on `nav`: tight enough for seven destinations between $bp-nav and
+  // $bp-wide, back to the original 12px above it.
+  padding: 6px 6px;
+
+  @include from($bp-wide) {
+    padding: 6px 12px;
+  }
+
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;

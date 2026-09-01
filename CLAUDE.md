@@ -102,6 +102,30 @@ build ships.
 - A `flex: 1` spacer keeps `order: 0`, so it lands first when the row wraps.
 - Content projected through `ng-content` keeps the *projecting* page's encapsulation, so
   the receiving component's scoped styles never reach it.
+- **`*ngFor` without `trackBy` destroys the child component on every state change.** Stores
+  and signal services here hand back a *new* object per change, which is the identity ngFor
+  tracks by, so the row is torn down and rebuilt rather than re-bound — and everything the
+  child held itself goes with it: timers, animation state, in-progress input. The bindings
+  keep working, which is what makes it invisible. The life counter's panels lost their
+  gain/loss animation and their hold-to-repeat this way, while the life total updated
+  perfectly. If a child "resets itself" whenever its parent's data changes, look here first.
+- **A hub call is positional, and the server will not fill in what you leave off.** SignalR does
+  not apply a C# default for an argument the client omitted, so a hub method that grew a fifth
+  parameter stopped accepting the four the board was sending. Every cast failed with `Failed to
+  invoke 'CastSpell' due to an error on the server` — no refusal banner, nothing in the game log,
+  the card just stayed in hand. Send every argument the hub declares, `null` included;
+  `signalr.service.spec.ts` counts them.
+- **A selector that names nothing reads exactly like a page with nothing on it.** `e2e/helpers/
+  board-driver.js` spoke a `gb-*` vocabulary — `.gb-root`, `.gb-hand .gb-card-name`,
+  `.gb-field-half:last-child` — that the board stopped rendering long ago. Every read came back
+  empty, every script that used it timed out on `.gb-root`, and nothing anywhere said the
+  selectors were wrong. The board it was pointed at was fine the whole time. When a harness
+  reports an empty board, re-find one selector by hand before believing it.
+- **The navbar's Tailwind classes are decorative; `navbar.component.scss` is the authority.**
+  The template says `gap-8 px-3`, and the stylesheet independently sets `gap: 32px` and
+  `padding: 6px 12px` on the same elements. Editing the classes changes nothing on screen
+  and the DOM will happily show you the class you just wrote. Check `getComputedStyle`
+  before believing a spacing change landed.
 
 ## Knowledge docs — they live in the API repo, read them there
 

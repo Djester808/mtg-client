@@ -1,0 +1,105 @@
+<div
+  class="panel"
+  [class.is-flipped]="flipped"
+  [class.is-dense]="dense"
+  [class.is-out]="out"
+  [class.mood-gain]="mood === 'gain'"
+  [class.mood-loss]="mood === 'loss'"
+  [style.--seat-hue]="seat.hue"
+>
+  <div
+    class="panel-art"
+    *ngIf="seat.art"
+    [style.backgroundImage]="'url(' + seat.art + ')'"
+    aria-hidden="true"
+  ></div>
+  <div class="panel-wash" aria-hidden="true"></div>
+
+  <!-- The two halves of the panel are the counter. They sit under the chrome so a tap on a
+       chip or the menu is not also a tap on the life total. -->
+  <button
+    type="button"
+    class="tap-zone tap-down"
+    [attr.aria-label]="'Lose 1 life — ' + seat.name"
+    (pointerdown)="onPointerDown($event, -1)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+    (pointerleave)="onPointerUp()"
+    (keydown)="onKey($event, -1)"
+  >
+    <span class="tap-hint" aria-hidden="true">−</span>
+  </button>
+  <button
+    type="button"
+    class="tap-zone tap-up"
+    [attr.aria-label]="'Gain 1 life — ' + seat.name"
+    (pointerdown)="onPointerDown($event, 1)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+    (pointerleave)="onPointerUp()"
+    (keydown)="onKey($event, 1)"
+  >
+    <span class="tap-hint" aria-hidden="true">+</span>
+  </button>
+
+  <div class="panel-face">
+    <header class="panel-head">
+      <span class="seat-name" [title]="seat.name">{{ seat.name }}</span>
+      <span class="seat-account" *ngIf="seat.account" title="Signed in — this game counts">◆</span>
+    </header>
+
+    <div class="life-block">
+      <!--
+        aria-live so a screen reader hears the total change; the flying delta is decorative
+        and stays out of the announcement.
+      -->
+      <span
+        class="life"
+        [class.bump-a]="bumpToken === 0"
+        [class.bump-b]="bumpToken === 1"
+        aria-live="polite"
+        [attr.aria-label]="seat.name + ': ' + seat.life + ' life'"
+        >{{ seat.life }}</span
+      >
+
+      <span class="delta delta-pending" *ngIf="pending !== 0" aria-hidden="true">{{
+        deltaLabel
+      }}</span>
+      <span class="delta delta-flying" *ngIf="flying !== null" aria-hidden="true">{{
+        deltaLabel
+      }}</span>
+    </div>
+
+    <div class="chips">
+      <span
+        class="chip"
+        *ngFor="let chip of chips"
+        [class.is-lethal]="chip.lethal"
+        [class.is-zero]="chip.value === 0"
+        [title]="chip.spec.label + ' — ' + chip.spec.rule"
+        >{{ chip.spec.short }} {{ chip.value }}</span
+      >
+      <span
+        class="chip chip-cmd"
+        *ngIf="worstCommanderDamage > 0"
+        [class.is-lethal]="worstCommanderDamage >= lethalCommanderDamage"
+        title="Worst single commander — CR 903.10a"
+        >CMD {{ worstCommanderDamage }}</span
+      >
+    </div>
+
+    <p class="out-banner" *ngIf="out">
+      <span class="out-word">Out</span>
+      <span class="out-why">{{ lossLabel }}</span>
+    </p>
+
+    <button
+      type="button"
+      class="seat-menu"
+      [attr.aria-label]="'Options for ' + seat.name"
+      (click)="openSeat.emit()"
+    >
+      <span aria-hidden="true">•••</span>
+    </button>
+  </div>
+</div>

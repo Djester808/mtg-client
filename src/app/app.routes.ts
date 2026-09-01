@@ -24,6 +24,20 @@ export const routes: Routes = [
     path: 'kb',
     loadComponent: () => import('./kb/kb.component').then((m) => m.KbComponent),
   },
+  // Tools: things for the table rather than the deck list. No guard — the life counter is
+  // useful to four people around a kitchen table with nobody signed in, and asking for an
+  // account first would be asking for one to do arithmetic.
+  {
+    path: 'tools',
+    loadComponent: () =>
+      import('./tools/tools-hub/tools-hub.component').then((m) => m.ToolsHubComponent),
+    pathMatch: 'full',
+  },
+  {
+    path: 'tools/life-counter',
+    loadComponent: () =>
+      import('./tools/life-counter/life-counter.component').then((m) => m.LifeCounterComponent),
+  },
   {
     path: 'collection',
     loadComponent: () =>
@@ -120,12 +134,16 @@ export const routes: Routes = [
       import('./game/game-lobby/game-lobby.component').then((m) => m.GameLobbyComponent),
     canActivate: [authGuard],
   },
-  // Playing a game. The board joins the SignalR hub on init and leaves on destroy, so the
-  // route is the whole lifecycle of a connection.
+  // The lobby and the board, restored to the routes they had before the engine UI was
+  // removed. Both are lazy so the game slice is not paid for on every other page.
   {
-    path: 'play/:gameId',
-    loadComponent: () =>
-      import('./game/game-board/game-board.component').then((m) => m.GameBoardComponent),
+    path: 'lobby',
+    loadComponent: () => import('./lobby/lobby.component').then((m) => m.LobbyComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'game/:gameId',
+    loadComponent: () => import('./board/game-board.component').then((m) => m.GameBoardComponent),
     canActivate: [authGuard],
   },
   {

@@ -1,14 +1,37 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   CandidatePoolDto,
   CardDto,
   CardHistoryEntryDto,
   PricePointDto,
+  GameStateDto,
   RulingDto,
   SetSummaryDto,
 } from '../models/game.models';
+import { GameView } from '../models/play.models';
+import { GameViewAdapter } from '../game/game-view.adapter';
+
+interface CreateGameRequest {
+  player1Name: string;
+  player2Name: string;
+  player1DeckList: string[]; // card names, resolved server-side
+  player2DeckList: string[];
+}
+
+interface CreateGameResponse {
+  gameId: string;
+  player1Token: string;
+  player2Token: string;
+}
+
+interface JoinGameResponse {
+  gameId: string;
+  playerToken: string;
+  playerId: string;
+  initialState: GameStateDto;
+}
 
 /**
  * Result of scanning a card photo.
@@ -34,9 +57,45 @@ export interface CardVisionResult {
 
 @Injectable({ providedIn: 'root' })
 export class GameApiService {
+  // ---- Game lifecycle -------------------------------------
+  //
+  // The board's own calls, kept at their old names and shapes so nothing above them changed,
+  // and pointed at the rebuilt engine underneath. `GameViewAdapter` does the translating.
+
+  createGame(req: CreateGameRequest): Observable<CreateGameResponse> {
+    return this.http.post<CreateGameResponse>(`${this.base}/games`, req);
+  }
+
+  /**
+   * The state to open the board on, from the rebuilt engine.
+   *
+   * There is no join endpoint any more: a game is created by an invitation between two
+   * accounts, and a player is already a seat at it by the time they open the board. So this
+   * asks for the view and shapes it into what the board's effect expects — including who the
+   * viewer is, which the old response carried as `playerId` and the new view names itself.
+   */
+  joinGame(gameId: string, _playerToken: string): Observable<JoinGameResponse> {
+    return this.http.get<GameView>(`${this.base}/games/${gameId}`).pipe(
+      map((view) => ({
+        gameId: view.gameId,
+        playerToken: _playerToken,
+        playerId: view.viewer,
+        initialState: this.adapter.toGameState(view),
+      })),
+    );
+  }
+
+  getGameState(gameId: string): Observable<GameStateDto> {
+    return this.http
+      .get<GameView>(`${this.base}/games/${gameId}`)
+      .pipe(map((view) => this.adapter.toGameState(view)));
+  }
   private readonly base = '/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private adapter: GameViewAdapter,
+  ) {}
 
   // ---- Card data ------------------------------------------
 

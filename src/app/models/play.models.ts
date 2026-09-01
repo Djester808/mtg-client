@@ -32,6 +32,14 @@ export interface GameView {
    * (CR 508.1), so "my turn and I have priority" does not identify the moment.
    */
   currentStep: string;
+  /**
+   * Who may act right now, or null when nobody has priority (CR 117.1).
+   *
+   * Null during untap (CR 502.4), cleanup (CR 514.3), and while something resolves
+   * (CR 117.2e). The board uses it to say whether you are acting or waiting, rather than
+   * offering an action the server will refuse.
+   */
+  priorityPlayerId: string | null;
   /** Attacking creature id → what it is attacking (CR 508.1b). */
   attackers: Record<string, AttackTarget>;
   /**
@@ -110,6 +118,12 @@ export interface PlayerView {
   commanderDamage: Record<string, number>;
   /** This player's commander, if the game has them (CR 903.3). */
   commanderName: string | null;
+  /**
+   * Mana available, by symbol — `W`, `U`, `B`, `R`, `G`, `C` (CR 106.4).
+   *
+   * Public, and kinds the player has none of are absent rather than zero.
+   */
+  manaPool: Record<string, number>;
 }
 
 /**
@@ -119,13 +133,30 @@ export interface PlayerView {
  * value with every continuous effect layered over it, and the server does not send that yet —
  * a field called `power` would be a lie the first time a lord is on the battlefield.
  */
+/** One activated ability the engine says this object has (CR 602.1). */
+export interface AbilityView {
+  id: string;
+  text: string;
+  requiresTap: boolean;
+  targetCount: number;
+  isManaAbility: boolean;
+}
+
 export interface ObjectView {
   id: string;
+  /** What it can be asked to do. Absent on anything with nothing to activate. */
+  abilities?: AbilityView[];
   name: string;
   oracleId: string;
   controllerId: string;
   manaCost: string | null;
   typeLine: string | null;
+  /** What the card does, so a player can read it instead of knowing it. */
+  oracleText: string | null;
+  /** Cropped art, for the card as it sits on the battlefield. */
+  artUri: string | null;
+  /** The whole card, for reading it. */
+  imageUri: string | null;
   /** Whether it is a planeswalker, and so something that can be attacked (CR 508.1b). */
   isPlaneswalker: boolean;
   /**
@@ -135,6 +166,10 @@ export interface ObjectView {
    * restrictions are the engine's to judge. It is enough to stop the board offering a land.
    */
   isCreature: boolean;
+  /** Whether it is a land, which is what a card face is coloured by first. */
+  isLand: boolean;
+  /** The card's colours, for the frame it is drawn in. */
+  colors: string[];
   printedPower: number | null;
   printedToughness: number | null;
   isTapped: boolean | null;

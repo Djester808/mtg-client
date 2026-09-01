@@ -1,0 +1,397 @@
+@use '../../../../styles/breakpoints' as *;
+@use '../../../../styles/detail-page' as *;
+
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: block;
+}
+
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.sheet {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -12px 0 40px rgb(0 0 0 / 0.5);
+}
+
+// Below the phone breakpoint a side panel is the screen, not a strip beside it.
+@include upto($bp-phone) {
+  .sheet {
+    inset: 0;
+    width: 100%;
+    border-left: none;
+  }
+}
+
+.sheet-header {
+  @include drawer-header;
+}
+
+.sheet-title {
+  @include drawer-title;
+  margin: 0;
+}
+
+.sheet-close {
+  @include drawer-close;
+  // The header's own control is the only way out on a phone, where there is no scrim to tap.
+  min-width: $tap-min;
+  min-height: $tap-min;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+
+.sheet-tab {
+  // The same small uppercase caption every header in the app uses; only the underline and
+  // the active colour are this control's own.
+  @include header-count;
+  flex: 1;
+  min-height: $tap-min;
+  padding: 8px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+
+  &.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// ---- A labelled row with a stepper ----------------------------------------------------
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+
+  &.is-lethal {
+    border-color: #ff8a7a;
+    background: rgb(192 57 43 / 0.18);
+  }
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.row-rule {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+
+.row-note {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.section-note {
+  margin: 0 0 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.empty-line {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+// ---- Stepper ---------------------------------------------------------------------------
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.step {
+  width: $tap-min;
+  height: $tap-min;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.step-up:hover {
+  border-color: var(--gold-dim);
+}
+
+.step-value {
+  min-width: 34px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+// ---- Segmented pair ----------------------------------------------------------------------
+
+.segmented {
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  button {
+    min-height: $tap-min;
+    padding: 0 12px;
+    background: var(--bg-surface);
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &.active {
+      background: var(--gold);
+      color: #0e0c08;
+      font-weight: 700;
+    }
+  }
+}
+
+.row-toggle {
+  margin-top: 6px;
+}
+
+// ---- Fields ------------------------------------------------------------------------------
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.field-input {
+  @include filter-field;
+  min-height: $tap-min;
+  width: 100%;
+  // 16px keeps iOS from zooming the page when the field takes focus, which on a fixed
+  // full-screen sheet leaves the user panned somewhere they cannot scroll back from.
+  font-size: 16px;
+}
+
+// ---- Backdrop ------------------------------------------------------------------------------
+
+.art-block {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+}
+
+.art-preview {
+  width: 76px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border-subtle);
+
+  &.is-empty {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--bg-surface),
+      var(--bg-surface) 6px,
+      var(--bg-deep) 6px,
+      var(--bg-deep) 12px
+    );
+  }
+}
+
+.art-text {
+  flex: 1;
+  min-width: 0;
+}
+
+// ---- Sign in / out ----------------------------------------------------------------------------
+
+.signin-block,
+.out-block {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+}
+
+.record {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.record-cell {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  text-align: center;
+
+  dt {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+}
+
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.form-error {
+  margin: 0;
+  font-size: 12px;
+  color: #ff8a7a;
+}
+
+.out-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+// ---- Buttons -------------------------------------------------------------------------------------
+
+.link-btn {
+  margin-top: 8px;
+  min-height: $tap-min;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ghost-btn {
+  min-height: $tap-min;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.btn-rule {
+  display: block;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.primary-btn {
+  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgb(201 168 76 / 0.3));
+  min-height: $tap-min;
+}

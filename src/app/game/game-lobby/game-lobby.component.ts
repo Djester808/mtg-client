@@ -114,7 +114,10 @@ export class GameLobbyComponent implements OnInit {
     this.api.accept(invite.id, this.acceptWithDeckId).subscribe({
       next: (result) => {
         this.busy.set(false);
-        void this.router.navigate(['/play', result.gameId]);
+        // The board is at /game/:gameId. '/play' is this lobby and has no :gameId child,
+        // so accepting an invitation used to navigate to a route that matches nothing - the
+        // board was unreachable from the only flow that starts a game between two people.
+        void this.router.navigate(['/game', result.gameId]);
       },
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);

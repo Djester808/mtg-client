@@ -1,0 +1,17 @@
+<section class="tools">
+  <header class="tools-head">
+    <h1 class="tools-title">Tools</h1>
+    <p class="tools-sub">Things for the table, rather than for the deck list.</p>
+  </header>
+
+  <div class="tool-grid">
+    <a class="tool-card" *ngFor="let tool of tools" [routerLink]="tool.path">
+      <span class="tool-glyph" aria-hidden="true">{{ tool.glyph }}</span>
+      <span class="tool-text">
+        <span class="tool-name">{{ tool.name }}</span>
+        <span class="tool-blurb">{{ tool.blurb }}</span>
+        <span class="tool-tag" *ngIf="tool.worksSignedOut">No account needed</span>
+      </span>
+    </a>
+  </div>
+</section>

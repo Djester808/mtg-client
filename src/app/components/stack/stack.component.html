@@ -1,0 +1,29 @@
+<div class="stack-panel" *ngIf="(isEmpty$ | async) === false">
+  <div class="stack-panel-title">The Stack</div>
+
+  <div class="stack-items">
+    <ng-container *ngIf="stack$ | async as stack">
+      <button
+        *ngFor="let obj of stack; trackBy: trackByStackObj; let i = index"
+        class="stack-item"
+        type="button"
+        [class.stack-item-top]="isTopOfStack(i, stack)"
+        [class.is-targetable]="(isTargeting$ | async) === true"
+        (click)="pick(obj)"
+      >
+        <div class="stack-item-index">#{{ i + 1 }}{{ isTopOfStack(i, stack) ? ' (top)' : '' }}</div>
+        <div class="stack-item-type">{{ typeLabel(obj) }}</div>
+        <div class="stack-item-name">{{ obj.sourceCardName }}</div>
+        <div class="stack-item-controller">{{ obj.description }}</div>
+      </button>
+    </ng-container>
+  </div>
+
+  <div class="stack-actions">
+    <!-- Cast Instant and Activate Ability used to sit here with no handlers on them at all —
+         two buttons that did nothing when pressed. An instant is cast from the hand and an
+         ability from its permanent, both by tapping the card itself, so there was never
+         anything for them to do. -->
+    <button class="action-btn primary" (click)="passPriority()">Pass Priority</button>
+  </div>
+</div>

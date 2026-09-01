@@ -1,0 +1,28 @@
+<div class="hand-zone">
+  <div class="hand-label">Hand — {{ count }} cards</div>
+  <!-- appScrollEdges supplies can-scroll-left / can-scroll-right; the stylesheet fades
+       the edge so a hand wider than the screen reads as more hand, not a clipped one. -->
+  <div class="hand-cards" #handCards appScrollEdges (click)="$event.stopPropagation()">
+    <div
+      *ngFor="let hc of orderedCards; trackBy: trackByCard; let i = index"
+      class="hand-card-wrapper"
+      [ngClass]="'rot-' + i"
+      [class.is-dragging]="hc.card.cardId === draggingId"
+      (mousedown)="onWrapperMouseDown($event, hc.card.cardId)"
+    >
+      <app-card
+        [card]="hc.card"
+        [isSelected]="hc.isSelected"
+        [isCastable]="hc.isCastable"
+        [showInfo]="true"
+        [style.width.px]="cardDims.w"
+        [style.height.px]="cardDims.h"
+        (clicked)="onCardClick(hc.card)"
+        (dblClicked)="onCardDblClick(hc)"
+        (hoverEnter)="onCardHover($event)"
+        (hoverLeave)="onCardHoverLeave()"
+      >
+      </app-card>
+    </div>
+  </div>
+</div>

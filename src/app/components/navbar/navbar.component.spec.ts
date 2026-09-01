@@ -98,13 +98,25 @@ describe('NavbarComponent', () => {
   });
 
   it('offers playing a game as a destination', () => {
-    // The game shipped with routes and no way in. /play was reachable only by typing it, which
-    // is not a feature anybody finds.
+    // The game shipped with routes and no way in — reachable only by typing the URL, which is
+    // not a feature anybody finds. The destination is /lobby, which is the route the board had
+    // before the engine UI was removed and has again.
     const fixture = TestBed.createComponent(NavbarComponent);
-    const play = fixture.componentInstance.navLinks.find((l) => l.path === '/play');
+    const play = fixture.componentInstance.navLinks.find((l) => l.path === '/lobby');
 
-    expect(play).withContext('nav must reach /play').toBeDefined();
+    expect(play).withContext('nav must reach the lobby').toBeDefined();
     expect(play!.label).toBe('Play');
+  });
+
+  it('offers the tools as a destination', () => {
+    const fixture = TestBed.createComponent(NavbarComponent);
+    const tools = fixture.componentInstance.navLinks.find((l) => l.path === '/tools');
+
+    expect(tools).withContext('nav must reach /tools').toBeDefined();
+    expect(tools!.label).toBe('Tools');
+    // Prefix matching, or the item would stop reading as current on /tools/life-counter —
+    // which is the page anyone who opened Tools is actually looking at.
+    expect(tools!.exact).toBeFalse();
   });
 });
 
