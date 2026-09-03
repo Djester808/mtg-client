@@ -16,6 +16,7 @@ const { By, until } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
 const { armAiBuildReplay, paceAiBuildReplay } = require('./helpers/ai-build-replay');
 const { armGameReplay } = require('./helpers/game-replay');
+const { abilityFixture, GAME_ID: ABILITY_GAME_ID } = require('./fixtures/ability-board');
 const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
 
@@ -217,8 +218,102 @@ async function openSeatSheet(d, tab = 'Counters') {
   await sleep(600);
 }
 
+/**
+ * Opens the board on a game whose permanents actually have abilities.
+ *
+ * `game-view.json` is a board with nothing to activate on it, so the whole activation path had
+ * never been photographed — which is how the ability list and the {X} prompt could both be
+ * missing without a single capture saying so. `fixtures/ability-board.js` bolts the two shapes
+ * that matter onto it and nothing else, so the rest of the board stays the board every other
+ * capture is measured against.
+ */
+async function toAbilityBoard(d) {
+  await trySignIn(d);
+  await armGameReplay(d, abilityFixture());
+  await d.get(baseUrl + '/game/' + ABILITY_GAME_ID);
+  await d.wait(until.elementLocated(By.css('.board')), 20000);
+  await d.wait(until.elementLocated(By.css('.battlefield .card-name')), 20000);
+  await sleep(900);
+}
+
+/** Taps the named permanent on the local battlefield. */
+async function tapPermanent(d, name) {
+  await d.executeScript(
+    `const hit = [...document.querySelectorAll('.self-field .card-name')]
+       .find((n) => n.textContent.trim() === arguments[0]);
+     if (!hit) throw new Error('not on the board: ' + arguments[0]);
+     hit.closest('.card').click();`,
+    name,
+  );
+  await sleep(500);
+}
+
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
+  // ---- The board ------------------------------------------------------------------------
+  //
+  // Three states, and they are the first captures this board has ever had. Until the replay
+  // helper could complete a hub connection, opening /game/:id rendered the board from the REST
+  // seed and then routed away inside the second: a socket that fails to open is dispatched as
+  // a `connectionError`, and that effect clears the session and navigates home.
+  {
+    id: 'board',
+    label: 'Game board — a permanent with abilities on it',
+    root: '.board',
+    extra: `return {
+      permanents: document.querySelectorAll('.self-field .permanents-row .card').length,
+      lands: document.querySelectorAll('.self-field .lands-row .card').length,
+      handCards: document.querySelectorAll('.hand-cards .card').length,
+      zoneLabels: [...document.querySelectorAll('.zone-label')].map((z) => z.textContent.trim()),
+      statusActions: [...document.querySelectorAll('.status-actions button')].map((b) =>
+        b.textContent.trim().replace(/\\s+/g, ' '),
+      ),
+    };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+    },
+  },
+  {
+    id: 'board-ability-menu',
+    label: 'Game board — which of two abilities',
+    root: '.status-bar',
+    // What this measures is whether the engine's own sentence is on the button. A permanent
+    // with two abilities used to answer a tap by doing nothing at all, and before r25-43 the
+    // two would have read identically had there been anywhere at all to read them.
+    extra: `return {
+      abilityButtons: [...document.querySelectorAll('.action-btn.ability')].map((b) =>
+        b.textContent.trim().replace(/\\s+/g, ' '),
+      ),
+      message: (document.querySelector('.status-message') || {}).textContent.trim(),
+    };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+      await tapPermanent(d, 'Prodigal Pyromancer');
+    },
+  },
+  {
+    id: 'board-announce-x',
+    label: 'Game board — naming X for a cost',
+    root: '.status-bar',
+    extra: `const field = document.querySelector('.announce-input');
+      const box = field && field.getBoundingClientRect();
+      return {
+        hasNumberField: !!field,
+        fieldBox: box ? { w: Math.round(box.width), h: Math.round(box.height) } : null,
+        message: (document.querySelector('.status-message') || {}).textContent.trim(),
+      };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+      // A storage land: one ability charges it, the other asks for a number (CR 601.2b), so
+      // the menu comes first and the prompt after it.
+      await tapPermanent(d, 'Calciform Pools');
+      await d.executeScript(
+        `[...document.querySelectorAll('.action-btn.ability')]
+           .find((b) => b.textContent.includes('Remove X')).click();`,
+      );
+      await sleep(600);
+    },
+  },
   {
     id: 'nav-drawer',
     label: 'Navigation drawer',
