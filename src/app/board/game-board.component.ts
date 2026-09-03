@@ -391,6 +391,10 @@ export class GameBoardComponent implements OnInit {
   /** Giving up on the spell: it stays in hand, nothing is sent. */
   cancelTargeting(): void {
     this.store.dispatch(UIActions.cancelTargetMode());
+    // The number named for it goes with it. The field is destroyed with the prompt but the
+    // value behind it is not, so without this the next announcement opens on the last one's
+    // number — for an ability that would be a cost paid for something nobody asked for.
+    this.forgetAnnouncedValue();
   }
 
   // ---- Abilities and the number a cost is counted with -----------------------------------
@@ -399,6 +403,7 @@ export class GameBoardComponent implements OnInit {
    * The ability the player pressed. What it needs first is the effect's to work out (CR 602.2).
    */
   chooseAbility(permanentId: string, abilityId: string): void {
+    this.forgetAnnouncedValue();
     this.store.dispatch(UIActions.chooseAbility({ permanentId, abilityId }));
   }
 
@@ -429,12 +434,15 @@ export class GameBoardComponent implements OnInit {
 
   confirmAnnounce(): void {
     this.store.dispatch(UIActions.confirmAnnounce({ value: this.announceValue }));
-    this.announceValue = 0;
-    this.cdr.markForCheck();
+    this.forgetAnnouncedValue();
   }
 
   cancelAnnounce(): void {
     this.store.dispatch(UIActions.cancelAnnounce());
+    this.forgetAnnouncedValue();
+  }
+
+  private forgetAnnouncedValue(): void {
     this.announceValue = 0;
     this.cdr.markForCheck();
   }
