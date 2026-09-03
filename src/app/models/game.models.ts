@@ -82,6 +82,12 @@ export interface CardDto {
   gameChanger: boolean;
   /** Prices of the printing this card object reflects; optional for pre-prices literals. */
   prices?: CardPricesDto | null;
+  /**
+   * Whether casting this asks the caster for a number first (CR 601.2b). Only a card in a game
+   * has one — optional, because every other producer of a `CardDto` is a card database and not
+   * a rules engine, and a required field would be a lie in all of them.
+   */
+  announcesVariable?: boolean;
 }
 
 // ---- Game state ---------------------------------------------------------------
@@ -96,6 +102,8 @@ export interface PermanentAbilityDto {
   requiresTap: boolean;
   targetCount: number;
   isManaAbility: boolean;
+  /** Whether its cost asks the player for a number before it is activated (CR 601.2b). */
+  announcesVariable: boolean;
 }
 
 export interface PermanentDto {

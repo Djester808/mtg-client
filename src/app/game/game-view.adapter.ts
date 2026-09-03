@@ -115,6 +115,10 @@ export class GameViewAdapter {
         requiresTap: a.requiresTap,
         targetCount: a.targetCount,
         isManaAbility: a.isManaAbility,
+        // CR 601.2b: a cost written with {X} is a number the player names, and it travels with
+        // the activation. Dropped here, every such ability was activated for zero — a storage
+        // land that taps for no mana, a search for a card with mana value 0 or less.
+        announcesVariable: a.announcesVariable ?? false,
       })),
       isTapped: o.isTapped ?? false,
       hasSummoningSickness: o.hasSummoningSickness ?? false,
@@ -176,6 +180,9 @@ export class GameViewAdapter {
       imageUriArtCrop: o.artUri,
       colorIdentity: this.colorsOf(o.colors),
       ownerId: o.controllerId,
+      // The engine's answer, not a reading of `manaCost`: the X can be in an additional cost the
+      // printed mana never mentions (Harvest Pyre is {1}{R} and exiles X cards).
+      announcesVariable: o.announcesVariable ?? false,
       // Not projected by the engine's view, and not invented here. The rules engine sends what
       // it reasons about — a card's printed characteristics — and nothing a deck builder or a
       // price page would want. Null is the honest answer; the board shows none of these.
