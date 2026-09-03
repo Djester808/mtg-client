@@ -717,5 +717,41 @@
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0
+  },
+  "state:iphone-se:board": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1,
+    "truncated": 0
+  },
+  "state:iphone-se:board-ability-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:board": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1,
+    "truncated": 0
+  },
+  "state:pixel-8:board-ability-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
   }
 }
