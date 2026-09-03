@@ -63,14 +63,24 @@ export class PlayLegalityService {
    * the first would be worse than one that does nothing.
    */
   readyAbility(permanent: PermanentDto): PermanentAbilityDto | null {
-    const usable = (permanent.abilities ?? []).filter((a) => {
+    const usable = this.usableAbilities(permanent);
+    return usable.length === 1 ? usable[0] : null;
+  }
+
+  /**
+   * Every ability on this permanent whose cost could be paid right now (CR 602.5b).
+   *
+   * The list `readyAbility` narrows to one, kept separately because more than one is not a
+   * failure — it is a permanent that needs a menu. Answering only "is there exactly one" is
+   * what left a Prodigal Pyromancer's two abilities with no way in at all.
+   */
+  usableAbilities(permanent: PermanentDto): PermanentAbilityDto[] {
+    return (permanent.abilities ?? []).filter((a) => {
       if (!a.requiresTap) return true;
       // CR 602.5b: only an untapped permanent can pay {T}. CR 302.6: and a creature must have
       // been controlled since the turn began to pay it, unless it has haste (CR 702.10c).
       return !permanent.isTapped && !this.summoningSick(permanent);
     });
-
-    return usable.length === 1 ? usable[0] : null;
   }
 
   /**

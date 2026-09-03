@@ -112,6 +112,7 @@ describe('ZonesComponent', () => {
     requiresTap: true,
     targetCount: 0,
     isManaAbility: true,
+    announcesVariable: false,
     ...over,
   });
 
@@ -121,9 +122,29 @@ describe('ZonesComponent', () => {
 
     component.onCardClick(rock, 'idle', true, []);
 
+    // What an ability needs before it can be sent — a number, targets, neither — is answered
+    // once in `abilityChosen$`, because the menu below reaches the very same code.
     expect(spy).toHaveBeenCalledWith(
-      GameActions.activateAbility({ permanentId: 'perm-1', abilityId: 'mana', targetIds: [] }),
+      UIActions.chooseAbility({ permanentId: 'perm-1', abilityId: 'mana' }),
     );
+  });
+
+  it('offers the list when a permanent has two abilities to choose between', () => {
+    // The case a tap cannot express. Before the menu the click fell through to selecting the
+    // card, so a Prodigal Pyromancer's ping and its pump were both unreachable and nothing on
+    // screen said either existed.
+    const twoWays = makePermanent({
+      abilities: [
+        ability({ id: 'ping', text: '{T}: Deal 1 damage to any target.', isManaAbility: false }),
+        ability({ id: 'pump', text: '{1}: +1/+0 until end of turn.', requiresTap: false }),
+      ],
+    });
+    const spy = spyOn(store, 'dispatch');
+
+    component.onCardClick(twoWays, 'idle', true, []);
+
+    expect(spy).toHaveBeenCalledWith(UIActions.openAbilityMenu({ permanentId: 'perm-1' }));
+    expect(spy).not.toHaveBeenCalledWith(UIActions.selectCard({ permanentId: 'perm-1' }));
   });
 
   it('does not offer a tap ability on something already tapped', () => {
@@ -136,7 +157,9 @@ describe('ZonesComponent', () => {
     expect(component.readyAbility(makePermanent({ abilities: [] }))).toBeNull();
   });
 
-  it('asks for a target first when the ability needs one (CR 602.2b)', () => {
+  it('sends nothing straight away for an ability that needs a target (CR 602.2b)', () => {
+    // The asking itself moved to `abilityChosen$`, which is where the rules' order lives; what
+    // matters here is that the click still does not put an activation on the wire by itself.
     const icy = makePermanent({
       abilities: [ability({ id: 'tap', targetCount: 1, isManaAbility: false })],
     });
@@ -145,7 +168,7 @@ describe('ZonesComponent', () => {
     component.onCardClick(icy, 'idle', true, []);
 
     expect(spy).toHaveBeenCalledWith(
-      UIActions.enterTargetMode({ sourceCardId: 'perm-1', targetCount: 1, abilityId: 'tap' }),
+      UIActions.chooseAbility({ permanentId: 'perm-1', abilityId: 'tap' }),
     );
     expect(spy).not.toHaveBeenCalledWith(
       GameActions.activateAbility({ permanentId: 'perm-1', abilityId: 'tap', targetIds: [] }),
@@ -204,7 +227,7 @@ describe('ZonesComponent', () => {
     component.onCardClick(forest, 'idle', true, []);
 
     expect(spy).toHaveBeenCalledWith(
-      GameActions.activateAbility({ permanentId: 'perm-1', abilityId: 'mana', targetIds: [] }),
+      UIActions.chooseAbility({ permanentId: 'perm-1', abilityId: 'mana' }),
     );
   });
 

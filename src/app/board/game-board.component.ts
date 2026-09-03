@@ -28,8 +28,10 @@ import {
   selectChoice,
   selectIsMyChoice,
   selectCombatState,
+  selectAbilityMenu,
+  selectAnnouncement,
 } from '../store/selectors';
-import { ChoiceDto, Phase, Step } from '../models/game.models';
+import { ChoiceDto, PermanentAbilityDto, Phase, Step } from '../models/game.models';
 
 import { SignalRService } from '../services/signalr.service';
 import { buildTypeLine } from '../utils/card.utils';
@@ -125,6 +127,8 @@ export class GameBoardComponent implements OnInit {
     this.store.select(selectChoice),
     this.store.select(selectIsMyChoice),
     this.store.select(selectCombatState),
+    this.store.select(selectAbilityMenu),
+    this.store.select(selectAnnouncement),
     this.picks$,
   ]).pipe(
     map(
@@ -146,6 +150,8 @@ export class GameBoardComponent implements OnInit {
         choice,
         isMyChoice,
         combat,
+        abilityMenu,
+        announcement,
         picks,
       ]) => ({
         localPlayer,
@@ -163,6 +169,8 @@ export class GameBoardComponent implements OnInit {
         zoneViewerOpen,
         choice,
         isMyChoice,
+        abilityMenu,
+        announcement,
         // Nothing else may happen while the game is waiting to be told something, so the rest
         // of the status bar stands down.
         stopped: !!choice,
@@ -177,6 +185,7 @@ export class GameBoardComponent implements OnInit {
           isActive,
           uiMode,
           pendingAttackers.length,
+          abilityMenu?.permanent.sourceCard.name ?? announcement?.sourceName ?? '',
         ),
         // Declaring is a turn-based action taken once (CR 508.1, 509.1). The step does not end
         // when it is done — everybody gets priority in it afterwards — so the step alone is not
@@ -384,6 +393,52 @@ export class GameBoardComponent implements OnInit {
     this.store.dispatch(UIActions.cancelTargetMode());
   }
 
+  // ---- Abilities and the number a cost is counted with -----------------------------------
+
+  /**
+   * The ability the player pressed. What it needs first is the effect's to work out (CR 602.2).
+   */
+  chooseAbility(permanentId: string, abilityId: string): void {
+    this.store.dispatch(UIActions.chooseAbility({ permanentId, abilityId }));
+  }
+
+  closeAbilityMenu(): void {
+    this.store.dispatch(UIActions.closeAbilityMenu());
+  }
+
+  trackByAbility(_: number, ability: PermanentAbilityDto): string {
+    return ability.id;
+  }
+
+  /**
+   * The number typed into the announcement, before it is sent (CR 601.2b).
+   *
+   * A plain field rather than a stream: it is only ever read back by the template that writes
+   * it, and the prompt's own text comes from the store. It is reset on entry so a second
+   * announcement does not open on the last one's number.
+   */
+  announceValue = 0;
+
+  onAnnounceInput(event: Event): void {
+    const raw = Number((event.target as HTMLInputElement).value);
+    // Negative is not a number X can be (CR 107.3), and the engine would refuse it; clamping
+    // here means the refusal never has to be shown for something the board could see coming.
+    this.announceValue = Number.isFinite(raw) ? Math.max(0, Math.min(99, Math.floor(raw))) : 0;
+    this.cdr.markForCheck();
+  }
+
+  confirmAnnounce(): void {
+    this.store.dispatch(UIActions.confirmAnnounce({ value: this.announceValue }));
+    this.announceValue = 0;
+    this.cdr.markForCheck();
+  }
+
+  cancelAnnounce(): void {
+    this.store.dispatch(UIActions.cancelAnnounce());
+    this.announceValue = 0;
+    this.cdr.markForCheck();
+  }
+
   enterAttackMode(): void {
     this.store.dispatch(UIActions.enterAttackMode());
   }
@@ -509,6 +564,40 @@ export class GameBoardComponent implements OnInit {
       : this.picks.length >= choice.minPicks && this.picks.length <= choice.maxPicks;
   }
 
+  /**
+   * What the board is in the middle of asking, or null when it is asking nothing.
+   *
+   * Its own method because the modes are one list and the rest of `buildStatusMessage` is a
+   * different question — where in the turn the game is. Kept together the two pushed that
+   * method past the complexity ceiling, which is the point at which a list is a list.
+   */
+  private modeMessage(
+    uiMode: string,
+    pendingAttackerCount: number,
+    sourceName: string,
+  ): string | null {
+    switch (uiMode) {
+      case 'declaring-attackers':
+        return pendingAttackerCount > 0
+          ? `${pendingAttackerCount} attacker(s) selected — confirm or cancel`
+          : 'Select creatures to attack with';
+      case 'declaring-blockers':
+        return 'Assign blockers to attacking creatures';
+      case 'targeting':
+        return 'Choose a target';
+      case 'choosing-ability':
+        return sourceName ? `Which ability of ${sourceName}?` : 'Which ability?';
+      case 'announcing':
+        // Named rather than "How many?", because a board with nine permanents on it does not
+        // make that a question anyone can answer.
+        return sourceName
+          ? `Name X for ${sourceName} — the cost is paid for what you name (CR 601.2b)`
+          : 'Name X — the cost is paid for what you name (CR 601.2b)';
+      default:
+        return null;
+    }
+  }
+
   private buildStatusMessage(
     choice: ChoiceDto | null,
     isMyChoice: boolean,
@@ -519,6 +608,7 @@ export class GameBoardComponent implements OnInit {
     isActive: boolean,
     uiMode: string,
     pendingAttackerCount: number,
+    sourceName: string,
   ): string {
     // A decision outranks everything else on the bar: until it is answered the game is stopped,
     // and saying "waiting for opponent" while the question is on your own screen is the worst
@@ -536,13 +626,8 @@ export class GameBoardComponent implements OnInit {
       return choice.prompt;
     }
 
-    if (uiMode === 'declaring-attackers') {
-      return pendingAttackerCount > 0
-        ? `${pendingAttackerCount} attacker(s) selected — confirm or cancel`
-        : 'Select creatures to attack with';
-    }
-    if (uiMode === 'declaring-blockers') return 'Assign blockers to attacking creatures';
-    if (uiMode === 'targeting') return 'Choose a target';
+    const forMode = this.modeMessage(uiMode, pendingAttackerCount, sourceName);
+    if (forMode) return forMode;
 
     if (!hasPriority) return 'Waiting for opponent...';
 

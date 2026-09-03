@@ -120,6 +120,56 @@ export const selectTargetSourceCardId = createSelector(
 export const selectPendingTargets = createSelector(selectUIFeature, (s) => s.pendingTargetIds);
 export const selectTargetCount = createSelector(selectUIFeature, (s) => s.targetCount);
 
+// ---- Choosing between a permanent's abilities (CR 602.1) ----------------------------------
+
+/**
+ * The abilities on offer, with the text the engine wrote for each.
+ *
+ * This is the only place `AbilityView.Text` reaches a screen. It was carried from the engine
+ * through the projector, the adapter and the DTO and then read by nobody — which made
+ * r25-43's fix, one that stopped 416 permanents offering two identical-looking buttons,
+ * unobservable here: there were no buttons.
+ */
+export const selectAbilityMenu = createSelector(
+  selectUIFeature,
+  selectBattlefield,
+  (ui, battlefield) => {
+    if (!ui.abilityMenuPermanentId) return null;
+    const permanent = battlefield.find((p) => p.permanentId === ui.abilityMenuPermanentId);
+    return permanent ? { permanent, abilities: permanent.abilities } : null;
+  },
+);
+
+// ---- Naming a number for a cost (CR 601.2b) ----------------------------------------------
+
+/**
+ * What is waiting on a number, and what it is called — so the prompt can name it.
+ *
+ * "How many?" over a board with nine permanents on it is not a question anyone can answer.
+ */
+export const selectAnnouncement = createSelector(
+  selectUIFeature,
+  selectBattlefield,
+  selectLocalPlayer,
+  (ui, battlefield, player) => {
+    if (!ui.announceSourceId) return null;
+
+    const permanent = battlefield.find((p) => p.permanentId === ui.announceSourceId);
+    const card = player?.hand.find((c) => c.cardId === ui.announceSourceId);
+    const ability = permanent?.abilities.find((a) => a.id === ui.announceAbilityId);
+
+    return {
+      sourceId: ui.announceSourceId,
+      abilityId: ui.announceAbilityId,
+      targetCount: ui.announceTargetCount,
+      sourceName: permanent?.sourceCard.name ?? card?.name ?? '',
+      abilityText: ability?.text ?? card?.oracleText ?? '',
+    };
+  },
+);
+
+export const selectVariableValue = createSelector(selectUIFeature, (s) => s.variableValue);
+
 // ---- The decision the game is waiting on ------------------------------------------------
 
 export const selectChoice = createSelector(selectGameState, (g) => g?.choice ?? null);

@@ -68,26 +68,26 @@ export class ZonesComponent {
     return this.legality.readyAbility(permanent);
   }
 
-  private activate(permanent: PermanentDto, ability: PermanentAbilityDto): void {
-    if (ability.targetCount > 0) {
-      // CR 602.2b: the targets are chosen as the ability is activated, so the board has to ask
-      // before it sends anything.
-      this.store.dispatch(
-        UIActions.enterTargetMode({
-          sourceCardId: permanent.permanentId,
-          targetCount: ability.targetCount,
-          abilityId: ability.id,
-        }),
-      );
-      return;
-    }
+  /**
+   * The abilities this permanent could be asked for, when there is a choice to make.
+   *
+   * More than one is the case a tap cannot express, and until the menu existed it was the case
+   * the board answered by doing nothing: `readyAbility` returns null rather than guess between
+   * them, and the click fell through to selecting the card.
+   */
+  usableAbilities(permanent: PermanentDto): PermanentAbilityDto[] {
+    return this.legality.usableAbilities(permanent);
+  }
 
+  /**
+   * Hands the ability on and lets the effect decide what it needs first (CR 602.2).
+   *
+   * A number for an {X} cost, then targets, then the activation — the order is the rules', not
+   * this component's, and it is answered in one place because the menu reaches the same code.
+   */
+  private activate(permanent: PermanentDto, ability: PermanentAbilityDto): void {
     this.store.dispatch(
-      GameActions.activateAbility({
-        permanentId: permanent.permanentId,
-        abilityId: ability.id,
-        targetIds: [],
-      }),
+      UIActions.chooseAbility({ permanentId: permanent.permanentId, abilityId: ability.id }),
     );
   }
 
@@ -143,6 +143,11 @@ export class ZonesComponent {
       // clicking an opponent creature while declaring blockers — handled by board
     } else if (!this.isOpponent && this.readyAbility(permanent)) {
       this.activate(permanent, this.readyAbility(permanent)!);
+    } else if (!this.isOpponent && this.usableAbilities(permanent).length > 1) {
+      // More than one, so the tap is not an answer. The list goes up in the status bar, where
+      // every other question the board asks is already asked, with the engine's own text on
+      // each button — which is the only place `AbilityView.Text` reaches a screen.
+      this.store.dispatch(UIActions.openAbilityMenu({ permanentId: permanent.permanentId }));
     } else if (!this.isOpponent && permanent.sourceCard.cardTypes.includes(CardType.Land)) {
       // A land whose only ability is spent. The board has always offered to untap it here; the
       // rules have no such action, and the service says so rather than sending anything.

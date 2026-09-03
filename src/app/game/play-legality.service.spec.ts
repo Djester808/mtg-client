@@ -30,6 +30,7 @@ describe('PlayLegalityService', () => {
     requiresTap: true,
     targetCount: 0,
     isManaAbility: true,
+    announcesVariable: false,
     ...over,
   });
 

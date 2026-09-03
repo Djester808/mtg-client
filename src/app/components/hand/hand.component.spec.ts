@@ -457,6 +457,21 @@ describe('HandComponent', () => {
     );
   });
 
+  it('asks for X before casting a spell whose cost is counted with one (CR 601.2b)', () => {
+    // Harvest Pyre is {1}{R} and exiles X cards from its caster's graveyard, so the printed mana
+    // does not show the X and the board cast it for zero: nothing exiled, no damage dealt.
+    spyOn(store, 'dispatch');
+    const pyre = { ...makeCard('pyre', [CardType.Instant], '1R'), announcesVariable: true };
+    component.onCardDblClick({ card: pyre, isCastable: true, isSelected: false });
+
+    expect(store.dispatch).toHaveBeenCalledWith(
+      UIActions.enterAnnounceMode({ sourceId: 'pyre', targetCount: 0 }),
+    );
+    expect(store.dispatch).not.toHaveBeenCalledWith(
+      GameActions.castSpell({ cardId: 'pyre', targetIds: [] }),
+    );
+  });
+
   it('does not dispatch on double-click of non-castable card', () => {
     spyOn(store, 'dispatch');
     const card = makeCard('c1');

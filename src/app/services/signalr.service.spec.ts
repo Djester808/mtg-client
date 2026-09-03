@@ -112,9 +112,18 @@ describe('SignalRService hub arity', () => {
   });
 
   it('passes the options through when a cost was chosen', async () => {
-    await service.castSpell('card-1', [], { kicked: true });
+    await service.castSpell('card-1', [], 0, { kicked: true });
 
     expect(sent[0][5]).toEqual({ kicked: true });
+  });
+
+  it('sends the announced X rather than a hardcoded zero (CR 601.2b)', async () => {
+    // The zero was written into the call itself, so every cast succeeded and every X spell was
+    // cast for nothing — Harvest Pyre exiling no cards and dealing no damage — while the engine
+    // charged the announced number correctly the whole time.
+    await service.castSpell('card-1', [], 4);
+
+    expect(sent[0][4]).toBe(4);
   });
 
   it('sends ActivateAbility every argument the hub declares', async () => {

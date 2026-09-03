@@ -115,9 +115,18 @@ export class SignalRService implements OnDestroy {
    * method that grew a fifth parameter simply stopped accepting four — every cast came back
    * "Failed to invoke 'CastSpell' due to an error on the server", with no refusal and no line in
    * the game log, because the invocation never reached the method at all.
+   *
+   * `variableValue` was hardcoded to zero here, which is a different kind of silence: the call
+   * succeeds and the spell is cast for an X of nothing. Harvest Pyre exiled no cards and dealt
+   * no damage; the engine charged the announced number correctly the whole time.
    */
-  castSpell(cardId: string, targetIds: string[], options: unknown = null): Promise<void> {
-    return this.invoke('CastSpell', cardId, this.targetsFor(targetIds), 0, options);
+  castSpell(
+    cardId: string,
+    targetIds: string[],
+    variableValue = 0,
+    options: unknown = null,
+  ): Promise<void> {
+    return this.invoke('CastSpell', cardId, this.targetsFor(targetIds), variableValue, options);
   }
 
   playLand(cardId: string): Promise<void> {

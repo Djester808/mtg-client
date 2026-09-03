@@ -18,7 +18,10 @@ export const GameActions = createActionGroup({
 
     // Player actions — sent to SignalR hub
     'Play Land': props<{ cardId: string }>(),
-    'Cast Spell': props<{ cardId: string; targetIds: string[] }>(),
+    // `variableValue` is the number named for a cost written with {X} (CR 601.2b), and it is
+    // optional because almost nothing asks for one — an absent value is zero, which is what X is
+    // until it is chosen (CR 202.3b).
+    'Cast Spell': props<{ cardId: string; targetIds: string[]; variableValue?: number }>(),
     'Activate Mana': props<{ permanentId: string }>(),
     // Any ability, by the id the engine gave it (CR 602.1). 'Activate Mana' is the special case
     // this generalises; it stays because tapping a land is dispatched from several places.
@@ -26,6 +29,7 @@ export const GameActions = createActionGroup({
       permanentId: string;
       abilityId: string;
       targetIds: string[];
+      variableValue?: number;
     }>(),
     'Untap Land': props<{ permanentId: string }>(),
     'Pass Priority': emptyProps(),

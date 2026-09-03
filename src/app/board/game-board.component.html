@@ -171,6 +171,44 @@
         </ng-container>
       </ng-container>
 
+      <!-- Which of a permanent's abilities is meant (CR 602.1).
+           One is activated by tapping the card and never reaches here. Two cannot be told apart
+           by a tap, so each is offered with the text the engine wrote for it — the only place
+           `AbilityView.Text` is painted anywhere in this client. -->
+      <ng-container *ngIf="vm.uiMode === 'choosing-ability' && vm.abilityMenu as menu">
+        <button
+          *ngFor="let ability of menu.abilities; trackBy: trackByAbility"
+          class="action-btn ability"
+          [class.is-mana]="ability.isManaAbility"
+          (click)="chooseAbility(menu.permanent.permanentId, ability.id)"
+        >
+          {{ ability.text }}
+        </button>
+        <button class="action-btn cancel" (click)="closeAbilityMenu()">Cancel</button>
+      </ng-container>
+
+      <!-- Naming the number a cost is counted with (CR 601.2b).
+           The engine charges what is announced, so a board that sent zero cast the spell for
+           nothing — Harvest Pyre exiling no cards, a storage land tapping for no mana. -->
+      <ng-container *ngIf="vm.uiMode === 'announcing' && vm.announcement as announcement">
+        <label class="announce" [attr.for]="'announce-x'">
+          <span class="announce-label">X for {{ announcement.sourceName }}</span>
+          <input
+            id="announce-x"
+            class="announce-input"
+            type="number"
+            min="0"
+            max="99"
+            inputmode="numeric"
+            [value]="announceValue"
+            (input)="onAnnounceInput($event)"
+            (keydown.enter)="confirmAnnounce()"
+          />
+        </label>
+        <button class="action-btn confirm" (click)="confirmAnnounce()">Announce X</button>
+        <button class="action-btn cancel" (click)="cancelAnnounce()">Cancel</button>
+      </ng-container>
+
       <!-- Choosing a target for a spell that is waiting on one (CR 601.2c). A permanent is
            picked by tapping it on either battlefield; a player has no card to tap, so they are
            offered here — as is giving up on the spell. -->
