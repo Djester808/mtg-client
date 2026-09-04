@@ -170,6 +170,64 @@ describe('CardComponent', () => {
     expect(found!.label).toBe('4');
   });
 
+  // ---- attachments (CR 303.4, 704.5m) --------------------------------
+
+  it('hasAttachments is false when no permanent', () => {
+    expect(component.hasAttachments).toBeFalse();
+  });
+
+  it('hasAttachments is false for an ordinary, unattached permanent', () => {
+    // The negative control: a bare creature carries nothing.
+    component.permanent = makePermanent({ attachments: [] });
+    expect(component.hasAttachments).toBeFalse();
+  });
+
+  it('reports what is attached, by name, when the engine says something is', () => {
+    component.permanent = makePermanent({ attachments: ['Rancor'] });
+    expect(component.hasAttachments).toBeTrue();
+    expect(component.attachments).toEqual(['Rancor']);
+  });
+
+  it('renders a badge on the card face for an attached permanent', () => {
+    // setInput, not a plain property assignment: this component is OnPush, and a directly
+    // mutated field never marks the view dirty, so `fixture.detectChanges()` would leave the
+    // old DOM standing — see `applies tapped CSS class` above for the same pattern.
+    fixture.componentRef.setInput(
+      'permanent',
+      makePermanent({ sourceCard: makeCard({ name: 'Bear' }), attachments: ['Rancor'] }),
+    );
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.counter-badge.attached');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent.trim()).toBe('🔗');
+  });
+
+  it('renders two-or-more attachments as a count on the badge', () => {
+    fixture.componentRef.setInput(
+      'permanent',
+      makePermanent({
+        sourceCard: makeCard({ name: 'Bear' }),
+        attachments: ['Rancor', 'Sword of Fire and Ice'],
+      }),
+    );
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.counter-badge.attached');
+    expect(badge.textContent.trim()).toBe('🔗2');
+  });
+
+  it('renders no attachment badge for an ordinary permanent', () => {
+    // The negative control for the DOM assertion above: nothing attached, nothing drawn.
+    fixture.componentRef.setInput(
+      'permanent',
+      makePermanent({ sourceCard: makeCard({ name: 'Bear' }), attachments: [] }),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.counter-badge.attached')).toBeFalsy();
+  });
+
   // ---- isCastable CSS class ----------------------------------------
 
   it('castable class is absent by default', () => {

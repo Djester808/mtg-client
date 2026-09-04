@@ -103,9 +103,24 @@ export interface PlayerView {
   poisonCounters: number;
   /** A count, never a list: nobody may look at a library, including its owner. */
   libraryCount: number;
+  /**
+   * The top card of this player's library, when something lets them see it (CR 401.2).
+   *
+   * Null for everyone else, always: a card that reveals or peeks is answered here rather than
+   * sent and trusted to be hidden by the client, which is the cheating vector the server-side
+   * projection exists to close.
+   */
+  topOfLibrary: ObjectView | null;
   handCount: number;
   /** Populated only for the viewer; null for everyone else. */
   hand: ObjectView[] | null;
+  /**
+   * The cards in this hand that everybody has been shown (CR 701.16a).
+   *
+   * Separate from `hand`, which is null for anyone but its owner. A reveal makes particular
+   * cards public without making the hand public, and the two are different facts.
+   */
+  revealedHand: ObjectView[];
   graveyard: ObjectView[];
   hasLost: boolean;
   landsPlayedThisTurn: number;
@@ -124,6 +139,23 @@ export interface PlayerView {
    * Public, and kinds the player has none of are absent rather than zero.
    */
   manaPool: Record<string, number>;
+  /**
+   * Mana that may only be spent on some things, one entry per mana (CR 106.6).
+   *
+   * Separate from `manaPool` on purpose: adding the two together would tell a player they
+   * could pay for something they cannot. Each entry names what the mana may be spent on in the
+   * card's own words, so a board can show the restriction without knowing the vocabulary
+   * behind it.
+   */
+  restrictedMana: RestrictedManaView[];
+}
+
+/** One mana that may only be spent on some things (CR 106.6). */
+export interface RestrictedManaView {
+  /** The mana symbol: `W`, `U`, `B`, `R`, `G` or `C`. */
+  symbol: string;
+  /** What it may be spent on, e.g. "creature spells". */
+  spendableOn: string;
 }
 
 /**
@@ -148,6 +180,33 @@ export interface AbilityView {
    * none. The number travels *with* the activation, so it has to be named before it is sent.
    */
   announcesVariable: boolean;
+  /**
+   * A printed timing restriction, as the engine names it (CR 602.5d). Absent means any time.
+   *
+   * The engine still enforces it; this is the courtesy copy, and where the two disagree the
+   * board is wrong.
+   */
+  timing?: string | null;
+  /**
+   * Costs the player has to pick cards for before activating (CR 601.2f).
+   *
+   * The payment travels *with* the activation: an ability whose cost is "Sacrifice a creature"
+   * cannot be activated by clicking it, and a board that offered it as a plain button would
+   * send an activation the engine refuses.
+   */
+  costChoices?: CostChoiceView[];
+}
+
+/** One cost the player picks cards for, as the board needs to ask it (CR 601.2f). */
+export interface CostChoiceView {
+  /** Sacrifice, discard, or discard at random. */
+  kind: string;
+  /** How many cards to pick — or the fewest, when `countIsChosen` says the card asks. */
+  count: number;
+  /** What qualifies, for the prompt. Null means any card in hand. */
+  description: string | null;
+  /** True for "Sacrifice X Treasures" and its relatives: the board asks for a number first. */
+  countIsChosen: boolean;
 }
 
 export interface ObjectView {
@@ -176,6 +235,17 @@ export interface ObjectView {
   isCreature: boolean;
   /** Whether it is a land, which is what a card face is coloured by first. */
   isLand: boolean;
+  /** Whether this is a battle, so a client can offer it as something to attack (CR 310.5). */
+  isBattle: boolean;
+  /** The player protecting this battle (CR 310.9), or null while nobody is designated. */
+  protectorId: string | null;
+  /**
+   * The permanent this is attached to, for an Aura or Equipment (CR 303.4, 704.5m). Null off
+   * the battlefield and for anything not attached to another permanent.
+   */
+  attachedTo: string | null;
+  /** The player this is attached to, for an Aura that enchants one (CR 303.4a). */
+  attachedToPlayer: string | null;
   /**
    * Whether casting this asks the caster for a number first (CR 601.2b).
    *
@@ -192,6 +262,20 @@ export interface ObjectView {
   hasSummoningSickness: boolean | null;
   damageMarked: number | null;
   counters: Record<string, number> | null;
+  /**
+   * The cards under this one, when the permanent is a stack of them (CR 730.2) — mutate.
+   *
+   * Empty for every ordinary permanent. Top-first, matching the physical stack.
+   */
+  mergedUnder: MergedCardView[];
+}
+
+/** One card under the top of a merged permanent, as a client sees it (CR 730.2). */
+export interface MergedCardView {
+  name: string;
+  oracleId: string;
+  oracleText: string | null;
+  imageUri: string | null;
 }
 
 /** A target as the client names it. Ids only; the server decides whether it is legal. */

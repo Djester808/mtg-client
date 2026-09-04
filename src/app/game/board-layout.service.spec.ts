@@ -27,6 +27,10 @@ describe('BoardLayoutService', () => {
     isPlaneswalker: false,
     isCreature: true,
     isLand: false,
+    isBattle: false,
+    protectorId: null,
+    attachedTo: null,
+    attachedToPlayer: null,
     announcesVariable: false,
     colors: [],
     printedPower: 2,
@@ -35,6 +39,7 @@ describe('BoardLayoutService', () => {
     hasSummoningSickness: false,
     damageMarked: 0,
     counters: null,
+    mergedUnder: [],
     ...over,
   });
 
@@ -44,14 +49,17 @@ describe('BoardLayoutService', () => {
     life: 20,
     poisonCounters: 0,
     libraryCount: 40,
+    topOfLibrary: null,
     handCount: 7,
     hand: [],
+    revealedHand: [],
     graveyard: [],
     hasLost: false,
     landsPlayedThisTurn: 0,
     commanderDamage: {},
     commanderName: null,
     manaPool: {},
+    restrictedMana: [],
     ...over,
   });
 

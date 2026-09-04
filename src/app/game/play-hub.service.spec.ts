@@ -111,6 +111,32 @@ describe('PlayHubService', () => {
     expect(invoked.every((i) => i.args[0] === 'game-9')).toBeTrue();
   });
 
+  it('sends CastSpell every argument the hub declares', async () => {
+    // SignalR binds hub arguments by position and does not fill in the server's default for
+    // one the client left off, so GameHub.CastSpell's fifth parameter (`options`) has to be
+    // sent even when nothing was chosen — a call with four arguments stops matching the hub
+    // method's signature entirely, and every cast fails silently: no refusal, no game-log line,
+    // the card just stays in hand. See `signalr.service.spec.ts`'s identical test.
+    await join();
+    invoked.length = 0;
+
+    await service.castSpell('card-2');
+
+    expect(invoked[0].method).toBe('CastSpell');
+    // gameId, cardId, targets, variableValue, options.
+    expect(invoked[0].args.length).toBe(5);
+    expect(invoked[0].args[4]).toBeNull();
+  });
+
+  it('passes cast options through when a cost was chosen', async () => {
+    await join();
+    invoked.length = 0;
+
+    await service.castSpell('card-2', [], 0, { kicked: true });
+
+    expect(invoked[0].args[4]).toEqual({ kicked: true });
+  });
+
   it('does nothing when asked to act before joining', async () => {
     await service.passPriority();
 

@@ -70,7 +70,10 @@ export function makePermanent(overrides: Partial<PermanentDto> = {}): PermanentD
   };
 }
 
-export function makePlayer(hand: CardDto[] = []): PlayerStateDto {
+export function makePlayer(
+  hand: CardDto[] = [],
+  overrides: Partial<PlayerStateDto> = {},
+): PlayerStateDto {
   return {
     playerId: 'p1',
     name: 'Alice',
@@ -85,6 +88,10 @@ export function makePlayer(hand: CardDto[] = []): PlayerStateDto {
     graveyard: [],
     exile: [],
     hasLandPlayedThisTurn: false,
+    commanderDamage: {},
+    commanderName: null,
+    hasLost: false,
+    ...overrides,
   };
 }
 

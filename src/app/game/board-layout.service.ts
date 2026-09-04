@@ -47,14 +47,17 @@ export class BoardLayoutService {
         life: 0,
         poisonCounters: 0,
         libraryCount: 0,
+        topOfLibrary: null,
         handCount: 0,
         hand: [],
+        revealedHand: [],
         graveyard: [],
         hasLost: false,
         landsPlayedThisTurn: 0,
         commanderDamage: {},
         commanderName: null,
         manaPool: {},
+        restrictedMana: [],
       } satisfies PlayerView);
 
     const result: BoardLayout = {

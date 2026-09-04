@@ -57,9 +57,14 @@
       </div>
 
       <!-- Counters -->
-      <div class="card-counters" *ngIf="counters.length">
+      <div class="card-counters" *ngIf="counters.length || hasAttachments">
         <div *ngFor="let c of counters" class="counter-badge" [ngClass]="c.cls">
           {{ c.label }}
+        </div>
+        <!-- CR 303.4, 704.5m: what this permanent has attached to it (Aura/Equipment). Names
+             are in the tooltip below; the card face only has room for a count. -->
+        <div *ngIf="hasAttachments" class="counter-badge attached" [title]="attachments.join(', ')">
+          🔗{{ attachments.length > 1 ? attachments.length : '' }}
         </div>
       </div>
 
@@ -94,6 +99,7 @@
         *ngIf="cardData.oracleText"
         [innerHTML]="cardData.oracleText | oracleSymbols"
       ></div>
+      <div class="tooltip-attached" *ngIf="hasAttachments">🔗 {{ attachments.join(', ') }}</div>
       <div class="tooltip-pt" *ngIf="isCreature">{{ effectivePower }}/{{ effectiveToughness }}</div>
     </div>
   </ng-container>

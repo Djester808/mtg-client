@@ -51,7 +51,9 @@ export class GameViewAdapter {
       currentStep: this.stepOf(view.currentStep),
       result: this.resultOf(view),
       players: view.players.map((p) => this.player(p, view)),
-      battlefield: view.battlefield.map((o) => this.permanent(o)),
+      battlefield: view.battlefield.map((o) =>
+        this.permanent(o, this.attachmentsOf(o.id, view.battlefield)),
+      ),
       // Reversed, because the two contracts disagree about which end is the top. The engine
       // sends index 0 as the next thing to resolve; the board's stack panel marks the *last*
       // entry as the top and lays them out column-reverse. Passed through as they came, the
@@ -81,6 +83,13 @@ export class GameViewAdapter {
       graveyard: p.graveyard.map((o) => this.card(o)),
       exile: view.exile.filter((o) => o.controllerId === p.playerId).map((o) => this.card(o)),
       hasLandPlayedThisTurn: p.landsPlayedThisTurn > 0,
+      // CR 903.10a: public, because every block at the table changes how close a commander is
+      // to twenty-one. Dropped here until now — the wire model carried it, `BoardLayoutService`
+      // (which nothing consumes) carried it, and it stopped one file short of the store this
+      // board actually reads, so no amount of commander damage was ever shown.
+      commanderDamage: p.commanderDamage ?? {},
+      commanderName: p.commanderName ?? null,
+      hasLost: p.hasLost,
     };
   }
 
@@ -102,7 +111,7 @@ export class GameViewAdapter {
 
   // ---- Objects ----------------------------------------------------------------------------
 
-  private permanent(o: ObjectView): PermanentDto {
+  private permanent(o: ObjectView, attachments: string[]): PermanentDto {
     return {
       permanentId: o.id,
       sourceCard: this.card(o),
@@ -124,15 +133,30 @@ export class GameViewAdapter {
       hasSummoningSickness: o.hasSummoningSickness ?? false,
       damageMarked: o.damageMarked ?? 0,
       counters: this.counters(o.counters),
-      // Attachments are not projected by the new view; an empty list is the truth here, not a
-      // placeholder for something the board should have shown.
-      attachments: [],
+      // CR 303.4, 704.5m: which permanents are Auras or Equipment attached to *this* one. The
+      // view carries the other direction — each attached permanent names its own host in
+      // `attachedTo` — so this is the reverse index built once per battlefield rather than
+      // stored on the object itself.
+      attachments,
       // Printed, plus counters — the same arithmetic the board's own sidebar does. What a
       // continuous effect did to this permanent is not in the view (CR 613), so this is the
       // most the client can honestly say.
       effectivePower: this.withCounters(o.printedPower, o.counters),
       effectiveToughness: this.withCounters(o.printedToughness, o.counters),
     };
+  }
+
+  /**
+   * Everything attached to one permanent, by name — for the label under it.
+   *
+   * `ObjectView.attachedTo` names the host from the attaching Aura or Equipment's side (CR
+   * 303.4, 704.5m), which is the direction the engine reasons in: an Aura that finds itself
+   * attached to nothing is put into its owner's graveyard, and a host has no opinion about what
+   * is stuck to it. The board wants the other direction — what is on this creature — so it is
+   * derived here, once per battlefield, rather than asked of the engine again per card.
+   */
+  private attachmentsOf(hostId: string, battlefield: ObjectView[]): string[] {
+    return battlefield.filter((o) => o.attachedTo === hostId).map((o) => o.name);
   }
 
   private withCounters(

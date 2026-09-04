@@ -16,6 +16,10 @@ const object = (over: Partial<ObjectView> = {}): ObjectView => ({
   isPlaneswalker: false,
   isCreature: true,
   isLand: false,
+  isBattle: false,
+  protectorId: null,
+  attachedTo: null,
+  attachedToPlayer: null,
   announcesVariable: false,
   colors: ['Green'],
   printedPower: 2,
@@ -24,6 +28,7 @@ const object = (over: Partial<ObjectView> = {}): ObjectView => ({
   hasSummoningSickness: false,
   damageMarked: 0,
   counters: null,
+  mergedUnder: [],
   ...over,
 });
 
@@ -33,14 +38,17 @@ const player = (over: Partial<PlayerView> = {}): PlayerView => ({
   life: 20,
   poisonCounters: 0,
   libraryCount: 50,
+  topOfLibrary: null,
   handCount: 3,
   hand: [],
+  revealedHand: [],
   graveyard: [],
   hasLost: false,
   landsPlayedThisTurn: 0,
   commanderDamage: {},
   commanderName: null,
   manaPool: {},
+  restrictedMana: [],
   ...over,
 });
 
@@ -182,6 +190,34 @@ describe('GameViewAdapter', () => {
       expect(unspent.players[0].hasLandPlayedThisTurn).toBe(false);
     });
 
+    it('carries commander damage through to the store (CR 903.10a)', () => {
+      // Dropped one file before the store: the wire model carried it, but `player()` never
+      // copied it into the `PlayerStateDto` the board's selectors actually read, and
+      // `PlayerStateDto` had no field to hold it even if it had.
+      const state = adapter.toGameState(
+        view({
+          players: [
+            player({ commanderDamage: { 'Alesha, Who Smiles at Death': 12 } }),
+            player({ playerId: 'bob' }),
+          ],
+        }),
+      );
+
+      expect(state.players[0].commanderDamage).toEqual({
+        'Alesha, Who Smiles at Death': 12,
+      });
+      // The negative control: a player nobody has hit keeps an empty record, not a dropped one.
+      expect(state.players[1].commanderDamage).toEqual({});
+    });
+
+    it('carries the commander name through to the store', () => {
+      const state = adapter.toGameState(
+        view({ players: [player({ commanderName: 'Alesha, Who Smiles at Death' })] }),
+      );
+
+      expect(state.players[0].commanderName).toBe('Alesha, Who Smiles at Death');
+    });
+
     it('converts the mana pool, dropping kinds the player has none of', () => {
       const state = adapter.toGameState(
         view({ players: [player({ manaPool: { R: 2, G: 1, U: 0 } })] }),
@@ -245,6 +281,48 @@ describe('GameViewAdapter', () => {
 
       expect(state.battlefield[0].effectivePower).toBeNull();
       expect(state.battlefield[0].effectiveToughness).toBeNull();
+    });
+  });
+
+  describe('attachments (CR 303.4, 704.5m)', () => {
+    it('names what is attached to a permanent, by the attaching object naming its host', () => {
+      // The engine's view carries the direction the rules reason in — the Aura names its host
+      // — and the board wants the other direction, so this is the seam that used to drop it:
+      // `attachments` was hardcoded to `[]` regardless of what the view said.
+      const state = adapter.toGameState(
+        view({
+          battlefield: [
+            object({ id: 'bear', name: 'Grizzly Bears' }),
+            object({ id: 'rancor', name: 'Rancor', attachedTo: 'bear' }),
+          ],
+        }),
+      );
+
+      const bear = state.battlefield.find((p) => p.permanentId === 'bear');
+      const rancor = state.battlefield.find((p) => p.permanentId === 'rancor');
+      expect(bear?.attachments).toEqual(['Rancor']);
+      // The negative control: the Aura itself has nothing attached to it.
+      expect(rancor?.attachments).toEqual([]);
+    });
+
+    it('leaves an unattached permanent with no attachments', () => {
+      const state = adapter.toGameState(view({ battlefield: [object({ id: 'bear' })] }));
+      expect(state.battlefield[0].attachments).toEqual([]);
+    });
+
+    it('lists more than one Equipment or Aura on the same creature', () => {
+      const state = adapter.toGameState(
+        view({
+          battlefield: [
+            object({ id: 'bear', name: 'Grizzly Bears' }),
+            object({ id: 'a', name: 'Rancor', attachedTo: 'bear' }),
+            object({ id: 'b', name: 'Sword of Fire and Ice', attachedTo: 'bear' }),
+          ],
+        }),
+      );
+
+      const bear = state.battlefield.find((p) => p.permanentId === 'bear');
+      expect(bear?.attachments).toEqual(['Rancor', 'Sword of Fire and Ice']);
     });
   });
 

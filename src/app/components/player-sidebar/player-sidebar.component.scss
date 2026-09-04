@@ -154,6 +154,55 @@
   color: #9b59b6;
 }
 
+// CR 903.10a: public, and changes every block, so it lives right beside life rather than
+// behind a click. Its own row rather than folded into poison's, because more than one
+// commander can be hitting this player at once (a four-player pod has up to three).
+.commander-damage-row {
+  @include upto($bp-phone) {
+    flex-shrink: 0;
+    // More pills than the strip has room for pan rather than wrap or overflow the screen — the
+    // same idiom `ScrollEdgesDirective` names for a layout the app computed, not the user's.
+    max-width: 22vw;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.commander-damage-pill {
+  @include upto($bp-phone) {
+    flex-shrink: 0;
+  }
+
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(192, 57, 43, 0.15);
+  border: 1px solid rgba(192, 57, 43, 0.35);
+}
+
+.cd-name {
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 8px;
+  color: var(--text-dim);
+}
+
+.cd-amount {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
 // ---- Mana pool --------------------------------------------
 
 .mana-pool {

@@ -131,8 +131,23 @@ export class PlayHubService {
     return this.send('PlayLand', cardId);
   }
 
-  castSpell(cardId: string, targets: TargetDto[] = [], variableValue = 0): Promise<void> {
-    return this.send('CastSpell', cardId, targets, variableValue);
+  /**
+   * Casts a spell (CR 601.2).
+   *
+   * `options` is sent even when nothing was chosen: SignalR binds hub arguments by position and
+   * does not fill in the server's default for one the client left off, so a hub method that
+   * grew a fifth parameter stops accepting the four this method used to send — every cast would
+   * fail with "Failed to invoke 'CastSpell' due to an error on the server", with no refusal and
+   * no line in the game log, because the invocation never reaches the method at all. See
+   * `signalr.service.ts`'s `castSpell`, which this mirrors.
+   */
+  castSpell(
+    cardId: string,
+    targets: TargetDto[] = [],
+    variableValue = 0,
+    options: unknown = null,
+  ): Promise<void> {
+    return this.send('CastSpell', cardId, targets, variableValue, options);
   }
 
   activateAbility(

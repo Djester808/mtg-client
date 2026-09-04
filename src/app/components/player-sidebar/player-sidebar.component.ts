@@ -42,6 +42,21 @@ export class PlayerSidebarComponent {
     return this.manaEntries.length > 0;
   }
 
+  /**
+   * Commander damage taken, by commander name (CR 903.10a).
+   *
+   * Public information — everyone at the table needs to know how close a commander is to
+   * twenty-one, because it changes every block — and previously unreachable from here: the
+   * store never carried it this far, so the sidebar had nothing to bind even though the
+   * component always had a place for it.
+   */
+  get commanderDamageEntries(): { name: string; amount: number }[] {
+    const damage = this.player?.commanderDamage ?? {};
+    return Object.entries(damage)
+      .filter(([, amount]) => amount > 0)
+      .map(([name, amount]) => ({ name, amount }));
+  }
+
   openGraveyard(): void {
     this.store.dispatch(
       UIActions.openZoneViewer({

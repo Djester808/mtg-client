@@ -125,6 +125,21 @@ export class CardComponent {
     return this.permanent?.hasSummoningSickness ?? false;
   }
 
+  /**
+   * The Auras and Equipment attached to this permanent (CR 303.4, 704.5m), by name.
+   *
+   * Without this every Aura and Equipment rendered as an ordinary, unattached permanent —
+   * nothing on the board distinguished a Rancor pumping a creature from one attached to
+   * nothing at all.
+   */
+  get attachments(): string[] {
+    return this.permanent?.attachments ?? [];
+  }
+
+  get hasAttachments(): boolean {
+    return this.attachments.length > 0;
+  }
+
   onMouseEnter(): void {
     if (this.cardData) this.hoverEnter.emit(this.cardData);
   }

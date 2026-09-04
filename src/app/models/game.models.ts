@@ -122,6 +122,12 @@ export interface PermanentDto {
   hasSummoningSickness: boolean;
   damageMarked: number;
   counters: Record<CounterType, number>;
+  /**
+   * The names of the Auras and Equipment attached to this permanent (CR 303.4, 704.5m).
+   *
+   * Names rather than ids: the board's only use for this is a label under the card, and every
+   * consumer that would want the object itself can already find it on the battlefield by name.
+   */
   attachments: string[];
   effectivePower: number | null;
   effectiveToughness: number | null;
@@ -164,6 +170,16 @@ export interface PlayerStateDto {
   graveyard: CardDto[]; // public
   exile: CardDto[]; // public
   hasLandPlayedThisTurn: boolean;
+  /**
+   * Combat damage this player has taken from each commander, by the commander's name
+   * (CR 903.10a). Public: everyone at the table needs to know how close a commander is to
+   * twenty-one, because it changes every block.
+   */
+  commanderDamage: Record<string, number>;
+  /** This player's commander, if the game has them (CR 903.3). */
+  commanderName: string | null;
+  /** Whether this player has lost (CR 104.3). */
+  hasLost: boolean;
 }
 
 export interface CombatStateDto {

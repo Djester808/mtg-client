@@ -13,6 +13,14 @@
     <div class="poison-row" *ngIf="player.poisonCounters > 0">
       <span class="poison-count">☠ {{ player.poisonCounters }}</span>
     </div>
+    <!-- CR 903.10a: public, and changes with every block, so it sits next to life rather than
+         behind a click. Twenty-one from one commander ends the game (CR 903.10a). -->
+    <div class="commander-damage-row" *ngIf="commanderDamageEntries.length">
+      <div *ngFor="let entry of commanderDamageEntries" class="commander-damage-pill">
+        <span class="cd-name">{{ entry.name }}</span>
+        <span class="cd-amount">{{ entry.amount }}</span>
+      </div>
+    </div>
   </div>
 
   <div class="mana-pool" [class.has-mana]="hasMana">
