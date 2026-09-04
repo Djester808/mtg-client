@@ -27,6 +27,7 @@ describe('BoardLayoutService', () => {
     isPlaneswalker: false,
     isCreature: true,
     isLand: false,
+    announcesVariable: false,
     colors: [],
     printedPower: 2,
     printedToughness: 2,

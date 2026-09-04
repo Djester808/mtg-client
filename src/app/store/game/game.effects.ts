@@ -16,6 +16,9 @@ import {
   selectTargetCount,
   selectTargetSourceCardId,
   selectTargetAbilityId,
+  selectVariableValue,
+  selectAnnouncement,
+  selectBattlefield,
 } from '../selectors';
 
 @Injectable()
@@ -53,7 +56,9 @@ export class GameEffects {
     () =>
       this.actions$.pipe(
         ofType(GameActions.castSpell),
-        tap(({ cardId, targetIds }) => this.signalr.castSpell(cardId, targetIds)),
+        tap(({ cardId, targetIds, variableValue }) =>
+          this.signalr.castSpell(cardId, targetIds, variableValue ?? 0),
+        ),
       ),
     { dispatch: false },
   );
@@ -83,8 +88,8 @@ export class GameEffects {
     () =>
       this.actions$.pipe(
         ofType(GameActions.activateAbility),
-        tap(({ permanentId, abilityId, targetIds }) =>
-          this.signalr.activateAbility(permanentId, abilityId, targetIds),
+        tap(({ permanentId, abilityId, targetIds, variableValue }) =>
+          this.signalr.activateAbility(permanentId, abilityId, targetIds, variableValue ?? 0),
         ),
       ),
     { dispatch: false },
@@ -164,20 +169,97 @@ export class GameEffects {
         this.store.select(selectPendingTargets),
         this.store.select(selectTargetCount),
         this.store.select(selectTargetAbilityId),
+        this.store.select(selectVariableValue),
       ),
       filter(([, cardId, targets, count]) => !!cardId && targets.length >= count),
       // An ability finishes by being activated, a spell by being cast. Everything used to end
       // in a cast, so pointing an Icy Manipulator would have tried to cast the Icy Manipulator.
-      switchMap(([, cardId, targets, , abilityId]) => [
+      switchMap(([, cardId, targets, , abilityId, variableValue]) => [
         abilityId
           ? GameActions.activateAbility({
               permanentId: cardId!,
               abilityId,
               targetIds: targets,
+              variableValue,
             })
-          : GameActions.castSpell({ cardId: cardId!, targetIds: targets }),
+          : GameActions.castSpell({ cardId: cardId!, targetIds: targets, variableValue }),
         UIActions.confirmTargets(),
       ]),
+    ),
+  );
+
+  /**
+   * What an activated ability needs before it can be sent (CR 602.2).
+   *
+   * The order is the rules' order and it is why this is one place rather than three: the number
+   * for a cost written with {X} is announced first (CR 601.2b), targets are chosen after
+   * (CR 601.2c), and only then is anything sent. A board that offered an {X} ability as a plain
+   * button sent an X of zero — a storage land tapping for no mana at all.
+   */
+  abilityChosen$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(UIActions.chooseAbility),
+      withLatestFrom(this.store.select(selectBattlefield)),
+      map(([{ permanentId, abilityId }, battlefield]) => {
+        const ability = battlefield
+          .find((p) => p.permanentId === permanentId)
+          ?.abilities.find((a) => a.id === abilityId);
+
+        if (ability?.announcesVariable) {
+          return UIActions.enterAnnounceMode({
+            sourceId: permanentId,
+            abilityId,
+            targetCount: ability.targetCount,
+          });
+        }
+        if ((ability?.targetCount ?? 0) > 0) {
+          // CR 602.2b: the targets are chosen as the ability is activated, so the board has to
+          // ask before it sends anything.
+          return UIActions.enterTargetMode({
+            sourceCardId: permanentId,
+            targetCount: ability!.targetCount,
+            abilityId,
+          });
+        }
+        return GameActions.activateAbility({ permanentId, abilityId, targetIds: [] });
+      }),
+    ),
+  );
+
+  /**
+   * Finishes an announcement once the player has named the number (CR 601.2b).
+   *
+   * X is announced before targets are chosen (CR 601.2c comes after 601.2b), so this either
+   * hands the value on to the targeting step or, when nothing is targeted, sends it.
+   *
+   * Read off the *state* rather than off the action for the same reason `castWhenTargeted$` is:
+   * reducers run first, and the value has to arrive somewhere the follow-up can find it. The
+   * confirmation keeps the source standing and only the send clears it.
+   */
+  announced$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(UIActions.confirmAnnounce),
+      withLatestFrom(this.store.select(selectAnnouncement)),
+      filter(([, announcement]) => !!announcement),
+      map(([{ value }, announcement]) => {
+        const { sourceId, abilityId, targetCount } = announcement!;
+        if (targetCount > 0) {
+          return UIActions.enterTargetMode({
+            sourceCardId: sourceId,
+            targetCount,
+            abilityId: abilityId ?? undefined,
+            variableValue: value,
+          });
+        }
+        return abilityId
+          ? GameActions.activateAbility({
+              permanentId: sourceId,
+              abilityId,
+              targetIds: [],
+              variableValue: value,
+            })
+          : GameActions.castSpell({ cardId: sourceId, targetIds: [], variableValue: value });
+      }),
     ),
   );
 

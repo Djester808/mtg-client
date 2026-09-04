@@ -140,6 +140,14 @@ export interface AbilityView {
   requiresTap: boolean;
   targetCount: number;
   isManaAbility: boolean;
+  /**
+   * Whether its cost contains {X}, so the board asks for a number first (CR 601.2b).
+   *
+   * Activating it as a plain button sends an X of zero, which the engine charges correctly and
+   * which is nothing at all: a storage land taps for no mana, and "remove X counters" removes
+   * none. The number travels *with* the activation, so it has to be named before it is sent.
+   */
+  announcesVariable: boolean;
 }
 
 export interface ObjectView {
@@ -168,6 +176,14 @@ export interface ObjectView {
   isCreature: boolean;
   /** Whether it is a land, which is what a card face is coloured by first. */
   isLand: boolean;
+  /**
+   * Whether casting this asks the caster for a number first (CR 601.2b).
+   *
+   * `AbilityView.announcesVariable` one surface along, and not derivable from `manaCost`: Harvest
+   * Pyre is {1}{R} and exiles X cards from its caster's graveyard, so a board reading the printed
+   * mana for an {X} finds none, casts for zero, exiles nothing and deals no damage.
+   */
+  announcesVariable: boolean;
   /** The card's colours, for the frame it is drawn in. */
   colors: string[];
   printedPower: number | null;

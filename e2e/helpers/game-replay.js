@@ -58,8 +58,18 @@ const STUB = `
   // Written without a regex on purpose: this whole script is a template literal, where a
   // backslash escape is eaten before the browser ever sees it, and the pattern it left behind
   // was a syntax error that killed the stub silently.
+  //
+  // The board's own route belongs in this list, and its absence is why the board had never
+  // been captured. The two halves of this file disagreed: the fetch arms below already
+  // answered for /game/:id, but the seed above covered only /play — so the board route was
+  // bounced to /login by the auth guard before a single arm was reached, and the run reported
+  // a page with nothing on it rather than a session that was never seeded.
   var here = location.pathname;
-  var onGameRoute = here === '/play' || here.indexOf('/play/') === 0;
+  var onGameRoute =
+    here === '/play' ||
+    here.indexOf('/play/') === 0 ||
+    here === '/lobby' ||
+    here.indexOf('/game/') === 0;
   var seeded = 'capture-harness-token';
 
   if (onGameRoute) {
@@ -165,14 +175,133 @@ const STUB = `
       return Promise.resolve(json(JSON.stringify(window.__gameReplayView)));
     }
 
-    // The hub's negotiate call. Refused deliberately: there is no socket to give it, and the
-    // board is expected to stay usable on the seeded view when the connection is down.
+    // The hub's negotiate call, answered rather than refused.
+    //
+    // It used to come back 503, which reads as "the board stays usable with the socket down"
+    // and is not what happens: SignalRService.connect() catches the failure from start() and
+    // dispatches connectionError, whose effect clears the session and routes to '/'. So the
+    // board rendered from the REST seed, was photographed by nobody, and was gone within the
+    // second — which is the whole of "the board cannot be captured yet" in
+    // ui-coverage-allow.json, and it was never the join endpoint that entry blames.
+    //
+    // Only WebSockets is offered, because window.WebSocket below is the thing answering.
     if (url.indexOf('/hubs/game') !== -1) {
-      return Promise.resolve(new Response('{}', { status: 503 }));
+      return Promise.resolve(json(JSON.stringify({
+        negotiateVersion: 1,
+        connectionId: 'capture-harness-connection',
+        connectionToken: 'capture-harness-connection',
+        availableTransports: [{ transport: 'WebSockets', transferFormats: ['Text', 'Binary'] }],
+      })));
     }
 
     return real(input, init);
   };
+
+  // ---- The socket ------------------------------------------------------------------------
+  //
+  // A hub connection the board can actually complete, so it is not thrown off its own screen
+  // before anything has been photographed. It speaks only the four frames that matter: the
+  // handshake, a ping, an invocation's completion, and a State push carrying the fixture.
+  //
+  // Pushing State rather than leaving the REST seed to do all the work is deliberate — it is
+  // the path a real game takes on every action, and until now no capture had ever exercised
+  // it. Everything the board is asked to do comes back "done" with the same view, which is
+  // enough to photograph a state and honest about being a stub: it plays no rules.
+  var RS = String.fromCharCode(30); // the record separator SignalR frames on
+  var NativeWebSocket = window.WebSocket;
+
+  function ReplaySocket(url) {
+    var self = this;
+    this.url = url;
+    this.readyState = 0;
+    this.binaryType = 'arraybuffer';
+    this.onopen = this.onclose = this.onerror = this.onmessage = null;
+    setTimeout(function () {
+      self.readyState = 1;
+      if (self.onopen) self.onopen({ target: self });
+    }, 0);
+  }
+
+  ReplaySocket.CONNECTING = 0;
+  ReplaySocket.OPEN = 1;
+  ReplaySocket.CLOSING = 2;
+  ReplaySocket.CLOSED = 3;
+  ReplaySocket.prototype.CONNECTING = 0;
+  ReplaySocket.prototype.OPEN = 1;
+  ReplaySocket.prototype.CLOSING = 2;
+  ReplaySocket.prototype.CLOSED = 3;
+
+  ReplaySocket.prototype._push = function (obj) {
+    var self = this;
+    setTimeout(function () {
+      if (self.readyState === 1 && self.onmessage) {
+        self.onmessage({ data: JSON.stringify(obj) + RS });
+      }
+    }, 0);
+  };
+
+  ReplaySocket.prototype.send = function (data) {
+    var self = this;
+    // What the board sent, so a capture that renders nothing can say which call went wrong.
+    window.__gameReplaySent = window.__gameReplaySent || [];
+
+    String(data)
+      .split(RS)
+      .filter(function (f) { return f.length > 0; })
+      .forEach(function (frame) {
+        var msg;
+        try {
+          msg = JSON.parse(frame);
+        } catch (e) {
+          return;
+        }
+
+        // The handshake is the only frame with no type, and it is answered with an empty
+        // object: any property on it is an error the client reports and closes on.
+        if (msg.type === undefined) {
+          setTimeout(function () {
+            if (self.onmessage) self.onmessage({ data: '{}' + RS });
+          }, 0);
+          return;
+        }
+
+        if (msg.type === 6) {
+          self._push({ type: 6 });
+          return;
+        }
+
+        if (msg.type === 1) {
+          // Arguments and all: the hub binds by position, so what a capture needs to be able to
+          // assert is not only that CastSpell was called but what landed in each slot.
+          window.__gameReplaySent.push({ target: msg.target, arguments: msg.arguments });
+          if (msg.target === 'Join') {
+            self._push({ type: 1, target: 'State', arguments: [window.__gameReplayView] });
+            self._push({ type: 1, target: 'Log', arguments: [window.__gameReplayLog] });
+          }
+          if (msg.invocationId) {
+            self._push({ type: 3, invocationId: msg.invocationId, result: null });
+          }
+        }
+      });
+  };
+
+  ReplaySocket.prototype.close = function () {
+    this.readyState = 3;
+    if (this.onclose) this.onclose({ wasClean: true, code: 1000, reason: '' });
+  };
+
+  // Off a game route the real constructor stands, so nothing else in the app is affected by a
+  // stub that outlives the states it was armed for.
+  window.WebSocket = function (url, protocols) {
+    if (!onAGameRoute() || String(url).indexOf('/hubs/game') === -1) {
+      return new NativeWebSocket(url, protocols);
+    }
+    return new ReplaySocket(url);
+  };
+  window.WebSocket.CONNECTING = 0;
+  window.WebSocket.OPEN = 1;
+  window.WebSocket.CLOSING = 2;
+  window.WebSocket.CLOSED = 3;
 })();
 `;
 

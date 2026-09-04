@@ -396,6 +396,84 @@
       color: #e07060;
     }
   }
+
+  // One of a permanent's abilities, wearing the engine's own text (CR 602.1).
+  //
+  // The only button on this bar whose label is a *sentence* rather than a word, and every other
+  // rule here is written for a word: `header-count` uppercases it, spaces the letters and
+  // forbids it to wrap. "{T}: THIS CREATURE DEALS 1 DAMAGE TO ANY TARGET." on one 375px line is
+  // not a label anyone reads, so this variant gives the text back its own case and lets it wrap
+  // onto as many lines as it needs — the text is the whole point of the control.
+  &.ability {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding: 8px 12px;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+    font-size: 12px;
+    line-height: 1.35;
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+
+    &:hover {
+      border-color: var(--gold-dim);
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    // A mana ability resolves without the stack (CR 605.3a), which is the one distinction worth
+    // drawing between two buttons that otherwise read the same length.
+    &.is-mana {
+      border-color: rgba(201, 168, 76, 0.35);
+    }
+  }
+}
+
+// ---- Naming a number for a cost (CR 601.2b) ---------------
+//
+// A field rather than a row of buttons: X has no upper bound the board can know, so offering
+// "1 2 3" would be offering a guess at what the player can afford.
+
+.announce {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: $tap-min;
+
+  @include upto($bp-phone) {
+    flex: 1 1 100%;
+  }
+}
+
+.announce-label {
+  @include header-count;
+
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  // The permanent's name is the half worth keeping when there is no room for both.
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.announce-input {
+  width: 72px;
+  // $tap-min in both directions: it is the control the whole prompt exists for, and 16px stops
+  // iOS zooming the board when it takes focus.
+  min-height: $tap-min;
+  padding: 6px 10px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-size: 16px;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
 }
 
 // ---- Hand row ---------------------------------------------

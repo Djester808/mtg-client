@@ -16,6 +16,7 @@ const object = (over: Partial<ObjectView> = {}): ObjectView => ({
   isPlaneswalker: false,
   isCreature: true,
   isLand: false,
+  announcesVariable: false,
   colors: ['Green'],
   printedPower: 2,
   printedToughness: 2,
@@ -396,5 +397,69 @@ describe('GameViewAdapter', () => {
 
     expect(state.stack.length).toBe(1);
     expect(state.stack[0].stackObjectId).toBe('only');
+  });
+
+  // ---- What the engine says about {X} (CR 601.2b) ----------------------------------------
+
+  it("carries an ability's text and the number its cost asks for", () => {
+    // Both were dropped here. The text was carried from the engine to a DTO nobody read, which
+    // is what made r25-43's fix — 416 permanents whose two buttons read identically —
+    // unobservable in this client. The flag was not carried at all, so every {X} ability was
+    // activated for zero: a storage land tapping for no mana.
+    const state = adapter.toGameState(
+      view({
+        battlefield: [
+          object({
+            id: 'pools',
+            name: 'Calciform Pools',
+            isCreature: false,
+            isLand: true,
+            abilities: [
+              {
+                id: 'release',
+                text: '{X}, {T}, Remove X storage counters: Add X mana.',
+                requiresTap: true,
+                targetCount: 0,
+                isManaAbility: true,
+                announcesVariable: true,
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    expect(state.battlefield[0].abilities[0].text).toBe(
+      '{X}, {T}, Remove X storage counters: Add X mana.',
+    );
+    expect(state.battlefield[0].abilities[0].announcesVariable).toBe(true);
+  });
+
+  it('carries the flag on a card in hand, where the printed mana does not show it', () => {
+    // Harvest Pyre is {1}{R} and its only X is in an additional cost, which is why this is the
+    // engine's answer and not a reading of `manaCost`.
+    const state = adapter.toGameState(
+      view({
+        players: [
+          player({
+            hand: [
+              object({
+                id: 'pyre',
+                name: 'Harvest Pyre',
+                manaCost: '{1}{R}',
+                typeLine: 'Instant',
+                isCreature: false,
+                announcesVariable: true,
+              }),
+            ],
+          }),
+          player({ playerId: 'bob', name: 'Bob' }),
+        ],
+      }),
+    );
+
+    const pyre = state.players[0].hand.find((c) => c.name === 'Harvest Pyre');
+    expect(pyre?.announcesVariable).toBe(true);
+    expect(pyre?.manaCost).toBe('1R');
   });
 });

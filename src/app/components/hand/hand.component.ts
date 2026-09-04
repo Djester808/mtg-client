@@ -227,6 +227,20 @@ export class HandComponent implements OnDestroy {
       return;
     }
 
+    // A cost counted with X is a number the caster names, and it is named before anything else
+    // about the cast (CR 601.2b). The engine says which cards ask — the flag is not derivable
+    // from the printed mana, because the X can be in an additional cost the mana never mentions.
+    // Harvest Pyre is {1}{R}: cast without the question it exiles nothing and deals no damage.
+    if (hc.card.announcesVariable) {
+      this.store.dispatch(
+        UIActions.enterAnnounceMode({
+          sourceId: hc.card.cardId,
+          targetCount: this.legality.targetsOnCast(hc.card) ? 1 : 0,
+        }),
+      );
+      return;
+    }
+
     // A spell that targets stops to ask (CR 601.2c). The board has had the mode for this all
     // along — 'targeting', with a "Choose a target" message — and nothing ever entered it, so a
     // Lightning Bolt was cast with no target and refused every time.

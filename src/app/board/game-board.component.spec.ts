@@ -462,4 +462,43 @@ describe('GameBoardComponent', () => {
     });
     expect(vm.showConfirmBlockersBtn).toBe(true);
   });
+
+  // ---- Naming a number for a cost (CR 601.2b) -------------
+
+  const typed = (value: string) => ({ target: { value } }) as unknown as Event;
+
+  it('announces the number that was typed', async () => {
+    await setup();
+    const spy = spyOn(store, 'dispatch');
+
+    component.onAnnounceInput(typed('3'));
+    component.confirmAnnounce();
+
+    expect(spy).toHaveBeenCalledWith(UIActions.confirmAnnounce({ value: 3 }));
+  });
+
+  it('will not announce a negative X (CR 107.3)', async () => {
+    // The engine would refuse it, and a refusal the board could see coming is one nobody
+    // should have to be shown.
+    await setup();
+    const spy = spyOn(store, 'dispatch');
+
+    component.onAnnounceInput(typed('-4'));
+    component.confirmAnnounce();
+
+    expect(spy).toHaveBeenCalledWith(UIActions.confirmAnnounce({ value: 0 }));
+  });
+
+  it('does not open the next prompt on the last one’s number', async () => {
+    // The field is destroyed with the prompt; the value behind it is not. Left standing it
+    // would be a cost paid for an amount nobody named.
+    await setup();
+    component.onAnnounceInput(typed('7'));
+    component.cancelAnnounce();
+
+    const spy = spyOn(store, 'dispatch');
+    component.confirmAnnounce();
+
+    expect(spy).toHaveBeenCalledWith(UIActions.confirmAnnounce({ value: 0 }));
+  });
 });
