@@ -1,0 +1,199 @@
+@use '../../../styles/detail-page' as *;
+
+// The dispute queue.
+//
+// Desktop only (CARD_ENGINE_PLAN.md, 2026-09-06): two JSON documents read against each other is
+// a two-column layout by nature, and squeezing it into 375px would produce a screen where the
+// one thing it exists for — seeing the two readings at the same time — is impossible. It is
+// registered in the capture harness at desktop width with the exemption written down in
+// tools/check-ui-states.js, rather than left out of the harness altogether.
+//
+// `.loading-state` and `.empty-state` come from global.scss (which includes the shared mixins);
+// they are deliberately not re-cut here.
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: auto;
+}
+
+.cd-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.cd-head {
+  margin-bottom: 20px;
+}
+
+.cd-title {
+  @include header-name;
+  margin: 0;
+}
+
+.cd-sub {
+  max-width: 70ch;
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cd-count {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.cd-card {
+  display: block;
+  margin-bottom: 20px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: rgba(20, 24, 32, 0.5);
+}
+
+.cd-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cd-card-name {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.cd-oracle {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.cd-path {
+  color: var(--text-secondary);
+  font-size: 12px;
+
+  code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(214, 158, 46, 0.18);
+    color: var(--gold);
+  }
+}
+
+.cd-path.is-unknown {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.cd-error {
+  margin: 0 0 10px;
+  padding: 6px 8px;
+  border: 1px solid rgba(197, 48, 48, 0.55);
+  border-radius: 4px;
+  background: rgba(197, 48, 48, 0.14);
+  color: #ffd9d9;
+  font-size: 12px;
+}
+
+// Both readings at once, which is the entire reason this screen exists. auto-fit rather than
+// two fixed columns so a card with one reading left does not sit in half a layout.
+.cd-readings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.cd-reading {
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: rgba(12, 15, 20, 0.6);
+}
+
+.cd-reading-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cd-model {
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+
+.cd-choose {
+  padding: 5px 10px;
+  border: 1px solid rgba(214, 158, 46, 0.55);
+  border-radius: 4px;
+  background: rgba(214, 158, 46, 0.16);
+  color: var(--gold);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(214, 158, 46, 0.28);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.cd-retry {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.cd-not-located {
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+// A reading is a document, not a paragraph: it keeps its own geometry and pans, with the panel
+// scrolling rather than the page (derived layouts reflow, authored ones pan — and JSON is the
+// pipeline's authored shape, not something this screen may rewrap).
+.cd-json {
+  margin: 0;
+  padding: 10px;
+  max-height: 420px;
+  overflow: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  white-space: pre;
+}
+
+.cd-line {
+  display: block;
+}
+
+// The one line the whole screen is about.
+.cd-line.is-diff {
+  background: rgba(214, 158, 46, 0.22);
+  box-shadow: inset 2px 0 0 var(--gold);
+  color: var(--text-primary);
+}

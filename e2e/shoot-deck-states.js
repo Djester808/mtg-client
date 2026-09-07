@@ -138,6 +138,26 @@ const STATES = [
     },
   },
   { id: 'deck-filters', label: 'Deck — filter bar', run: (d) => openFilters(d) },
+  {
+    id: 'deck-admissions',
+    label: 'Deck — which cards the engine plays',
+    // The admission badge on every row: enforced, honour-system or refused
+    // (CARD_ENGINE_PLAN.md). Waits on `.admission-badge` by name rather than on a sleep, for
+    // the same reason the suggestions state waits on its panel — that wait is what registers
+    // the badge with tools/check-ui-states.js, and a badge that stopped rendering would
+    // otherwise cost nothing but a screenshot indistinguishable from the one beside it.
+    //
+    // The wait is allowed to time out: `/api/cards/{oracleId}/implementation` is being written
+    // on the API side, and until it answers there is no badge to wait for. A capture of the
+    // rows without it is still the capture this state is for; a thrown wait would take the
+    // whole run down over an endpoint that is not this screen's fault.
+    run: async (d) => {
+      await setView(d, 0);
+      await d
+        .wait(until.elementLocated(By.css('app-admission-badge .admission-badge')), 8000)
+        .catch(() => {});
+    },
+  },
 ];
 
 async function backToDeck(d, deckUrl) {

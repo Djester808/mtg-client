@@ -1,0 +1,10 @@
+<span
+  class="admission-badge"
+  *ngIf="admission as which"
+  [class.is-enforced]="which === 'enforced'"
+  [class.is-honour]="which === 'honour-system'"
+  [class.is-refused]="which === 'refused'"
+  [title]="tooltip"
+  [attr.aria-label]="tooltip"
+  >{{ glyph }}</span
+>

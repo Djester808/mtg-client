@@ -901,6 +901,9 @@
                 >
                   <span class="list-qty">{{ cardCount(card) }}</span>
                   <span class="list-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                  <!-- Which admission this card would reach a table under: the engine plays it,
+                       the players do by hand, or it is refused (CARD_ENGINE_PLAN.md). -->
+                  <app-admission-badge [oracleId]="card.oracleId"></app-admission-badge>
                   <app-mana-cost
                     *ngIf="card.cardDetails?.manaCost"
                     [cost]="card.cardDetails!.manaCost"
@@ -1122,6 +1125,7 @@
                 >
                   <span class="list-qty">1</span>
                   <span class="list-name">{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                  <app-admission-badge [oracleId]="card.oracleId"></app-admission-badge>
                   <app-mana-cost
                     *ngIf="card.cardDetails?.manaCost"
                     [cost]="card.cardDetails!.manaCost"

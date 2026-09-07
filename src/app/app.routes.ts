@@ -38,6 +38,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./tools/life-counter/life-counter.component').then((m) => m.LifeCounterComponent),
   },
+  // The card pipeline's dispute queue: cards two models translated differently, with both
+  // readings side by side so a person can say which one is right. A desktop surface
+  // (CARD_ENGINE_PLAN.md, 2026-09-06) — two JSON documents read against each other is a
+  // two-column layout by nature.
+  {
+    path: 'tools/card-disputes',
+    loadComponent: () =>
+      import('./tools/card-disputes/card-disputes.component').then((m) => m.CardDisputesComponent),
+  },
   {
     path: 'collection',
     loadComponent: () =>

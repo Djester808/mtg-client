@@ -1,0 +1,61 @@
+<section class="cd-shell">
+  <header class="cd-head">
+    <h1 class="cd-title">Card disputes</h1>
+    <p class="cd-sub">
+      Cards two models read differently. Both readings are below; choosing one settles the card and
+      takes it off this list. Until then the card is on the honour system, not broken.
+    </p>
+    <span class="cd-count" *ngIf="!loading && !loadFailed">{{ rows.length }} waiting</span>
+  </header>
+
+  <div class="loading-state" *ngIf="loading">Loading the queue…</div>
+
+  <div class="empty-state" *ngIf="loadFailed">
+    <p>The dispute queue could not be loaded.</p>
+    <button class="cd-retry" (click)="load()">Try again</button>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !loadFailed && rows.length === 0">
+    <p>Nothing is disputed. Every translated card has one agreed reading.</p>
+  </div>
+
+  <article class="cd-card" *ngFor="let row of rows; trackBy: trackRow">
+    <header class="cd-card-head">
+      <h2 class="cd-card-name">{{ row.card.name }}</h2>
+      <code class="cd-oracle">{{ row.card.oracleId }}</code>
+      <span class="cd-path" *ngIf="row.card.firstDifference">
+        First difference: <code>{{ row.card.firstDifference }}</code>
+      </span>
+      <span class="cd-path is-unknown" *ngIf="!row.card.firstDifference">
+        The server did not name a differing path
+      </span>
+    </header>
+
+    <p class="cd-error" *ngIf="row.error">{{ row.error }}</p>
+
+    <div class="cd-readings">
+      <div class="cd-reading" *ngFor="let panel of row.panels; trackBy: trackPanel">
+        <div class="cd-reading-head">
+          <span class="cd-model">{{ panel.model }}</span>
+          <button
+            class="cd-choose"
+            [disabled]="!!row.choosing"
+            (click)="choose(row, panel.model)"
+            [title]="'Take this reading as the definition of ' + row.card.name"
+          >
+            {{ row.choosing === panel.model ? 'Choosing…' : 'Choose this reading' }}
+          </button>
+        </div>
+        <p class="cd-not-located" *ngIf="row.card.firstDifference && !panel.located">
+          The named path is not in this reading — the readings differ in shape, not in a value.
+        </p>
+        <pre class="cd-json"><span
+            class="cd-line"
+            *ngFor="let line of panel.lines; trackBy: trackLine"
+            [class.is-diff]="line.highlighted"
+          >{{ line.text }}
+</span></pre>
+      </div>
+    </div>
+  </article>
+</section>

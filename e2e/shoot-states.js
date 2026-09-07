@@ -357,6 +357,33 @@ const STATES = [
       await sleep(400);
     },
   },
+  // ---- The dispute queue --------------------------------------------------------------
+  //
+  // Two readings of one card, side by side, with the line they first differ at marked. Desktop
+  // like the board (CARD_ENGINE_PLAN.md, 2026-09-06): two JSON documents read against each
+  // other is a two-column layout by nature, so it is judged at `--devices=desktop` and carries
+  // a phone-audit exemption recorded in tools/check-ui-states.js. Registered here for both,
+  // because the audit reporting a phone number for it is better than the harness not knowing
+  // the screen exists — which is the exact hole check-ui-states.js was written for.
+  {
+    id: 'card-disputes',
+    label: 'Card disputes — two readings of one card',
+    root: '.cd-shell',
+    extra: `return {
+      cards: [...document.querySelectorAll('.cd-card-name')].map((n) => n.textContent.trim()),
+      readings: document.querySelectorAll('.cd-reading').length,
+      // The line the whole screen is about. Zero of these while cards are on screen means the
+      // highlight stopped landing, and no screenshot of pretty-printed JSON would show it.
+      highlighted: document.querySelectorAll('.cd-line.is-diff').length,
+      empty: !!document.querySelector('.empty-state'),
+    };`,
+    async drive(d) {
+      await trySignIn(d);
+      await d.get(baseUrl + '/tools/card-disputes');
+      await d.wait(until.elementLocated(By.css('.cd-shell')), 20000);
+      await sleep(700);
+    },
+  },
   {
     id: 'nav-drawer',
     label: 'Navigation drawer',

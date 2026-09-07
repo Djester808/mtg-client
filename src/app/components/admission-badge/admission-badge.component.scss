@@ -1,0 +1,39 @@
+// Which admission a deck row's card reaches the table under.
+//
+// A row badge, not the board's corner badge (card.component.scss): it sits in the flow of a
+// list row next to the name, so it takes its size from the row's font rather than being
+// positioned over artwork. The colours and glyphs match the board's on purpose — the same
+// three answers should not look like two different ideas across two screens.
+.admission-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 1;
+  cursor: help;
+}
+
+.admission-badge.is-enforced {
+  background: rgba(20, 24, 32, 0.75);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.admission-badge.is-honour {
+  background: rgba(214, 158, 46, 0.9);
+  border: 1px solid rgba(214, 158, 46, 0.55);
+  color: #1a1408;
+}
+
+// Refused is the only one of the three that means the card is not in the game, so it is the
+// only one that gets a colour a list scan stops on.
+.admission-badge.is-refused {
+  background: rgba(197, 48, 48, 0.9);
+  border: 1px solid rgba(197, 48, 48, 0.55);
+  color: #fff5f5;
+}

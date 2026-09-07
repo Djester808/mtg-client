@@ -104,6 +104,13 @@ function harnessText() {
  */
 const DESKTOP_ONLY = [
   {
+    prefix: 'src/app/tools/card-disputes/',
+    reason:
+      'two readings of one card read against each other is a two-column layout by nature ' +
+      '(CARD_ENGINE_PLAN.md, 2026-09-06) — captured with shoot-states.js --devices=desktop; ' +
+      'a phone number for it is not a verdict',
+  },
+  {
     prefix: 'src/app/board/',
     reason:
       'the game is a desktop surface (CARD_ENGINE_PLAN.md, 2026-09-06) — captured with ' +

@@ -48,6 +48,7 @@ import { ScrollEdgesDirective } from '../../directives/scroll-edges.directive';
 import { BreakpointsService } from '../../shared/breakpoints.service';
 import { flyCardGhost, FlightSource } from '../../shared/fly-card';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
+import { AdmissionBadgeComponent } from '../../components/admission-badge/admission-badge.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CardSideListComponent } from '../../components/card-side-list/card-side-list.component';
@@ -94,6 +95,7 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
     CommonModule,
     FormsModule,
     ManaCostComponent,
+    AdmissionBadgeComponent,
     CardModalComponent,
     CardSearchPanelComponent,
     CardSideListComponent,
