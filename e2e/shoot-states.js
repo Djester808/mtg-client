@@ -406,7 +406,10 @@ const STATES = [
     async drive(d) {
       await trySignIn(d);
       await d.get(baseUrl + '/tools/card-disputes');
-      await d.wait(until.elementLocated(By.css('.cd-shell')), 20000);
+      // The shell paints before the queue arrives, and a shot taken in that gap measures a page
+      // with nothing on it and reports it as a layout — one Pixel 8 pass recorded queued:0 on a
+      // queue of 105. Wait for the queue itself, or for the page saying there is none.
+      await d.wait(until.elementLocated(By.css('.cd-pick, .empty-state')), 20000);
       await sleep(700);
     },
   },
@@ -439,7 +442,8 @@ const STATES = [
     async drive(d) {
       await trySignIn(d);
       await d.get(baseUrl + '/tools/card-coverage');
-      await d.wait(until.elementLocated(By.css('.cc-shell')), 20000);
+      // The counts, not the shell — see the note on the dispute queue above.
+      await d.wait(until.elementLocated(By.css('.cc-figure-count, .empty-state')), 20000);
       await sleep(700);
     },
   },

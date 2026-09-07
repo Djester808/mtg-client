@@ -193,6 +193,12 @@
 }
 
 .cd-choose {
+  // The one control on the screen that changes anything, so it clears $tap-min where there is
+  // no pointer — it was the only undersized target left on the phone capture, twice per card.
+  @include touch {
+    min-height: $tap-min;
+  }
+
   padding: 5px 10px;
   border: 1px solid rgba(214, 158, 46, 0.55);
   border-radius: 4px;

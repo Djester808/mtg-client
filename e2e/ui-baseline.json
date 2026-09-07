@@ -21,8 +21,8 @@
   },
   "route:iphone-se:forum": {
     "overflows": false,
-    "smallTargets": 446,
-    "smallSelectors": 6
+    "smallTargets": 4,
+    "smallSelectors": 4
   },
   "route:iphone-se:commanders": {
     "overflows": false,
@@ -34,15 +34,30 @@
     "smallTargets": 5,
     "smallSelectors": 4
   },
+  "route:iphone-se:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-se:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
   "route:iphone-se:collection": {
     "overflows": false,
-    "smallTargets": 45,
-    "smallSelectors": 4
+    "smallTargets": 4,
+    "smallSelectors": 3
   },
   "route:iphone-se:deck": {
     "overflows": false,
-    "smallTargets": 35,
+    "smallTargets": 21,
     "smallSelectors": 6
+  },
+  "route:iphone-se:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
   },
   "route:iphone-se:profile": {
     "overflows": false,
@@ -81,8 +96,8 @@
   },
   "route:iphone-15-pro:forum": {
     "overflows": false,
-    "smallTargets": 446,
-    "smallSelectors": 6
+    "smallTargets": 4,
+    "smallSelectors": 4
   },
   "route:iphone-15-pro:commanders": {
     "overflows": false,
@@ -94,15 +109,30 @@
     "smallTargets": 5,
     "smallSelectors": 4
   },
+  "route:iphone-15-pro:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
   "route:iphone-15-pro:collection": {
     "overflows": false,
-    "smallTargets": 45,
-    "smallSelectors": 4
+    "smallTargets": 4,
+    "smallSelectors": 3
   },
   "route:iphone-15-pro:deck": {
     "overflows": false,
-    "smallTargets": 35,
+    "smallTargets": 21,
     "smallSelectors": 6
+  },
+  "route:iphone-15-pro:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
   },
   "route:iphone-15-pro:profile": {
     "overflows": false,
@@ -141,8 +171,8 @@
   },
   "route:pixel-8:forum": {
     "overflows": false,
-    "smallTargets": 446,
-    "smallSelectors": 6
+    "smallTargets": 4,
+    "smallSelectors": 4
   },
   "route:pixel-8:commanders": {
     "overflows": false,
@@ -154,15 +184,30 @@
     "smallTargets": 5,
     "smallSelectors": 4
   },
+  "route:pixel-8:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
   "route:pixel-8:collection": {
     "overflows": false,
-    "smallTargets": 45,
-    "smallSelectors": 4
+    "smallTargets": 4,
+    "smallSelectors": 3
   },
   "route:pixel-8:deck": {
     "overflows": false,
-    "smallTargets": 35,
+    "smallTargets": 21,
     "smallSelectors": 6
+  },
+  "route:pixel-8:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
   },
   "route:pixel-8:profile": {
     "overflows": false,
@@ -201,8 +246,8 @@
   },
   "route:ipad-mini:forum": {
     "overflows": false,
-    "smallTargets": 463,
-    "smallSelectors": 11
+    "smallTargets": 21,
+    "smallSelectors": 9
   },
   "route:ipad-mini:commanders": {
     "overflows": false,
@@ -214,15 +259,30 @@
     "smallTargets": 5,
     "smallSelectors": 4
   },
+  "route:ipad-mini:tools": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:life-counter": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
   "route:ipad-mini:collection": {
     "overflows": false,
-    "smallTargets": 45,
-    "smallSelectors": 4
+    "smallTargets": 4,
+    "smallSelectors": 3
   },
   "route:ipad-mini:deck": {
     "overflows": false,
-    "smallTargets": 32,
+    "smallTargets": 18,
     "smallSelectors": 3
+  },
+  "route:ipad-mini:lobby": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 2
   },
   "route:ipad-mini:profile": {
     "overflows": false,
@@ -241,65 +301,128 @@
   },
   "route:desktop:home": {
     "overflows": false,
-    "smallTargets": 41,
+    "smallTargets": 43,
     "smallSelectors": 15
   },
   "route:desktop:login": {
     "overflows": false,
-    "smallTargets": 8,
+    "smallTargets": 10,
     "smallSelectors": 4
   },
   "route:desktop:register": {
     "overflows": false,
-    "smallTargets": 8,
+    "smallTargets": 10,
     "smallSelectors": 4
   },
   "route:desktop:kb": {
     "overflows": false,
-    "smallTargets": 9,
+    "smallTargets": 11,
     "smallSelectors": 5
   },
   "route:desktop:forum": {
     "overflows": false,
-    "smallTargets": 469,
-    "smallSelectors": 13
+    "smallTargets": 29,
+    "smallSelectors": 11
   },
   "route:desktop:commanders": {
     "overflows": false,
-    "smallTargets": 19,
+    "smallTargets": 21,
     "smallSelectors": 7
   },
   "route:desktop:players": {
     "overflows": false,
-    "smallTargets": 11,
+    "smallTargets": 13,
     "smallSelectors": 6
+  },
+  "route:desktop:tools": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "route:desktop:life-counter": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
   },
   "route:desktop:collection": {
     "overflows": false,
-    "smallTargets": 51,
-    "smallSelectors": 6
+    "smallTargets": 12,
+    "smallSelectors": 5
   },
   "route:desktop:deck": {
     "overflows": false,
-    "smallTargets": 41,
+    "smallTargets": 29,
     "smallSelectors": 8
+  },
+  "route:desktop:lobby": {
+    "overflows": false,
+    "smallTargets": 11,
+    "smallSelectors": 4
   },
   "route:desktop:profile": {
     "overflows": false,
-    "smallTargets": 7,
+    "smallTargets": 9,
     "smallSelectors": 3
   },
   "route:desktop:account": {
     "overflows": false,
-    "smallTargets": 8,
+    "smallTargets": 10,
     "smallSelectors": 4
   },
   "route:desktop:ai-builder": {
     "overflows": false,
-    "smallTargets": 8,
+    "smallTargets": 10,
     "smallSelectors": 4
   },
   "state:iphone-se:nav-drawer": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-8": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-2": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-setup": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-seat-sheet": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-commander-damage": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-seat-tab": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:life-counter-backdrop": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1,
+    "truncated": 0
+  },
+  "state:iphone-se:tools-hub": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,
@@ -437,6 +560,54 @@
     "smallSelectors": 0,
     "truncated": 0
   },
+  "state:pixel-8:life-counter-8": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-2": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-setup": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-seat-sheet": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-commander-damage": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-seat-tab": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:life-counter-backdrop": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1,
+    "truncated": 0
+  },
+  "state:pixel-8:tools-hub": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:pixel-8:game-lobby": {
     "overflows": false,
     "smallTargets": 0,
@@ -563,161 +734,6 @@
     "smallSelectors": 0,
     "truncated": 0
   },
-  "route:iphone-se:lobby": {
-    "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 2
-  },
-  "route:iphone-15-pro:lobby": {
-    "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 2
-  },
-  "route:pixel-8:lobby": {
-    "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 2
-  },
-  "route:ipad-mini:lobby": {
-    "overflows": false,
-    "smallTargets": 3,
-    "smallSelectors": 2
-  },
-  "route:desktop:lobby": {
-    "overflows": false,
-    "smallTargets": 10,
-    "smallSelectors": 4
-  },
-  "route:iphone-se:tools": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:iphone-se:life-counter": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:iphone-15-pro:tools": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:iphone-15-pro:life-counter": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:pixel-8:tools": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:pixel-8:life-counter": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:ipad-mini:tools": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:ipad-mini:life-counter": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "route:desktop:tools": {
-    "overflows": false,
-    "smallTargets": 9,
-    "smallSelectors": 3
-  },
-  "route:desktop:life-counter": {
-    "overflows": false,
-    "smallTargets": 9,
-    "smallSelectors": 3
-  },
-  "state:iphone-se:life-counter-8": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-2": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-setup": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-seat-sheet": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-commander-damage": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-backdrop": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "state:iphone-se:tools-hub": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-8": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-2": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-setup": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-seat-sheet": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-commander-damage": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-backdrop": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1
-  },
-  "state:pixel-8:tools-hub": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:iphone-se:life-counter-seat-tab": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
-  "state:pixel-8:life-counter-seat-tab": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0
-  },
   "state:iphone-se:board": {
     "overflows": false,
     "smallTargets": 1,
@@ -736,6 +752,18 @@
     "smallSelectors": 0,
     "truncated": 0
   },
+  "state:iphone-se:board-manual-controls": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:board-manual-move-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
   "state:pixel-8:board": {
     "overflows": false,
     "smallTargets": 1,
@@ -749,6 +777,42 @@
     "truncated": 0
   },
   "state:pixel-8:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:board-manual-controls": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:board-manual-move-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:card-disputes": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:card-coverage": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:card-disputes": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:card-coverage": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,

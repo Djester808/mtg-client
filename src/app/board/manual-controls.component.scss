@@ -138,9 +138,18 @@
   position: relative;
 }
 
+// Every control in here is primary — moving, tapping and counting a card the engine does not
+// play is the whole of the honour system — so on a device with no hovering pointer they clear
+// $tap-min rather than staying at the 28px desktop density. 28px is what put 15 undersized
+// targets on the board's phone capture (5 kinds) the moment this panel arrived.
 .mp-btn {
   min-height: 28px;
   padding: 4px 8px;
+
+  @include touch {
+    min-height: $tap-min;
+    padding: 6px 12px;
+  }
   background: var(--bg-hover);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
@@ -191,6 +200,11 @@
   text-align: left;
   cursor: pointer;
 
+  @include touch {
+    min-height: $tap-min;
+    padding: 6px 12px;
+  }
+
   &:hover,
   &:focus-visible {
     background: var(--bg-hover);
@@ -223,6 +237,11 @@
   width: 68px;
   min-height: 28px;
   padding: 3px 6px;
+
+  @include touch {
+    min-height: $tap-min;
+  }
+
   background: var(--bg-deep);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
@@ -234,6 +253,10 @@
   min-width: 28px;
   font-size: 14px;
   line-height: 1;
+
+  @include touch {
+    min-width: $tap-min;
+  }
 }
 
 .mp-on {
