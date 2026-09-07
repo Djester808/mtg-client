@@ -12,6 +12,10 @@ import { CollectionCardDto, CardType, ManaColor } from '../../models/game.models
 import { makeCard } from '../../testing/test-factories';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { CollectionApiService } from '../../services/collection-api.service';
+import {
+  CardImplementationApiService,
+  CardImplementationApiStub,
+} from '../../services/card-implementation-api.service';
 
 function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCardDto {
   return {
@@ -104,6 +108,10 @@ async function setup() {
       { provide: DeckApiService, useValue: deckApi },
       { provide: PreferencesApiService, useValue: preferencesApi },
       { provide: CollectionApiService, useValue: collectionApi },
+      // The admission badge on every list row is a real child component, so it resolves this
+      // seam out of the injector and would otherwise drag HttpClient into every deck spec.
+      // The stub is the one C2 wrote for exactly this, and it is typed against the service.
+      { provide: CardImplementationApiService, useClass: CardImplementationApiStub },
       { provide: Router, useValue: { navigate: jasmine.createSpy() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'deck-1' } } } },
     ],
@@ -3744,5 +3752,68 @@ describe('DeckDetailComponent — the commander slot controls', () => {
     expect(el.querySelector('.cp-empty-actions'))
       .withContext('and nothing else is offered alongside it')
       .toBeNull();
+  });
+});
+
+// ── Admission badge on a deck row ─────────────────────────────────────────────
+//
+// The badge went in beside `list-name`, which only exists under `textStyle` — a mode that is
+// off until somebody turns it on. So for three commits the deck list carried the badge on no
+// screen anyone lands on, and the capture harness was written to let its wait for the badge
+// time out quietly. These assert the default thumbnail row, which is the one that has to
+// carry it.
+
+describe('DeckDetailComponent — admission badge', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  async function listOf(
+    cards: CollectionCardDto[],
+    arrange?: (stub: CardImplementationApiStub) => void,
+  ) {
+    const { component, fixture, store } = await setup();
+    arrange?.(TestBed.inject(CardImplementationApiService) as unknown as CardImplementationApiStub);
+    store.setState({
+      ...INITIAL_STATE,
+      deck: { decks: [], activeDeck: makeDeck(cards), loading: false, error: null },
+    });
+    component.viewMode = 'list';
+    component.textStyle = false;
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('badges every row of the default thumbnail list, not only the text style', async () => {
+    const el = await listOf([
+      makeDeckCard({ id: 'c1', oracleId: 'oracle-1' }),
+      makeDeckCard({ id: 'c2', oracleId: 'oracle-2' }),
+    ]);
+
+    const rows = el.querySelectorAll('.card-row');
+    expect(rows.length).withContext('two cards, two rows').toBe(2);
+    expect(el.querySelectorAll('app-admission-badge').length)
+      .withContext('every row says which admission its card reaches a table under')
+      .toBe(rows.length);
+  });
+
+  it('badges each row from its own card, not from the first one it drew', async () => {
+    const el = await listOf(
+      [
+        makeDeckCard({ id: 'c1', oracleId: 'oracle-a' }),
+        makeDeckCard({ id: 'c2', oracleId: 'oracle-b' }),
+      ],
+      (stub) => {
+        stub.implementations.set('oracle-a', { oracleId: 'oracle-a', status: 'Verified' });
+        stub.implementations.set('oracle-b', {
+          oracleId: 'oracle-b',
+          status: 'Excluded',
+          exclusionReason: 'Needs a primitive the language cannot say yet',
+        });
+      },
+    );
+
+    const glyphs = Array.from(el.querySelectorAll('.card-row')).map((row) =>
+      row.querySelector('.admission-badge')?.textContent?.trim(),
+    );
+    expect(glyphs).withContext('enforced, then refused').toEqual(['⚙', '⛔']);
   });
 });

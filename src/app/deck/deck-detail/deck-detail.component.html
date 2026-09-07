@@ -841,6 +841,11 @@
                   <div class="card-info">
                     <div class="card-name">
                       <span>{{ card.cardDetails?.name ?? card.oracleId }}</span>
+                      <!-- Which admission this card would reach a table under. This is the deck's
+                           default list row — the text-style rows below carry the same badge, but
+                           `textStyle` is off until someone turns it on, so without this the badge
+                           was on no screen anybody lands on. -->
+                      <app-admission-badge [oracleId]="card.oracleId"></app-admission-badge>
                     </div>
                     <div class="card-type">
                       <span>{{ typeLine(card) }}</span>

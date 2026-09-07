@@ -151,11 +151,34 @@ const STATES = [
     // on the API side, and until it answers there is no badge to wait for. A capture of the
     // rows without it is still the capture this state is for; a thrown wait would take the
     // whole run down over an endpoint that is not this screen's fault.
+    //
+    // `keepScroll`, because on a 667px-tall phone the card list starts about two screens down
+    // and every other state is photographed from the top of the page. Eleven runs of this state
+    // photographed the deck header. The badge is what this capture is for, so this is the one
+    // state that keeps the scroll its run() left behind.
+    keepScroll: true,
     run: async (d) => {
       await setView(d, 0);
       await d
         .wait(until.elementLocated(By.css('app-admission-badge .admission-badge')), 8000)
         .catch(() => {});
+      await d.executeScript(`
+        const row = document.querySelector('.card-row');
+        if (row) {
+          // scrollIntoView alone leaves the row wherever its own scroller can put it, which on a
+          // phone is under two sticky bars and one row from the bottom edge. Walk the ancestors
+          // and scroll each one that can scroll, so the rows end up at the top of whatever is
+          // actually showing them.
+          for (let p = row.parentElement; p; p = p.parentElement) {
+            const s = getComputedStyle(p).overflowY;
+            if ((s === 'auto' || s === 'scroll') && p.scrollHeight > p.clientHeight + 1) {
+              p.scrollTop += row.getBoundingClientRect().top - p.getBoundingClientRect().top - 4;
+            }
+          }
+          window.scrollBy(0, row.getBoundingClientRect().top - 4);
+        }
+      `);
+      await sleep(800);
     },
   },
 ];
@@ -196,12 +219,26 @@ async function openFilters(d) {
 }
 
 function parseArgs(argv) {
-  const out = { dpr: 1, devices: ['iphone-se'] };
+  // `--deck=` names which deck to open, because the admission badge is the one state whose
+  // answer comes from the *cards in the deck* rather than from the layout: a deck of verified
+  // cards and a deck of disputed ones are two different screens through the same component,
+  // and the seeded Showcase deck is neither. The suffix keeps the two runs' captures apart.
+  const out = { dpr: 1, devices: ['iphone-se'], deck: 'Showcase', suffix: '', only: null };
   for (const a of argv.slice(2)) {
     const m = /^--([a-z]+)=(.*)$/.exec(a);
     if (!m) continue;
     if (m[1] === 'dpr') out.dpr = Number(m[2]);
     if (m[1] === 'devices') out.devices = m[2].split(',').map((s) => s.trim());
+    if (m[1] === 'only') out.only = m[2].split(',').map((s) => s.trim());
+    if (m[1] === 'deck') {
+      out.deck = m[2];
+      out.suffix =
+        '-' +
+        m[2]
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+    }
   }
   return out;
 }
@@ -230,17 +267,18 @@ function parseArgs(argv) {
       await d.get(baseUrl + '/deck');
       await d.wait(until.elementLocated(By.css('.deck-card')), 15000);
       await sleep(1500);
-      // Open the seeded Showcase deck by name, not whichever card is first — flow runs
-      // leave their own decks behind and the list order is not stable.
-      await d.executeScript(`
-        const cards = Array.from(document.querySelectorAll('.deck-card'));
-        (cards.find(c => c.textContent.includes('Showcase')) || cards[0]).click();
-      `);
+      // Open the named deck (default: the seeded Showcase one), not whichever card is first —
+      // flow runs leave their own decks behind and the list order is not stable.
+      await d.executeScript(
+        `const cards = Array.from(document.querySelectorAll('.deck-card'));
+         (cards.find(c => c.textContent.includes(${JSON.stringify(args.deck)})) || cards[0]).click();`,
+      );
       await d.wait(async () => /\/deck\/[^/]+$/.test(await d.getCurrentUrl()), 20000);
       await sleep(3000);
       const deckUrl = await d.getCurrentUrl();
 
-      for (const st of STATES) {
+      const states = args.only ? STATES.filter((s) => args.only.includes(s.id)) : STATES;
+      for (const st of states) {
         try {
           // Each state starts from a clean deck page so panels do not stack up.
           await backToDeck(d, deckUrl);
@@ -249,12 +287,14 @@ function parseArgs(argv) {
           // it clicks, which slid the board up and tucked the search bar under the
           // sticky rows — every "the search bar is clipped" report traced back to this
           // capture artifact, not the app.
-          await d.executeScript(`
-            for (const el of document.querySelectorAll('*')) {
-              if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) el.scrollTop = 0;
-            }
-            window.scrollTo(0, 0);
-          `);
+          if (!st.keepScroll) {
+            await d.executeScript(`
+              for (const el of document.querySelectorAll('*')) {
+                if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) el.scrollTop = 0;
+              }
+              window.scrollTo(0, 0);
+            `);
+          }
           await sleep(600);
           const audit = await d.executeScript(AUDIT);
           // Capture-time truth for the search box — a debugging aid for a capture that
@@ -265,7 +305,30 @@ function parseArgs(argv) {
             const b = c.getBoundingClientRect();
             return Math.round(b.top) + 'y ' + Math.round(b.height) + 'h vis=' + (b.height > 0);
           `);
-          const file = path.join(devDir, `deckstate-${st.id}.png`);
+          // The badge census, as data. A screenshot shows that *a* badge is there; it cannot
+          // show that all 24 rows got one, nor that the glyph on them is the one the card's
+          // status earns — and "every row badged honour-system" is exactly the claim this
+          // state exists to make. Counted by class, so a badge that renders with no class
+          // (the bug that would read as enforced) lands in `unclassed` rather than nowhere.
+          audit.badges = await d.executeScript(`
+            const rows = document.querySelectorAll('.card-row');
+            const b = Array.from(document.querySelectorAll('app-admission-badge .admission-badge'));
+            const count = (c) => b.filter((x) => x.classList.contains(c)).length;
+            return {
+              rows: rows.length,
+              total: b.length,
+              enforced: count('is-enforced'),
+              honour: count('is-honour'),
+              refused: count('is-refused'),
+              unclassed: b.length - count('is-enforced') - count('is-honour') - count('is-refused'),
+              glyphs: Array.from(new Set(b.map((x) => x.textContent.trim()))),
+              firstTitle: b.length ? b[0].getAttribute('title') : null,
+              size: b.length
+                ? Math.round(b[0].getBoundingClientRect().width) + 'x' + Math.round(b[0].getBoundingClientRect().height)
+                : null,
+            };
+          `);
+          const file = path.join(devDir, `deckstate-${st.id}${args.suffix}.png`);
           fs.writeFileSync(file, await d.takeScreenshot(), 'base64');
           results.push({
             device: device.id,
@@ -276,8 +339,9 @@ function parseArgs(argv) {
             file: path.relative(outDir, file).replace(/\\/g, '/'),
             ...audit,
           });
+          const badges = audit.badges;
           console.log(
-            `  ${st.id.padEnd(18)} ${(audit.offscreen.length ? audit.offscreen.length + ' OFF: ' + audit.offscreen[0].sel : 'fits').padEnd(30)} ${audit.cramped} under 44px  search=${audit.searchBox}`,
+            `  ${st.id.padEnd(18)} ${(audit.offscreen.length ? audit.offscreen.length + ' OFF: ' + audit.offscreen[0].sel : 'fits').padEnd(30)} ${audit.cramped} under 44px  badges=${badges.total}/${badges.rows} rows ⚙${badges.enforced} ✋${badges.honour} ⛔${badges.refused} ?${badges.unclassed} ${badges.size ?? ''}`,
           );
         } catch (e) {
           console.log(`  ${st.id.padEnd(18)} BLOCKED: ${e.message.split('\n')[0]}`);
@@ -296,7 +360,18 @@ function parseArgs(argv) {
     }
   }
 
-  fs.writeFileSync(path.join(outDir, 'deck-states.json'), JSON.stringify(results, null, 2));
+  // A `--only` run merges into what is already recorded rather than replacing it, for the same
+  // reason shoot-states.js does: a file holding only this run's states tells the audit that every
+  // other state stopped working.
+  const stateFile = path.join(outDir, `deck-states${args.suffix}.json`);
+  let merged = results;
+  if (args.only && fs.existsSync(stateFile)) {
+    const prev = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    const key = (r) => `${r.device}/${r.state}`;
+    const fresh = new Set(results.map(key));
+    merged = [...prev.filter((r) => !fresh.has(key(r))), ...results];
+  }
+  fs.writeFileSync(stateFile, JSON.stringify(merged, null, 2));
   console.log(`\nWrote ${results.length} deck states`);
 })().catch((e) => {
   console.error(e);
