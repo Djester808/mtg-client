@@ -1,3 +1,4 @@
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/detail-page' as *;
 
 // The coverage dashboard.
@@ -161,6 +162,16 @@
   gap: 12px;
   padding: 7px 0;
   border-bottom: 1px solid var(--border-subtle);
+
+  // 260px of fixed columns on a 375px screen leaves the reason about 55px, and a 55px window
+  // panned across a sentence is not reading it — the phone capture showed "No way", "Optiona"
+  // and "Search" as whole rows. The sentence takes the width and the bar and its count sit
+  // under it.
+  @include upto($bp-phone) {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    align-items: baseline;
+    row-gap: 4px;
+  }
 }
 
 .cc-reason {
@@ -172,6 +183,14 @@
   // than being ellipsised into a column of "Cannot express…" lines that name nothing.
   overflow-x: auto;
   white-space: nowrap;
+
+  // Given the whole width it wraps instead, which is what a sentence does when it has room.
+  @include upto($bp-phone) {
+    grid-column: 1 / -1;
+    overflow-x: visible;
+    white-space: normal;
+    line-height: 1.45;
+  }
 }
 
 .cc-blocked {
@@ -196,6 +215,13 @@
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: rgba(20, 24, 32, 0.5);
+
+  // Three figures with a 110px floor plus the run's metadata is 400px of track list before the
+  // gaps, so at 375 the third figure — "no scenarios", the one the whole note underneath is
+  // about — was cut off at the right edge with the metadata pushed off the row entirely.
+  @include upto($bp-phone) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .cc-run-figure {
@@ -232,8 +258,14 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
   color: var(--text-secondary);
   font-size: 12px;
+  overflow-wrap: anywhere;
+
+  @include upto($bp-phone) {
+    grid-column: 1 / -1;
+  }
 
   code {
     color: var(--text-dim);
