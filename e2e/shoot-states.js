@@ -350,6 +350,18 @@ const STATES = [
     root: '.manual-panel',
     extra: `return {
       zones: [...document.querySelectorAll('.mp-menu-item')].map((b) => b.textContent.trim()),
+      // The list being in the DOM is not the list being reachable. The panel is a scroller, and
+      // a scroller cannot reach anything above its own origin, so a menu that opened upward
+      // clipped Hand, Battlefield and Graveyard off the top with no way to scroll back to them —
+      // and the names above still read out in full. This is how many are actually gettable.
+      zonesUnreachable: (() => {
+        const panel = document.querySelector('.manual-panel');
+        if (!panel) return null;
+        const top = panel.getBoundingClientRect().top;
+        return [...document.querySelectorAll('.mp-menu-item')].filter(
+          (b) => b.getBoundingClientRect().top - top + panel.scrollTop < 0,
+        ).length;
+      })(),
     };`,
     async drive(d) {
       await toAbilityBoard(d);
@@ -370,11 +382,25 @@ const STATES = [
     label: 'Card disputes — two readings of one card',
     root: '.cd-shell',
     extra: `return {
-      cards: [...document.querySelectorAll('.cd-card-name')].map((n) => n.textContent.trim()),
+      // One card's readings are on screen; the rest of the queue is names in the picker. The
+      // first spelling rendered all 105, which measured 120,772px tall at 375px.
+      queued: document.querySelectorAll('.cd-pick').length,
+      card: (document.querySelector('.cd-card-name') || {}).textContent,
       readings: document.querySelectorAll('.cd-reading').length,
-      // The line the whole screen is about. Zero of these while cards are on screen means the
-      // highlight stopped landing, and no screenshot of pretty-printed JSON would show it.
+      // The line the whole screen is about. Zero of these while a card is on screen means the
+      // highlight stopped landing, and no screenshot of pretty-printed JSON would show it. It
+      // read zero on every card for as long as the client looked the server's excerpt up as a
+      // path, which the server has never sent.
       highlighted: document.querySelectorAll('.cd-line.is-diff').length,
+      differenceAt: (document.querySelector('.cd-path code') || {}).textContent,
+      // Marking the line and showing it are two different things: a definition runs 200 lines
+      // inside a 420px scroller, so a mark nobody scrolls to is a mark nobody sees. This is
+      // whether the difference is inside each panel's visible band.
+      diffOnScreen: [...document.querySelectorAll('.cd-json')].map((p) => {
+        const line = p.querySelector('.cd-line.is-diff');
+        if (!line) return null;
+        return line.offsetTop >= p.scrollTop && line.offsetTop < p.scrollTop + p.clientHeight;
+      }),
       empty: !!document.querySelector('.empty-state'),
     };`,
     async drive(d) {

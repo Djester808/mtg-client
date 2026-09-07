@@ -15,6 +15,10 @@ import {
  * The real `CardDisputeDiffService` is used rather than a spy: what is worth proving is that the
  * highlighted line reaches the DOM, and a spied renderer would pass with a component that never
  * rendered a line at all.
+ *
+ * `firstDifference` carries what the endpoint really sends — an excerpt pair, not a path — so a
+ * spec cannot pass here by inventing a contract the server does not honour. That is how the
+ * highlight came to be green in the suite and dead on all 105 cards of the live corpus.
  */
 describe('CardDisputesComponent', () => {
   let fixture: ComponentFixture<CardDisputesComponent>;
@@ -28,7 +32,7 @@ describe('CardDisputesComponent', () => {
       { model: 'model-a', definitionJson: JSON.stringify({ effects: [{ amount: 3 }] }) },
       { model: 'model-b', definitionJson: JSON.stringify({ effects: [{ amount: 2 }] }) },
     ],
-    firstDifference: 'effects[0].amount',
+    firstDifference: '"amount": 3     } | "amount": 2     }',
   };
   const shock: DisputedCard = {
     oracleId: 'o-shock',
@@ -37,7 +41,7 @@ describe('CardDisputesComponent', () => {
       { model: 'model-a', definitionJson: JSON.stringify({ effects: [{ amount: 2 }] }) },
       { model: 'model-b', definitionJson: JSON.stringify({ effects: [{ amount: 1 }] }) },
     ],
-    firstDifference: 'effects[0].amount',
+    firstDifference: '"amount": 2     } | "amount": 1     }',
   };
 
   async function open(disputed: DisputedCard[]) {
@@ -54,17 +58,41 @@ describe('CardDisputesComponent', () => {
     fixture.detectChanges();
   }
 
+  const names = () =>
+    fixture.debugElement
+      .queryAll(By.css('.cd-pick'))
+      .map((el) => (el.nativeElement.textContent as string).trim());
+
   afterEach(() => TestBed.resetTestingModule());
 
   // ---- the queue --------------------------------------------------------------
 
-  it('lists a card per dispute with both readings side by side', async () => {
+  // One card's readings on screen, not every card's. A hundred pairs of JSON documents rendered
+  // at once made a page 120,772px tall at 375px, which is the defect this asserts against.
+  it('lists every card but renders one card at a time', async () => {
     await open([bolt, shock]);
-    expect(fixture.debugElement.queryAll(By.css('.cd-card')).length).toBe(2);
-    expect(fixture.debugElement.queryAll(By.css('.cd-card .cd-reading')).length).toBe(4);
+    expect(names()).toEqual(['Lightning Bolt', 'Shock']);
+    expect(fixture.debugElement.queryAll(By.css('.cd-card')).length).toBe(1);
+    expect(fixture.debugElement.queryAll(By.css('.cd-reading')).length).toBe(2);
     expect(
       fixture.debugElement.queryAll(By.css('.cd-model')).map((el) => el.nativeElement.textContent),
-    ).toEqual(['model-a', 'model-b', 'model-a', 'model-b']);
+    ).toEqual(['model-a', 'model-b']);
+  });
+
+  it('opens on the first card and swaps to the one picked', async () => {
+    await open([bolt, shock]);
+    expect(fixture.debugElement.query(By.css('.cd-card-name')).nativeElement.textContent).toContain(
+      'Lightning Bolt',
+    );
+
+    fixture.debugElement.queryAll(By.css('.cd-pick'))[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(component.selected?.card.oracleId).toBe('o-shock');
+    expect(fixture.debugElement.query(By.css('.cd-card-name')).nativeElement.textContent).toContain(
+      'Shock',
+    );
+    expect(fixture.debugElement.queryAll(By.css('.cd-pick.is-selected')).length).toBe(1);
   });
 
   it('says so when nothing is disputed rather than showing an empty page', async () => {
@@ -92,23 +120,64 @@ describe('CardDisputesComponent', () => {
     expect(marked).toEqual(['"amount": 3', '"amount": 2']);
   });
 
-  it('says the path is missing rather than silently marking nothing', async () => {
-    await open([{ ...bolt, firstDifference: 'effects[0].nowhere' }]);
+  it('names the differing path in the header', async () => {
+    await open([bolt]);
+    expect(fixture.debugElement.query(By.css('.cd-path code')).nativeElement.textContent).toBe(
+      'effects[0].amount',
+    );
+  });
+
+  // Marking the line and showing it are two different things. A real definition runs 200 lines
+  // inside a 420px scroller, so a highlight nobody scrolls to is a highlight nobody sees.
+  it('scrolls each reading to the line it marked', async () => {
+    const long = (amount: number) => ({
+      filler: Array.from({ length: 200 }, (_, i) => `line ${i}`),
+      effects: [{ amount }],
+    });
+    await open([
+      {
+        ...bolt,
+        readings: [
+          { model: 'model-a', definitionJson: JSON.stringify(long(3)) },
+          { model: 'model-b', definitionJson: JSON.stringify(long(2)) },
+        ],
+      },
+    ]);
+    // The scroll runs on a timer after the row renders, so wait a real macrotask for it.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const panels = fixture.debugElement
+      .queryAll(By.css('.cd-json'))
+      .map((el) => el.nativeElement as HTMLElement);
+    expect(panels.length).toBe(2);
+    for (const panel of panels) {
+      const line = panel.querySelector<HTMLElement>('.cd-line.is-diff');
+      expect(line).not.toBeNull();
+      expect(panel.scrollTop).toBeGreaterThan(0);
+      expect(line!.offsetTop).toBeGreaterThanOrEqual(panel.scrollTop);
+      expect(line!.offsetTop).toBeLessThan(panel.scrollTop + panel.clientHeight);
+    }
+  });
+
+  it('says why rather than silently marking nothing when there is one reading', async () => {
+    await open([{ ...bolt, readings: [bolt.readings[0]] }]);
     expect(fixture.debugElement.queryAll(By.css('.cd-line.is-diff')).length).toBe(0);
-    expect(fixture.debugElement.queryAll(By.css('.cd-not-located')).length).toBe(2);
+    expect(
+      fixture.debugElement.query(By.css('.cd-path.is-unknown')).nativeElement.textContent,
+    ).toContain('one model');
   });
 
   // ---- choosing ---------------------------------------------------------------
 
-  it('posts the chosen model and drops the card from the list', async () => {
+  it('posts the chosen model and advances to the next card', async () => {
     await open([bolt, shock]);
-    const chooseB = fixture.debugElement.queryAll(By.css('.cd-card .cd-choose'))[1];
-    chooseB.nativeElement.click();
+    fixture.debugElement.queryAll(By.css('.cd-choose'))[1].nativeElement.click();
     fixture.detectChanges();
 
     expect(api.chosen).toEqual([{ oracleId: 'o-bolt', model: 'model-b' }]);
     expect(component.rows.map((r) => r.card.oracleId)).toEqual(['o-shock']);
-    expect(fixture.debugElement.queryAll(By.css('.cd-card')).length).toBe(1);
+    expect(component.selected?.card.oracleId).toBe('o-shock');
+    expect(names()).toEqual(['Shock']);
   });
 
   it('keeps the card and says so when the choice is refused', async () => {

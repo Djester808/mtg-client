@@ -55,10 +55,15 @@ export interface DisputedCard {
   name: string;
   readings: CardReading[];
   /**
-   * The path the two readings first differ at, e.g. `Effects[0].Amount`.
+   * Sixty characters of each reading around the first character they differ at, joined by ` | `.
    *
-   * The server finds it, because the server has both definitions in their typed form; the
-   * client only has to point at it. Empty when the server could not name one.
+   * **Not a path**, despite the name. `CardImplementationService.FirstDifference` walks the two
+   * JSON *strings* to the first unequal character and excerpts both sides of it, so a value here
+   * reads like `], "spell": true | ] }` — unreadable on screen and not something a lookup can
+   * resolve. The queue was written against a path this endpoint has never sent, which is why no
+   * line was ever highlighted; it now finds the differing line itself
+   * (`CardDisputeDiffService.render`) and nothing binds this field. Kept on the interface because
+   * the DTO carries it, and documented so the next reader does not try again.
    */
   firstDifference: string;
 }

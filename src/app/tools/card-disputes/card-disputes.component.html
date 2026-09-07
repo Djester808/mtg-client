@@ -19,43 +19,67 @@
     <p>Nothing is disputed. Every translated card has one agreed reading.</p>
   </div>
 
-  <article class="cd-card" *ngFor="let row of rows; trackBy: trackRow">
-    <header class="cd-card-head">
-      <h2 class="cd-card-name">{{ row.card.name }}</h2>
-      <code class="cd-oracle">{{ row.card.oracleId }}</code>
-      <span class="cd-path" *ngIf="row.card.firstDifference">
-        First difference: <code>{{ row.card.firstDifference }}</code>
-      </span>
-      <span class="cd-path is-unknown" *ngIf="!row.card.firstDifference">
-        The server did not name a differing path
-      </span>
-    </header>
+  <div class="cd-queue" *ngIf="!loading && !loadFailed && rows.length > 0">
+    <!--
+      The queue itself. Every name is here so the size of the backlog stays visible, but only the
+      selected card's readings are rendered — a hundred pairs of JSON documents at once is a page
+      120,772px tall, not a screen.
+    -->
+    <nav class="cd-picker" aria-label="Disputed cards">
+      <button
+        class="cd-pick"
+        type="button"
+        *ngFor="let row of rows; trackBy: trackRow"
+        [class.is-selected]="row === selected"
+        [attr.aria-current]="row === selected ? 'true' : null"
+        (click)="select(row)"
+      >
+        {{ row.card.name }}
+      </button>
+    </nav>
 
-    <p class="cd-error" *ngIf="row.error">{{ row.error }}</p>
+    <article class="cd-card" *ngIf="selected as row">
+      <header class="cd-card-head">
+        <h2 class="cd-card-name">{{ row.card.name }}</h2>
+        <code class="cd-oracle">{{ row.card.oracleId }}</code>
+        <span class="cd-path" *ngIf="row.located && row.differenceAt">
+          First difference: <code>{{ row.differenceAt }}</code>
+        </span>
+        <span class="cd-path" *ngIf="row.located && !row.differenceAt">
+          The readings differ in shape — the highlighted line is where
+        </span>
+        <span class="cd-path is-unknown" *ngIf="!row.located">
+          {{
+            row.panels.length < 2
+              ? 'Only one model produced a reading, so there is nothing to compare'
+              : 'The two readings are identical as rendered'
+          }}
+        </span>
+      </header>
 
-    <div class="cd-readings">
-      <div class="cd-reading" *ngFor="let panel of row.panels; trackBy: trackPanel">
-        <div class="cd-reading-head">
-          <span class="cd-model">{{ panel.model }}</span>
-          <button
-            class="cd-choose"
-            [disabled]="!!row.choosing"
-            (click)="choose(row, panel.model)"
-            [title]="'Take this reading as the definition of ' + row.card.name"
-          >
-            {{ row.choosing === panel.model ? 'Choosing…' : 'Choose this reading' }}
-          </button>
-        </div>
-        <p class="cd-not-located" *ngIf="row.card.firstDifference && !panel.located">
-          The named path is not in this reading — the readings differ in shape, not in a value.
-        </p>
-        <pre class="cd-json"><span
-            class="cd-line"
-            *ngFor="let line of panel.lines; trackBy: trackLine"
-            [class.is-diff]="line.highlighted"
-          >{{ line.text }}
+      <p class="cd-error" *ngIf="row.error">{{ row.error }}</p>
+
+      <div class="cd-readings">
+        <div class="cd-reading" *ngFor="let panel of row.panels; trackBy: trackPanel">
+          <div class="cd-reading-head">
+            <span class="cd-model">{{ panel.model }}</span>
+            <button
+              class="cd-choose"
+              [disabled]="!!row.choosing"
+              (click)="choose(row, panel.model)"
+              [title]="'Take this reading as the definition of ' + row.card.name"
+            >
+              {{ row.choosing === panel.model ? 'Choosing…' : 'Choose this reading' }}
+            </button>
+          </div>
+          <pre class="cd-json"><span
+              class="cd-line"
+              *ngFor="let line of panel.lines; trackBy: trackLine"
+              [class.is-diff]="line.highlighted"
+            >{{ line.text }}
 </span></pre>
+        </div>
       </div>
-    </div>
-  </article>
+    </article>
+  </div>
 </section>
