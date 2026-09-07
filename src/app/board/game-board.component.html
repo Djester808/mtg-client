@@ -277,6 +277,13 @@
   </div>
 
   <!-- ====================================================
+       HONOUR-SYSTEM CONTROLS
+       The cards the engine does not play. Pinned over the table rather than placed in the
+       grid: the board's track list is the geometry every capture is measured against.
+  ==================================================== -->
+  <app-manual-controls [permanents]="vm.manualObjects" [players]="vm.seats"></app-manual-controls>
+
+  <!-- ====================================================
        ATTACK ARROWS
   ==================================================== -->
   <app-attack-arrows></app-attack-arrows>

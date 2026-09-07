@@ -108,6 +108,21 @@ function abilityFixture() {
     ],
   });
 
+  // Which of the deck gate's admissions each object is on the board under (CARD_ENGINE_PLAN.md:
+  // a card is enforced, badged honour-system, or refused). Everything the engine can play is
+  // enforced; two cards are left on the honour system, which is what puts the manual controls on
+  // the board and the second badge on a card. A board where every object is honour-system
+  // photographs a panel as long as the battlefield, and one where none is photographs no panel at
+  // all — neither is the state worth measuring.
+  for (const obj of view.battlefield) {
+    obj.enforced = true;
+  }
+  for (const obj of view.battlefield) {
+    if (obj.name === 'Kalonian Hydra' || obj.name === 'Chandra, Torch of Defiance') {
+      obj.enforced = false;
+    }
+  }
+
   const alice = view.players.find((p) => p.playerId === ALICE);
   // Harvest Pyre is {1}{R} and its only X is in an additional cost, which is the whole reason
   // ObjectView carries the flag: a board reading the printed mana for an {X} finds none.

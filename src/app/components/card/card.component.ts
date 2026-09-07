@@ -59,6 +59,23 @@ export class CardComponent {
     return this.permanent?.damageMarked ?? 0;
   }
 
+  /**
+   * Which of the deck gate's admissions this object is on the board under.
+   *
+   * `enforced` means the engine plays the card and a manual action on it is refused;
+   * `honour` means the players do, through the panel on the board. Null for a card that is not
+   * a permanent — a card in hand is not yet an object anything is enforcing (CR 110.1), and a
+   * badge on it would be answering a question nobody asked.
+   *
+   * Two badges rather than one, because the absence of a badge is not a fact: a card with
+   * nothing on it reads as "nobody has said", which is exactly the ambiguity the honour system
+   * cannot afford at a table where some cards are being played by hand.
+   */
+  get admission(): 'enforced' | 'honour' | null {
+    if (!this.permanent) return null;
+    return this.permanent.enforced ? 'enforced' : 'honour';
+  }
+
   get counters(): { label: string; cls: string }[] {
     if (!this.permanent) return [];
     const result: { label: string; cls: string }[] = [];

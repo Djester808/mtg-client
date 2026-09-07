@@ -1,0 +1,120 @@
+<!-- Nothing at all when the engine is playing every card on the table: a panel of controls for
+     an empty list is clutter over a board that has no room for it, and "no honour-system cards
+     here" is a sentence nobody needs while playing. The badge on each card is what says which
+     kind of table this is. -->
+<div class="manual-panel" *ngIf="hasHonourSystem">
+  <div class="mp-head">
+    <span class="mp-title">Honour system</span>
+    <span class="mp-note">
+      The engine does not play these cards. Move them, tap them and count them yourselves — every
+      action is logged with your name.
+    </span>
+  </div>
+
+  <!-- One row per object the table is playing by hand. -->
+  <div class="mp-objects">
+    <div
+      class="mp-object"
+      *ngFor="let p of honourSystem; trackBy: trackByPermanent"
+      [attr.data-object-id]="p.permanentId"
+    >
+      <div class="mp-object-head">
+        <span class="mp-badge is-honour" title="Played by the players, not by the engine"
+          >Honour system</span
+        >
+        <span class="mp-name">{{ p.sourceCard.name }}</span>
+        <span class="mp-state" *ngIf="p.isTapped">tapped</span>
+      </div>
+
+      <div class="mp-row">
+        <!-- Move to zone (CR 400.1 by agreement; the ends of a library are CR 401.1). -->
+        <div class="mp-move">
+          <button
+            type="button"
+            class="mp-btn mp-move-btn"
+            [class.is-open]="isMenuOpen(p)"
+            [attr.aria-expanded]="isMenuOpen(p)"
+            (click)="toggleMenu(p)"
+          >
+            Move to…
+          </button>
+          <div class="mp-menu" *ngIf="isMenuOpen(p)" role="menu">
+            <button
+              type="button"
+              class="mp-menu-item"
+              role="menuitem"
+              *ngFor="let zone of zones; trackBy: trackByZone"
+              (click)="move(p, zone.id)"
+            >
+              {{ zone.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Tapped, or not (CR 701.21). -->
+        <button type="button" class="mp-btn mp-tap" [class.is-tapped]="p.isTapped" (click)="tap(p)">
+          {{ p.isTapped ? 'Untap' : 'Tap' }}
+        </button>
+
+        <!-- Counters, by whatever the card calls them (CR 122.1). -->
+        <div class="mp-counters">
+          <label class="mp-kind">
+            <span class="mp-kind-label">Counters</span>
+            <input
+              class="mp-kind-input"
+              type="text"
+              maxlength="24"
+              [value]="kindFor(p)"
+              [attr.aria-label]="'Counter kind on ' + p.sourceCard.name"
+              (input)="onKindInput(p, $event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="mp-btn mp-step"
+            [attr.aria-label]="'Remove a ' + kindFor(p) + ' counter'"
+            (click)="bumpCounters(p, -1)"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            class="mp-btn mp-step"
+            [attr.aria-label]="'Add a ' + kindFor(p) + ' counter'"
+            (click)="bumpCounters(p, 1)"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div class="mp-on" *ngIf="countersOn(p).length">
+        <span class="mp-on-item" *ngFor="let c of countersOn(p)">{{ c.count }} × {{ c.kind }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Life, for any seat: what has to be paid for an honour-system card is as often theirs. -->
+  <div class="mp-lives">
+    <div class="mp-life" *ngFor="let player of players; trackBy: trackByPlayer">
+      <span class="mp-life-name">{{ player.name }}</span>
+      <button
+        type="button"
+        class="mp-btn mp-step"
+        [attr.aria-label]="player.name + ' loses a life'"
+        (click)="bumpLife(player, -1)"
+      >
+        −
+      </button>
+      <span class="mp-life-total">{{ player.life }}</span>
+      <button
+        type="button"
+        class="mp-btn mp-step"
+        [attr.aria-label]="player.name + ' gains a life'"
+        (click)="bumpLife(player, 1)"
+      >
+        +
+      </button>
+    </div>
+  </div>
+</div>

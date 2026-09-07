@@ -66,6 +66,10 @@ export function makePermanent(overrides: Partial<PermanentDto> = {}): PermanentD
     attachments: [],
     effectivePower: 2,
     effectiveToughness: 2,
+    // An ordinary permanent the engine plays. A test about the honour system overrides it,
+    // which keeps the manual controls out of every capture and spec that is about something
+    // else.
+    enforced: true,
     ...overrides,
   };
 }

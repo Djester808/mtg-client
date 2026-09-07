@@ -281,6 +281,35 @@
   z-index: 5;
 }
 
+// ---- Which admission the object is on the board under -----
+//
+// Enforced or honour-system, never neither: a card with no badge would read as a card nobody
+// has decided about, and at a table where some cards are played by hand that is the one thing
+// the board must not leave to inference. The two are told apart by colour and by glyph rather
+// than by colour alone.
+.card-admission {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 5;
+  padding: 0 3px;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 14px;
+
+  &.is-honour {
+    background: rgba(214, 158, 46, 0.9);
+    border: 1px solid rgba(214, 158, 46, 0.55);
+    color: #1a1408;
+  }
+
+  &.is-enforced {
+    background: rgba(20, 24, 32, 0.75);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+  }
+}
+
 // ---- Counters ---------------------------------------------
 
 .card-counters {

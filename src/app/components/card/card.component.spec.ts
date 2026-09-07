@@ -123,6 +123,27 @@ describe('CardComponent', () => {
     expect(component.effectiveToughness).toBe(7);
   });
 
+  // ---- which admission the object is on the board under ----
+  //
+  // A card is enforced, badged honour-system, or refused (CARD_ENGINE_PLAN.md). Both of the two
+  // that reach a table are badged: no badge would read as "nobody has said", which is the one
+  // thing a table playing some cards by hand cannot be left to infer.
+
+  it('badges a permanent the engine plays as enforced', () => {
+    component.permanent = makePermanent({ enforced: true });
+    expect(component.admission).toBe('enforced');
+  });
+
+  it('badges a permanent the players play as honour-system', () => {
+    component.permanent = makePermanent({ enforced: false });
+    expect(component.admission).toBe('honour');
+  });
+
+  it('badges a card that is not a permanent at all with neither (CR 110.1)', () => {
+    component.card = makeCard();
+    expect(component.admission).toBeNull();
+  });
+
   // ---- damageMarked ----------------------------------------
 
   it('damageMarked is 0 when no permanent', () => {

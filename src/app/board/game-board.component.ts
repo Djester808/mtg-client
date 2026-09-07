@@ -4,6 +4,7 @@ import {
   ChangeDetectorRef,
   HostListener,
   OnInit,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -32,6 +33,7 @@ import {
   selectAnnouncement,
 } from '../store/selectors';
 import { ChoiceDto, PermanentAbilityDto, Phase, Step } from '../models/game.models';
+import { readSessionToken } from '../utils/session.utils';
 
 import { SignalRService } from '../services/signalr.service';
 import { buildTypeLine } from '../utils/card.utils';
@@ -47,26 +49,8 @@ import { ZoneViewerComponent } from '../components/zone-viewer/zone-viewer.compo
 import { ToastContainerComponent } from '../components/toast/toast-container.component';
 import { AttackArrowsComponent } from '../components/attack-arrows/attack-arrows.component';
 import { OracleSymbolsPipe } from '../pipes/oracle-symbols.pipe';
-
-/**
- * The per-game token stored by the lobby, if this browser has one for this game.
- *
- * Returns an empty string rather than throwing or redirecting: nothing downstream uses the
- * value, and a missing or malformed one is not a reason to refuse to show the board.
- */
-function readSessionToken(gameId: string): string {
-  try {
-    const raw = localStorage.getItem('mtg_session');
-    if (!raw) {
-      return '';
-    }
-
-    const session = JSON.parse(raw) as { gameId?: string; playerToken?: string };
-    return session.gameId === gameId ? (session.playerToken ?? '') : '';
-  } catch {
-    return '';
-  }
-}
+import { ManualControlsComponent } from './manual-controls.component';
+import { ManualControlsService } from './manual-controls.service';
 
 @Component({
   selector: 'app-game-board',
@@ -85,6 +69,7 @@ function readSessionToken(gameId: string): string {
     ToastContainerComponent,
     AttackArrowsComponent,
     OracleSymbolsPipe,
+    ManualControlsComponent,
   ],
   templateUrl: './game-board.component.html',
   styleUrls: ['./game-board.component.scss'],
@@ -100,6 +85,9 @@ export class GameBoardComponent implements OnInit {
    * calls back into the component, and the sentence above them did not.
    */
   private readonly picks$ = new BehaviorSubject<string[]>([]);
+
+  /** The honour system: which objects its panel is for, and what each of its controls sends. */
+  private readonly manual = inject(ManualControlsService);
 
   get picks(): string[] {
     return this.picks$.value;
@@ -171,6 +159,11 @@ export class GameBoardComponent implements OnInit {
         isMyChoice,
         abilityMenu,
         announcement,
+        // Both battlefields, for the honour-system panel: a card the engine cannot play is as
+        // often the opponent's as yours, and the players moving it by hand are the same players
+        // either way. The panel keeps only the objects admitted that way.
+        manualObjects: this.manual.bothBattlefields(localPerms, opponentPerms),
+        seats: this.manual.seatsAtTable(localPlayer, opponent),
         // Nothing else may happen while the game is waiting to be told something, so the rest
         // of the status bar stands down.
         stopped: !!choice,

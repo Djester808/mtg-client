@@ -1,0 +1,247 @@
+@use '../../styles/breakpoints' as *;
+
+// The honour system's panel.
+//
+// Pinned rather than placed in the board's grid: it is auxiliary to the table and the grid's
+// track list is the geometry every capture of this board is measured against, so a new row
+// would move the board itself. Fixed, over the right-hand column, above the hand.
+//
+// The game is a desktop surface (CARD_ENGINE_PLAN.md, 2026-09-06) — this panel is judged at
+// 1280 and carries a phone-audit exemption recorded in tools/check-ui-states.js rather than
+// silently skipped. It still shrinks and scrolls at narrow widths instead of overflowing the
+// document, because that costs three lines and a layout wider than the screen is a defect
+// wherever it appears.
+.manual-panel {
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--hand-h, 160px) + 56px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  max-height: 44vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  font-size: 12px;
+  color: var(--text-primary);
+
+  @include upto($bp-phone) {
+    right: 6px;
+    left: 6px;
+    width: auto;
+    max-height: 40vh;
+  }
+}
+
+.mp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mp-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.mp-note {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.mp-objects {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-object {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+}
+
+.mp-object-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mp-name {
+  font-weight: 600;
+}
+
+.mp-state {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+// The two admissions, told apart at a glance. The same two words appear on the card itself
+// (card.component.scss .card-admission) so that the badge on the board and the row in here
+// read as one fact.
+.mp-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  &.is-honour {
+    background: rgb(214 158 46 / 18%);
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+  }
+}
+
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mp-move {
+  position: relative;
+}
+
+.mp-btn {
+  min-height: 28px;
+  padding: 4px 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--gold-dim);
+  }
+}
+
+.mp-move-btn.is-open {
+  border-color: var(--gold);
+}
+
+.mp-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  background: var(--bg-deep);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 50%);
+}
+
+.mp-menu-item {
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bg-hover);
+  }
+}
+
+.mp-tap.is-tapped {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.mp-counters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mp-kind {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mp-kind-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.mp-kind-input {
+  width: 68px;
+  min-height: 28px;
+  padding: 3px 6px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.mp-step {
+  min-width: 28px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.mp-on {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.mp-lives {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-dim);
+}
+
+.mp-life {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mp-life-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-life-total {
+  min-width: 28px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-align: center;
+  color: var(--gold);
+}

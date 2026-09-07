@@ -143,6 +143,12 @@ export class GameViewAdapter {
       // most the client can honestly say.
       effectivePower: this.withCounters(o.printedPower, o.counters),
       effectiveToughness: this.withCounters(o.printedToughness, o.counters),
+      // `ObjectView.Enforced`: whether the engine plays this card's rules. A view that does not
+      // carry the flag is read as the honour system, not as enforcement — the deck gate admits
+      // three kinds of card and the board has to be able to say which one this is, and claiming
+      // an engine is enforcing something it has never heard of is the one error a player at the
+      // table cannot notice. The other way round costs a refusal toast.
+      enforced: o.enforced ?? false,
     };
   }
 

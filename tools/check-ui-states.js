@@ -88,9 +88,35 @@ function harnessText() {
     .join('\n');
 }
 
+/**
+ * Surfaces the phone audit does not judge, and why.
+ *
+ * The phone requirement was removed for the game on 2026-09-06 (CARD_ENGINE_PLAN.md, "The game
+ * is a desktop surface"): the board, the dispute queue and the coverage dashboard are judged at
+ * desktop width. That is an exemption from the *audit*, not from the harness — a screen nothing
+ * in e2e/ mentions is still unregistered, and still fails, because the whole reason this check
+ * exists is that a feature can ship with no capture at all and every gate stay green.
+ *
+ * It is written down here rather than left as a habit for the same reason: a skip nobody can see
+ * is indistinguishable from a screen everybody forgot. The audit's own ratchet
+ * (e2e/ui-baseline.json) is what carries the numbers; this list is what says the numbers for
+ * these routes are not a verdict.
+ */
+const DESKTOP_ONLY = [
+  {
+    prefix: 'src/app/board/',
+    reason:
+      'the game is a desktop surface (CARD_ENGINE_PLAN.md, 2026-09-06) — captured with ' +
+      'shoot-states.js --devices=desktop; a phone number for it is not a verdict',
+  },
+];
+
+const desktopOnly = (file) => DESKTOP_ONLY.find((d) => file.startsWith(d.prefix)) ?? null;
+
 const allow = fs.existsSync(ALLOW) ? JSON.parse(fs.readFileSync(ALLOW, 'utf8')) : {};
 const harness = harnessText();
 const missing = [];
+const exempt = [];
 let checked = 0;
 
 for (const file of changedComponents()) {
@@ -101,6 +127,8 @@ for (const file of changedComponents()) {
   if (!info || !info.handles.length) continue;
 
   checked++;
+  const desktop = desktopOnly(norm);
+  if (desktop) exempt.push({ file: norm, reason: desktop.reason });
   if (!info.handles.some((h) => harness.includes(h))) {
     missing.push({ file: norm, handles: info.handles.slice(0, 6) });
   }
@@ -136,6 +164,10 @@ if (fresh.length) {
       'deliberate; it just has to be written down.\n',
   );
   process.exit(1);
+}
+
+for (const e of exempt) {
+  console.log(`check-ui-states: ${e.file} registered, exempt from the phone audit — ${e.reason}`);
 }
 
 console.log(

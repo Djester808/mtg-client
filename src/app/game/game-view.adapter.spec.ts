@@ -282,6 +282,24 @@ describe('GameViewAdapter', () => {
       expect(state.battlefield[0].effectivePower).toBeNull();
       expect(state.battlefield[0].effectiveToughness).toBeNull();
     });
+
+    // Which of the deck gate's three admissions this object is on the board under
+    // (`ObjectView.Enforced`). The board draws a different badge for each and only offers the
+    // manual controls on the honour-system ones, so dropping the flag here would be a board
+    // that quietly claims the engine is playing a card it has never read.
+    it('carries whether the engine plays this card', () => {
+      const state = adapter.toGameState(
+        view({ battlefield: [object({ enforced: true } as never)] }),
+      );
+
+      expect(state.battlefield[0].enforced).toBeTrue();
+    });
+
+    it('reads a missing admission as the honour system, not as enforcement', () => {
+      const state = adapter.toGameState(view({ battlefield: [object()] }));
+
+      expect(state.battlefield[0].enforced).toBeFalse();
+    });
   });
 
   describe('attachments (CR 303.4, 704.5m)', () => {

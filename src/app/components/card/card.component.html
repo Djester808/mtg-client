@@ -48,6 +48,23 @@
         </div>
       </div>
 
+      <!-- Which admission this object is on the board under: the engine plays it, or the players
+           do (CARD_ENGINE_PLAN.md — a card is enforced, badged honour-system, or refused). Both
+           are badged, because a card with no badge reads as "nobody has said". -->
+      <div
+        class="card-admission"
+        *ngIf="admission as which"
+        [class.is-honour]="which === 'honour'"
+        [class.is-enforced]="which === 'enforced'"
+        [title]="
+          which === 'honour'
+            ? 'Honour system — the engine does not play this card. Use the manual controls.'
+            : 'Enforced — the engine plays this card and refuses manual actions on it.'
+        "
+      >
+        {{ which === 'honour' ? '✋' : '⚙' }}
+      </div>
+
       <!-- P/T -->
       <div class="card-pt" *ngIf="isCreature">{{ effectivePower }}/{{ effectiveToughness }}</div>
 

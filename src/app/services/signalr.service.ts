@@ -216,6 +216,65 @@ export class SignalRService implements OnDestroy {
     return this.invoke('Choose', picks);
   }
 
+  // ---- The honour system ----------------------------------------------------------------
+  //
+  // Four commands the engine applies no rule to: it accepts them only on objects the deck gate
+  // admitted as honour-system, refuses them on an enforced object, and writes each one to the
+  // log with the actor who did it, so a replay still holds and the table can see who moved
+  // what. The board is the players' hands here; the rules are theirs to keep.
+  //
+  // Every argument is sent, `null` and `false` included. A hub call binds by position and the
+  // server does not apply a C# default for one the client left off — the four spellings below
+  // are `ManualMove(objectId, zone, position, tapped)`, `ManualTap(objectId, tapped)`,
+  // `ManualCounters(objectId, kind, delta)` and `ManualLife(targetPlayerId, delta)`, and
+  // `signalr.service.spec.ts` counts each one.
+
+  /**
+   * Puts an object in a zone by hand (the engine's `ManualMove`, CR 400.1 by agreement).
+   *
+   * `position` is where in the zone it goes — 0 for the top of a library, -1 for the bottom or
+   * for a zone where order does not matter (CR 401.1, 401.4). `tapped` says how it arrives on
+   * the battlefield; it is meaningless elsewhere and still sent, because leaving it off is not
+   * "the default", it is a failed invocation.
+   *
+   * The defaults here are the engine's own (`ManualMove(… , int Position = -1, bool Tapped =
+   * false)`), not `null`, and nothing manufactures a null for these two slots. A JSON null
+   * arriving at a non-nullable `int` is the same class of failure as an omitted argument — the
+   * invocation never reaches the method — so "send everything" cannot be honoured by sending
+   * nothing-shaped values into slots that cannot hold one. A null a caller passes deliberately is
+   * still passed on rather than dropped, because whether the hub types them nullable is the hub's
+   * to say and silently swallowing an argument is the bug this whole section is about.
+   */
+  manualMove(
+    objectId: string,
+    zone: string,
+    position: number | null = -1,
+    tapped: boolean | null = false,
+  ): Promise<void> {
+    return this.invoke('ManualMove', objectId, zone, position, tapped);
+  }
+
+  /** Turns an object sideways, or back (the engine's `ManualTap`, CR 701.21). */
+  manualTap(objectId: string, tapped: boolean): Promise<void> {
+    return this.invoke('ManualTap', objectId, tapped);
+  }
+
+  /**
+   * Adds or removes counters of one kind by hand (the engine's `ManualCounters`, CR 122.1).
+   *
+   * The kind is the card's own word for them — `+1/+1`, `charge`, `loyalty`, or whatever a card
+   * the engine has never read calls its own. `delta` is signed; removing is a negative one, and
+   * how few a permanent may end with is the players' business, not this method's.
+   */
+  manualCounters(objectId: string, kind: string, delta: number): Promise<void> {
+    return this.invoke('ManualCounters', objectId, kind, delta);
+  }
+
+  /** Moves one player's life total by hand (the engine's `ManualLife`, CR 119.3). */
+  manualLife(targetPlayerId: string, delta: number): Promise<void> {
+    return this.invoke('ManualLife', targetPlayerId, delta);
+  }
+
   // ---- Helpers --------------------------------------------
 
   /**

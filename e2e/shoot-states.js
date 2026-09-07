@@ -314,6 +314,49 @@ const STATES = [
       await sleep(600);
     },
   },
+  // ---- The honour system ------------------------------------------------------------------
+  //
+  // The controls for a card the engine does not play: move it to a zone, tap it, count its
+  // counters, move a life total. Two states, because the panel and its open move menu are two
+  // layouts and the menu is the one that can leave the screen.
+  //
+  // The game is a desktop surface (CARD_ENGINE_PLAN.md, 2026-09-06), so these are judged at
+  // `--devices=desktop` and carry a phone-audit exemption recorded in tools/check-ui-states.js
+  // rather than being left out of the harness. They are registered here for both, because the
+  // audit reporting a phone number for them is better than the harness not knowing they exist —
+  // which is the exact hole check-ui-states.js was written for.
+  {
+    id: 'board-manual-controls',
+    label: 'Game board — honour-system controls',
+    root: '.manual-panel',
+    extra: `return {
+      objects: [...document.querySelectorAll('.mp-object .mp-name')].map((n) => n.textContent.trim()),
+      honourBadges: document.querySelectorAll('.mp-badge.is-honour').length,
+      // Both admissions are badged on the card itself, and they have to be different badges.
+      cardHonour: document.querySelectorAll('.card-admission.is-honour').length,
+      cardEnforced: document.querySelectorAll('.card-admission.is-enforced').length,
+      lifeRows: [...document.querySelectorAll('.mp-life .mp-life-name')].map((n) =>
+        n.textContent.trim(),
+      ),
+      counterKind: (document.querySelector('.mp-kind-input') || {}).value,
+    };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+    },
+  },
+  {
+    id: 'board-manual-move-menu',
+    label: 'Game board — where a card is being put by hand',
+    root: '.manual-panel',
+    extra: `return {
+      zones: [...document.querySelectorAll('.mp-menu-item')].map((b) => b.textContent.trim()),
+    };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+      await d.executeScript(`document.querySelector('.mp-move-btn').click();`);
+      await sleep(400);
+    },
+  },
   {
     id: 'nav-drawer',
     label: 'Navigation drawer',

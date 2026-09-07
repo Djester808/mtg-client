@@ -268,6 +268,17 @@ export interface ObjectView {
    * Empty for every ordinary permanent. Top-first, matching the physical stack.
    */
   mergedUnder: MergedCardView[];
+  /**
+   * Whether the engine plays this card for you, mirroring `ObjectView.Enforced`.
+   *
+   * `false` is the honour system: the table admitted the card knowing the engine does not
+   * implement it, so the players move it, tap it and count its counters themselves, and the
+   * server records every one of those as an event with an actor. Absent is read as `false`
+   * rather than `true` — a board that claims enforcement the engine is not doing is the one
+   * mistake here that a player cannot see, whereas offering a manual control on an enforced
+   * object costs a refusal toast and nothing else.
+   */
+  enforced?: boolean;
 }
 
 /** One card under the top of a merged permanent, as a client sees it (CR 730.2). */

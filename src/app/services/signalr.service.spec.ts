@@ -143,4 +143,70 @@ describe('SignalRService hub arity', () => {
 
     expect(sent[0][5]).toBe(3);
   });
+
+  // ---- The honour system's four commands ------------------------------------------------
+  //
+  // These are the ones most at risk of the positional bug, because three of their four
+  // arguments are values a caller would naturally leave off: a position that only a library
+  // cares about, a tapped flag that only the battlefield does, a delta of one. Every one of
+  // them is sent — null included — and counted here.
+
+  it('sends ManualMove every argument the hub declares', async () => {
+    await service.manualMove('obj-1', 'Graveyard');
+
+    // name, gameId, objectId, zone, position, tapped. The two trailing slots are filled with the
+    // engine's own defaults — `int Position = -1, bool Tapped = false` — rather than with null: a
+    // JSON null arriving at a non-nullable parameter fails the invocation exactly as an omitted
+    // argument does, so "send everything" cannot be honoured by sending a null into a slot that
+    // cannot hold one.
+    expect(sent.length).toBe(1);
+    expect(sent[0][0]).toBe('ManualMove');
+    expect(sent[0].length).toBe(6);
+    expect(sent[0][4]).toBe(-1);
+    expect(sent[0][5]).toBeFalse();
+  });
+
+  it('still sends a null a caller passed on purpose rather than dropping the argument', async () => {
+    await service.manualMove('obj-1', 'Exile', null, null);
+
+    // Whether the hub types these nullable is the hub's to say; swallowing an argument here is
+    // the bug this whole section exists for.
+    expect(sent[0].length).toBe(6);
+    expect(sent[0][4]).toBeNull();
+    expect(sent[0][5]).toBeNull();
+  });
+
+  it('sends the position and the tapped flag a move was given', async () => {
+    await service.manualMove('obj-1', 'Library', 0, false);
+
+    expect(sent[0].slice(2)).toEqual(['obj-1', 'Library', 0, false]);
+  });
+
+  it('sends ManualTap every argument the hub declares', async () => {
+    await service.manualTap('obj-1', true);
+
+    // name, gameId, objectId, tapped. `false` is a value here, not an omission — untapping is
+    // the same command with the other answer.
+    expect(sent[0][0]).toBe('ManualTap');
+    expect(sent[0].length).toBe(4);
+    expect(sent[0][3]).toBeTrue();
+  });
+
+  it('sends ManualCounters every argument the hub declares', async () => {
+    await service.manualCounters('obj-1', '+1/+1', -2);
+
+    // name, gameId, objectId, kind, delta.
+    expect(sent[0][0]).toBe('ManualCounters');
+    expect(sent[0].length).toBe(5);
+    expect(sent[0].slice(2)).toEqual(['obj-1', '+1/+1', -2]);
+  });
+
+  it('sends ManualLife every argument the hub declares', async () => {
+    await service.manualLife('bob', -3);
+
+    // name, gameId, targetPlayerId, delta — any seat's life, not only the caller's.
+    expect(sent[0][0]).toBe('ManualLife');
+    expect(sent[0].length).toBe(4);
+    expect(sent[0].slice(2)).toEqual(['bob', -3]);
+  });
 });

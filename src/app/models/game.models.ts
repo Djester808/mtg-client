@@ -131,6 +131,14 @@ export interface PermanentDto {
   attachments: string[];
   effectivePower: number | null;
   effectiveToughness: number | null;
+  /**
+   * Whether the engine plays this permanent's card for you (`ObjectView.Enforced`).
+   *
+   * False is the honour system: the deck gate admitted a card the engine does not implement,
+   * so the manual controls are the only way it can be played, and the board says which kind of
+   * object it is looking at rather than leaving the player to guess from behaviour.
+   */
+  enforced: boolean;
 }
 
 // ---- Stack DTOs -------------------------------------------
