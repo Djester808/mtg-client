@@ -18,8 +18,7 @@ const path = require('path');
 const GAME_ID = '11111111-2222-3333-4444-555555555555';
 const ALICE = 'aaaaaaaa-0000-0000-0000-000000000001';
 
-const base = () =>
-  JSON.parse(fs.readFileSync(path.join(__dirname, 'game-view.json'), 'utf8'));
+const base = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'game-view.json'), 'utf8'));
 
 /** The shape `PlayerViewProjector.ProjectAbilities` sends, with its defaults. */
 const ability = (over) => ({
