@@ -1,0 +1,125 @@
+<section class="cc-shell">
+  <header class="cc-head">
+    <h1 class="cc-title">Card coverage</h1>
+    <p class="cc-sub">
+      Where the corpus is on the road from oracle text to a table. Only verified cards are played by
+      the engine; everything short of that reaches a table on the honour system, and excluded cards
+      do not reach one at all.
+    </p>
+  </header>
+
+  <div class="loading-state" *ngIf="loading">Reading the ledger…</div>
+
+  <div class="empty-state" *ngIf="loadFailed">
+    <p>Coverage could not be read.</p>
+    <button class="cc-retry" (click)="load()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadFailed && view as v">
+    <div class="empty-state" *ngIf="v.empty">
+      <p>The ledger is empty. No card has been through the pipeline yet.</p>
+    </div>
+
+    <ng-container *ngIf="!v.empty">
+      <!-- 1. Counts by status, in pipeline order, with the total beside them. -->
+      <section class="cc-block">
+        <div class="cc-block-head">
+          <h2 class="cc-block-title">By status</h2>
+          <span class="cc-total"
+            ><strong class="cc-total-count">{{ v.total }}</strong> cards in the ledger</span
+          >
+        </div>
+
+        <div class="cc-figures">
+          <div
+            class="cc-figure"
+            *ngFor="let figure of v.figures; trackBy: trackFigure"
+            [class.is-link]="!!figure.link"
+          >
+            <a
+              class="cc-figure-body"
+              *ngIf="figure.link; else plainFigure"
+              [routerLink]="figure.link"
+              [title]="'Open the dispute queue'"
+            >
+              <span class="cc-figure-count">{{ figure.count }}</span>
+              <span class="cc-figure-label">{{ figure.status }}</span>
+            </a>
+            <ng-template #plainFigure>
+              <span class="cc-figure-body">
+                <span class="cc-figure-count">{{ figure.count }}</span>
+                <span class="cc-figure-label">{{ figure.status }}</span>
+              </span>
+            </ng-template>
+            <span class="cc-track" aria-hidden="true">
+              <span class="cc-bar" [style.width.%]="figure.share"></span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. The vocabulary backlog: what the next round should be about, read off the top. -->
+      <section class="cc-block">
+        <div class="cc-block-head">
+          <h2 class="cc-block-title">Primitive backlog</h2>
+          <span class="cc-block-sub">
+            What the translator could not say, most-blocking first. The next vocabulary round reads
+            off the top of this list.
+          </span>
+        </div>
+
+        <p class="cc-none" *ngIf="v.backlog.length === 0">
+          Nothing is blocked on a missing primitive.
+        </p>
+
+        <ol class="cc-backlog" *ngIf="v.backlog.length > 0">
+          <li class="cc-backlog-line" *ngFor="let line of v.backlog; trackBy: trackLine">
+            <span class="cc-reason">{{ line.reason }}</span>
+            <span class="cc-track cc-track-wide" aria-hidden="true">
+              <span class="cc-bar" [style.width.%]="line.share"></span>
+            </span>
+            <span class="cc-blocked">{{ line.cardsBlocked }}</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- 3. The last verification run. -->
+      <section class="cc-block">
+        <div class="cc-block-head">
+          <h2 class="cc-block-title">Last verification run</h2>
+        </div>
+
+        <p class="cc-none" *ngIf="!v.run">
+          No verification run has been recorded against this ledger.
+        </p>
+
+        <div class="cc-run" *ngIf="v.run as run">
+          <div class="cc-run-figure">
+            <span class="cc-run-count">{{ run.passed }}</span>
+            <span class="cc-run-label">verified</span>
+          </div>
+          <div class="cc-run-figure is-failed">
+            <span class="cc-run-count">{{ run.failed }}</span>
+            <span class="cc-run-label">failed</span>
+          </div>
+          <div class="cc-run-figure is-unknown">
+            <span class="cc-run-count">—</span>
+            <span class="cc-run-label">no scenarios</span>
+          </div>
+          <div class="cc-run-meta">
+            <span class="cc-run-at">{{ run.at | date: 'medium' }}</span>
+            <span class="cc-run-ids">
+              run <code>{{ run.runId }}</code> · engine <code>{{ run.engineHash }}</code>
+            </span>
+            <span class="cc-run-total">{{ run.total }} scenarios played</span>
+          </div>
+          <p class="cc-gap">
+            The endpoint carries no count of cards with no scenarios, so that figure is shown as
+            unanswered rather than as a zero — a zero would read as "every card has scenarios".
+            <code>VerificationDto</code> would need the field before this screen can say it.
+          </p>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+</section>

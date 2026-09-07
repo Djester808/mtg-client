@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, shareReplay } from 'rxjs';
+import { Observable, map, of, shareReplay } from 'rxjs';
 
 /**
  * Where a card is on the road from oracle text to a table.
@@ -64,6 +64,45 @@ export interface DisputedCard {
 }
 
 /**
+ * A primitive the translation stage could not express, and how many cards are waiting on it.
+ *
+ * This is the vocabulary backlog: each reason is one thing the card language cannot yet say, and
+ * `cardsBlocked` is what saying it would buy. Mirrors `PrimitiveBacklogDto`.
+ */
+export interface PrimitiveBacklog {
+  reason: string;
+  cardsBlocked: number;
+}
+
+/**
+ * The last time the runner played the corpus' scenarios. Mirrors `VerificationDto`.
+ *
+ * Note what is *not* here: a count of cards carrying no scenarios at all. The DTO has no field
+ * for it, so the dashboard says the number is not carried rather than showing a zero that would
+ * read as "every card has scenarios" — the opposite of the truth while the corpus is being
+ * translated. `failed` is not carried either, but is honestly derivable as `total - passed`.
+ */
+export interface Verification {
+  engineHash: string;
+  runId: string;
+  passed: number;
+  total: number;
+  /** ISO-8601, as `DateTimeOffset` serialises. */
+  at: string;
+}
+
+/** `GET /api/cards/coverage` — the whole ledger in one call. Mirrors `CardCoverageDto`. */
+export interface CardCoverage {
+  total: number;
+  /** Keyed by `ImplementationStatus` name. A status with no cards may be absent, not zero. */
+  byStatus: Partial<Record<ImplementationStatus, number>>;
+  primitiveBacklog: PrimitiveBacklog[];
+  lastVerification?: Verification | null;
+  /** Populated only when the call named `?status=Disputed`. */
+  disputed?: DisputedCard[] | null;
+}
+
+/**
  * The admission rule, in one place.
  *
  * `Verified` is the only status the engine enforces: a reading that has passed its scenarios
@@ -91,7 +130,7 @@ export function admissionFor(status: ImplementationStatus): Admission {
  */
 export type CardImplementationApi = Pick<
   CardImplementationApiService,
-  'getImplementation' | 'listDisputed' | 'chooseReading'
+  'getImplementation' | 'getCoverage' | 'listDisputed' | 'chooseReading'
 >;
 
 /** Every call about a card's admission. The one seam between this client and the card pipeline. */
@@ -120,11 +159,28 @@ export class CardImplementationApiService {
     return call;
   }
 
-  /** The dispute queue: cards whose two readings disagree, with both readings. */
+  /**
+   * The whole ledger: counts by status, the primitive backlog, and the last verification run.
+   *
+   * Uncached on purpose — the dashboard exists to say what the pipeline has done *since* the
+   * page was last looked at, and a cached count would make a re-run look like nothing happened.
+   */
+  getCoverage(): Observable<CardCoverage> {
+    return this.http.get<CardCoverage>(`${this.base}/coverage`);
+  }
+
+  /**
+   * The dispute queue: cards whose two readings disagree, with both readings.
+   *
+   * `?status=Disputed` narrows the same coverage document rather than returning a bare list —
+   * `CardsImplementationController.Coverage` returns `CardCoverageDto` for every call — so the
+   * rows come out of its `disputed` field. Absent means the server named no disputes, which is
+   * an empty queue and not an error.
+   */
   listDisputed(): Observable<DisputedCard[]> {
-    return this.http.get<DisputedCard[]>(`${this.base}/coverage`, {
-      params: { status: 'Disputed' },
-    });
+    return this.http
+      .get<CardCoverage>(`${this.base}/coverage`, { params: { status: 'Disputed' } })
+      .pipe(map((coverage) => coverage.disputed ?? []));
   }
 
   /**
@@ -155,6 +211,8 @@ export class CardImplementationApiService {
 export class CardImplementationApiStub implements CardImplementationApi {
   readonly implementations = new Map<string, CardImplementation>();
   disputed: DisputedCard[] = [];
+  /** What `getCoverage()` answers with. An empty ledger by default, which is a real state. */
+  coverage: CardCoverage = { total: 0, byStatus: {}, primitiveBacklog: [], lastVerification: null };
   readonly chosen: { oracleId: string; model: string }[] = [];
   /** Set to make `chooseReading` fail, for the "it stays in the list" case. */
   chooseFails = false;
@@ -162,6 +220,10 @@ export class CardImplementationApiStub implements CardImplementationApi {
   getImplementation(oracleId: string): Observable<CardImplementation> {
     const known = this.implementations.get(oracleId);
     return of(known ?? { oracleId, status: 'Untranslated' as const });
+  }
+
+  getCoverage(): Observable<CardCoverage> {
+    return of(this.coverage);
   }
 
   listDisputed(): Observable<DisputedCard[]> {

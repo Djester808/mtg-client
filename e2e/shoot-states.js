@@ -384,6 +384,39 @@ const STATES = [
       await sleep(700);
     },
   },
+  // ---- The coverage dashboard ----------------------------------------------------------
+  //
+  // Counts by status, the vocabulary backlog ranked by cards blocked, and the last verification
+  // run. Desktop beside the queue above and exempted the same way (tools/check-ui-states.js);
+  // registered here so the harness knows the screen exists at all.
+  {
+    id: 'card-coverage',
+    label: 'Card coverage — where the corpus is',
+    root: '.cc-shell',
+    extra: `return {
+      // The row has to be complete: five labels, five counts. Four means a status the server
+      // stopped naming quietly dropped out of the row rather than reading zero.
+      statuses: [...document.querySelectorAll('.cc-figure-label')].map((n) => n.textContent.trim()),
+      counts: [...document.querySelectorAll('.cc-figure-count')].map((n) => n.textContent.trim()),
+      // The ranking is the screen's claim, so capture it in order: the next vocabulary round is
+      // chosen off the top of this list, and a screenshot of a bar chart would not show a
+      // mis-sort.
+      backlog: [...document.querySelectorAll('.cc-backlog-line')].map((li) => ({
+        reason: li.querySelector('.cc-reason').textContent.trim(),
+        blocked: li.querySelector('.cc-blocked').textContent.trim(),
+      })),
+      run: [...document.querySelectorAll('.cc-run-figure .cc-run-count')].map((n) =>
+        n.textContent.trim(),
+      ),
+      empty: !!document.querySelector('.empty-state'),
+    };`,
+    async drive(d) {
+      await trySignIn(d);
+      await d.get(baseUrl + '/tools/card-coverage');
+      await d.wait(until.elementLocated(By.css('.cc-shell')), 20000);
+      await sleep(700);
+    },
+  },
   {
     id: 'nav-drawer',
     label: 'Navigation drawer',

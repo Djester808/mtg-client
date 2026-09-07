@@ -111,6 +111,13 @@ const DESKTOP_ONLY = [
       'a phone number for it is not a verdict',
   },
   {
+    prefix: 'src/app/tools/card-coverage/',
+    reason:
+      "a maintainer's dashboard for the card pipeline, read beside the corpus and the run logs " +
+      '(CARD_ENGINE_PLAN.md, 2026-09-06) — captured with shoot-states.js --devices=desktop; ' +
+      'a phone number for it is not a verdict',
+  },
+  {
     prefix: 'src/app/board/',
     reason:
       'the game is a desktop surface (CARD_ENGINE_PLAN.md, 2026-09-06) — captured with ' +

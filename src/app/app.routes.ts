@@ -47,6 +47,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./tools/card-disputes/card-disputes.component').then((m) => m.CardDisputesComponent),
   },
+  // How far along the card programme is: counts by status, the vocabulary backlog ranked by the
+  // cards each missing primitive blocks, and the last verification run. A maintainer's dashboard,
+  // desktop like the queue beside it (CARD_ENGINE_PLAN.md, 2026-09-06).
+  {
+    path: 'tools/card-coverage',
+    loadComponent: () =>
+      import('./tools/card-coverage/card-coverage.component').then((m) => m.CardCoverageComponent),
+  },
   {
     path: 'collection',
     loadComponent: () =>
