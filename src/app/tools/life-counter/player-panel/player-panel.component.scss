@@ -74,7 +74,7 @@
 .tap-hint {
   position: absolute;
   bottom: 6px;
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale, 1));
   line-height: 1;
   color: var(--text-dim);
   opacity: 0.5;
@@ -135,8 +135,8 @@
 }
 
 .seat-account {
-  font-size: 9px;
-  color: var(--gold);
+  font-size: calc(9px * var(--text-scale, 1));
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -222,7 +222,7 @@
 
 .chip {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 2px 5px;
@@ -246,7 +246,7 @@
 
 .chip-cmd {
   border-color: var(--gold-dim);
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 // ---- Out of the game --------------------------------------------------------------------------
@@ -278,7 +278,7 @@
 
 .out-word {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -286,7 +286,7 @@
 }
 
 .out-why {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   color: var(--text-dim);
   text-align: center;
 }
@@ -306,7 +306,7 @@
   border: none;
   background: transparent;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   letter-spacing: 0.1em;
   cursor: pointer;
   border-radius: 10px;

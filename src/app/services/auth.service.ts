@@ -20,11 +20,29 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  register(username: string, email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/register`, { username, email, password });
+  register(
+    username: string,
+    email: string,
+    password: string,
+    acceptedTerms = false,
+  ): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/register`, {
+      username,
+      email,
+      password,
+      acceptedTerms,
+    });
   }
 
-  login(username: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login`, { username, password });
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.base}/logout`, {}, { withCredentials: true });
+  }
+
+  login(username: string, password: string, rememberMe?: boolean): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/login`, {
+      username,
+      password,
+      ...(rememberMe === undefined ? {} : { rememberMe }),
+    });
   }
 }

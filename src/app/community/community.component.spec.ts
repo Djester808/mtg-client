@@ -21,7 +21,7 @@ describe('CommunityComponent', () => {
     }),
   );
 
-  it('offers all three community destinations', () => {
+  it('offers all four community destinations', () => {
     const fixture = TestBed.createComponent(CommunityComponent);
     fixture.detectChanges();
 
@@ -30,10 +30,11 @@ describe('CommunityComponent', () => {
     );
     const text = tabs.map((t) => (t.textContent ?? '').replace(/\s+/g, ' ').trim());
 
-    expect(tabs.length).toBe(3);
+    expect(tabs.length).toBe(4);
     expect(text[0]).toContain('Decks');
     expect(text[1]).toContain('Commanders');
-    expect(text[2]).toContain('Players');
+    expect(text[2]).toContain('Explore');
+    expect(text[3]).toContain('Players');
   });
 
   it('hands the strip to appScrollEdges rather than watching it itself', () => {

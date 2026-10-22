@@ -11,17 +11,26 @@ export interface CollectionDto {
 }
 
 export interface CollectionCardDto {
+  language?: string;
+  condition?: string | null;
+  tags?: string[];
   id: string;
   oracleId: string;
   scryfallId: string | null;
   quantity: number;
   quantityFoil: number;
+  quantityEtched?: number;
   notes: string | null;
   board?: string;
   addedAt: string;
   /** Market price when this entry was created; null for entries predating price tracking. */
   priceUsdAtAdd?: number | null;
   priceUsdFoilAtAdd?: number | null;
+  priceUsdEtchedAtAdd?: number | null;
+  finishData?: Record<
+    string,
+    { condition: string | null; tags: string[]; addedAt: string | null; priceAtAdd: number | null }
+  >;
   cardDetails: CardDto | null;
 }
 
@@ -30,6 +39,7 @@ export interface MoveCardRequest {
   targetCollectionId: string;
   quantity?: number | null;
   quantityFoil?: number | null;
+  quantityEtched?: number | null;
 }
 
 export interface MoveCardResultDto {
@@ -98,8 +108,10 @@ export interface CardHistoryEntryDto {
   setCode: string | null;
   quantityDelta: number;
   quantityFoilDelta: number;
+  quantityEtchedDelta?: number;
   quantityAfter: number;
   quantityFoilAfter: number;
+  quantityEtchedAfter?: number;
   counterpartCollectionId: string | null;
   /** The other collection in a transfer; null for everything else. */
   counterpartCollectionName: string | null;
@@ -116,7 +128,18 @@ export interface PricePointDto {
   tix: number | null;
 }
 
+export interface CollectionPageData {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalRows: number;
+  valuation: { value: number; priced: number; copies: number };
+  insights: import('../services/collection-insights.service').CollectionInsight[];
+  setOptions: { value: string; label: string }[];
+  queryError: string | null;
+}
 export interface CollectionDetailDto {
+  pageData?: CollectionPageData;
   id: string;
   name: string;
   description: string | null;
@@ -138,15 +161,19 @@ export interface UpdateCollectionRequest {
 }
 
 export interface AddCardToCollectionRequest {
+  language?: string;
   oracleId: string;
   scryfallId?: string | null;
   quantity?: number;
   quantityFoil?: number;
+  quantityEtched?: number;
   notes?: string | null;
   board?: string;
 }
 
 export interface UpdateCollectionCardRequest {
+  quantityEtched?: number;
+  updateNotes?: boolean;
   quantity: number;
   quantityFoil: number;
   scryfallId?: string | null;

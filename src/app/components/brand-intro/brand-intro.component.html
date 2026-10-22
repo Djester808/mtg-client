@@ -1,0 +1,21 @@
+<section class="brand-intro" [class.is-exiting]="exiting()" aria-label="Welcome to Compleat">
+  <div class="intro-art">
+    <img src="assets/brand/logo.png" alt="Compleat" class="intro-poster" />
+    <video
+      *ngIf="!reducedMotion && !failed()"
+      #video
+      class="intro-video"
+      src="assets/brand/intro.mp4"
+      poster="assets/brand/logo.png"
+      autoplay
+      muted
+      playsinline
+      [muted]="true"
+      (ended)="loop(video)"
+      (error)="videoFailed()"
+      aria-hidden="true"
+    ></video>
+  </div>
+  <p class="intro-status" role="status">Opening Compleat…</p>
+  <button type="button" class="intro-skip" (click)="finish()">Skip intro</button>
+</section>

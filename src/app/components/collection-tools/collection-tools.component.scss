@@ -1,0 +1,60 @@
+@use '../../../styles/preferences' as *;
+@use '../../../styles/breakpoints' as *;
+:host {
+  display: block;
+}
+.collection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-dim);
+  background: var(--bg-surface);
+}
+.collection-value,
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.value-label {
+  color: var(--text-secondary);
+  font: 700 10px var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 400;
+}
+button {
+  @include preferences-action;
+}
+p {
+  flex-basis: 100%;
+  color: var(--text-secondary);
+  margin: 0;
+}
+[role='alert'] {
+  color: #ff8a5b;
+}
+@include upto($bp-phone) {
+  .collection-tools {
+    padding: 12px 16px;
+  }
+  .export-actions {
+    width: 100%;
+    button {
+      flex: 1;
+    }
+  }
+}

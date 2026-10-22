@@ -77,7 +77,7 @@
   border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   line-height: 1;
   padding: 10px 13px;
   transition:
@@ -86,13 +86,13 @@
 
   &:hover,
   &.is-open {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold-dim);
   }
 
   // A filter left on inside a closed menu is otherwise invisible.
   &.has-filters {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold);
   }
 }
@@ -259,14 +259,14 @@
   }
 
   .filter-input {
-    font-size: 15px;
+    font-size: calc(15px * var(--text-scale, 1));
     padding: 11px 16px 11px 38px;
     // Ellipsis rather than a hard cut once the box is narrower than its placeholder.
     text-overflow: ellipsis;
   }
 
   .filter-icon {
-    font-size: 18px;
+    font-size: calc(18px * var(--text-scale, 1));
   }
 }
 
@@ -312,31 +312,9 @@
 //
 // `display: contents` hands the menu's children straight to the bar's grid, so they are
 // laid out here without being rendered twice.
-// 1180px. The two side columns are equal, so the binding constraint is the *wider*
-// cluster fitting in one of them:
-//
-//     width >= 2 x widest-cluster + box + gaps
-//
-// A fixed 460px box put the floor at 1328, so wide mode needed ~1400px of window and a
-// full-screen laptop got the menu instead. The box is the only soft term — a cluster is
-// as wide as its controls — so it gives up width first (see .cgf-center below).
-//
-// ⚠️ KNOWN: the collection fits here; the deck does not. Measured by rendering the bar in
-// a Karma spec and reading getBoundingClientRect/scrollWidth at 1180–1500, the deck's left
-// cluster needs ~485px, not the 420px this derivation originally assumed, and it overflows
-// its column by ~59px from 1180 up to ~1420. That is NOT new to the 1180 breakpoint: at
-// the old 1340 the box was 460, giving columns of (1340-460-28)/2 = 426 against the same
-// 485, so the deck bar has overlapped between ~1340 and ~1420 all along — it just went
-// unnoticed above ~1420, where the columns are finally wide enough.
-//
-// The cause is that the deck is lopsided: four groups left (Group By, Layout, Set,
-// Filters) against two right (Display, Zoom), and a symmetric grid sizes both columns to
-// the wider side. Deferred deliberately, to be fixed while working in that area. The
-// options measured out as: size the side columns to content (`1fr`, drop `min-width: 0`)
-// so nothing overlaps but the box drifts off-centre; raise the threshold to ~1300, which
-// costs wide mode on a 1366px laptop; or add an input so Set and Filters render in the
-// right cluster on the deck, balancing both sides near ~340px. Re-measure, don't estimate.
-@container (min-width: 1180px) {
+// The deck projects the widest controls. Keep the compact menu until both side
+// clusters and the name input fit without overlapping.
+@container (min-width: 1440px) {
   .cgf-row {
     // `minmax(auto, ...)`, not `minmax(0, ...)`: a zero minimum lets a column be squeezed
     // below its contents, and the contents then spill over the name box rather than the
@@ -504,5 +482,105 @@
   // fill a given ng-content once.
   .cgf-zoom {
     order: -1;
+  }
+}
+
+.cgf-clusters {
+  max-height: var(--cgf-menu-room, 60dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  &.opens-up {
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform-origin: bottom left;
+  }
+}
+@container (min-width: 1440px) {
+  .cgf-clusters {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+// A scrolling menu keeps each section's natural height so its last controls stay reachable.
+.cgf-clusters > * {
+  flex-shrink: 0;
+}
+
+@container (max-width: 1439px) {
+  // A real final flex item preserves scroll room after the last disclosure control.
+  .cgf-clusters::after {
+    content: '';
+    flex: 0 0 16px;
+    width: 1px;
+  }
+}
+
+// A canvas toolbar has no search box: use its full width rather than reserving a
+// centred grid column, including below the ordinary searchable-bar breakpoint.
+:host(.without-query) {
+  .cgf-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .cgf-menu-btn {
+    display: none;
+  }
+  .cgf-clusters {
+    display: contents;
+    opacity: 1;
+    transform: none;
+    translate: none;
+  }
+  .cgf-controls-line {
+    display: contents;
+  }
+  .cgf-clusters .cgf-left {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 12px 16px;
+  }
+  .cgf-clusters .cgf-right {
+    flex: 0 0 auto;
+    align-self: flex-end;
+  }
+}
+
+.owned-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: calc(11px * var(--text-scale, 1));
+    min-width: 0;
+    flex: 1 1 120px;
+  }
+  input,
+  select {
+    min-height: 44px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    padding: 8px;
+  }
+  .owned-check {
+    flex-direction: row;
+    align-items: center;
+    input {
+      width: auto;
+    }
   }
 }

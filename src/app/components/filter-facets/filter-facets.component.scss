@@ -127,7 +127,7 @@ app-filter-chips {
   @include filter-active-dot;
 }
 
-@include upto($bp-phone) {
+@include upto($bp-nav) {
   .fx-toggle {
     display: flex;
     flex: 1 1 100%;

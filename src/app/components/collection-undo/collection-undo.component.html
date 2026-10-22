@@ -1,0 +1,25 @@
+<ng-container *ngIf="collectionId; else global"
+  ><button
+    class="undo-add"
+    *ngIf="undo.lastAdd(collectionId!) as added"
+    (click)="undo.undo(added)"
+    [disabled]="undo.busy()"
+  >
+    Undo last added card
+  </button></ng-container
+>
+<ng-template #global>
+  <ng-container *ngIf="undo.offer() as change"
+    ><div class="collection-undo-banner" role="status" *ngIf="change.owner === username()">
+      <span
+        >Collection
+        {{ change.kind === 'move' ? 'move' : change.kind === 'remove' ? 'removal' : 'update' }}
+        completed.</span
+      ><button (click)="undo.undo(change)" [disabled]="undo.busy()">Undo</button>
+    </div></ng-container
+  >
+  <div class="collection-undo-error" role="alert" *ngIf="undo.error()">
+    {{ undo.error() }}
+    <button (click)="undo.error.set('')" aria-label="Dismiss undo message">Close</button>
+  </div>
+</ng-template>

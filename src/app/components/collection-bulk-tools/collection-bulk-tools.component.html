@@ -1,0 +1,67 @@
+<div class="bulk-tools-backdrop" *ngIf="open">
+  <section
+    class="bulk-tools"
+    appDialogFocus
+    role="dialog"
+    aria-modal="true"
+    aria-label="Edit selected cards"
+  >
+    <header>
+      <h2>Edit selected cards</h2>
+      <button
+        type="button"
+        (click)="closed.emit()"
+        [disabled]="busy()"
+        aria-label="Close bulk editor"
+      >
+        ✕
+      </button>
+    </header>
+    <p>
+      {{ selectedIds.size }} card rows selected. Undo is available for five seconds after a change.
+    </p>
+    <p role="alert" *ngIf="error()">{{ error() }}</p>
+    <p role="status" *ngIf="notice()">{{ notice() }}</p>
+    <form #bulk="ngForm" (ngSubmit)="apply()">
+      <label
+        >Action<select name="action" [(ngModel)]="action">
+          <option value="tag">Add tag</option>
+          <option value="untag">Remove tag</option>
+          <option value="condition">Set condition</option>
+          <option value="remove">Remove cards</option>
+        </select></label
+      >
+      <label *ngIf="action === 'tag' || action === 'untag'"
+        >Tag<input name="tag" [(ngModel)]="tag" required maxlength="64"
+      /></label>
+      <label *ngIf="action === 'condition'"
+        >Condition<select name="condition" [(ngModel)]="condition">
+          <option value="">Not specified</option>
+          <option value="NM">Near mint</option>
+          <option value="LP">Lightly played</option>
+          <option value="MP">Moderately played</option>
+          <option value="HP">Heavily played</option>
+          <option value="DMG">Damaged</option>
+        </select></label
+      >
+      <p *ngIf="action === 'remove'">
+        All regular and foil copies in the selected rows will be removed.
+      </p>
+      <button [disabled]="busy() || bulk.invalid || !selectedIds.size || selectedIds.size > 500">
+        {{ action === 'remove' ? 'Remove selected cards' : 'Apply to selected cards' }}
+      </button>
+    </form>
+    <button
+      type="button"
+      class="bulk-undo"
+      *ngIf="undoToken()"
+      (click)="undo()"
+      [disabled]="busy()"
+    >
+      Undo bulk edit
+    </button>
+  </section>
+</div>
+<div class="bulk-undo-notice" *ngIf="!open && undoToken()" role="status">
+  {{ notice() }} <button type="button" (click)="undo()" [disabled]="busy()">Undo</button>
+</div>

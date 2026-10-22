@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
+import { selectIsLoggedIn } from '../../store/auth/auth.selectors';
 import { NavbarComponent } from './navbar.component';
 import { BreakpointsService } from '../../shared/breakpoints.service';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
@@ -32,6 +33,20 @@ describe('NavbarComponent', () => {
         { provide: BreakpointsService, useValue: bp },
       ],
     });
+  });
+
+  it('shows the original Compleat sigil and wordmark', () => {
+    const fixture = TestBed.createComponent(NavbarComponent);
+    fixture.detectChanges();
+    const brand = fixture.nativeElement.querySelector('.compleat-brand');
+    expect(brand.getAttribute('aria-label')).toBe('Compleat');
+    expect(brand.querySelector('.compleat-sigil').getAttribute('src')).toBe(
+      'assets/brand/sigil.png',
+    );
+    expect(brand.querySelector('.compleat-wordmark').getAttribute('src')).toBe(
+      'assets/brand/wordmark.png',
+    );
+    fixture.destroy();
   });
 
   it('closes the drawer when the viewport grows past the navbar breakpoint', () => {
@@ -129,11 +144,16 @@ describe('NavbarComponent avatar', () => {
       imports: [NavbarComponent, HttpClientTestingModule],
       providers: [
         provideRouter([]),
-        provideMockStore({ initialState: { auth: { username: 'Nissa', token: 'jwt' } } }),
+        provideMockStore({
+          initialState: { auth: { username: 'Nissa', token: 'jwt' } },
+          selectors: [{ selector: selectIsLoggedIn, value: true }],
+        }),
         { provide: BreakpointsService, useValue: bp },
       ],
     });
   });
+
+  afterEach(() => TestBed.inject(MockStore).resetSelectors());
 
   it('loads the profile once and shows the picture in the bar', () => {
     const http = TestBed.inject(HttpTestingController);

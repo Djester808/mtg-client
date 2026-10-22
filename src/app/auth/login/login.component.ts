@@ -18,6 +18,7 @@ export class LoginComponent {
   form = this.fb.nonNullable.group({
     username: ['', Validators.required],
     password: ['', Validators.required],
+    rememberMe: [true],
   });
 
   loading$ = this.store.select(selectAuthLoading);
@@ -30,7 +31,7 @@ export class LoginComponent {
 
   submit(): void {
     if (this.form.invalid) return;
-    const { username, password } = this.form.getRawValue();
-    this.store.dispatch(AuthActions.login({ username, password }));
+    const { username, password, rememberMe } = this.form.getRawValue();
+    this.store.dispatch(AuthActions.login({ username, password, rememberMe }));
   }
 }

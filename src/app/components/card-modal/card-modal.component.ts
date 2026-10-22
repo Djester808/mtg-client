@@ -1,3 +1,7 @@
+import { CardCommunityComponent } from '../card-community/card-community.component';
+import { inject } from '@angular/core';
+import { CollectionOwnershipService } from '../../services/collection-ownership.service';
+import { OwnedCardBadgeComponent } from '../owned-card-badge/owned-card-badge.component';
 import {
   Component,
   ElementRef,
@@ -45,6 +49,8 @@ export interface PriceDelta {
   selector: 'app-card-modal',
   standalone: true,
   imports: [
+    CardCommunityComponent,
+    OwnedCardBadgeComponent,
     CommonModule,
     ManaCostComponent,
     OracleSymbolsPipe,
@@ -60,6 +66,12 @@ export interface PriceDelta {
   hostDirectives: [ToBodyDirective],
 })
 export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
+  readonly ownership = inject(CollectionOwnershipService);
+  ownsPrinting(id: string): boolean {
+    const count = this.ownership.count(this.card?.oracleId ?? '', id);
+    return !!count && count.normal + count.foil > 0;
+  }
+  @Input() commanderOracleId: string | null = null;
   @Input() card: CardDto | null = null;
   @Input() printings: PrintingDto[] = [];
 
@@ -284,9 +296,22 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
 
   // ---- Price movement since the card was added -------------------------
 
+  priceFinish: 'nonfoil' | 'foil' | 'etched' = 'nonfoil';
+  get priceAtAdd(): number | null {
+    const entry = this.ownedEntry;
+    const details = entry?.finishData?.[this.priceFinish];
+    return details
+      ? details.priceAtAdd
+      : this.priceFinish === 'foil'
+        ? (entry?.priceUsdFoilAtAdd ?? null)
+        : this.priceFinish === 'etched'
+          ? (entry?.priceUsdEtchedAtAdd ?? null)
+          : (entry?.priceUsdAtAdd ?? null);
+  }
   private deltaMemo: {
     entry: CollectionCardDto | null;
     prices: CardPricesDto | null;
+    finish: string;
     value: PriceDelta | null;
   } | null = null;
 
@@ -299,11 +324,17 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
     const entry = this.ownedEntry;
     const prices = this.currentPrices;
     const m = this.deltaMemo;
-    if (m && m.entry === entry && m.prices === prices) return m.value;
+    if (m && m.entry === entry && m.prices === prices && m.finish === this.priceFinish)
+      return m.value;
 
     let value: PriceDelta | null = null;
-    const then = entry?.priceUsdAtAdd ?? null;
-    const now = prices?.usd ?? null;
+    const then = this.priceAtAdd;
+    const now =
+      (this.priceFinish === 'foil'
+        ? prices?.usdFoil
+        : this.priceFinish === 'etched'
+          ? prices?.usdEtched
+          : prices?.usd) ?? null;
     if (then != null && now != null) {
       const diff = now - then;
       value = {
@@ -315,7 +346,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
         direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat',
       };
     }
-    this.deltaMemo = { entry, prices, value };
+    this.deltaMemo = { entry, prices, finish: this.priceFinish, value };
     return value;
   }
 
@@ -330,7 +361,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
    * ends up showing the event even if the write was slow.
    */
   get historyReloadKey(): string {
-    return `${this.countBadge ?? 0}:${this.foilCountBadge ?? 0}:${this.ownedEntry?.scryfallId ?? ''}`;
+    return `${this.countBadge ?? 0}:${this.foilCountBadge ?? 0}:${this.ownedEntry?.quantityEtched ?? 0}:${this.ownedEntry?.scryfallId ?? ''}`;
   }
 
   get hasBack(): boolean {

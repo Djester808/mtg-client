@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.copy-language {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--text-secondary);
+  font-size: calc(12px * var(--text-scale, 1));
+  select {
+    flex: 1 1 140px;
+    min-height: 44px;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 8px;
+  }
+}
+.copy-language-counts {
+  display: block;
+  color: var(--text-secondary);
+  font-size: calc(11px * var(--text-scale, 1));
+  margin-top: 6px;
+}

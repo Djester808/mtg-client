@@ -6,6 +6,8 @@ import {
   HostListener,
   Input,
   Output,
+  SimpleChanges,
+  OnChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,7 +31,16 @@ import { ToBodyDirective } from '../../shared/to-body.directive';
   changeDetection: ChangeDetectionStrategy.OnPush,
   hostDirectives: [ToBodyDirective],
 })
-export class CollectionPickerDialogComponent {
+export class CollectionPickerDialogComponent implements OnChanges {
+  @Input() quantities: { quantity: number; quantityFoil: number; quantityEtched?: number } | null =
+    null;
+  @Input() allowCreate = false;
+  @Input() error = '';
+  @Input() busy = false;
+  newName = '';
+  normal = 0;
+  foil = 0;
+  etched = 0;
   @Input() heading = 'Choose Collection';
   /** Sentence above the list explaining what will happen. */
   @Input() lead = '';
@@ -39,7 +50,14 @@ export class CollectionPickerDialogComponent {
   @Input() checkboxLabel: string | null = null;
   @Input() emptyText = 'You need another collection first.';
 
-  @Output() confirmed = new EventEmitter<{ targetId: string; checked: boolean }>();
+  @Output() confirmed = new EventEmitter<{
+    targetId: string;
+    checked: boolean;
+    newName?: string;
+    quantity?: number;
+    quantityFoil?: number;
+    quantityEtched?: number;
+  }>();
   @Output() closed = new EventEmitter<void>();
 
   selectedId: string | null = null;
@@ -52,6 +70,13 @@ export class CollectionPickerDialogComponent {
   private static readonly SEARCH_THRESHOLD = 6;
 
   constructor(private cdr: ChangeDetectorRef) {}
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['quantities'] && this.quantities) {
+      this.normal = this.quantities.quantity;
+      this.foil = this.quantities.quantityFoil;
+      this.etched = this.quantities.quantityEtched ?? 0;
+    }
+  }
 
   get showSearch(): boolean {
     return this.targets.length > CollectionPickerDialogComponent.SEARCH_THRESHOLD;
@@ -97,8 +122,34 @@ export class CollectionPickerDialogComponent {
   }
 
   confirm(): void {
-    if (!this.selectedId) return;
-    this.confirmed.emit({ targetId: this.selectedId, checked: this.checked });
+    if (!this.selectedId || this.busy) return;
+    if (
+      this.selectedId === '__new__' &&
+      (!this.allowCreate || !this.newName.trim() || this.newName.trim().length > 100)
+    )
+      return;
+    if (
+      this.quantities &&
+      (!Number.isInteger(this.normal) ||
+        !Number.isInteger(this.foil) ||
+        !Number.isInteger(this.etched) ||
+        this.etched < 0 ||
+        this.etched > (this.quantities.quantityEtched ?? 0) ||
+        this.normal < 0 ||
+        this.foil < 0 ||
+        this.normal > this.quantities.quantity ||
+        this.foil > this.quantities.quantityFoil ||
+        this.normal + this.foil + this.etched === 0)
+    )
+      return;
+    this.confirmed.emit({
+      targetId: this.selectedId,
+      checked: this.checked,
+      ...(this.selectedId === '__new__' ? { newName: this.newName.trim() } : {}),
+      ...(this.quantities
+        ? { quantity: this.normal, quantityFoil: this.foil, quantityEtched: this.etched }
+        : {}),
+    });
   }
 
   trackById = (_: number, col: CollectionDto): string => col.id;

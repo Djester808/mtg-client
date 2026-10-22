@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, ElementRef, NgZone } from '@angular/core';
-import { CardGridFiltersComponent } from './card-grid-filters.component';
+import { CardGridFiltersComponent, gridMenuPlacement } from './card-grid-filters.component';
 import { CardFilters } from '../../models/card-filters';
 import { BreakpointsService } from '../../shared/breakpoints.service';
 
@@ -205,5 +205,35 @@ describe('CardGridFiltersComponent', () => {
     expect(c.filters.hasAny).toBeFalse();
     expect(c.filters.query).toBe('');
     expect(c.filters.rarities.size).toBe(0);
+  });
+});
+
+describe('Grid controls viewport placement', () => {
+  it('uses the space below when there is room for controls', () => {
+    expect(gridMenuPlacement({ top: 100, bottom: 160 }, 800)).toEqual({ up: false, height: 624 });
+  });
+  it('opens upward when controls would otherwise run below the screen', () => {
+    expect(gridMenuPlacement({ top: 550, bottom: 610 }, 667)).toEqual({ up: true, height: 482 });
+  });
+  it('opens, marks the OnPush view, and closes through the same control', () => {
+    const { c, marks, el } = make();
+    const event = new MouseEvent('click');
+    spyOn(event, 'stopPropagation');
+    c.toggleMenu(event);
+    expect(c.menuOpen).toBeTrue();
+    expect(el.style.getPropertyValue('--cgf-menu-room')).toMatch(/px$/);
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(marks.count).toBe(1);
+    c.toggleMenu(event);
+    expect(c.menuOpen).toBeFalse();
+  });
+});
+
+describe('Grid menu clipping boundary', () => {
+  it('keeps the menu below the bar when the page header occupies the space above', () => {
+    expect(gridMenuPlacement({ top: 470, bottom: 530 }, 667, 354)).toEqual({
+      up: false,
+      height: 121,
+    });
   });
 });

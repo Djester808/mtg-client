@@ -7,15 +7,9 @@
 
   <div class="lobby-card">
     <div class="text-center mb-9">
-      <div class="block text-[28px] text-gold leading-none mb-2.5 animate-pulse-gold">✦</div>
-      <h1
-        class="font-display text-[32px] font-bold tracking-[0.15em] text-parchment uppercase m-0 mb-1.5"
-      >
-        MTG Engine
+      <h1 class="m-0">
+        <img class="lobby-logo" src="assets/brand/sigil.png" alt="Compleat" />
       </h1>
-      <p class="font-display text-[12px] tracking-[0.2em] text-parchment-faint uppercase m-0">
-        Pragmatic Edition
-      </p>
     </div>
 
     <form
@@ -27,7 +21,7 @@
       <div class="flex items-end gap-4">
         <div class="flex-1 relative">
           <label
-            class="block font-display text-[9px] tracking-[0.2em] uppercase text-parchment-faint mb-2"
+            class="block font-display text-[length:calc(9px*var(--text-scale,1))] tracking-[0.2em] uppercase text-parchment-faint mb-2"
             >Player 1</label
           >
           <input
@@ -40,13 +34,15 @@
           <div class="field-accent left"></div>
         </div>
 
-        <div class="font-display text-[11px] tracking-[0.2em] text-parchment-faint pb-2.5 shrink-0">
+        <div
+          class="font-display text-[length:calc(11px*var(--text-scale,1))] tracking-[0.2em] text-parchment-faint pb-2.5 shrink-0"
+        >
           VS
         </div>
 
         <div class="flex-1 relative">
           <label
-            class="block font-display text-[9px] tracking-[0.2em] uppercase text-parchment-faint mb-2"
+            class="block font-display text-[length:calc(9px*var(--text-scale,1))] tracking-[0.2em] uppercase text-parchment-faint mb-2"
             >Player 2</label
           >
           <input
@@ -62,7 +58,7 @@
 
       <div>
         <label
-          class="block font-display text-[9px] tracking-[0.2em] uppercase text-parchment-faint mb-2"
+          class="block font-display text-[length:calc(9px*var(--text-scale,1))] tracking-[0.2em] uppercase text-parchment-faint mb-2"
           >Starting Deck Preset</label
         >
         <div class="grid grid-cols-2 gap-2 mt-2">
@@ -82,15 +78,16 @@
                 c
               }}</span>
             </div>
-            <span class="font-display text-[10px] tracking-[0.05em] text-parchment-muted">{{
-              preset.label
-            }}</span>
+            <span
+              class="font-display text-[length:calc(10px*var(--text-scale,1))] tracking-[0.05em] text-parchment-muted"
+              >{{ preset.label }}</span
+            >
           </label>
         </div>
       </div>
 
       <div
-        class="error-msg bg-[rgba(192,57,43,0.1)] border border-solid border-[rgba(192,57,43,0.3)] rounded-lg py-2.5 px-3.5 text-[12px] text-[#e07060] italic"
+        class="error-msg bg-[rgba(192,57,43,0.1)] border border-solid border-[rgba(192,57,43,0.3)] rounded-lg py-2.5 px-3.5 text-[length:calc(12px*var(--text-scale,1))] text-[#e07060] italic"
         *ngIf="error$ | async as err"
       >
         {{ err }}
@@ -105,7 +102,7 @@
     </form>
 
     <div
-      class="text-center mt-7 text-[10px] tracking-[0.12em] text-parchment-faint font-display uppercase"
+      class="text-center mt-7 text-[length:calc(10px*var(--text-scale,1))] tracking-[0.12em] text-parchment-faint font-display uppercase"
     >
       Phase 1 engine · Angular 17 · .NET 8 · SignalR
     </div>

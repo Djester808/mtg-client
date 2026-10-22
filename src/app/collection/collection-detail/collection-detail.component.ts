@@ -1,3 +1,9 @@
+import { CollectionQueryState } from '../../services/collection-query-state';
+import { CollectionPageService } from '../../services/collection-page.service';
+import { VirtualContentDirective } from '../../shared/virtual-content.directive';
+import { inject } from '@angular/core';
+import { CopyLanguagePickerComponent } from '../../components/copy-language-picker/copy-language-picker.component';
+import { CollectionToolsComponent } from '../../components/collection-tools/collection-tools.component';
 import {
   Component,
   OnInit,
@@ -11,7 +17,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, takeUntil, take, map } from 'rxjs';
+import { Observable, Subject, takeUntil, take, map, of, switchMap, catchError } from 'rxjs';
 import { AppState } from '../../store';
 import { CollectionActions } from '../../store/collection/collection.actions';
 import {
@@ -26,6 +32,7 @@ import {
   PrintingDto,
   CardDto,
 } from '../../models/game.models';
+import { CollectionApiService } from '../../services/collection-api.service';
 import { CollectionPickerDialogComponent } from '../../components/collection-picker-dialog/collection-picker-dialog.component';
 import { SetIconComponent } from '../../components/set-icon/set-icon.component';
 import { CardGridFiltersComponent } from '../../components/card-grid-filters/card-grid-filters.component';
@@ -48,6 +55,8 @@ import {
 } from '../../utils/printing-options';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
+import { CollectionMetadataComponent } from '../../components/collection-metadata/collection-metadata.component';
+import { CollectionBulkToolsComponent } from '../../components/collection-bulk-tools/collection-bulk-tools.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
 import { CardSearchPanelComponent } from '../../components/card-search-panel/card-search-panel.component';
 import { CardSideListComponent } from '../../components/card-side-list/card-side-list.component';
@@ -75,12 +84,18 @@ export type CollectionDensity = 'full' | 'half' | 'name';
 @Component({
   selector: 'app-collection-detail',
   standalone: true,
+  providers: [CollectionPageService],
   imports: [
+    VirtualContentDirective,
+    CopyLanguagePickerComponent,
+    CollectionToolsComponent,
     CommonModule,
     FormsModule,
     ManaCostComponent,
     OracleSymbolsPipe,
     CardModalComponent,
+    CollectionMetadataComponent,
+    CollectionBulkToolsComponent,
     CardSearchPanelComponent,
     CardSideListComponent,
     CoverPickerModalComponent,
@@ -96,6 +111,11 @@ export type CollectionDensity = 'full' | 'half' | 'name';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionDetailComponent implements OnInit, OnDestroy {
+  bulkDetailsOpen = false;
+  refreshDetails(id: string): void {
+    this.store.dispatch(CollectionActions.refreshCollection({ id }));
+    this.cdr.markForCheck();
+  }
   collection$: Observable<CollectionDetailDto | null>;
   loading$: Observable<boolean>;
   /** Every other collection — where a card from this one can be moved. */
@@ -103,6 +123,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   /** The entry being moved, or null when the move dialog is closed. */
   moveCard: CollectionCardDto | null = null;
+  moveError = '';
+  moveBusy = false;
   moveTargetId: string | null = null;
 
   /** Multi-select: tiles become checkable and the bulk bar appears. */
@@ -143,6 +165,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   setGroupMode(mode: CardGroupMode): void {
     this.groupMode = mode;
+    this.onFiltersChanged();
     this.persistDisplay();
     this.cdr.markForCheck();
   }
@@ -168,8 +191,17 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   /** Sections for the grid, memoized by the service on (cards identity, mode). */
+  readonly paging = inject(CollectionPageService);
+  readonly queries = inject(CollectionQueryState);
   getGroups(collection: CollectionDetailDto): CardSection[] {
-    return this.filterRules.sections(this.filteredCards(collection), this.groupMode);
+    const rows = this.paging.rows(
+      collection,
+      this.queries.from(this.filters.toState(), this.groupSameCard, this.groupMode),
+    );
+    return this.filterRules.sections(
+      this.filteredCards({ ...collection, cards: rows }),
+      this.groupMode,
+    );
   }
 
   private persistDisplay(): void {
@@ -193,6 +225,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card detail modal ----------------------------------------
   selectedCard: CollectionCardDto | null = null;
+  modalLanguage: string | null = null;
+  private modalRows: CollectionCardDto[] = [];
+  private modalRowsRequest = 0;
   modalViewScryfallId: string | null = null;
   modalFlipped = false;
   flippedCardIds = new Set<string>();
@@ -226,6 +261,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     private host: ElementRef<HTMLElement>,
     private filterRules: CardGridFilterService,
     private prefs: PreferencesApiService,
+    private collectionApi: CollectionApiService,
   ) {
     this.collection$ = this.store.select(selectActiveCollection);
     this.loading$ = this.store.select(selectCollectionLoading);
@@ -240,6 +276,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   trackByGroupKey = (_: number, section: CardSection): string => section.key;
 
   openMove(entry: CollectionCardDto): void {
+    this.moveError = '';
     this.moveCard = entry;
     this.moveTargetId = null;
     this.cdr.markForCheck();
@@ -247,6 +284,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   closeMove(): void {
     this.moveCard = null;
+    this.moveBusy = false;
     this.moveTargetId = null;
     this.cdr.markForCheck();
   }
@@ -255,7 +293,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   moveLead(entry: CollectionCardDto): string {
     const name = entry.cardDetails?.name ?? 'this card';
     const copies =
-      entry.quantity + entry.quantityFoil > 1
+      entry.quantity + entry.quantityFoil + (entry.quantityEtched ?? 0) > 1
         ? ` (${entry.quantity} normal${entry.quantityFoil ? `, ${entry.quantityFoil} foil` : ''})`
         : '';
     return `Move ${name}${copies} to another collection. It keeps when you added it and what it cost then.`;
@@ -266,36 +304,80 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
    * ghost flies to the Collection nav link — the way back to where they went — and the
    * toast names the destination.
    */
-  confirmMove(entry: CollectionCardDto, targetId: string): void {
+  confirmMove(
+    entry: CollectionCardDto,
+    targetId: string,
+    options?: {
+      newName?: string;
+      quantity?: number;
+      quantityFoil?: number;
+      quantityEtched?: number;
+    },
+  ): void {
+    if (this.moveBusy) return;
+    if (options?.newName) {
+      this.moveBusy = true;
+      this.cdr.markForCheck();
+      this.collectionApi
+        .createCollection({ name: options.newName })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (target) => {
+            this.dispatchMove(entry, target, options);
+            this.store.dispatch(CollectionActions.loadCollections());
+          },
+          error: () => {
+            this.moveBusy = false;
+            this.moveError = 'The collection could not be created. Please retry.';
+            this.cdr.markForCheck();
+          },
+        });
+      return;
+    }
     this.moveTargets$.pipe(take(1)).subscribe((targets) => {
       const target = targets.find((t) => t.id === targetId);
       if (!target) return;
 
-      const from = this.tileArtRect(entry.id);
-      this.store.dispatch(
-        CollectionActions.moveCard({
-          collectionId: this.collectionId,
-          cardId: entry.id,
-          request: { targetCollectionId: target.id },
-          targetName: target.name,
-        }),
-      );
-      this.closeMove();
-      this.closeCard();
+      this.dispatchMove(entry, target, options);
+    });
+  }
 
-      const to = this.visibleRect(
-        document.querySelector('.nav-link[href="/collection"], .nav-link'),
-      );
-      if (!from || !to) return;
-      void flyCardGhost({
-        from,
-        to,
-        imageUrl:
-          entry.cardDetails?.imageUriArtCrop ??
-          entry.cardDetails?.imageUriSmall ??
-          entry.cardDetails?.imageUriNormal ??
-          null,
-      });
+  private dispatchMove(
+    entry: CollectionCardDto,
+    target: Pick<CollectionDto, 'id' | 'name'>,
+    options?: { quantity?: number; quantityFoil?: number; quantityEtched?: number },
+  ): void {
+    const from = this.tileArtRect(entry.id);
+    this.store.dispatch(
+      CollectionActions.moveCard({
+        collectionId: this.collectionId,
+        cardId: entry.id,
+        request: {
+          targetCollectionId: target.id,
+          ...(options?.quantity != null
+            ? {
+                quantity: options.quantity,
+                quantityFoil: options.quantityFoil,
+                quantityEtched: options.quantityEtched,
+              }
+            : {}),
+        },
+        targetName: target.name,
+      }),
+    );
+    this.closeMove();
+    this.closeCard();
+
+    const to = this.visibleRect(document.querySelector('.nav-link[href="/collection"], .nav-link'));
+    if (!from || !to) return;
+    void flyCardGhost({
+      from,
+      to,
+      imageUrl:
+        entry.cardDetails?.imageUriArtCrop ??
+        entry.cardDetails?.imageUriSmall ??
+        entry.cardDetails?.imageUriNormal ??
+        null,
     });
   }
 
@@ -421,6 +503,12 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.collectionId = this.route.snapshot.paramMap.get('id')!;
+    this.collection$.pipe(takeUntil(this.destroy$)).subscribe((col) => {
+      if (col?.pageData && this.selectedCard) this.loadModalRows(this.selectedCard);
+    });
+    this.paging.bind(this.collectionId, () =>
+      this.store.dispatch(CollectionActions.refreshCollection({ id: this.collectionId })),
+    );
     this.store.dispatch(CollectionActions.loadCollection({ id: this.collectionId }));
     // The list is needed for the move dialog's destinations; it also keeps the counts
     // fresh after a move lands.
@@ -451,6 +539,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.paging.destroy();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -514,8 +603,22 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Search panel event handler -----------------------------------
 
+  private collectionForOracle(oracleId: string): Observable<CollectionDetailDto | null> {
+    return this.collection$.pipe(
+      take(1),
+      switchMap((col) =>
+        col?.pageData
+          ? this.collectionApi.lookupRows(col.id, [oracleId]).pipe(
+              map((cards) => ({ ...col, cards })),
+              catchError(() => of(null)),
+            )
+          : of(col),
+      ),
+    );
+  }
+
   onPanelCardRemove(oracleId: string): void {
-    this.collection$.pipe(take(1)).subscribe((col) => {
+    this.collectionForOracle(oracleId).subscribe((col) => {
       if (!col) return;
       const card = col.cards.find((c) => c.oracleId === oracleId);
       if (!card) return;
@@ -525,12 +628,17 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  onPanelDecrementNormal(oracleId: string): void {
-    this.collection$.pipe(take(1)).subscribe((col) => {
+  onPanelDecrementNormal(
+    oracleId: string,
+    context?: { scryfallId?: string | null; language: string },
+  ): void {
+    this.collectionForOracle(oracleId).subscribe((col) => {
       if (!col) return;
-      const card = col.cards.find((c) => c.oracleId === oracleId);
+      const card = context
+        ? this.filterRules.ownedEntry(col.cards, oracleId, context.scryfallId, context.language)
+        : col.cards.find((c) => c.oracleId === oracleId);
       if (!card || card.quantity <= 0) return;
-      if (card.quantity === 1 && card.quantityFoil === 0) {
+      if (card.quantity === 1 && card.quantityFoil === 0 && (card.quantityEtched ?? 0) === 0) {
         this.store.dispatch(
           CollectionActions.removeCard({ collectionId: this.collectionId, cardId: card.id }),
         );
@@ -546,12 +654,17 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  onPanelDecrementFoil(oracleId: string): void {
-    this.collection$.pipe(take(1)).subscribe((col) => {
+  onPanelDecrementFoil(
+    oracleId: string,
+    context?: { scryfallId?: string | null; language: string },
+  ): void {
+    this.collectionForOracle(oracleId).subscribe((col) => {
       if (!col) return;
-      const card = col.cards.find((c) => c.oracleId === oracleId);
+      const card = context
+        ? this.filterRules.ownedEntry(col.cards, oracleId, context.scryfallId, context.language)
+        : col.cards.find((c) => c.oracleId === oracleId);
       if (!card || card.quantityFoil <= 0) return;
-      if (card.quantityFoil === 1 && card.quantity === 0) {
+      if (card.quantityFoil === 1 && card.quantity === 0 && (card.quantityEtched ?? 0) === 0) {
         this.store.dispatch(
           CollectionActions.removeCard({ collectionId: this.collectionId, cardId: card.id }),
         );
@@ -571,6 +684,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     oracleId: string;
     scryfallId: string;
     foil?: boolean;
+    etched?: boolean;
+    language?: string;
     flight?: FlightSource;
   }): void {
     this.flyIntoSideList(event.flight, event.oracleId);
@@ -580,8 +695,10 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
         request: {
           oracleId: event.oracleId,
           scryfallId: event.scryfallId,
-          quantity: event.foil ? 0 : 1,
+          quantity: event.foil || event.etched ? 0 : 1,
           quantityFoil: event.foil ? 1 : 0,
+          ...(event.etched ? { quantityEtched: 1 } : {}),
+          ...(event.language ? { language: event.language } : {}),
         },
       }),
     );
@@ -600,8 +717,12 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       const raw = event.dataTransfer?.getData('application/x-search-card');
       if (!raw) return;
       event.preventDefault();
-      const { oracleId, scryfallId } = JSON.parse(raw) as { oracleId: string; scryfallId: string };
-      this.onPanelCardAdd({ oracleId, scryfallId });
+      const { oracleId, scryfallId, language } = JSON.parse(raw) as {
+        oracleId: string;
+        scryfallId: string;
+        language?: string;
+      };
+      this.onPanelCardAdd({ oracleId, scryfallId, language });
     } catch {
       /* ignore */
     }
@@ -789,12 +910,19 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   /** The bar mutated `filters` in place — OnPush needs the explicit mark. */
   onFiltersChanged(): void {
+    this.collection$.pipe(take(1)).subscribe((col) => {
+      if (col)
+        this.paging.rows(
+          col,
+          this.queries.from(this.filters.toState(), this.groupSameCard, this.groupMode),
+        );
+    });
     this.cdr.markForCheck();
   }
 
   /** Sets represented in this collection — the deck grid asks the same question. */
   setFilterOptions(col: CollectionDetailDto): SelectMenuOption[] {
-    return this.filterRules.setOptions(col.cards);
+    return col.pageData?.setOptions ?? this.filterRules.setOptions(col.cards);
   }
 
   /**
@@ -806,7 +934,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   }
 
   filteredCards(collection: CollectionDetailDto): CollectionCardDto[] {
-    const matching = this.filterRules.apply(collection.cards, this.filters.toState());
+    const matching = collection.pageData
+      ? collection.cards
+      : this.filterRules.apply(collection.cards, this.filters.toState());
     if (!this.groupSameCard) return matching;
     const { rows, members } = this.filterRules.group(matching, this.groupChoice);
     this.groupMembers = members;
@@ -830,6 +960,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   toggleGroupSameCard(): void {
     this.groupSameCard = !this.groupSameCard;
+    this.onFiltersChanged();
     // Stale group state would otherwise survive a round-trip through ungrouped mode
     // and resurrect a display choice for a printing that has since been moved away.
     this.groupMembers = new Map();
@@ -876,7 +1007,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     const opts = rows.map((r) => {
       const p = r.scryfallId ? cached?.find((x) => x.scryfallId === r.scryfallId) : undefined;
       // The copy count only earns its place when there is more than one row to compare.
-      const suffix = rows.length > 1 ? ` ×${r.quantity + r.quantityFoil}` : '';
+      const suffix =
+        rows.length > 1 ? ` ×${r.quantity + r.quantityFoil + (r.quantityEtched ?? 0)}` : '';
       return p
         ? printingOption(p, { value: r.id, suffix })
         : setCodeOption(r.id, r.cardDetails?.setCode, suffix);
@@ -940,7 +1072,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   decrementNormal(card: CollectionCardDto): void {
     this.withCurrent(card, (cur) => {
       if (cur.quantity <= 0) return;
-      if (cur.quantity === 1 && cur.quantityFoil === 0) {
+      if (cur.quantity === 1 && cur.quantityFoil === 0 && (cur.quantityEtched ?? 0) === 0) {
         this.removeCard(cur);
         return;
       }
@@ -969,7 +1101,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   decrementFoil(card: CollectionCardDto): void {
     this.withCurrent(card, (cur) => {
       if (cur.quantityFoil <= 0) return;
-      if (cur.quantityFoil === 1 && cur.quantity === 0) {
+      if (cur.quantityFoil === 1 && cur.quantity === 0 && (cur.quantityEtched ?? 0) === 0) {
         this.removeCard(cur);
         return;
       }
@@ -1000,8 +1132,32 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Card detail modal ----------------------------------------
 
+  private loadModalRows(card: CollectionCardDto): void {
+    const request = ++this.modalRowsRequest;
+    this.collectionApi
+      .lookupRows(this.collectionId, [card.oracleId])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          if (this.selectedCard?.oracleId === card.oracleId && request === this.modalRowsRequest) {
+            this.modalRows = rows;
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => {
+          this.modalRows = [];
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
   openCard(card: CollectionCardDto): void {
     this.selectedCard = card;
+    this.modalRows = [card];
+    this.collection$.pipe(take(1)).subscribe((col) => {
+      if (col?.pageData) this.loadModalRows(card);
+    });
+    this.modalLanguage = card.language ?? 'en';
     this.modalFlipped = false;
     const cached = this.printings.cached(card.oracleId);
     this.modalViewScryfallId = card.scryfallId ?? cached?.[0]?.scryfallId ?? null;
@@ -1023,6 +1179,40 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   // ---- Modal quantity controls ----------------------------------
 
+  modalChangeEtched(col: CollectionDetailDto, card: CollectionCardDto, delta: number): void {
+    const entry = this.viewedEntry(col, card);
+    if (entry?.id) {
+      const quantityEtched = Math.max(0, (entry.quantityEtched ?? 0) + delta);
+      if (quantityEtched + entry.quantity + entry.quantityFoil === 0) {
+        this.store.dispatch(
+          CollectionActions.removeCard({ collectionId: col.id, cardId: entry.id }),
+        );
+      } else {
+        this.store.dispatch(
+          CollectionActions.updateCard({
+            collectionId: col.id,
+            cardId: entry.id,
+            request: { quantity: entry.quantity, quantityFoil: entry.quantityFoil, quantityEtched },
+          }),
+        );
+      }
+    } else if (delta > 0 && this.modalViewScryfallId) {
+      this.store.dispatch(
+        CollectionActions.addCard({
+          collectionId: col.id,
+          request: {
+            oracleId: card.oracleId,
+            scryfallId: this.modalViewScryfallId,
+            language: this.modalLanguage ?? 'en',
+            quantity: 0,
+            quantityFoil: 0,
+            quantityEtched: 1,
+          },
+        }),
+      );
+    }
+  }
+
   modalIncrementNormal(col: CollectionDetailDto, card: CollectionCardDto): void {
     const entry = this.viewedEntry(col, card);
     if (entry?.id) {
@@ -1037,7 +1227,14 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       this.store.dispatch(
         CollectionActions.addCard({
           collectionId: this.collectionId,
-          request: { oracleId: card.oracleId, scryfallId: this.modalViewScryfallId, quantity: 1 },
+          request: {
+            oracleId: card.oracleId,
+            scryfallId: this.modalViewScryfallId,
+            quantity: 1,
+            ...(this.modalLanguage && this.modalLanguage !== 'en'
+              ? { language: this.modalLanguage }
+              : {}),
+          },
         }),
       );
     }
@@ -1046,7 +1243,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   modalDecrementNormal(col: CollectionDetailDto, card: CollectionCardDto): void {
     const entry = this.viewedEntry(col, card);
     if (!entry?.id || entry.quantity <= 0) return;
-    if (entry.quantity === 1 && entry.quantityFoil === 0) {
+    if (entry.quantity === 1 && entry.quantityFoil === 0 && (entry.quantityEtched ?? 0) === 0) {
       this.store.dispatch(
         CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }),
       );
@@ -1080,6 +1277,9 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
             scryfallId: this.modalViewScryfallId,
             quantity: 0,
             quantityFoil: 1,
+            ...(this.modalLanguage && this.modalLanguage !== 'en'
+              ? { language: this.modalLanguage }
+              : {}),
           },
         }),
       );
@@ -1089,7 +1289,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
   modalDecrementFoil(col: CollectionDetailDto, card: CollectionCardDto): void {
     const entry = this.viewedEntry(col, card);
     if (!entry?.id || entry.quantityFoil <= 0) return;
-    if (entry.quantityFoil === 1 && entry.quantity === 0) {
+    if (entry.quantityFoil === 1 && entry.quantity === 0 && (entry.quantityEtched ?? 0) === 0) {
       this.store.dispatch(
         CollectionActions.removeCard({ collectionId: this.collectionId, cardId: entry.id }),
       );
@@ -1106,7 +1306,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
 
   getAlsoOwnedIds(col: CollectionDetailDto): string[] {
     if (!this.selectedCard) return [];
-    return col.cards
+    return (col.pageData ? this.modalRows : col.cards)
       .filter(
         (c) =>
           c.oracleId === this.selectedCard!.oracleId &&
@@ -1116,56 +1316,14 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
       .map((c) => c.scryfallId!);
   }
 
-  private viewedEntryMemo: {
-    cards: CollectionCardDto[];
-    oracleId: string;
-    scryfallId: string | null;
-    value: CollectionCardDto | null;
-  } | null = null;
-
-  /**
-   * The owned row behind the open modal: the one pinning the printing on screen, else
-   * the collection's *unpinned* row for the card.
-   *
-   * That fallback is the point. An unpinned row means "owned, printing unspecified", but
-   * the modal always views a concrete printing — `openCard` substitutes the newest one
-   * when a row pins nothing. Matching on printing alone therefore found no row for an
-   * unpinned entry, so a card the grid showed as owned opened with no count badge, no
-   * ownership box and no −/+ buttons.
-   *
-   * Memoized per CLAUDE.md: the template reads this ~6 times per change-detection pass
-   * and each read scans the collection.
-   */
   viewedEntry(col: CollectionDetailDto, card: CollectionCardDto): CollectionCardDto | null {
-    const m = this.viewedEntryMemo;
-    if (
-      m &&
-      m.cards === col.cards &&
-      m.oracleId === card.oracleId &&
-      m.scryfallId === this.modalViewScryfallId
-    ) {
-      return m.value;
-    }
-
-    const sameCard = (c: CollectionCardDto): boolean => c.oracleId === card.oracleId;
-    const rows = col.cards.filter(sameCard);
-    const pinned = this.modalViewScryfallId
-      ? rows.find((c) => c.scryfallId === this.modalViewScryfallId)
-      : undefined;
-
-    // The unpinned row stands in only when *nothing* is pinned. Falling back to it
-    // whenever the viewed printing wasn't owned meant switching printings in the modal
-    // and pressing + incremented the row you already had instead of adding the printing
-    // you were looking at.
-    const value = pinned ?? (rows.some((c) => c.scryfallId) ? null : (rows[0] ?? null));
-
-    this.viewedEntryMemo = {
-      cards: col.cards,
-      oracleId: card.oracleId,
-      scryfallId: this.modalViewScryfallId,
-      value,
-    };
-    return value;
+    return this.filterRules.ownedEntry(
+      col.pageData ? this.modalRows : col.cards,
+      card.oracleId,
+      this.modalViewScryfallId,
+      this.modalLanguage ?? card.language ?? 'en',
+      card.id,
+    );
   }
 
   // ---- Modal notes -----------------------------------------------
@@ -1202,6 +1360,7 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
           quantity: entry.quantity,
           quantityFoil: entry.quantityFoil,
           notes: draft || null,
+          updateNotes: true,
         },
       }),
     );

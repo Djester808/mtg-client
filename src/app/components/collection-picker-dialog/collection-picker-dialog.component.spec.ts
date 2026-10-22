@@ -30,6 +30,54 @@ describe('CollectionPickerDialogComponent', () => {
     component.targets = [col('a', 'Alpha'), col('b', 'Beta')];
   });
 
+  it('rejects invalid partial quantities and emits a valid partial move', () => {
+    component.quantities = { quantity: 3, quantityFoil: 2 };
+    component.normal = 4;
+    component.foil = 0;
+    component.select('b');
+    const emit = spyOn(component.confirmed, 'emit');
+    component.confirm();
+    expect(emit).not.toHaveBeenCalled();
+    component.normal = 1;
+    component.foil = 1;
+    component.confirm();
+    expect(emit).toHaveBeenCalledWith({
+      targetId: 'b',
+      checked: false,
+      quantity: 1,
+      quantityFoil: 1,
+      quantityEtched: 0,
+    });
+  });
+  it('moves etched independently and rejects an oversized etched transfer', () => {
+    component.quantities = { quantity: 0, quantityFoil: 0, quantityEtched: 3 };
+    component.etched = 4;
+    component.select('b');
+    const emit = spyOn(component.confirmed, 'emit');
+    component.confirm();
+    expect(emit).not.toHaveBeenCalled();
+    component.etched = 2;
+    component.confirm();
+    expect(emit).toHaveBeenCalledWith({
+      targetId: 'b',
+      checked: false,
+      quantity: 0,
+      quantityFoil: 0,
+      quantityEtched: 2,
+    });
+  });
+  it('can choose a new destination without an existing collection', () => {
+    component.allowCreate = true;
+    component.newName = 'New binder';
+    component.selectedId = '__new__';
+    const emit = spyOn(component.confirmed, 'emit');
+    component.confirm();
+    expect(emit).toHaveBeenCalledWith({
+      targetId: '__new__',
+      checked: false,
+      newName: 'New binder',
+    });
+  });
   it('starts with nothing selected so confirm cannot fire by accident', () => {
     expect(component.selectedId).toBeNull();
     spyOn(component.confirmed, 'emit');

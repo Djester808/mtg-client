@@ -1,3 +1,4 @@
+@use '../../../styles/preferences' as *;
 // Three levels to src/ — this component sits at app/profile/profile-edit/.
 @use '../../../styles/breakpoints' as *;
 @use '../../../styles/detail-page' as *;
@@ -10,14 +11,8 @@
 }
 
 .pe-page {
-  max-width: 720px;
-  margin: 0 auto;
-  // Bottom padding clears the pinned save bar so the last card is never trapped under it.
-  padding: 24px 16px 120px;
-
-  @include from($bp-phone) {
-    padding: 40px 24px 120px;
-  }
+  @include preferences-page;
+  padding-bottom: 120px;
 }
 
 .pe-loading {
@@ -40,17 +35,12 @@
 }
 
 .pe-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
-  margin: 0;
+  @include preferences-title;
 }
 
 .pe-sub {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 4px 0 0;
   // An address that will not fit shrinks into its own line rather than widening the page.
@@ -65,36 +55,27 @@
   padding: 0 12px;
   border-radius: 8px;
   font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--gold);
+  font-size: calc(13px * var(--text-scale, 1));
+  color: var(--accent-text);
   text-decoration: none;
-  border: 1px solid rgba(201, 168, 76, 0.28);
-  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(184, 0, 224, 0.28);
+  background: rgba(184, 0, 224, 0.06);
 }
 
 // ---- Cards ----------------------------------------------------------------
 
 .pe-card {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 18px 16px;
+  @include preferences-card;
   margin-bottom: 16px;
 }
 
 .pe-card-title {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  margin: 0 0 4px;
+  @include preferences-section;
 }
 
 .pe-card-sub {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 0 0 14px;
 }
@@ -129,7 +110,7 @@
 .pe-hint {
   flex-basis: 100%;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 0;
 }
@@ -145,7 +126,7 @@
   padding: 0 16px;
   border-radius: 8px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
@@ -159,9 +140,9 @@
 }
 
 .pe-btn-primary {
-  background: rgba(201, 168, 76, 0.16);
-  border-color: rgba(201, 168, 76, 0.4);
-  color: var(--gold);
+  background: rgba(184, 0, 224, 0.16);
+  border-color: rgba(184, 0, 224, 0.4);
+  color: var(--accent-text);
 }
 
 .pe-btn-quiet {
@@ -184,7 +165,7 @@
 .pe-label {
   display: block;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
@@ -203,7 +184,7 @@
   color: var(--text-primary);
   font-family: var(--font-body);
   // 16px keeps iOS from zooming the page when the field takes focus.
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
 
   &:focus {
     outline: none;
@@ -227,7 +208,7 @@
 .pe-note {
   display: block;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   margin-top: 5px;
 }
@@ -255,7 +236,7 @@
 
   &.is-picked {
     border-color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
+    background: rgba(184, 0, 224, 0.12);
   }
 }
 
@@ -271,7 +252,7 @@
 
 .pe-cmd-name {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   // Two lines of a commander's name beats one line plus an ellipsis; these names are long
@@ -281,7 +262,7 @@
 
 .pe-cmd-count {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -305,20 +286,20 @@
 
 .pe-private-value {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale, 1));
   font-weight: 700;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .pe-private-label {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-secondary);
 }
 
 .pe-private-note {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -338,13 +319,13 @@
   // Clears the home indicator on a notched phone.
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: rgba(18, 16, 12, 0.96);
-  border-top: 1px solid rgba(201, 168, 76, 0.25);
+  border-top: 1px solid rgba(184, 0, 224, 0.25);
   backdrop-filter: blur(8px);
 }
 
 .pe-savebar-text {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 

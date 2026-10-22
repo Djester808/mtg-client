@@ -1,0 +1,113 @@
+<main class="settings-page">
+  <app-account-nav />
+  <header>
+    <h1>Settings</h1>
+    <p>Make Compleat work for you.</p>
+    <label for="settings-search">Search settings</label
+    ><input
+      id="settings-search"
+      type="search"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      placeholder="Text, motion, account…"
+    />
+  </header>
+  <p role="status" *ngIf="!preferences.saved()">
+    These settings could not be saved on this device. They will last until you close the app.
+  </p>
+  <div class="settings-layout">
+    <nav aria-label="Settings categories" *ngIf="showCategories()">
+      <button
+        type="button"
+        *ngFor="let item of categories"
+        (click)="category.set(item)"
+        [attr.aria-current]="category() === item ? 'page' : null"
+      >
+        {{ item }} <span aria-hidden="true">→</span>
+      </button>
+    </nav>
+    <section class="settings-results" *ngIf="visible().length || query().trim()">
+      <button
+        type="button"
+        class="settings-back"
+        *ngIf="breakpoints.isPhone() && category() && !query().trim()"
+        (click)="category.set(null)"
+      >
+        ← All settings
+      </button>
+      <h2>{{ heading() }}</h2>
+      <p *ngIf="!visible().length">No settings match that search.</p>
+      <article class="setting-card" *ngFor="let setting of visible(); trackBy: trackSetting">
+        <h3>{{ setting.title }}</h3>
+        <p>{{ setting.description }}</p>
+        <ng-container [ngSwitch]="setting.id">
+          <div class="setting-links" *ngSwitchCase="'account'">
+            <a routerLink="/account/security">Account &amp; security</a
+            ><a routerLink="/account">Edit profile</a
+            ><a routerLink="/recover-account">Recover account</a>
+          </div>
+          <div *ngSwitchCase="'text'">
+            <label for="text-size">Text size: {{ preferences.state().textSize }}%</label
+            ><input
+              id="text-size"
+              type="range"
+              min="85"
+              max="160"
+              step="5"
+              [ngModel]="preferences.state().textSize"
+              (ngModelChange)="preferences.update({ textSize: +$event })"
+            />
+            <p class="setting-preview">The quick brown fox jumps over the lazy dog.</p>
+          </div>
+          <label class="setting-toggle" *ngSwitchCase="'contrast'"
+            ><input
+              type="checkbox"
+              [ngModel]="preferences.state().highContrast"
+              (ngModelChange)="preferences.update({ highContrast: $event })"
+            />
+            High contrast</label
+          >
+          <label class="setting-toggle" *ngSwitchCase="'motion'"
+            ><input
+              type="checkbox"
+              [ngModel]="preferences.state().reduceMotion"
+              (ngModelChange)="preferences.update({ reduceMotion: $event })"
+            />
+            Reduce motion</label
+          >
+          <div class="setting-actions" *ngSwitchCase="'reset'">
+            <button type="button" (click)="preferences.resetAccessibility()">
+              Reset accessibility</button
+            ><button type="button" *ngIf="preferences.canUndo()" (click)="preferences.undoReset()">
+              Undo reset
+            </button>
+          </div>
+          <label *ngSwitchCase="'startup'"
+            >Startup screen<select
+              [ngModel]="preferences.state().startup"
+              (ngModelChange)="preferences.update({ startup: $event })"
+            >
+              <option *ngFor="let destination of destinations" [value]="destination.path">
+                {{ destination.label }}
+              </option>
+            </select></label
+          >
+          <label *ngSwitchCase="'navigation'"
+            >Desktop navigation<select
+              [ngModel]="preferences.state().navigation"
+              (ngModelChange)="setNavigation($event)"
+            >
+              <option value="top">Top bar</option>
+              <option value="compact">Compact sidebar</option>
+              <option value="expanded">Expanded sidebar</option>
+            </select></label
+          >
+          <p *ngSwitchCase="'about'">
+            Compleat · Browser app 0.1.0<br />Card data and artwork from Scryfall. Mana symbols from
+            Mana (SIL Open Font License). Not affiliated with Wizards of the Coast.
+          </p>
+        </ng-container>
+      </article>
+    </section>
+  </div>
+</main>

@@ -16,7 +16,7 @@
 }
 
 .rf-title {
-  @include drawer-title(#c9a84c);
+  @include drawer-title(#b800e0);
 }
 
 .rf-close {
@@ -43,12 +43,12 @@
 }
 
 .rf-lead {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
 }
 
 .rf-note {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   line-height: 1.45;
   color: var(--text-dim);
 }
@@ -72,7 +72,7 @@
   border: 1px solid rgba(220, 90, 90, 0.35);
   background: rgba(220, 90, 90, 0.08);
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale, 1));
   line-height: 1.45;
   color: var(--text-primary);
 }
@@ -123,8 +123,8 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--gold);
-  font-size: 15px;
+  color: var(--accent-text);
+  font-size: calc(15px * var(--text-scale, 1));
   cursor: pointer;
 }
 
@@ -140,11 +140,11 @@
   flex-wrap: wrap;
   gap: 6px;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale, 1));
   line-height: 1.4;
 
   i {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-dim);
   }
 }
@@ -161,7 +161,7 @@
 .rf-why {
   margin: 3px 0 0;
   font-family: var(--font-body);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   line-height: 1.45;
   color: var(--text-dim);
 }
@@ -190,7 +190,7 @@
   background: var(--bg-raised);
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -203,9 +203,9 @@
 }
 
 .rf-btn-primary {
-  border-color: rgba(201, 168, 76, 0.5);
-  background: rgba(201, 168, 76, 0.14);
-  color: var(--gold);
+  border-color: rgba(184, 0, 224, 0.5);
+  background: rgba(184, 0, 224, 0.14);
+  color: var(--accent-text);
 }
 
 // ---- Waiting ----------------------------------------------------------------

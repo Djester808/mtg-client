@@ -1,3 +1,6 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { CollectionApiService } from '../../services/collection-api.service';
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -5,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
+import { CollectionMetadataApiService } from '../../services/collection-metadata-api.service';
 import { CollectionDetailComponent } from './collection-detail.component';
 import { GameApiService } from '../../services/game-api.service';
 import { PrintingsService } from '../../services/printings.service';
@@ -67,7 +71,20 @@ async function setupTestBed() {
     imports: [CollectionDetailComponent, CommonModule, FormsModule],
     schemas: [NO_ERRORS_SCHEMA],
     providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
       provideMockStore({ initialState: INITIAL_STATE }),
+      { provide: CollectionApiService, useValue: { exportCollection: jasmine.createSpy() } },
+      {
+        provide: CollectionMetadataApiService,
+        useValue: {
+          get: () =>
+            of({ language: 'en', condition: null, purchasePrice: null, currency: null, tags: [] }),
+          update: () => of(undefined),
+          bulk: () => of({ undoToken: 'token', expiresAt: new Date().toISOString(), affected: 1 }),
+          undo: () => of(undefined),
+        },
+      },
       { provide: GameApiService, useValue: gameApi },
       { provide: PrintingsService, useValue: printings },
       { provide: PreferencesApiService, useValue: preferencesApi },
@@ -943,6 +960,8 @@ describe('CollectionDetailComponent — display options', () => {
       'rarity',
       'artist',
       'set',
+      'price',
+      'month',
     ]);
   });
 

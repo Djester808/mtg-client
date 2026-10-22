@@ -50,7 +50,7 @@ $sc-stagger: 45ms;
 .sc-label {
   width: 78px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -79,7 +79,7 @@ $sc-stagger: 45ms;
   width: 22px;
   flex-shrink: 0;
   text-align: right;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -108,7 +108,7 @@ $sc-stagger: 45ms;
 }
 
 .sc-vbar-val {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   color: var(--text-dim);
   min-height: 12px;
   line-height: 12px;
@@ -136,7 +136,7 @@ $sc-stagger: 45ms;
 }
 
 .sc-vbar-label {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -154,7 +154,7 @@ $sc-stagger: 45ms;
 // ── Empty state ───────────────────────────────────────
 
 .sc-empty {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   padding: 8px 0;
   text-align: center;

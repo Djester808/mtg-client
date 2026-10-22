@@ -25,9 +25,14 @@ const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
 
 const ROUTES = [
+  { id: 'settings', path: '/settings', auth:false, label:'Settings and accessibility', ready:'app-account-nav' },
+  { id: 'account-security', path:'/account/security', auth:true, label:'Account management', ready:'.account-page app-account-identity' },
+  { id: 'account-recovery', path:'/recover-account', auth:false, label:'Account recovery', ready:'app-account-recovery' },
+  { id: 'collection-sharing', path:'/account/sharing', auth:true, label:'Collection sharing', ready:'.public-collection-page' },
+  { id: 'explore', path:'/community/explore', auth:false, label:'EDHREC Explore', ready:'app-explore' },
   { id: 'home', path: '/', auth: false, label: 'Home / search' },
-  { id: 'login', path: '/login', auth: false, label: 'Sign in' },
-  { id: 'register', path: '/register', auth: false, label: 'Create account' },
+  { id: 'login', path: '/login', auth: false, label: 'Sign in', ready:'app-login .remember-choice' },
+  { id: 'register', path: '/register', auth: false, label: 'Create account', ready:'app-register .auth-terms' },
   { id: 'kb', path: '/kb', auth: false, label: 'Knowledge base' },
   { id: 'forum', path: '/community/forum', auth: false, label: 'Community — forum' },
   { id: 'commanders', path: '/community/commanders', auth: false, label: 'Community — commanders' },
@@ -335,12 +340,17 @@ async function settle(driver) {
       for (const route of routes) {
         try {
           await driver.get(baseUrl + route.path);
+          // Route captures measure the page. The intro has its own brand capture.
+          const introSkip = await driver.findElements(By.css('.intro-skip'));
+          if (introSkip.length) { try { await introSkip[0].click(); } catch {} }
+
           // `ready` names an element that only exists once the page's data has arrived.
           // Without it a route whose content comes from a second request is photographed
           // as its own loading state, and the audit measures a layout no user sees.
           if (route.ready) {
             await driver.wait(until.elementLocated(By.css(route.ready)), 15000);
           }
+          await driver.wait(async () => !(await driver.findElements(By.css('.brand-intro'))).length, 12000);
           await settle(driver);
 
           const audit = await driver.executeScript(AUDIT);
@@ -385,7 +395,13 @@ async function settle(driver) {
     }
   }
 
-  fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify(results, null, 2));
+  const resultsFile=path.join(outDir,'results.json');
+  let combined=results;
+  if ((args.routes || args.devices) && fs.existsSync(resultsFile)) {
+    const measured=new Set(results.map(r=>r.device+':'+r.route));
+    combined=JSON.parse(fs.readFileSync(resultsFile,'utf8')).filter(r=>!measured.has(r.device+':'+r.route)).concat(results);
+  }
+  fs.writeFileSync(resultsFile,JSON.stringify(combined,null,2));
   console.log(`\nWrote ${results.length} shots to ${outDir}`);
 })().catch((e) => {
   console.error(e);

@@ -1,6 +1,8 @@
-# mtg-client — Angular 17 Frontend
+# Compleat — Browser Client
 
-MTG Engine game board UI. Connects to the .NET Web API + SignalR hub.
+Compleat companion and game board UI. Connects to the .NET Web API + SignalR hub.
+
+The Compleat brand uses the original logo, sigil, wordmark and purple intro from the archived Unity project. Internal workspace names stay `mtg-client` and `MtgEngine` to preserve existing tooling and data.
 
 ## Stack
 

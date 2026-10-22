@@ -1,8 +1,11 @@
+import { BuilderDraftService } from '../../services/builder-draft.service';
+import { storedAuth } from '../../services/auth-storage';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   HostListener,
+  inject,
   OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -108,6 +111,10 @@ function stackCards(cards: PlannedCard[]): StackedCard[] {
   styleUrls: ['./ai-deck-builder.component.scss'],
 })
 export class AiDeckBuilderComponent implements OnDestroy {
+  readonly draftStore = inject(BuilderDraftService);
+  private draftCommitted = false;
+  saveAttemptDeckId: string | null = null;
+  previousSaveNeedsReview = false;
   readonly colors = COLORS;
   readonly brackets = BRACKETS;
   readonly maxBrief = 600;
@@ -187,7 +194,67 @@ export class AiDeckBuilderComponent implements OnDestroy {
     private http: HttpClient,
     private printings: PrintingsService,
     private cdr: ChangeDetectorRef,
-  ) {}
+  ) {
+    const draft = this.draftStore.load();
+    if (draft) {
+      this.brief = draft.brief;
+      this.chosenColors = new Set(draft.colors);
+      this.bracket = draft.bracket;
+      this.ownedOnly = draft.ownedOnly;
+      this.suggestions = draft.suggestions;
+      this.picked = draft.picked;
+      this.plan = draft.plan;
+      this.step = draft.plan ? 'plan' : draft.step === 'plan' ? 'commanders' : draft.step;
+      this.stageLabel = draft.stageLabel;
+      this.stageStep = draft.stageStep;
+      this.saveAttemptDeckId = draft.saveAttemptDeckId;
+      if (this.saveAttemptDeckId) this.restoreSaveAttempt(this.saveAttemptDeckId);
+    }
+  }
+  @HostListener('document:input')
+  @HostListener('document:change')
+  @HostListener('document:click')
+  persistDraft(): void {
+    if (this.draftCommitted) return;
+    this.draftStore.save({
+      version: 1,
+      brief: this.brief,
+      colors: [...this.chosenColors],
+      bracket: this.bracket,
+      ownedOnly: this.ownedOnly,
+      step: this.step,
+      suggestions: this.suggestions,
+      picked: this.picked,
+      plan: this.plan,
+      saveAttemptDeckId: this.saveAttemptDeckId,
+      stageLabel: this.stageLabel,
+      stageStep: this.stageStep,
+    });
+  }
+  private restoreSaveAttempt(id: string): void {
+    this.previousSaveNeedsReview = true;
+    this.decks.getDeck(id).subscribe({
+      next: (deck) => {
+        if (!deck.cards.length) {
+          this.deckId = id;
+          this.createdDeckId = id;
+          this.previousSaveNeedsReview = false;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        if (error?.status === 404) {
+          this.saveAttemptDeckId = null;
+          this.previousSaveNeedsReview = false;
+          this.persistDraft();
+        } else this.previousSaveNeedsReview = true;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+  openPreviousSave(): void {
+    if (this.saveAttemptDeckId) void this.router.navigate(['/deck', this.saveAttemptDeckId]);
+  }
 
   get busy(): boolean {
     return this.suggesting || this.planning || this.applying;
@@ -233,6 +300,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
   ngOnDestroy(): void {
     // Leaving the page mid-build must not leave a timer running against a dead view.
     this.stopTimer();
+    this.persistDraft();
 
     // Nor an empty deck. Navigating within the app is the commonest way to abandon a
     // build — commoner than pressing Discard — and it left exactly the same orphan behind.
@@ -253,11 +321,12 @@ export class AiDeckBuilderComponent implements OnDestroy {
    */
   @HostListener('window:pagehide')
   onPageHide(): void {
+    this.persistDraft();
     const id = this.createdDeckId;
     if (!id) return;
 
     this.createdDeckId = null;
-    const token = localStorage.getItem('auth_token');
+    const token = storedAuth('auth_token');
 
     fetch(`/api/decks/${encodeURIComponent(id)}`, {
       method: 'DELETE',
@@ -434,7 +503,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
 
     // Same source the suggestions stream uses: this path is fetch-based, so the auth
     // interceptor never runs and the header has to be attached by hand.
-    const token = localStorage.getItem('auth_token');
+    const token = storedAuth('auth_token');
 
     this.api
       .planBuildStream(
@@ -459,6 +528,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
             // The deck exists; show it while the assessment is still running.
             this.plan = event.plan;
             this.step = 'plan';
+            this.persistDraft();
           } else if (event.type === 'final') {
             this.plan = event.plan;
             this.step = 'plan';
@@ -486,12 +556,38 @@ export class AiDeckBuilderComponent implements OnDestroy {
   // ---- Step 3: accept or discard ------------------------------------------
 
   acceptPlan(): void {
-    if (!this.plan || !this.deckId || this.busy) return;
+    if (!this.plan || this.busy || this.previousSaveNeedsReview) return;
+    if (!this.deckId) {
+      this.applying = true;
+      this.cdr.markForCheck();
+      this.decks
+        .createDeck({
+          name: this.plan.commanderName,
+          format: 'commander',
+          commanderOracleId: this.plan.commanderOracleId,
+        })
+        .subscribe({
+          next: (deck) => {
+            this.deckId = deck.id;
+            this.createdDeckId = deck.id;
+            this.applying = false;
+            this.acceptPlan();
+          },
+          error: () => {
+            this.applying = false;
+            this.error = 'The deck could not be created. Your draft is retained.';
+            this.cdr.markForCheck();
+          },
+        });
+      return;
+    }
 
     this.applying = true;
     this.cdr.markForCheck();
 
     const deckId = this.deckId;
+    this.saveAttemptDeckId = deckId;
+    this.persistDraft();
 
     // Handed over before the write, not after. Leaving the page while the apply is in
     // flight would otherwise run the cleanup against a deck that is mid-write; if the
@@ -507,6 +603,10 @@ export class AiDeckBuilderComponent implements OnDestroy {
       .subscribe({
         next: (result) => {
           this.applying = false;
+          this.draftCommitted = true;
+          this.draftStore.clear();
+          this.saveAttemptDeckId = null;
+          this.plan = null;
           this.toast.show(`Added ${result.cardsAdded} cards`, 'success');
           this.router.navigate(['/deck', deckId]);
         },

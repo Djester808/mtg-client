@@ -51,7 +51,7 @@
 .kws-eyebrow {
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -88,7 +88,7 @@
 .kws-note {
   color: var(--text-dim);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-style: italic;
 }
 
@@ -96,7 +96,7 @@
   margin-bottom: 18px;
   color: var(--text-secondary);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   line-height: 1.65;
 }
 
@@ -116,9 +116,9 @@ app-rule-block {
   display: flex;
   align-items: center;
   min-height: $tap-min;
-  color: var(--gold);
+  color: var(--accent-text);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   letter-spacing: 0.08em;
   text-decoration: none;
   text-transform: uppercase;

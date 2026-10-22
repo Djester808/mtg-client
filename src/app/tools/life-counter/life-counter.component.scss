@@ -49,7 +49,7 @@
 
 .setup-sub {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -66,7 +66,7 @@
 .setup-legend {
   padding: 0;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -89,20 +89,20 @@
   background: var(--bg-raised);
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   font-weight: 600;
   cursor: pointer;
 
   &.active {
     background: var(--gold);
     border-color: var(--gold);
-    color: #0e0c08;
+    color: #ffffff;
   }
 }
 
 .setup-note {
   margin: 0;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -142,7 +142,7 @@
   background: var(--bg-raised);
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -167,13 +167,13 @@
  */
 .bar-toggle.active {
   border-color: var(--gold-dim);
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .lc-warning {
   margin: 0;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: #f0c674;
   background: rgb(240 198 116 / 0.1);
   border-bottom: 1px solid rgb(240 198 116 / 0.25);
@@ -208,12 +208,12 @@
 .result-line {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   color: var(--text-secondary);
 }
 
 .result-name {
-  color: var(--gold);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -225,14 +225,14 @@
 }
 
 .result-note {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 // ---- Buttons ------------------------------------------------------------------------------------
 
 .primary-btn {
-  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgb(201 168 76 / 0.3));
+  @include page-add-btn(var(--gold), #ca33e9, #ffffff, rgb(201 168 76 / 0.3));
   min-height: $tap-min;
 }
 
@@ -244,7 +244,7 @@
   background: var(--bg-raised);
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;

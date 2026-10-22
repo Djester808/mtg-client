@@ -1,3 +1,7 @@
+import { CollectionUndoService } from './collection-undo.service';
+import { inject } from '@angular/core';
+import { map, tap } from 'rxjs';
+import { storedAuth } from './auth-storage';
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Store } from '@ngrx/store';
@@ -156,6 +160,7 @@ export interface ManaFineTuneDto {
 @Injectable({ providedIn: 'root' })
 export class DeckApiService {
   private readonly base = '/api/decks';
+  private readonly undo = inject(CollectionUndoService);
 
   constructor(
     private http: HttpClient,
@@ -184,7 +189,13 @@ export class DeckApiService {
   }
 
   addCard(deckId: string, req: AddCardToCollectionRequest): Observable<CollectionCardDto> {
-    return this.http.post<CollectionCardDto>(`${this.base}/${deckId}/cards`, req);
+    const owner = storedAuth('auth_username');
+    return this.http
+      .post<CollectionCardDto>(`${this.base}/${deckId}/cards`, req, { observe: 'response' })
+      .pipe(
+        tap((response) => this.undo.accept(response.headers, owner)),
+        map((response) => response.body!),
+      );
   }
 
   updateCard(
@@ -235,7 +246,7 @@ export class DeckApiService {
   getSuggestionsStream(req: DeckSuggestionsRequest): Observable<SuggestionStreamEvent> {
     return new Observable<SuggestionStreamEvent>((subscriber) => {
       const controller = new AbortController();
-      const token = localStorage.getItem('auth_token');
+      const token = storedAuth('auth_token');
 
       const emit = (ev: SuggestionStreamEvent) => this.zone.run(() => subscriber.next(ev));
 

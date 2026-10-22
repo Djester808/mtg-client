@@ -116,7 +116,12 @@ export const collectionReducer = createReducer(
         ...state.activeCollection,
         cards: state.activeCollection.cards.map((c) =>
           c.id === cardId
-            ? { ...c, quantity: request.quantity, quantityFoil: request.quantityFoil }
+            ? {
+                ...c,
+                quantity: request.quantity,
+                quantityFoil: request.quantityFoil,
+                quantityEtched: request.quantityEtched ?? c.quantityEtched,
+              }
             : c,
         ),
       },
@@ -166,7 +171,9 @@ export const collectionReducer = createReducer(
     const viewingSource = state.activeCollection?.id === sourceCollectionId;
     const activeCollection =
       state.activeCollection?.id === result.target.id
-        ? result.target
+        ? state.activeCollection.pageData
+          ? state.activeCollection
+          : result.target
         : viewingSource && result.sourceDeleted
           ? null
           : viewingSource
@@ -204,7 +211,12 @@ export const collectionReducer = createReducer(
           c.id === card.id
             ? authoritative
               ? card
-              : { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil }
+              : {
+                  ...card,
+                  quantity: c.quantity,
+                  quantityFoil: c.quantityFoil,
+                  quantityEtched: c.quantityEtched,
+                }
             : c,
         ),
       },

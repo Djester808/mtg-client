@@ -13,6 +13,8 @@ import { ToastService, Toast } from '../../services/toast.service';
         *ngFor="let t of toastService.toasts$ | async; trackBy: trackById"
         class="toast"
         [ngClass]="t.kind"
+        [class.is-persistent]="t.durationMs <= 0"
+        role="status"
         [@toastAnim]
         (click)="toastService.dismiss(t.id)"
       >

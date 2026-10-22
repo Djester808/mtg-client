@@ -1,3 +1,4 @@
+@use '../../../styles/detail-page' as *;
 .cp-overlay {
   position: fixed;
   inset: 0;
@@ -53,7 +54,7 @@
 
   h2 {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -63,14 +64,9 @@
 }
 
 .cp-close {
+  @include drawer-close;
   background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 4px 6px;
-  border-radius: 4px;
-  color: var(--text-dim);
+  font-size: calc(16px * var(--text-scale, 1));
   transition: color 0.2s;
   &:hover {
     color: var(--text-parchment);
@@ -88,26 +84,18 @@
   position: absolute;
   left: 38px;
   pointer-events: none;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 .cp-search-input {
+  @include filter-input(rgba(167, 139, 250, 0.4));
   width: 100%;
   background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
   color: var(--text-parchment);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   padding: 9px 14px 9px 36px;
-  outline: none;
   transition: border-color 0.2s;
-  &::placeholder {
-    color: var(--text-dim);
-  }
-  &:focus {
-    border-color: rgba(167, 139, 250, 0.4);
-  }
 }
 
 .cp-body {
@@ -128,7 +116,7 @@
   > div:not(.cp-loading):not([style]) {
     text-align: center;
     padding: 40px 0;
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     color: var(--text-dim);
     font-style: italic;
   }

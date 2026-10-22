@@ -1,0 +1,84 @@
+<main class="public-collection-page">
+  <a [routerLink]="owner ? '/account' : ['/u', username()]"
+    >← {{ owner ? 'Your profile' : 'Player profile' }}</a
+  >
+  <h1>{{ owner ? 'Collection sharing' : username() + '’s collection' }}</h1>
+  @if (loading()) {
+    <p role="status">Loading…</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+    <button (click)="load()">Try again</button>
+  }
+  @if (notice()) {
+    <p role="status">{{ notice() }}</p>
+  }
+  @if (owner && !loading() && !error()) {
+    <section class="sharing-setting">
+      <h2>Public collection summary</h2>
+      <p>
+        Share total copies, unique cards and printings, and breakdowns by color, type, rarity, set,
+        finish, and mana value.
+      </p>
+      <p>
+        Card names, collection names, notes, tags, purchase details, and collection value stay
+        private. Decks are excluded from these counts.
+      </p>
+      <label
+        ><input
+          type="checkbox"
+          [ngModel]="visible()"
+          (ngModelChange)="save($event)"
+          [disabled]="saving()"
+        />
+        Show my collection summary publicly</label
+      >
+      <p>
+        {{
+          visible()
+            ? 'Anyone with your profile link can view these counts.'
+            : 'Only you can view your collection details.'
+        }}
+      </p>
+      @if (visible()) {
+        <a [routerLink]="['/u', signedInUsername(), 'collection']">View public summary →</a>
+      }
+    </section>
+  }
+  @if (summary(); as s) {
+    <div class="collection-counts">
+      <p>
+        <strong>{{ s.copies | number }}</strong> copies
+      </p>
+      <p>
+        <strong>{{ s.uniqueCards | number }}</strong> unique cards
+      </p>
+      <p>
+        <strong>{{ s.uniquePrintings | number }}</strong> pinned printings
+      </p>
+    </div>
+    @if (!s.copies) {
+      <p>This collection has no cards yet.</p>
+    }
+    <div class="collection-breakdowns">
+      @for (group of groups; track group.key) {
+        <section>
+          <h2>{{ group.title }}</h2>
+          <dl>
+            @for (bucket of s[group.key]; track bucket.key) {
+              <div>
+                <dt>{{ bucket.key }}</dt>
+                <dd>{{ bucket.copies | number }}</dd>
+              </div>
+            } @empty {
+              <p>No cards</p>
+            }
+          </dl>
+        </section>
+      }
+    </div>
+    <p class="count-note">
+      Multicolored cards and cards with multiple types count in each matching category.
+    </p>
+  }
+</main>

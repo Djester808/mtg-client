@@ -4,6 +4,15 @@
     <p class="ab-sub">Describe the deck you want. Nothing is saved until you accept it.</p>
   </header>
 
+  <p class="ab-note" *ngIf="!draftStore.drafts.saved()">
+    Your draft could not be saved on this device.
+  </p>
+  <div class="ab-card" *ngIf="previousSaveNeedsReview">
+    <p>
+      A previous save was interrupted. Open that deck to check what was saved before continuing.
+    </p>
+    <button class="ab-btn ab-btn-secondary" (click)="openPreviousSave()">Open previous save</button>
+  </div>
   <!-- Progress -->
   <ol class="ab-steps" aria-label="Progress">
     <li class="ab-step" [class.is-active]="step === 'brief'" [class.is-done]="step !== 'brief'">
@@ -19,6 +28,7 @@
 
   <!-- The same card modal the deck and collection pages use. -->
   <app-card-modal
+    [commanderOracleId]="picked?.oracleId ?? null"
     *ngIf="modalCard as mc"
     [card]="mc"
     [printings]="modalPrintings"
@@ -301,7 +311,12 @@
       <button type="button" class="ab-btn ab-btn-quiet" [disabled]="busy" (click)="discardPlan()">
         Discard
       </button>
-      <button type="button" class="ab-btn ab-btn-primary" [disabled]="busy" (click)="acceptPlan()">
+      <button
+        type="button"
+        class="ab-btn ab-btn-primary"
+        [disabled]="busy || previousSaveNeedsReview"
+        (click)="acceptPlan()"
+      >
         {{ applying ? 'Saving…' : 'Save to deck' }}
       </button>
     </div>

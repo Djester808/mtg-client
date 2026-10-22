@@ -1,3 +1,6 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/detail-page' as *;
+
 // Prefixed class names + keyframes: emulated encapsulation does not scope keyframes,
 // so an unprefixed `fade-in` here would fight the ones in global.scss.
 :host {
@@ -12,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 320;
+  z-index: 1200;
   animation: picker-fade-in 0.15s ease;
 }
 
@@ -60,7 +63,7 @@
   h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -69,11 +72,8 @@
 }
 
 .picker-close {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
+  @include drawer-close;
+  font-size: calc(13px * var(--text-scale, 1));
   padding: 3px 6px;
   border-radius: 4px;
   transition:
@@ -93,7 +93,7 @@
 
 .picker-lead {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-secondary);
   margin: 0 0 14px;
@@ -115,7 +115,7 @@
 
   i {
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
   }
 
   input {
@@ -126,7 +126,7 @@
     outline: none;
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
 
     &::placeholder {
       color: var(--text-dim);
@@ -140,7 +140,7 @@
 
 .picker-more {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 6px 0 0;
   text-align: center;
@@ -200,7 +200,7 @@
 
 .picker-target-name {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -210,18 +210,18 @@
 
 .picker-target-count {
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 .picker-target-tick {
-  color: var(--gold);
-  font-size: 12px;
+  color: var(--accent-text);
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .picker-empty {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
   margin: 6px 0 0;
@@ -233,7 +233,7 @@
   gap: 8px;
   margin-top: 14px;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-secondary);
   cursor: pointer;
 
@@ -252,8 +252,9 @@
 
 .picker-cancel,
 .picker-confirm {
+  min-height: $tap-min;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -287,4 +288,33 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
+}
+
+.picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  min-width: 0;
+  input {
+    min-height: 44px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 8px;
+  }
+}
+.picker-quantities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.picker-error {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }

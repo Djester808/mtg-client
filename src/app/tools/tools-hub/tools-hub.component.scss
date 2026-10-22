@@ -24,7 +24,7 @@
 
 .tools-sub {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -55,8 +55,8 @@
 }
 
 .tool-glyph {
-  font-size: 18px;
-  color: var(--gold);
+  font-size: calc(18px * var(--text-scale, 1));
+  color: var(--accent-text);
   flex-shrink: 0;
   line-height: 1.4;
 }
@@ -70,13 +70,13 @@
 
 .tool-name {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .tool-blurb {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -88,7 +88,7 @@
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);

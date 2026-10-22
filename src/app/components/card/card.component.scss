@@ -186,7 +186,7 @@
 }
 
 .card-emoji {
-  font-size: 26px;
+  font-size: calc(26px * var(--text-scale, 1));
   pointer-events: none;
 }
 
@@ -195,7 +195,7 @@
 .card-type {
   padding: 1px 5px;
   background: rgba(0, 0, 0, 0.6);
-  font-size: 6px;
+  font-size: calc(6px * var(--text-scale, 1));
   color: var(--text-dim);
   font-family: var(--font-display);
   letter-spacing: 0.05em;
@@ -227,7 +227,7 @@
 
 .card-name {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -243,7 +243,7 @@
   gap: 1px;
   flex-shrink: 0;
   .ms {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
   }
 }
 
@@ -258,7 +258,7 @@
   border-radius: 3px;
   padding: 1px 4px;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   color: var(--text-primary);
   z-index: 5;
@@ -275,7 +275,7 @@
   border-radius: 3px;
   padding: 1px 4px;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   color: white;
   z-index: 5;
@@ -294,7 +294,7 @@
   z-index: 5;
   padding: 0 3px;
   border-radius: 3px;
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   line-height: 14px;
 
   &.is-honour {
@@ -326,7 +326,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  font-size: 7px;
+  font-size: calc(7px * var(--text-scale, 1));
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -358,8 +358,8 @@
     min-width: 14px;
     padding: 0 3px;
     border-radius: 7px;
-    background: rgba(201, 168, 76, 0.85);
-    border: 1px solid rgba(201, 168, 76, 0.5);
+    background: rgba(184, 0, 224, 0.85);
+    border: 1px solid rgba(184, 0, 224, 0.5);
   }
 }
 
@@ -428,13 +428,13 @@
     45deg,
     transparent,
     transparent 6px,
-    rgba(201, 168, 76, 0.04) 6px,
-    rgba(201, 168, 76, 0.04) 7px
+    rgba(184, 0, 224, 0.04) 6px,
+    rgba(184, 0, 224, 0.04) 7px
   );
 
   &::after {
     content: '✦';
-    font-size: 20px;
+    font-size: calc(20px * var(--text-scale, 1));
     color: var(--gold-dim);
     opacity: 0.4;
   }
@@ -466,7 +466,7 @@
 
 .ci-type {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.05em;
   color: rgba(255, 255, 255, 0.55);
@@ -478,7 +478,7 @@
 }
 
 .ci-text {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: rgba(255, 255, 255, 0.88);
   line-height: 1.45;
   display: -webkit-box;
@@ -489,14 +489,14 @@
   min-height: 0;
 
   .ms {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     vertical-align: middle;
   }
 
   .kw-link {
-    color: var(--gold);
+    color: var(--accent-text);
     text-decoration: underline;
-    text-decoration-color: rgba(201, 168, 76, 0.4);
+    text-decoration-color: rgba(184, 0, 224, 0.4);
     text-underline-offset: 2px;
     cursor: pointer;
     pointer-events: auto;
@@ -505,14 +505,14 @@
       text-decoration-color 0.15s;
 
     &:hover {
-      color: #dbb954;
+      color: #ca33e9;
       text-decoration-color: rgba(219, 185, 84, 0.8);
     }
   }
 }
 
 .ci-artist {
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   color: rgba(255, 255, 255, 0.38);
   text-align: left;
   white-space: nowrap;
@@ -595,7 +595,7 @@
 
 .tooltip-name {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.03em;
@@ -607,13 +607,13 @@
 .tooltip-cost {
   flex-shrink: 0;
   .ms {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
   }
 }
 
 .tooltip-type {
   font-family: var(--font-display);
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--text-scale, 1));
   color: var(--text-primary);
   letter-spacing: 0.04em;
   border-top: 1px solid var(--border-dim);
@@ -621,7 +621,7 @@
 }
 
 .tooltip-text {
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--text-scale, 1));
   color: var(--text-secondary);
   line-height: 1.4;
   display: -webkit-box;
@@ -630,14 +630,14 @@
   overflow: hidden;
 
   .ms {
-    font-size: 7.5px;
+    font-size: calc(7.5px * var(--text-scale, 1));
     vertical-align: middle;
   }
 
   .kw-link {
-    color: var(--gold);
+    color: var(--accent-text);
     text-decoration: underline;
-    text-decoration-color: rgba(201, 168, 76, 0.4);
+    text-decoration-color: rgba(184, 0, 224, 0.4);
     text-underline-offset: 1px;
     cursor: pointer;
     transition:
@@ -645,15 +645,15 @@
       text-decoration-color 0.15s;
 
     &:hover {
-      color: #dbb954;
+      color: #ca33e9;
       text-decoration-color: rgba(219, 185, 84, 0.8);
     }
   }
 }
 
 .tooltip-attached {
-  font-size: 7.5px;
-  color: var(--gold);
+  font-size: calc(7.5px * var(--text-scale, 1));
+  color: var(--accent-text);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -662,7 +662,7 @@
 
 .tooltip-pt {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;

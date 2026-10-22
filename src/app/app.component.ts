@@ -1,8 +1,11 @@
-import { Component, computed, inject } from '@angular/core';
+import { CollectionUndoComponent } from './components/collection-undo/collection-undo.component';
+import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
+import { filter, map, startWith, take } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { BrandIntroComponent } from './components/brand-intro/brand-intro.component';
+import { UiPreferencesService } from './services/ui-preferences.service';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { ToastContainerComponent } from './components/toast/toast-container.component';
 import { KeywordSheetComponent } from './components/keyword-sheet/keyword-sheet.component';
@@ -14,28 +17,38 @@ const FULL_SCREEN = /^\/play\/[^/]+/;
   selector: 'app-root',
   standalone: true,
   imports: [
+    CollectionUndoComponent,
     CommonModule,
+    BrandIntroComponent,
     RouterOutlet,
     NavbarComponent,
     ToastContainerComponent,
     KeywordSheetComponent,
   ],
   template: `
-    <app-navbar *ngIf="!fullScreen()" />
-    <div class="app-content" [class.is-full-screen]="fullScreen()">
-      <router-outlet />
+    <app-brand-intro *ngIf="introVisible()" (completed)="introVisible.set(false)" />
+    <div class="app-shell" [attr.inert]="introVisible() ? '' : null">
+      <app-navbar *ngIf="!fullScreen()" />
+      <div class="app-content" [class.is-full-screen]="fullScreen()">
+        <router-outlet />
+      </div>
+      <app-toast-container />
+      <app-collection-undo />
+      <app-keyword-sheet />
     </div>
-    <app-toast-container />
-    <app-keyword-sheet />
   `,
   styles: [
     `
       :host {
         display: block;
-        height: 100vh;
+        height: 100dvh;
+      }
+      .app-shell {
+        display: flow-root;
+        height: 100%;
       }
       .app-content {
-        height: calc(100vh - 52px);
+        height: calc(100dvh - 52px);
         margin-top: 52px;
         overflow-y: auto;
       }
@@ -50,7 +63,7 @@ const FULL_SCREEN = /^\/play\/[^/]+/;
        * The way out is the board's own Leave button, which is where it was before.
        */
       .app-content.is-full-screen {
-        height: 100vh;
+        height: 100dvh;
         margin-top: 0;
         overflow: hidden;
       }
@@ -58,6 +71,8 @@ const FULL_SCREEN = /^\/play\/[^/]+/;
   ],
 })
 export class AppComponent {
+  readonly introVisible = signal(true);
+  readonly preferences = inject(UiPreferencesService);
   private readonly router = inject(Router);
 
   private readonly url = toSignal(
@@ -68,6 +83,18 @@ export class AppComponent {
     ),
     { initialValue: this.router.url },
   );
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        take(1),
+      )
+      .subscribe((event) => {
+        if (event.urlAfterRedirects === '/' && this.preferences.state().startup !== '/')
+          void this.router.navigateByUrl(this.preferences.state().startup);
+      });
+  }
 
   readonly fullScreen = computed(() => FULL_SCREEN.test(this.url()));
 }

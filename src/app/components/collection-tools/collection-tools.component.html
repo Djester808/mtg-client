@@ -1,0 +1,49 @@
+<div class="collection-tools">
+  <div class="collection-value">
+    <span class="value-label">Collection value</span>
+    <strong *ngIf="!preferences.state().hideCollectionValue; else hidden"
+      >{{ valuation.value | currency: 'USD' }}
+      <small>{{ valuation.priced }}/{{ valuation.copies }} copies priced</small></strong
+    >
+    <ng-template #hidden><strong>Value hidden</strong></ng-template>
+    <button
+      type="button"
+      (click)="toggleValue()"
+      [attr.aria-pressed]="preferences.state().hideCollectionValue"
+      [attr.aria-label]="
+        preferences.state().hideCollectionValue ? 'Show collection value' : 'Hide collection value'
+      "
+    >
+      <i
+        class="bi"
+        [class.bi-eye]="preferences.state().hideCollectionValue"
+        [class.bi-eye-slash]="!preferences.state().hideCollectionValue"
+        aria-hidden="true"
+      ></i>
+    </button>
+  </div>
+  <button
+    type="button"
+    (click)="showInsights.set(!showInsights())"
+    [attr.aria-expanded]="showInsights()"
+  >
+    {{ showInsights() ? 'Close insights' : 'Insights' }}
+  </button>
+  <div class="export-actions" aria-label="Export full collection">
+    <button type="button" (click)="download('csv')" [disabled]="busy()">
+      <i class="bi bi-download" aria-hidden="true"></i> Export CSV
+    </button>
+    <button type="button" (click)="download('text')" [disabled]="busy()">Export text</button>
+  </div>
+  <p role="status" *ngIf="notice()">{{ notice() }}</p>
+  <p role="alert" *ngIf="error()">{{ error() }}</p>
+  <p role="status" *ngIf="!preferences.saved()">
+    Value visibility could not be saved on this device.
+  </p>
+</div>
+
+<app-collection-insights
+  *ngIf="showInsights()"
+  [cards]="collection.cards"
+  [summary]="collection.pageData?.insights ?? null"
+/>

@@ -67,7 +67,7 @@
   border: none;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -98,7 +98,7 @@
     border-radius: 7px;
     color: var(--text-secondary);
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     letter-spacing: 0.08em;
     text-transform: uppercase;
     cursor: pointer;
@@ -106,13 +106,13 @@
 
     &:hover {
       border-color: var(--gold);
-      color: var(--gold);
+      color: var(--accent-text);
     }
 
     &.active {
-      background: rgba(201, 168, 76, 0.1);
+      background: rgba(184, 0, 224, 0.1);
       border-color: var(--gold);
-      color: var(--gold);
+      color: var(--accent-text);
     }
 
     &:focus-visible {
@@ -127,7 +127,7 @@
   padding: 10px 16px 4px;
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -156,11 +156,11 @@
   }
 
   &.active {
-    background: rgba(201, 168, 76, 0.08);
+    background: rgba(184, 0, 224, 0.08);
     border-right: 2px solid var(--gold);
 
     .item-label {
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 }
@@ -174,7 +174,7 @@
   min-width: 0;
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.35;
 }
 
@@ -182,7 +182,7 @@
   flex-shrink: 0;
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.06em;
 }
 
@@ -208,13 +208,13 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   letter-spacing: 0.08em;
   text-transform: uppercase;
 
   &.keyword {
-    background: rgba(201, 168, 76, 0.14);
-    color: var(--gold);
+    background: rgba(184, 0, 224, 0.14);
+    color: var(--accent-text);
   }
 
   &.rule {
@@ -230,7 +230,7 @@
   min-width: 0;
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.35;
 }
 
@@ -241,7 +241,7 @@
   -webkit-line-clamp: 2;
   color: var(--text-secondary);
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   line-height: 1.45;
 }
 
@@ -249,7 +249,7 @@
   padding: 10px 16px;
   color: var(--text-dim);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-style: italic;
 }
 
@@ -262,14 +262,14 @@
   border-radius: 7px;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
 
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -291,7 +291,7 @@
   margin-bottom: 8px;
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -310,11 +310,11 @@
 
 .rule-ref {
   padding: 3px 9px;
-  border: 1px solid rgba(201, 168, 76, 0.3);
+  border: 1px solid rgba(184, 0, 224, 0.3);
   border-radius: 5px;
-  color: var(--gold);
+  color: var(--accent-text);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   letter-spacing: 0.08em;
 }
 
@@ -322,7 +322,7 @@
   margin-bottom: 24px;
   color: var(--text-secondary);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   line-height: 1.7;
 }
 
@@ -368,7 +368,7 @@
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(201, 168, 76, 0.07), transparent 70%);
+  background: radial-gradient(circle, rgba(184, 0, 224, 0.07), transparent 70%);
   top: -200px;
   left: -100px;
 }

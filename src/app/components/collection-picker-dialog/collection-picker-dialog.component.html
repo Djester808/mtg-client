@@ -48,7 +48,7 @@
         <p class="picker-empty" *ngIf="noMatches">No collection matches “{{ search }}”.</p>
       </div>
       <ng-template #noTargets>
-        <p class="picker-empty">{{ emptyText }}</p>
+        <p class="picker-empty">{{ allowCreate ? 'Create a collection below.' : emptyText }}</p>
       </ng-template>
 
       <label class="picker-check" *ngIf="checkboxLabel">
@@ -56,9 +56,49 @@
         <span>{{ checkboxLabel }}</span>
       </label>
 
+      <label class="picker-field" *ngIf="allowCreate"
+        ><span>New collection</span
+        ><input
+          maxlength="100"
+          placeholder="Collection name"
+          [(ngModel)]="newName"
+          (ngModelChange)="select('__new__')"
+      /></label>
+      <div class="picker-quantities" *ngIf="quantities as counts">
+        <label class="picker-field"
+          >Normal ({{ counts.quantity }} available)<input
+            type="number"
+            min="0"
+            [max]="counts.quantity"
+            step="1"
+            [(ngModel)]="normal"
+        /></label>
+        <label class="picker-field"
+          >Foil ({{ counts.quantityFoil }} available)<input
+            type="number"
+            min="0"
+            [max]="counts.quantityFoil"
+            step="1"
+            [(ngModel)]="foil"
+        /></label>
+      </div>
+      <label class="picker-field" *ngIf="quantities && (quantities.quantityEtched ?? 0) > 0"
+        >Etched ({{ quantities.quantityEtched }} available)<input
+          type="number"
+          min="0"
+          [max]="quantities.quantityEtched ?? 0"
+          step="1"
+          [(ngModel)]="etched"
+      /></label>
+      <p class="picker-error" role="alert" *ngIf="error">{{ error }}</p>
       <div class="picker-actions">
         <button type="button" class="picker-cancel" (click)="closed.emit()">Cancel</button>
-        <button type="button" class="picker-confirm" [disabled]="!selectedId" (click)="confirm()">
+        <button
+          type="button"
+          class="picker-confirm"
+          [disabled]="!selectedId || busy"
+          (click)="confirm()"
+        >
           {{ confirmLabel }}
         </button>
       </div>

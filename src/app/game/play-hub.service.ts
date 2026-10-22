@@ -1,3 +1,4 @@
+import { storedAuth } from '../services/auth-storage';
 import { Injectable, NgZone, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { firstValueFrom } from 'rxjs';
@@ -187,7 +188,7 @@ export class PlayHubService {
       .withUrl('/hubs/game', {
         // A browser cannot set an Authorization header on a WebSocket handshake, so the token
         // goes as a query parameter; the API accepts it that way only for this path.
-        accessTokenFactory: () => localStorage.getItem('auth_token') ?? '',
+        accessTokenFactory: () => storedAuth('auth_token') ?? '',
       })
       .withAutomaticReconnect()
       .build();

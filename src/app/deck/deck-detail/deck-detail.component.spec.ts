@@ -3817,3 +3817,21 @@ describe('DeckDetailComponent — admission badge', () => {
     expect(glyphs).withContext('enforced, then refused').toEqual(['⚙', '⛔']);
   });
 });
+
+describe('Publication draft restoration', () => {
+  it('keeps a description when the publication dialog is cancelled and reopened', async () => {
+    localStorage.setItem(
+      'auth_token',
+      'x.' + btoa(JSON.stringify({ sub: 'publish-owner' })) + '.x',
+    );
+    const { component, fixture } = await setup();
+    component.openPublishModal();
+    component.publishDescription = 'Keep this publication description';
+    component.closePublishModal();
+    component.openPublishModal();
+    expect(component.publishDescription).toBe('Keep this publication description');
+    fixture.destroy();
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('compleat.draft.v1.publish-owner.publish.deck-1');
+  });
+});

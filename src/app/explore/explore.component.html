@@ -1,0 +1,409 @@
+<main class="explore-page" [appExploreScroll]="!loading()">
+  @if (loggedIn() && visit.deck()) {
+    <div class="explore-filters">
+      <a [routerLink]="['/deck', visit.deck()]">Open active deck</a
+      ><app-collection-undo [collectionId]="visit.deck()" />
+    </div>
+  }
+  <a routerLink="/community/explore" class="back-link">← Explore</a>
+  @if (page(); as p) {
+    <header class="explore-hero">
+      @if (p.subject.imageUriArtCrop) {
+        <img [src]="p.subject.imageUriArtCrop" alt="" />
+      }
+      <div>
+        <p class="eyebrow">
+          EDHREC ·
+          {{
+            p.kind === 'average'
+              ? 'Average deck'
+              : p.kind === 'card'
+                ? 'Card insights'
+                : 'Commander insights'
+          }}
+        </p>
+        <h1>{{ p.subject.name }}</h1>
+        <div class="metrics">
+          @if (p.deckCount !== null) {
+            <span
+              ><strong>{{ p.deckCount | number }}</strong> decks</span
+            >
+          }
+          @if (p.rank !== null) {
+            <span
+              >Rank <strong>#{{ p.rank | number }}</strong></span
+            >
+          }
+          @if (p.potentialDecks !== null) {
+            <span>{{ p.potentialDecks | number }} eligible decks</span>
+          }
+          @if (p.salt !== null) {
+            <span
+              >Salt <strong>{{ p.salt | number: '1.0-2' }}</strong> / 4</span
+            >
+          }
+          @if (p.kind === 'average') {
+            <span>{{ totalCards() }} cards + {{ p.commanders.length }} commander(s)</span>
+          }
+        </div>
+        <p class="source">
+          Community data from EDHREC · retrieved {{ p.fetchedAt | date: 'mediumDate' }}
+        </p>
+      </div>
+    </header>
+    @if (p.variants.length) {
+      <nav class="page-links" aria-label="Explore views">
+        <a
+          [routerLink]="['/explore/commanders', p.subject.oracleId]"
+          [queryParams]="{ variant: p.variant }"
+          [class.selected]="p.kind === 'commander'"
+          >Recommendations</a
+        >
+        <a
+          [routerLink]="['/explore/commanders', p.subject.oracleId, 'average']"
+          [queryParams]="{ variant: p.variant }"
+          [class.selected]="p.kind === 'average'"
+          >Average deck</a
+        >
+      </nav>
+      <label class="variant-label"
+        >Deck variant
+        <select [ngModel]="p.variant" (ngModelChange)="changeVariant($event)">
+          @for (v of p.variants; track v.key) {
+            <option [value]="v.key">
+              {{ v.label }}{{ v.decks !== null ? ' · ' + v.decks + ' decks' : '' }}
+            </option>
+          }
+        </select>
+      </label>
+    }
+    @if (!p.hasPage) {
+      <p class="empty-state">
+        EDHREC has no page for this selection yet. Choose another variant or return to Explore.
+      </p>
+    }
+    <app-explore-insights [page]="p" (preview)="viewedCard.set($event)" />
+    @if (p.kind === 'average' && p.hasPage) {
+      @if (loggedIn()) {
+        <button (click)="copyAverage()" [disabled]="saving()">
+          {{ saving() ? 'Copying…' : 'Copy to my decks' }}
+        </button>
+      } @else {
+        <a routerLink="/login">Sign in to copy this deck</a>
+      }
+    }
+    @if (p.commanders.length) {
+      <p>
+        Commanders:
+        @for (c of p.commanders; track c.name) {
+          <span>{{ c.name }} </span>
+        }
+      </p>
+    }
+  } @else {
+    <header>
+      <p class="eyebrow">Discover your next deck</p>
+      <h1>Explore</h1>
+      <p>Commander recommendations, card insights, and average decks from EDHREC.</p>
+    </header>
+    <form class="explore-search" (ngSubmit)="search()">
+      <label
+        >Search for<select [(ngModel)]="searchKind" name="kind">
+          <option value="commander">Commanders</option>
+          <option value="card">Cards</option>
+        </select></label
+      >
+      <label
+        >Card name<input
+          [ngModel]="searchText"
+          (ngModelChange)="onSearchInput($event)"
+          name="search"
+          type="search"
+          placeholder="Atraxa, Sol Ring…"
+      /></label>
+      <button type="submit" [disabled]="loading()">Search</button>
+    </form>
+    @if (suggestions().length) {
+      <nav class="page-links" aria-label="Search suggestions">
+        @for (entry of suggestions(); track entry.name) {
+          <a [routerLink]="link(entry)">{{ entry.name }}</a>
+        }
+      </nav>
+    }
+    @if (home.recents().length) {
+      <div class="page-links">
+        <span>Recent searches</span>
+        @for (recent of home.recents(); track recent.kind + recent.q) {
+          <button (click)="searchText = recent.q; searchKind = recent.kind; search()">
+            {{ recent.q }}
+          </button>
+        }
+        <button (click)="home.clear()">Clear</button>
+      </div>
+    }
+    @if (daily(); as featured) {
+      <section class="explore-hero">
+        <img *ngIf="featured.card?.imageUriArtCrop" [src]="featured.card!.imageUriArtCrop" alt="" />
+        <div>
+          <h2>Commander of the day</h2>
+          <a [routerLink]="link(featured)">{{ featured.name }}</a>
+          <p>
+            {{ featured.decks | number }} decks
+            @if (featured.rank != null) {
+              · Rank #{{ featured.rank }}
+            }
+          </p>
+        </div>
+      </section>
+    }
+  }
+  @if (!page()) {
+    <details (toggle)="directoryOpen = $any($event.target).open">
+      <summary>Browse the full commander directory</summary>
+      @if (directoryOpen) {
+        <app-commander-directory />
+      }
+    </details>
+  }
+  @if (error()) {
+    <p role="alert" class="error-state">
+      {{ error() }} <button (click)="retry()">Try again</button>
+    </p>
+  }
+  @if (loading()) {
+    <p role="status">Loading community data…</p>
+  }
+  @if (notice() && !pending()) {
+    <p role="status" class="notice">{{ notice() }}</p>
+  }
+  @if (!loading() && !error() && (!page() || page()?.hasPage)) {
+    <div class="explore-filters">
+      <label
+        >Filter cards<input
+          type="search"
+          [ngModel]="query()"
+          (ngModelChange)="changeState('q', $event)"
+      /></label>
+      @if (page(); as p) {
+        <label
+          >Section<select [ngModel]="section()" (ngModelChange)="changeState('section', $event)">
+            <option value="">All sections</option>
+            @for (s of p.sections; track s.tag) {
+              <option [value]="s.tag">{{ s.title }}</option>
+            }
+          </select></label
+        >
+      }
+      <label
+        >Sort<select [ngModel]="sort()" (ngModelChange)="changeState('sort', $event)">
+          <option value="decks">Deck count</option>
+          <option value="name">Name</option>
+          <option value="inclusion">Inclusion</option>
+          <option value="synergy">Synergy</option>
+          <option value="price">Price (USD)</option>
+          <option value="mv">Mana value</option>
+        </select></label
+      >
+      <label
+        >View<select [ngModel]="view()" (ngModelChange)="changeState('view', $event)">
+          <option value="rows">List</option>
+          <option value="grid">Cards</option>
+        </select></label
+      >
+    </div>
+    <div class="explore-filters">
+      <label
+        >Direction<select [ngModel]="advanced().dir" (ngModelChange)="changeState('dir', $event)">
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select></label
+      >
+      <label
+        >Group by<select
+          [ngModel]="advanced().group"
+          (ngModelChange)="changeState('group', $event)"
+        >
+          <option value="category">Category</option>
+          <option value="mv">Mana value</option>
+          <option value="rarity">Rarity</option>
+          <option value="price">Price</option>
+        </select></label
+      >
+      <label
+        >Color identity<select
+          [ngModel]="advanced().color"
+          (ngModelChange)="changeState('color', $event)"
+        >
+          <option value="">Any color</option>
+          <option value="W">White</option>
+          <option value="U">Blue</option>
+          <option value="B">Black</option>
+          <option value="R">Red</option>
+          <option value="G">Green</option>
+        </select></label
+      >
+      <label
+        >Rarity<select
+          [ngModel]="advanced().rarity"
+          (ngModelChange)="changeState('rarity', $event)"
+        >
+          <option value="">Any rarity</option>
+          <option>common</option>
+          <option>uncommon</option>
+          <option>rare</option>
+          <option>mythic</option>
+        </select></label
+      >
+      <label
+        >Type<select [ngModel]="advanced().type" (ngModelChange)="changeState('type', $event)">
+          <option value="">Any type</option>
+          <option>Creature</option>
+          <option>Artifact</option>
+          <option>Enchantment</option>
+          <option>Instant</option>
+          <option>Sorcery</option>
+          <option>Planeswalker</option>
+          <option>Land</option>
+        </select></label
+      >
+      <label
+        >WITH cards<input
+          placeholder="Names or oracle IDs, separated by commas"
+          [ngModel]="advanced().with"
+          (ngModelChange)="changeState('with', $event)"
+      /></label>
+      <label
+        >WITHOUT cards<input
+          placeholder="Names or oracle IDs, separated by commas"
+          [ngModel]="advanced().without"
+          (ngModelChange)="changeState('without', $event)"
+      /></label>
+    </div>
+    @for (s of visibleSections(); track s.tag) {
+      <section class="explore-section">
+        <h2>
+          {{ s.title }} <small>{{ s.total }}</small>
+        </h2>
+        <div class="entries" [class.card-grid]="view() === 'grid'">
+          @for (entry of s.cards; track entry.name) {
+            <article class="explore-entry">
+              @if (entry.card; as card) {
+                <button
+                  class="card-preview"
+                  (click)="viewedCard.set(card)"
+                  [attr.aria-label]="'View ' + entry.name"
+                >
+                  @if (card.imageUriNormal) {
+                    <img [src]="card.imageUriNormal" [alt]="entry.name" loading="lazy" />
+                  } @else {
+                    <span>{{ entry.name }}</span>
+                  }
+                </button>
+              }
+              <div class="entry-info">
+                @if (entry.card) {
+                  <a [routerLink]="link(entry)">{{ entry.name }}</a>
+                } @else {
+                  <strong>{{ entry.name }}</strong>
+                }
+                <div class="entry-metrics">
+                  @if (page()?.kind === 'average') {
+                    <span>{{ entry.quantity }} copies</span>
+                  }
+                  @if (entry.decks !== null) {
+                    <span>{{ entry.decks | number }} decks</span>
+                  }
+                  @if (entry.inclusion !== null) {
+                    <span>{{ entry.inclusion | percent: '1.0-1' }} inclusion</span>
+                  }
+                  @if (entry.synergy !== null) {
+                    <span>{{ entry.synergy | percent: '1.0-1' }} synergy</span>
+                  }
+                  @if (entry.card?.prices?.usd !== null && entry.card?.prices?.usd !== undefined) {
+                    <span>{{ entry.card?.prices?.usd | currency: 'USD' }}</span>
+                  }
+                </div>
+                @if (!entry.card) {
+                  <small>Card details unavailable</small>
+                }
+              </div>
+              @if (entry.card && page()) {
+                @if (loggedIn()) {
+                  <button
+                    class="add-card"
+                    (click)="openAdd(entry)"
+                    [attr.aria-label]="'Add ' + entry.name + ' to a deck'"
+                  >
+                    + Deck
+                  </button>
+                } @else {
+                  <a routerLink="/login" class="add-card">Sign in to add</a>
+                }
+              }
+            </article>
+          }
+        </div>
+        @if (s.cards.length < s.total) {
+          <button (click)="changeState('limit', (advanced().limit + 40).toString())">
+            Show more · {{ s.total - s.cards.length }} remaining
+          </button>
+        }
+      </section>
+    } @empty {
+      <p class="empty-state">No cards match your filters.</p>
+    }
+    @if (page()?.similar?.length) {
+      <section>
+        <h2>Related cards</h2>
+        <div class="related">
+          @for (entry of page()!.similar; track entry.name) {
+            @if (entry.card) {
+              <a [routerLink]="link(entry)">{{ entry.name }}</a>
+            } @else {
+              <span>{{ entry.name }}</span>
+            }
+          }
+        </div>
+      </section>
+    }
+  }
+</main>
+@if (viewedCard(); as card) {
+  <app-card-modal [card]="card" (closed)="viewedCard.set(null)" />
+}
+@if (pending(); as entry) {
+  <div class="explore-dialog-backdrop">
+    <section
+      class="explore-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-title"
+      appDialogFocus
+      (keydown.escape)="pending.set(null)"
+    >
+      <h2 id="add-title">Add to a deck</h2>
+      <p>{{ entry.name }}</p>
+      <label
+        >Destination<select [(ngModel)]="destination">
+          <option value="">Choose a deck</option>
+          @for (d of decks(); track d.id) {
+            <option [value]="d.id">{{ d.name }}</option>
+          }
+        </select></label
+      >
+      @if (!decks().length) {
+        <p>No decks available. <a routerLink="/deck">Create a deck</a> first.</p>
+      }
+      <label>Copies<input type="number" min="1" max="999" step="1" [(ngModel)]="quantity" /></label>
+      @if (notice()) {
+        <p role="alert">{{ notice() }}</p>
+      }
+      <footer>
+        <button (click)="pending.set(null)" [disabled]="saving()">Cancel</button
+        ><button (click)="add()" [disabled]="!destination || saving()">
+          {{ saving() ? 'Adding…' : 'Add card' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

@@ -86,6 +86,7 @@ const AUDIT = `
  * Every other state here is a public route. The AI builder is not, and repeating a login
  * for each of its five states would spend most of the run on the login form.
  */
+async function skipFeatureIntro(d) { const skips=await d.findElements(By.css('.intro-skip'));if(skips.length)await skips[0].click();await d.wait(async()=>!(await d.findElements(By.css('.brand-intro'))).length,12000); }
 async function ensureSignedIn(d) {
   await d.get(baseUrl + '/login');
   await sleep(600);
@@ -112,6 +113,7 @@ async function ensureSignedIn(d) {
   );
   await d.get(baseUrl + '/login');
   await sleep(400);
+  await skipFeatureIntro(d);
 
   await d.wait(until.elementLocated(By.id('username')), 15000);
   await d.findElement(By.id('username')).sendKeys(username);
@@ -151,6 +153,7 @@ async function toSuggestions(d) {
   await armAiBuildReplay(d);
   await ensureSignedIn(d);
   await d.get(baseUrl + '/deck/build');
+  await skipFeatureIntro(d);
   await d.wait(until.elementLocated(By.css('.ab-textarea')), 20000);
   await sleep(900);
   await d.findElement(By.css('.ab-textarea')).sendKeys('wolf tribal');
@@ -248,8 +251,27 @@ async function tapPermanent(d, name) {
   await sleep(500);
 }
 
+async function toOwnedCollection(d,needsCards=false){
+ await ensureSignedIn(d);
+ const id=process.env.E2E_COLLECTION_ID || await d.executeAsyncScript("const needs=arguments[0],done=arguments[arguments.length-1];fetch('/api/collections',{headers:{Authorization:'Bearer '+(sessionStorage.getItem('auth_token')||localStorage.getItem('auth_token'))}}).then(r=>{if(!r.ok)throw Error('Could not load collections');return r.json()}).then(rows=>done((needs?rows.find(c=>c.cardCount>0):rows[0])?.id || null)).catch(()=>done(null))",needsCards);
+ if(!id)throw Error('Collection state needs E2E_COLLECTION_ID or an owned collection with cards.');
+ await d.get(baseUrl+'/collection/'+id);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('app-collection-tools')),15000);
+}
+
 /** Each state: navigate, drive it open, then audit the named root element. */
 const STATES = [
+ {id:'explore-directory',label:'Commander directory filters',root:'app-commander-directory',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/community/explore');await skipFeatureIntro(d);await d.wait(until.elementLocated(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')),20000);await d.findElement(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')).click();await d.wait(until.elementLocated(By.css('app-commander-directory .directory-rows a')),60000);}},
+ {id:'explore-insights',label:'Detailed community insights',root:'app-explore-insights',async drive(d){await ensureSignedIn(d);const id=await d.executeAsyncScript("const done=arguments[0];fetch('/api/cards/by-name?name=Atraxa%2C%20Praetors%27%20Voice',{headers:{Authorization:'Bearer '+localStorage.getItem('auth_token')}}).then(r=>r.json()).then(c=>done(c.oracleId)).catch(()=>done(null))");if(!id)throw Error('Commander fixture unavailable');await d.get(baseUrl+'/explore/commanders/'+id);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('app-explore-insights summary')),60000);await d.findElement(By.css('app-explore-insights summary')).click();}},
+ {id:'deck-mana-analysis',label:'Mana analysis panel',root:'app-mana-suggest-panel',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/deck/'+process.env.E2E_DECK_ID);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('button[title="Mana analysis"]')),15000);await d.findElement(By.css('button[title="Mana analysis"]')).click();await d.wait(until.elementLocated(By.css('app-mana-suggest-panel')),10000);}},
+ {id:'collection-mutation-toast',label:'Collection update notice',root:'.toast-stack',async drive(d){await toOwnedCollection(d,true);await d.actions().doubleClick(await d.wait(until.elementLocated(By.css('.card-wrap .ct-art')),10000)).perform();await d.wait(until.elementLocated(By.css('.modal-title-btn[title="Move this card to another collection"]')),10000);await d.findElement(By.css('.modal-title-btn[title="Move this card to another collection"]')).click();await d.wait(until.elementLocated(By.css('.picker-modal input[maxlength="100"]')),5000);await d.findElement(By.css('.picker-modal input[maxlength="100"]')).sendKeys('Visual capture destination');await d.findElement(By.css('.picker-confirm')).click();await d.wait(until.elementLocated(By.css('app-toast-container .toast')),10000);await d.findElement(By.css('.collection-undo-banner button')).click();await d.wait(async()=>!(await d.findElements(By.css('.collection-undo-banner'))).length,5000);}},
+
+ {id:'registration-terms',label:'Original terms of use',root:'app-register .auth-terms',async drive(d){await d.get(baseUrl+'/register');await skipFeatureIntro(d);await d.findElement(By.css('.auth-terms summary')).click();}},
+ {id:'collection-insights',label:'Collection insights',root:'app-collection-insights',async drive(d){await toOwnedCollection(d);await d.findElement(By.xpath('//app-collection-tools//button[normalize-space(.)="Insights"]')).click();await d.wait(until.elementLocated(By.css('app-collection-insights article')),5000);}},
+ {id:'collection-partial-move',label:'Move copy quantities',root:'.picker-modal',async drive(d){await toOwnedCollection(d,true);await d.actions().doubleClick(await d.wait(until.elementLocated(By.css('.card-wrap .ct-art')),10000)).perform();await d.wait(until.elementLocated(By.css('app-card-modal app-owned-card-badge')),10000);await d.findElement(By.css('.modal-title-btn[title="Move this card to another collection"]')).click();await d.wait(until.elementLocated(By.css('.picker-modal input[type=number]')),5000);}},
+  {id:'collection-export',label:'Collection value and export',root:'app-collection-tools',async drive(d){await ensureSignedIn(d);const id=process.env.E2E_COLLECTION_ID || await d.executeAsyncScript("const done=arguments[0];fetch('/api/collections',{headers:{Authorization:'Bearer '+localStorage.getItem('auth_token')}}).then(r=>{if(!r.ok)throw Error('Could not load collections');return r.json()}).then(rows=>done(rows[0]?.id || null)).catch(()=>done(null))");if(!id)throw new Error('Collection export capture requires a collection or E2E_COLLECTION_ID.');await d.get(baseUrl+'/collection/'+id);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('app-collection-tools')),15000);}},
+  { id:'settings-accessibility',label:'Settings — accessibility',root:'.settings-page',async drive(d){await d.get(baseUrl+'/settings');await d.wait(until.elementLocated(By.css('.settings-page')),15000);} },
+  { id:'deck-type-pie',label:'Deck type breakdown',root:'app-pie-chart',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/deck/'+process.env.E2E_DECK_ID);const stats=await d.wait(until.elementLocated(By.css('button[title="Stats"]')),15000);await skipFeatureIntro(d);await d.executeScript('arguments[0].scrollIntoView({block:"center"})',stats);await stats.click();const pie=await d.wait(until.elementLocated(By.css('.stats-section button[title="Pie chart"]')),5000);await d.executeScript('arguments[0].scrollIntoView({block:"center"})',pie);await pie.click();await d.wait(until.elementLocated(By.css('app-pie-chart')),5000);} },
+  { id:'profile-format-menu',label:'Profile format menu',root:'app-select-menu',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/account');await d.wait(until.elementLocated(By.css('app-select-menu')),15000);} },
   // ---- The board ------------------------------------------------------------------------
   //
   // Three states, and they are the first captures this board has ever had. Until the replay
@@ -640,6 +662,7 @@ const STATES = [
       await armAiBuildReplay(d);
       await ensureSignedIn(d);
       await d.get(baseUrl + '/deck/build');
+  await skipFeatureIntro(d);
       await d.wait(until.elementLocated(By.css('.ab-textarea')), 20000);
       await sleep(1200);
     },
@@ -714,6 +737,19 @@ const STATES = [
       await d.executeScript("document.querySelector('.ab-row-btn').click();");
       await d.wait(until.elementLocated(By.css('.card-modal')), 15000);
       await sleep(1400);
+    },
+  },
+  {
+    id: 'commander-charts',
+    label: 'Commander charts — Compleat palette',
+    root: 'app-commander-charts',
+    async drive(d) {
+      await d.get(baseUrl + '/community/commanders');
+      await d.wait(until.elementLocated(By.css('a[href*="/commanders/"], .cl-card')), 20000);
+      const first = await d.findElement(By.css('a[href*="/commanders/"], .cl-card'));
+      await d.executeScript('arguments[0].click();', first);
+      await d.wait(until.elementLocated(By.css('app-commander-charts')), 20000);
+      await d.executeScript("document.querySelector('app-commander-charts').scrollIntoView();");
     },
   },
   {
@@ -1104,6 +1140,21 @@ function parseArgs(argv) {
   return out;
 }
 
+async function freshStateDriver(device,dpr) {
+    const d = await buildDriver({ device, dpr });
+    // Each document opens the branded intro and makes its application content inert.
+    // Finish that transition before a state types into or clicks its controls.
+    const navigate=d.get.bind(d);
+    d.get=async (url) => {
+      await navigate(url);
+      if(url.startsWith(baseUrl)) {
+        await d.wait(until.elementLocated(By.css('app-navbar,.intro-skip,.board')),15000);
+        await skipFeatureIntro(d);
+      }
+    };
+  return d;
+}
+
 (async () => {
   const args = parseArgs(process.argv);
   const devices = DEVICES.filter((d) => args.devices.includes(d.id));
@@ -1121,11 +1172,16 @@ function parseArgs(argv) {
     console.log(`\n=== ${device.label} (${device.width}x${device.height}) ===`);
     const devDir = path.join(outDir, device.id);
     fs.mkdirSync(devDir, { recursive: true });
-    const d = await buildDriver({ device, dpr: args.dpr });
+    let d = await freshStateDriver(device,args.dpr);
     try {
       for (const state of states) {
+        // Draft restoration is real behavior. Each builder fixture uses a fresh temporary
+        // Chrome profile so it starts from its own stage without deleting saved drafts.
+        if(state.id.startsWith('ai-build-')) {await d.quit();d=await freshStateDriver(device,args.dpr);}
         try {
           await state.drive(d);
+          await d.wait(async () => !(await d.findElements(By.css('.brand-intro'))).length, 12000);
+          await d.wait(()=>d.executeScript("return document.getAnimations().filter(a=>a.playState==='running' && Number.isFinite(a.effect?.getComputedTiming().endTime)).length===0"),10000);
           const audit = await d.executeScript(AUDIT, state.root);
           const extra = state.extra ? await d.executeScript(state.extra) : null;
           const file = path.join(devDir, `state-${state.id}.png`);

@@ -25,6 +25,9 @@
         >✦{{ card.quantityFoil }}</span
       >
 
+      <span class="row-qty row-qty--foil" *ngIf="foilMode && (card.quantityEtched ?? 0) > 0"
+        >{{ card.quantityEtched }} etched</span
+      >
       <span class="row-name">{{ name(card) }}</span>
 
       <app-mana-cost

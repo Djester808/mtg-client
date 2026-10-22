@@ -1,3 +1,4 @@
+import { AccountNavComponent } from '../../components/account-nav/account-nav.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -37,7 +38,14 @@ const FORMATS = [
 @Component({
   selector: 'app-profile-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, UserAvatarComponent, SelectMenuComponent],
+  imports: [
+    AccountNavComponent,
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    UserAvatarComponent,
+    SelectMenuComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile-edit.component.html',
   styleUrls: ['./profile-edit.component.scss'],

@@ -7,7 +7,7 @@
     [class.is-open]="menuOpen"
     [class.has-filters]="facets && filters.hasAny"
     [attr.aria-expanded]="menuOpen"
-    (click)="menuOpen = !menuOpen; $event.stopPropagation()"
+    (click)="toggleMenu($event)"
     title="Grid controls and filters"
   >
     <i class="bi bi-sliders"></i>
@@ -15,7 +15,7 @@
 
   <!-- `display: contents` at full width, so everything inside is laid out by the bar's
        own grid; a dropping panel below the button once the bar is narrow. -->
-  <div class="cgf-clusters" [class.is-open]="menuOpen">
+  <div class="cgf-clusters" [class.is-open]="menuOpen" [class.opens-up]="menuOpensUp">
     <div class="cgf-controls-line">
       <!-- Page-specific controls at the left, then the bar's own columns. -->
       <div class="cgf-left">
@@ -97,6 +97,72 @@
          it — a caption over an empty space reads as a control that failed to render. -->
     </div>
 
+    <div class="owned-filters" *ngIf="ownableTypes">
+      <label
+        >Finish<select [(ngModel)]="filters.finish" (ngModelChange)="filtersChange.emit()">
+          <option value="">All finishes</option>
+          <option value="nonfoil">Nonfoil</option>
+          <option value="etched">Etched</option>
+          <option value="foil">Foil</option>
+        </select></label
+      >
+      <label
+        >Condition<select [(ngModel)]="filters.condition" (ngModelChange)="filtersChange.emit()">
+          <option value="">All conditions</option>
+          <option>NM</option>
+          <option>LP</option>
+          <option>MP</option>
+          <option>HP</option>
+          <option>DMG</option>
+        </select></label
+      >
+      <label
+        >Language<input
+          placeholder="Language code"
+          [(ngModel)]="filters.language"
+          (ngModelChange)="filtersChange.emit()"
+      /></label>
+      <label
+        >Tag<input
+          placeholder="Exact tag"
+          [(ngModel)]="filters.tag"
+          (ngModelChange)="filtersChange.emit()"
+      /></label>
+      <label class="owned-check"
+        ><input
+          type="checkbox"
+          [(ngModel)]="filters.duplicatesOnly"
+          (ngModelChange)="filtersChange.emit()"
+        />
+        Duplicates only</label
+      >
+      <label class="owned-check"
+        ><input
+          type="checkbox"
+          [(ngModel)]="filters.matchCase"
+          (ngModelChange)="filtersChange.emit()"
+        />
+        Match case</label
+      >
+      <label class="owned-check"
+        ><input
+          type="checkbox"
+          [(ngModel)]="filters.matchWord"
+          (ngModelChange)="filtersChange.emit()"
+        />
+        Whole word</label
+      >
+    </div>
+    <div class="owned-filters">
+      <label class="owned-check" *ngIf="ownableTypes"
+        ><input
+          type="checkbox"
+          [(ngModel)]="filters.regex"
+          (ngModelChange)="filtersChange.emit()"
+        />Regular expression</label
+      >
+    </div>
+    <p role="alert" *ngIf="queryError">{{ queryError }}</p>
     <div class="cgf-facets" *ngIf="facets && hasAnyFacetChips">
       <!-- Same shared arrangement the card search panel mounts. -->
       <app-filter-facets

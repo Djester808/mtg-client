@@ -48,7 +48,7 @@
 
 .viewer-title {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--text-primary);
@@ -58,7 +58,7 @@
 
 .viewer-count {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   letter-spacing: 0.1em;
 }
@@ -67,7 +67,7 @@
   @include icon-action-btn;
 
   background: var(--bg-hover);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 
   &:hover {
     background: var(--bg-raised);
@@ -103,7 +103,7 @@
 
 .viewer-card-name {
   font-family: var(--font-display);
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   letter-spacing: 0.08em;
   color: var(--text-dim);
   text-align: center;

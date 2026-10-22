@@ -69,11 +69,11 @@ async function signIn(p) {
     return (await api(null, 'POST', '/api/auth/login', p)).token;
   } catch {
     return (
-      await api(null, 'POST', '/api/auth/register', {
+      await api(null, 'POST', '/api/auth/register', {...({
         username: p.username,
         email: p.username + '@example.invalid',
         password: p.password,
-      })
+      }), acceptedTerms:true})
     ).token;
   }
 }

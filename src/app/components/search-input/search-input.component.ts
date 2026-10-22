@@ -74,7 +74,7 @@ import { FormsModule } from '@angular/forms';
         top: 50%;
         transform: translateY(-50%);
         color: #6b6050;
-        font-size: 12px;
+        font-size: calc(12px * var(--text-scale, 1));
         pointer-events: none;
       }
 
@@ -87,7 +87,7 @@ import { FormsModule } from '@angular/forms';
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         color: #e8e0ce;
-        font-size: 12px;
+        font-size: calc(12px * var(--text-scale, 1));
         outline: none;
         transition: border-color 0.15s;
 
@@ -95,7 +95,7 @@ import { FormsModule } from '@angular/forms';
           color: #5a5040;
         }
         &:focus {
-          border-color: rgba(201, 168, 76, 0.4);
+          border-color: rgba(184, 0, 224, 0.4);
         }
       }
 
@@ -113,7 +113,7 @@ import { FormsModule } from '@angular/forms';
         padding: 0 4px;
         cursor: pointer;
         color: #6b6050;
-        font-size: 12px;
+        font-size: calc(12px * var(--text-scale, 1));
         line-height: 1;
 
         &:hover {
@@ -127,7 +127,7 @@ import { FormsModule } from '@angular/forms';
 
       .si-trailing {
         margin-left: 8px;
-        font-size: 10px;
+        font-size: calc(10px * var(--text-scale, 1));
         color: #6b6050;
         white-space: nowrap;
       }

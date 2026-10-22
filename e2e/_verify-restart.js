@@ -69,7 +69,7 @@ async function api(token, method, url, body) {
 /** Registers the player, or signs in if a previous run already made them. */
 async function signIn(player) {
   try {
-    return (await api(null, 'POST', '/api/auth/register', player)).token;
+    return (await api(null, 'POST', '/api/auth/register', {...(player), acceptedTerms:true})).token;
   } catch (err) {
     if (!String(err.message).includes('409')) throw err;
     const loggedIn = await api(null, 'POST', '/api/auth/login', {

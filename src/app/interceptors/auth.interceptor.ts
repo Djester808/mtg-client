@@ -1,35 +1,40 @@
+import { storedAuth } from '../services/auth-storage';
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { catchError, throwError } from 'rxjs';
+import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthActions } from '../store/auth/auth.actions';
+import { AuthRefreshService } from '../services/auth-refresh.service';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const store = inject(Store);
-  const token = localStorage.getItem('auth_token');
-
-  // A request that set its own Authorization meant it, so it is left alone. The life
-  // counter is the caller that needs this: several people share one device, each seat holds
-  // its own token, and reading one player's record has to go up as *that* player rather than
-  // as whoever the browser happens to be signed in as. Overwriting it silently answered the
-  // question about the wrong account.
-  if (token && !req.headers.has('Authorization')) {
-    req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
-  }
+  const refresh = inject(AuthRefreshService);
+  const token = storedAuth('auth_token');
+  const ownAuthorization = request.headers.has('Authorization');
+  const req =
+    token && !ownAuthorization
+      ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+      : request;
   return next(req).pipe(
-    catchError((err) => {
-      // A 401 while we hold a token means the session is dead (expired or revoked):
-      // log out and land on the login page instead of leaving every feature to fail
-      // silently. Auth endpoints are exempt — a wrong password is not a dead session.
+    catchError((error) => {
       if (
-        err instanceof HttpErrorResponse &&
-        err.status === 401 &&
-        token &&
-        !req.url.includes('/auth/')
-      ) {
-        store.dispatch(AuthActions.logout());
-      }
-      return throwError(() => err);
+        !(error instanceof HttpErrorResponse) ||
+        error.status !== 401 ||
+        !token ||
+        ownAuthorization ||
+        req.url.includes('/auth/')
+      )
+        return throwError(() => error);
+      return refresh.refresh().pipe(
+        switchMap((session) =>
+          next(request.clone({ setHeaders: { Authorization: `Bearer ${session.token}` } })),
+        ),
+        catchError((failure) => {
+          if (failure instanceof HttpErrorResponse && failure.status === 401)
+            store.dispatch(AuthActions.logout());
+          return throwError(() => failure);
+        }),
+      );
     }),
   );
 };

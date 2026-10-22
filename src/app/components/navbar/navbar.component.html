@@ -6,16 +6,18 @@
     routerLink="/"
     (click)="closeMenu()"
   >
-    <span class="text-[14px] text-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.5)]">&#9670;</span>
-    <span class="font-display text-[14px] font-bold tracking-[0.12em] uppercase text-parchment"
-      >MTG Engine</span
-    >
+    <span class="compleat-brand" role="img" aria-label="Compleat"
+      ><img class="compleat-sigil" src="assets/brand/sigil.png" alt="" /><img
+        class="compleat-wordmark"
+        src="assets/brand/wordmark.png"
+        alt=""
+    /></span>
   </a>
 
   <div class="nav-links flex items-center gap-1 flex-1">
     <a
       *ngFor="let link of navLinks"
-      class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+      class="nav-link py-1.5 px-3 font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
       [routerLink]="link.path"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: link.exact }"
@@ -23,6 +25,7 @@
     >
   </div>
 
+  <a class="nav-settings" routerLink="/settings" aria-label="Settings" title="Settings">⚙</a>
   <div class="account-menu flex items-center gap-2 relative shrink-0">
     <ng-container *ngIf="isLoggedIn$ | async; else loggedOut">
       <button
@@ -36,24 +39,25 @@
           [size]="24"
         ></app-user-avatar>
         <span
-          class="account-name font-display text-[11px] font-semibold tracking-[0.08em] text-parchment max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap"
+          class="account-name font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.08em] text-parchment max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap"
           >{{ accountName() }}</span
         >
         <span
-          class="account-caret text-[8px] text-parchment-faint transition-transform duration-200"
+          class="account-caret text-[length:calc(8px*var(--text-scale,1))] text-parchment-faint transition-transform duration-200"
           [class.open]="accountOpen()"
           >&#9660;</span
         >
       </button>
       <div class="account-dropdown animate-dropdown-in" *ngIf="accountOpen()">
         <a
-          class="dropdown-item block w-full py-2 px-3 font-body text-[13px] text-parchment-muted no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms] hover:bg-raised hover:text-parchment"
+          class="dropdown-item block w-full py-2 px-3 font-body text-[length:calc(13px*var(--text-scale,1))] text-parchment-muted no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms] hover:bg-raised hover:text-parchment"
           routerLink="/account"
           >Profile</a
         >
+        <a class="dropdown-item" routerLink="/account/security">Account &amp; security</a>
         <div class="h-px bg-[rgba(255,255,255,0.06)] my-1"></div>
         <button
-          class="dropdown-item danger block w-full py-2 px-3 font-body text-[13px] no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms]"
+          class="dropdown-item danger block w-full py-2 px-3 font-body text-[length:calc(13px*var(--text-scale,1))] no-underline bg-transparent border-none rounded-md cursor-pointer text-left transition-[background,color] duration-[120ms]"
           (click)="signOut()"
         >
           Sign Out
@@ -63,12 +67,12 @@
 
     <ng-template #loggedOut>
       <a
-        class="nav-link py-1.5 px-3 font-display text-[11px] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
+        class="nav-link py-1.5 px-3 font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.1em] uppercase text-parchment-muted no-underline rounded-md transition-[color,background] duration-150 hover:text-parchment hover:bg-raised"
         routerLink="/login"
         >Sign In</a
       >
       <a
-        class="nav-btn py-[7px] px-4 bg-gold rounded-[7px] font-display text-[11px] font-bold tracking-[0.1em] uppercase text-[#0e0c08] no-underline transition-[background,box-shadow] duration-150 hover:bg-[#dbb954] hover:shadow-[0_2px_16px_rgba(201,168,76,0.3)]"
+        class="nav-btn py-[7px] px-4 bg-gold rounded-[7px] font-display text-[length:calc(11px*var(--text-scale,1))] font-bold tracking-[0.1em] uppercase text-[#ffffff] no-underline transition-[background,box-shadow] duration-150 hover:bg-[#ca33e9] hover:shadow-[0_2px_16px_rgba(184,0,224,0.3)]"
         routerLink="/register"
         >Create Account</a
       >
@@ -107,6 +111,7 @@
     >{{ link.label }}</a
   >
 
+  <a class="mobile-nav-link" routerLink="/settings" (click)="closeMenu()">Settings</a>
   <div class="mobile-nav-rule"></div>
 
   <ng-container *ngIf="isLoggedIn$ | async; else loggedOutMobile">
@@ -120,6 +125,9 @@
       <span>{{ accountName() }}</span>
     </p>
     <a class="mobile-nav-link" routerLink="/account" (click)="closeMenu()">Profile</a>
+    <a class="mobile-nav-link" routerLink="/account/security" (click)="closeMenu()"
+      >Account &amp; security</a
+    >
     <button type="button" class="mobile-nav-link danger" (click)="signOut()">Sign Out</button>
   </ng-container>
 
@@ -130,3 +138,25 @@
     >
   </ng-template>
 </div>
+
+<aside
+  class="desktop-rail"
+  *ngIf="preferences.state().navigation !== 'top'"
+  [class.is-expanded]="preferences.state().navigation === 'expanded'"
+  aria-label="Main navigation"
+>
+  <a
+    *ngFor="let link of navLinks; let index = index"
+    [routerLink]="link.path"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: link.exact }"
+    [attr.aria-label]="link.label"
+    [attr.title]="link.label"
+    ><span class="rail-symbol" aria-hidden="true">{{ navSymbols[index] }}</span
+    ><span class="rail-label">{{ link.label }}</span></a
+  >
+  <a routerLink="/settings" routerLinkActive="active" aria-label="Settings" title="Settings"
+    ><span class="rail-symbol" aria-hidden="true">⚙</span
+    ><span class="rail-label">Settings</span></a
+  >
+</aside>

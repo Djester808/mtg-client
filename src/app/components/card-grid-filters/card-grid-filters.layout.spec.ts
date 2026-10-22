@@ -27,6 +27,7 @@ import { PHONE_QUERY } from '../../shared/breakpoints.service';
     <div [style.width.px]="width">
       <app-card-grid-filters
         [filters]="filters"
+        [showQuery]="showQuery"
         [facets]="true"
         [sortControls]="sortControls"
         [setOptions]="setOptions"
@@ -51,6 +52,7 @@ import { PHONE_QUERY } from '../../shared/breakpoints.service';
 })
 class HostComponent {
   filters = new CardFilters();
+  showQuery = true;
   setOptions = [{ value: '__all', label: 'All Sets' }];
   sortControls = false;
   width = 1400;
@@ -131,7 +133,7 @@ describe('CardGridFiltersComponent layout', () => {
     // Guards every measurement below. If the projected groups silently failed to render —
     // a missing CommonModule leaves *ngFor inert — the bar would still lay out and each
     // geometry assertion would pass while measuring nothing that matters.
-    const captions = layoutAt(1400).captions;
+    const captions = layoutAt(1500).captions;
     expect(captions).toContain('Group By');
     expect(captions).toContain('Layout');
     expect(captions).toContain('Display');
@@ -146,29 +148,33 @@ describe('CardGridFiltersComponent layout', () => {
       pending('Karma viewport is phone-width; the 302px pin is correct there');
       return;
     }
-    const wide = layoutAt(1400);
+    const wide = layoutAt(1500);
     expect(wide.facetsWidth).toBeGreaterThan(900);
   });
 
   it('lays the controls out on the bar once it is wide enough', () => {
-    expect(layoutAt(1400).isWide).toBeTrue();
+    expect(layoutAt(1500).isWide).toBeTrue();
     // Below the breakpoint everything folds into the menu instead.
-    expect(layoutAt(900).isWide).toBeFalse();
+    for (const width of [375, 640, 744, 900, 1024, 1180, 1280, 1366, 1439]) {
+      expect(layoutAt(width).isWide)
+        .withContext(`${width}px keeps controls in the menu`)
+        .toBeFalse();
+    }
   });
 
   it('never lets the panel’s wrap reach the laid-out bar', () => {
     // The regression: `display: contents` keeps the DOM ancestry, so the panel's
     // `flex-wrap: wrap` matched here and broke the cluster onto a second line.
-    expect(layoutAt(1400).leftWraps).toBeFalse();
-    expect(layoutAt(1180).leftWraps).toBeFalse();
+    expect(layoutAt(1500).leftWraps).toBeFalse();
+    expect(layoutAt(1440).leftWraps).toBeFalse();
   });
 
   it('puts every caption on one line, whatever the controls under them measure', () => {
     // Group By (38px), Layout (34px), Set, Filters, Display (30px) and the taller name box
     // all differ in height. Top alignment is what keeps the captions on a single line; with
     // the columns centred they landed across a 20px spread on the deck.
-    expect(layoutAt(1400).distinctLabelTops).toBe(1);
-    expect(layoutAt(1180).distinctLabelTops).toBe(1);
+    expect(layoutAt(1500).distinctLabelTops).toBe(1);
+    expect(layoutAt(1440).distinctLabelTops).toBe(1);
   });
 
   it('gives every cluster the width its controls need, at any bar width', () => {
@@ -176,7 +182,7 @@ describe('CardGridFiltersComponent layout', () => {
     // share of the bar. With `minmax(0, 1fr)` columns it was squeezed below its contents
     // and the Filters chip spilled 17px over the name box at 1366; an auto minimum makes
     // the column take the room it needs instead.
-    for (const width of [1180, 1280, 1366, 1500]) {
+    for (const width of [1440, 1500, 1600, 1920]) {
       const l = layoutAt(width);
       expect(l.leftOverflow).withContext(`left cluster overflows at ${width}px`).toBe(0);
       expect(l.rightOverflow).withContext(`right cluster overflows at ${width}px`).toBe(0);
@@ -187,7 +193,7 @@ describe('CardGridFiltersComponent layout', () => {
   });
 
   it('keeps both clusters clear of the centred box at every width', () => {
-    for (const width of [1180, 1280, 1366, 1420, 1500]) {
+    for (const width of [1440, 1500, 1600, 1920]) {
       const l = layoutAt(width);
       expect(l.gapRightToBox)
         .withContext(`right cluster sits on the name box at ${width}px`)
@@ -198,6 +204,29 @@ describe('CardGridFiltersComponent layout', () => {
   it('captions the bar’s own columns and the projected ones identically', () => {
     // Three copies of this pair had drifted to 10.5px, 9.5px and 9px, and the differing
     // caption heights were half of why the deck's columns sat at the wrong height.
-    expect(layoutAt(1400).distinctLabelHeights).toBe(1);
+    expect(layoutAt(1500).distinctLabelHeights).toBe(1);
   });
+});
+
+describe('Canvas toolbar without a query', () => {
+  beforeEach(() => TestBed.configureTestingModule({ imports: [HostComponent] }));
+  for (const width of [744, 1280, 1920]) {
+    it('aligns the controls on one band at ' + width + 'px without a phantom search column', () => {
+      const fixture = TestBed.createComponent(HostComponent);
+      fixture.componentInstance.width = width;
+      fixture.componentInstance.showQuery = false;
+      document.body.appendChild(fixture.nativeElement);
+      fixture.detectChanges();
+      const bar = fixture.nativeElement.querySelector('app-card-grid-filters') as HTMLElement;
+      const left = bar.querySelector('.cgf-left')!.getBoundingClientRect();
+      const right = bar.querySelector('.cgf-right')!.getBoundingClientRect();
+      expect(bar.classList.contains('without-query')).toBeTrue();
+      expect(bar.querySelector('.cgf-center')).toBeNull();
+      expect(getComputedStyle(bar.querySelector('.cgf-menu-btn')!).display).toBe('none');
+      expect(Math.abs(left.bottom - right.bottom)).toBeLessThanOrEqual(1);
+      expect(right.left).toBeGreaterThanOrEqual(left.right);
+      expect(right.right).toBeLessThanOrEqual(bar.getBoundingClientRect().right + 1);
+      fixture.destroy();
+    });
+  }
 });

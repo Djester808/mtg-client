@@ -1,3 +1,4 @@
+import { storedAuth } from './auth-storage';
 import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import * as signalR from '@microsoft/signalr';
@@ -45,7 +46,7 @@ export class SignalRService implements OnDestroy {
       // The account's own JWT, not a per-game token: the rebuilt engine authenticates the hub
       // the same way it authenticates the API, and works out which seat you are from it.
       .withUrl('/hubs/game', {
-        accessTokenFactory: () => localStorage.getItem('auth_token') ?? '',
+        accessTokenFactory: () => storedAuth('auth_token') ?? '',
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000])
       .configureLogging(signalR.LogLevel.Warning)

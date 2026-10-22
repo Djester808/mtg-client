@@ -97,7 +97,7 @@ export interface SelectMenuOption {
         border-radius: 6px;
         color: var(--text-secondary);
         cursor: pointer;
-        font-size: 11px;
+        font-size: calc(11px * var(--text-scale, 1));
         font-weight: 600;
         padding: 5px 8px;
         transition:
@@ -131,7 +131,7 @@ export interface SelectMenuOption {
         color: var(--text-dim);
       }
       .asm-chev {
-        font-size: 9px;
+        font-size: calc(9px * var(--text-scale, 1));
         flex-shrink: 0;
         transition: transform 0.15s;
       }

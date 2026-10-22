@@ -29,6 +29,9 @@ const LS_KEYS: Record<keyof UserPreferences, string> = {
 
 /** The group modes a stored preference may name; anything else is ignored on read. */
 const GROUP_MODES = [
+  'none',
+  'price',
+  'month',
   'cmc',
   'type',
   'creature-split',

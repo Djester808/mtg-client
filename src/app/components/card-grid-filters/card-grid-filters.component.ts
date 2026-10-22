@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ownedPattern } from '../../utils/owned-query';
 import { CardFilters, SortBy } from '../../models/card-filters';
 import { FilterChip, FilterChipsComponent } from '../filter-chips/filter-chips.component';
 import { FilterFacetsComponent } from '../filter-facets/filter-facets.component';
@@ -63,6 +64,14 @@ import { BreakpointsService } from '../../shared/breakpoints.service';
 })
 export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) filters!: CardFilters;
+  @Input() serverSearch = false;
+  @Input() serverQueryError = '';
+  get queryError(): string {
+    if (this.serverSearch) return this.serverQueryError;
+    return this.filters.regex
+      ? ownedPattern(this.filters.query, this.filters.matchCase, this.filters.matchWord).error
+      : '';
+  }
 
   /** Card names offered under the box. Already narrowed by the caller. */
   @Input() suggestions: string[] = [];
@@ -86,6 +95,9 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
 
   /** The deck's free-arrange mode has no filterable grid, so it hides the box. */
   @Input() showQuery = true;
+  @HostBinding('class.without-query') get withoutQuery(): boolean {
+    return !this.showQuery;
+  }
 
   /**
    * Which facet values the page's cards actually contain, from
@@ -129,7 +141,17 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
   }
   private readonly allCmcChips = CMC_CHIPS;
   private readonly allRarityChips = RARITY_CHIPS;
-  readonly sortChips = SORT_CHIPS;
+  readonly ownedSortChips: FilterChip[] = [
+    ...SORT_CHIPS,
+    { code: 'set', label: 'Set' },
+    { code: 'rarity', label: 'Rarity' },
+    { code: 'price', label: 'Price' },
+    { code: 'quantity', label: 'Quantity' },
+    { code: 'added', label: 'Added' },
+  ];
+  get sortChips(): FilterChip[] {
+    return this.ownableTypes ? this.ownedSortChips : SORT_CHIPS;
+  }
   readonly clearChips = CLEAR_CHIPS;
   /** Chips that act as buttons rather than toggles never read as active. */
   readonly none: ReadonlySet<string> = new Set<string>();
@@ -157,13 +179,28 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
    * decides whether the menu exists at all.
    */
   menuOpen = false;
+  menuOpensUp = false;
+  toggleMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      const box = this.host.nativeElement.getBoundingClientRect();
+      const viewport = this.host.nativeElement.ownerDocument.defaultView?.innerHeight ?? 667;
+      const parent = this.host.nativeElement.closest('.groups-area, .grid-area');
+      const boundary = Math.max(52, parent?.getBoundingClientRect().top ?? 52);
+      const place = gridMenuPlacement(box, viewport, boundary);
+      this.menuOpensUp = place.up;
+      this.host.nativeElement.style.setProperty('--cgf-menu-room', place.height + 'px');
+    }
+    this.cdr.markForCheck();
+  }
 
   /**
    * The width at which the stylesheet stops using the menu and lays the controls out on
    * the bar. Kept in step with the `@container` query in the stylesheet by hand — there
    * is no way to read a container query back from script.
    */
-  private static readonly WIDE_AT = 1180;
+  private static readonly WIDE_AT = 1440;
 
   private resize?: ResizeObserver;
 
@@ -367,4 +404,16 @@ export class CardGridFiltersComponent implements AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
     this.filtersChange.emit();
   }
+}
+
+/** Fit the controls inside the visible viewport, above the bar when necessary. */
+export function gridMenuPlacement(
+  box: { top: number; bottom: number },
+  viewport: number,
+  topBoundary = 52,
+): { up: boolean; height: number } {
+  const below = Math.max(0, viewport - box.bottom - 16);
+  const above = Math.max(0, box.top - topBoundary - 16);
+  const up = below < 300 && above > below;
+  return { up, height: Math.max(88, up ? above : below) };
 }

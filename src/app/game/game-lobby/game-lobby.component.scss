@@ -15,16 +15,16 @@
 .gl-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale, 1));
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .gl-note {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -42,7 +42,7 @@
 .gl-heading {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -56,13 +56,13 @@
 
 .gl-label {
   font-family: var(--font-body);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 .gl-hint {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   opacity: 0.85;
 }
@@ -78,7 +78,7 @@
   font-family: var(--font-body);
   // 16px so iOS does not zoom the page when the field takes focus, which on a phone throws the
   // whole layout out and does not come back on blur.
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
 }
 
 .gl-invite {
@@ -97,12 +97,12 @@
   flex-direction: column;
   gap: 2px;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale, 1));
   color: var(--text-primary);
 }
 
 .gl-invite-life {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -114,7 +114,7 @@
   background: var(--bg-base);
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -127,9 +127,9 @@
 }
 
 .gl-btn-primary {
-  border-color: rgba(201, 168, 76, 0.5);
-  background: rgba(201, 168, 76, 0.14);
-  color: var(--gold);
+  border-color: rgba(184, 0, 224, 0.5);
+  background: rgba(184, 0, 224, 0.14);
+  color: var(--accent-text);
 }
 
 // The refusal names the cards the engine cannot play, so it needs room to be a list rather
@@ -140,7 +140,7 @@
   border: 1px solid rgba(220, 154, 90, 0.5);
   background: rgba(220, 154, 90, 0.12);
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-primary);
 }

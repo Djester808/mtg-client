@@ -27,7 +27,7 @@ export class DeckLegalityService {
   } | null = null;
 
   private cardCount(card: CollectionCardDto): number {
-    return card.quantity + card.quantityFoil;
+    return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
   }
 
   private isBasicLand(card: CollectionCardDto): boolean {
@@ -79,7 +79,7 @@ export class DeckLegalityService {
     const formatViolations =
       !fmt || fmt === 'commander'
         ? []
-        : deck.cards.filter((c) => {
+        : mainCards.filter((c) => {
             const leg = c.cardDetails?.legalities?.[fmt];
             return !!leg && leg !== 'legal';
           });

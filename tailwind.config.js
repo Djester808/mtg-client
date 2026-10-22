@@ -8,16 +8,16 @@ module.exports = {
     extend: {
       colors: {
         // Backgrounds — darkest → lightest
-        void:    '#080808',
-        deep:    '#0e0e0f',
-        surface: '#141416',
-        raised:  '#1c1c20',
-        elevated:'#242428',
+        void:    '#0a0a0b',
+        deep:    '#111113',
+        surface: '#111113',
+        raised:  '#1b1b1f',
+        elevated:'#32323a',
 
         // Accent
         gold: {
-          DEFAULT: '#c9a84c',
-          dim:     '#8a6f2e',
+          DEFAULT: '#b800e0',
+          dim:     '#df80f5',
         },
         crimson: {
           DEFAULT: '#c0392b',
@@ -27,7 +27,7 @@ module.exports = {
         parchment: {
           DEFAULT: '#f0e8d8',
           muted:   '#c4b8a8',
-          faint:   '#8a8070',
+          faint:   '#9a8f7c',
         },
 
         // Mana pip colors
@@ -51,13 +51,13 @@ module.exports = {
       }),
 
       fontFamily: {
-        display: ['Cinzel', 'serif'],
+        display: ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
         body:    ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
 
       boxShadow: {
-        'gold':     '0 0 0 2px #c9a84c, 0 0 20px rgba(201,168,76,0.4)',
-        'gold-sm':  '0 0 0 2px #c9a84c, 0 0 16px rgba(201,168,76,0.35)',
+        'gold':     '0 0 0 2px #b800e0, 0 0 20px rgba(184,0,224,0.4)',
+        'gold-sm':  '0 0 0 2px #b800e0, 0 0 16px rgba(184,0,224,0.35)',
         'crimson':  '0 0 0 2px #e74c3c, 0 0 18px rgba(231,76,60,0.45)',
         'castable': '0 0 0 1px rgba(39,174,96,0.5), 0 0 12px rgba(39,174,96,0.2)',
       },

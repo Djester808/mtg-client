@@ -39,7 +39,7 @@
 
 .up-name {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text-primary);
@@ -49,20 +49,20 @@
   overflow-wrap: anywhere;
 
   @include from($bp-phone) {
-    font-size: 28px;
+    font-size: calc(28px * var(--text-scale, 1));
   }
 }
 
 .up-handle {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-dim);
   margin-top: 2px;
 }
 
 .up-tagline {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-secondary);
   margin: 6px 0 0;
   line-height: 1.4;
@@ -73,7 +73,7 @@
   flex-wrap: wrap;
   gap: 6px 14px;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -86,7 +86,7 @@
 
 .up-bio {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   line-height: 1.6;
   color: var(--text-secondary);
   margin: 16px 0 0;
@@ -103,8 +103,8 @@
   margin-top: 16px;
   padding: 10px;
   border-radius: 12px;
-  background: rgba(201, 168, 76, 0.07);
-  border: 1px solid rgba(201, 168, 76, 0.22);
+  background: rgba(184, 0, 224, 0.07);
+  border: 1px solid rgba(184, 0, 224, 0.22);
   text-decoration: none;
 }
 
@@ -127,7 +127,7 @@
 
 .up-pinned-label {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold-dim);
@@ -135,14 +135,14 @@
 
 .up-pinned-name {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
 .up-pinned-pips i {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   margin-right: 2px;
 }
 
@@ -170,14 +170,14 @@
 
 .up-stat-value {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale, 1));
   font-weight: 700;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .up-stat-label {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   text-align: center;
   line-height: 1.25;
@@ -191,7 +191,7 @@
 
 .up-section-title {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -213,7 +213,7 @@
   gap: 10px;
 
   i {
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     flex-shrink: 0;
   }
 }
@@ -230,12 +230,12 @@
   display: block;
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(90deg, rgba(201, 168, 76, 0.75), rgba(201, 168, 76, 0.35));
+  background: linear-gradient(90deg, rgba(184, 0, 224, 0.75), rgba(184, 0, 224, 0.35));
 }
 
 .up-color-count {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   min-width: 20px;
   text-align: right;
@@ -281,7 +281,7 @@
 .up-played-name,
 .up-cmd-name {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
@@ -290,7 +290,7 @@
 .up-played-count,
 .up-cmd-count {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -333,7 +333,7 @@
 
 .up-active-name {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   overflow-wrap: anywhere;
@@ -344,7 +344,7 @@
   flex-wrap: wrap;
   gap: 4px 10px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -367,7 +367,7 @@
   border: none;
   border-bottom: 2px solid transparent;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -375,14 +375,14 @@
   cursor: pointer;
 
   &.active {
-    color: var(--gold);
+    color: var(--accent-text);
     border-bottom-color: var(--gold);
   }
 }
 
 .up-tab-count {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   padding: 1px 6px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
@@ -429,7 +429,7 @@
   gap: 2px;
 
   i {
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
   }
 }
 
@@ -439,7 +439,7 @@
 
 .up-deck-name {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
   overflow-wrap: anywhere;
@@ -447,7 +447,7 @@
 
 .up-deck-desc {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.45;
   color: var(--text-dim);
   margin: 6px 0 0;
@@ -465,7 +465,7 @@
   gap: 4px 12px;
   margin-top: 10px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -500,7 +500,7 @@
 
 .up-comment-deck {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--gold-dim);
   overflow-wrap: anywhere;
@@ -508,7 +508,7 @@
 
 .up-comment-time {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -518,7 +518,7 @@
 
 .up-comment-content {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-secondary);
   margin: 6px 0 0;
@@ -535,11 +535,17 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   cursor: pointer;
 
   &:disabled {
     opacity: 0.6;
     cursor: default;
   }
+}
+
+.collection-summary-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
 }

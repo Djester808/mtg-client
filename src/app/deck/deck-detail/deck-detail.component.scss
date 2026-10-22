@@ -1,3 +1,36 @@
 // Styles for this component live in src/styles/global.scss, nested under
 // `app-deck-detail`. They were moved there to get under the per-component CSS budget;
 // the host-element nesting keeps them scoped to this component.
+
+.stats-extras {
+  margin-top: 20px;
+}
+.stats-extra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin: 6px 0;
+  padding: 8px;
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-align: left;
+  img {
+    width: 32px;
+    height: auto;
+  }
+  span {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  small {
+    display: block;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+}

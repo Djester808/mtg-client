@@ -1,0 +1,93 @@
+@use '../../../styles/breakpoints' as *;
+.public-collection-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+  h1 {
+    font-size: calc(28px * var(--text-scale, 1));
+    margin: 20px 0;
+  }
+  h2 {
+    font-size: calc(20px * var(--text-scale, 1));
+    margin: 0 0 16px;
+  }
+  a {
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    min-height: $tap-min;
+  }
+  p {
+    margin: 12px 0;
+    color: var(--text-secondary);
+  }
+  button {
+    min-height: $tap-min;
+    padding: 8px 16px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: $tap-min;
+    margin-top: 24px;
+    input {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+  }
+  section {
+    padding: 20px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--bg-surface);
+    min-width: 0;
+  }
+  dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 0;
+  }
+  dt {
+    overflow-wrap: anywhere;
+  }
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.collection-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 24px 0;
+  strong {
+    display: block;
+    font-size: calc(28px * var(--text-scale, 1));
+    color: var(--text-primary);
+  }
+}
+.collection-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.count-note {
+  font-size: calc(13px * var(--text-scale, 1));
+}
+@include upto($bp-phone) {
+  .public-collection-page {
+    padding: 16px;
+  }
+  .collection-breakdowns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -31,10 +31,10 @@
 }
 
 .scanner-title {
-  font-family: 'Cinzel', serif;
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 700;
-  color: #c9a84c;
+  color: var(--accent-text);
   margin: 0;
   display: flex;
   align-items: center;
@@ -47,8 +47,8 @@
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  color: #a09070;
-  font-size: 18px;
+  color: var(--text-secondary);
+  font-size: calc(18px * var(--text-scale, 1));
   line-height: 1;
   cursor: pointer;
   transition:
@@ -56,7 +56,7 @@
     border-color 0.15s;
 
   &:hover {
-    color: #e8e0ce;
+    color: var(--text-primary);
     border-color: rgba(255, 255, 255, 0.25);
   }
 }
@@ -82,23 +82,23 @@
 }
 
 .scanner-hint {
-  font-size: 13px;
-  color: #a09070;
+  font-size: calc(13px * var(--text-scale, 1));
+  color: var(--text-secondary);
   text-align: center;
   margin: 0;
   max-width: 480px;
   line-height: 1.6;
 
   &.scan-status {
-    color: #c9a84c;
-    font-size: 12px;
+    color: var(--accent-text);
+    font-size: calc(12px * var(--text-scale, 1));
   }
 }
 
 .state-icon {
-  font-size: 40px;
+  font-size: calc(40px * var(--text-scale, 1));
   &.warn {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
   &.error {
     color: #e05252;
@@ -147,8 +147,8 @@
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  color: #6b6050;
-  font-size: 12px;
+  color: var(--text-dim);
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   padding: 5px 14px;
   display: flex;
@@ -165,8 +165,8 @@
   }
 
   &.scanning {
-    color: #c9a84c;
-    border-color: rgba(201, 168, 76, 0.4);
+    color: var(--accent-text);
+    border-color: rgba(184, 0, 224, 0.4);
 
     i {
       animation: spin 1s linear infinite;
@@ -190,7 +190,7 @@
 .scan-now-btn {
   flex-shrink: 0;
   padding: 7px 14px;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 
   &:disabled {
     opacity: 0.5;
@@ -204,8 +204,8 @@
   right: 8px;
   background: rgba(0, 0, 0, 0.55);
   border-radius: 10px;
-  color: #6b6050;
-  font-size: 10px;
+  color: var(--text-dim);
+  font-size: calc(10px * var(--text-scale, 1));
   padding: 3px 8px;
 }
 
@@ -217,7 +217,7 @@
   gap: 7px;
   padding: 9px 20px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -225,12 +225,12 @@
     box-shadow 0.15s;
 
   &.primary {
-    background: linear-gradient(135deg, #c9a84c, #a8862e);
+    background: linear-gradient(135deg, #b800e0, #a8862e);
     color: #1a1208;
     border: none;
 
     &:hover:not(:disabled) {
-      box-shadow: 0 4px 16px rgba(201, 168, 76, 0.4);
+      box-shadow: 0 4px 16px rgba(184, 0, 224, 0.4);
     }
     &:disabled {
       opacity: 0.5;
@@ -241,11 +241,11 @@
   &.secondary {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #a09070;
+    color: var(--text-secondary);
 
     &:hover {
       border-color: rgba(255, 255, 255, 0.3);
-      color: #e8e0ce;
+      color: var(--text-primary);
     }
   }
 }
@@ -280,13 +280,13 @@
 }
 
 .result-detected {
-  font-size: 11px;
-  color: #6b6050;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--text-dim);
   margin: 0 0 8px;
 
   em {
     font-style: normal;
-    color: #a09070;
+    color: var(--text-secondary);
   }
 }
 
@@ -299,10 +299,10 @@
 }
 
 .result-name {
-  font-family: 'Cinzel', serif;
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
-  color: #e8e0ce;
+  color: var(--text-primary);
 }
 
 .result-mana {
@@ -310,14 +310,14 @@
 }
 
 .result-type {
-  font-size: 11px;
-  color: #a09070;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--text-secondary);
   margin: 0 0 6px;
   font-style: italic;
 }
 
 .result-oracle {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: #c8c0b0;
   line-height: 1.55;
   margin: 0 0 6px;
@@ -338,16 +338,16 @@
 }
 
 .result-pt {
-  font-size: 12px;
-  color: #e8e0ce;
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--text-primary);
   font-weight: 600;
   margin: 0 0 4px;
   text-align: right;
 }
 
 .result-set {
-  font-size: 11px;
-  color: #6b6050;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--text-dim);
   margin: 0;
   letter-spacing: 0.05em;
 
@@ -363,15 +363,15 @@
 }
 
 .printing-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: #8a7860;
   margin: 0 0 6px;
   letter-spacing: 0.04em;
 }
 
 .printing-loading {
-  font-size: 12px;
-  color: #6b6050;
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--text-dim);
   font-style: italic;
 }
 
@@ -422,7 +422,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   color: #8a7860;
   letter-spacing: 0.05em;
 }

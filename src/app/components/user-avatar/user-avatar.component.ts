@@ -41,7 +41,7 @@ import { CommonModule } from '@angular/common';
         height: var(--ua-size, 40px);
         border-radius: 50%;
         overflow: hidden;
-        border: 1px solid rgba(201, 168, 76, 0.28);
+        border: 1px solid rgba(184, 0, 224, 0.28);
         background: var(--bg-raised, rgba(255, 255, 255, 0.04));
       }
 

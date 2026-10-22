@@ -7,7 +7,7 @@
 
 .history-loading,
 .history-empty {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
 
   p {
@@ -16,14 +16,14 @@
 }
 
 .history-empty-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   opacity: 0.75;
 }
 
 .history-retry {
   margin-top: 4px;
   padding: 3px 10px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text);
   background: var(--bg-raised);
   border: 1px solid var(--border);
@@ -62,7 +62,7 @@
 }
 
 .history-icon {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 700;
   line-height: 1;
   text-align: center;
@@ -86,12 +86,12 @@
 }
 
 .history-headline {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text);
 }
 
 .history-detail {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
   // Long collection names must not push the timestamp off the row.
   overflow: hidden;
@@ -100,7 +100,7 @@
 }
 
 .history-when {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
   white-space: nowrap;
 }

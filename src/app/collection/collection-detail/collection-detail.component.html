@@ -35,7 +35,9 @@
       </div>
       <div class="header-right">
         <span class="header-count"
-          >{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span
+          >{{ col.pageData?.totalRows ?? col.cards.length }} card{{
+            (col.pageData?.totalRows ?? col.cards.length) !== 1 ? 's' : ''
+          }}</span
         >
         <button
           class="scan-btn-header"
@@ -64,6 +66,8 @@
     </ng-template>
   </header>
 
+  <app-collection-tools *ngIf="collection$ | async as collection" [collection]="collection" />
+
   <!-- Body: grid + optional search panel -->
   <div class="detail-body">
     <!-- Card grid area -->
@@ -86,11 +90,13 @@
              The deck grid does not — neither is legal in a deck. -->
         <app-card-grid-filters
           class="grid-filters"
-          *ngIf="col.cards.length"
+          *ngIf="(col.pageData?.totalRows ?? col.cards.length) > 0"
           [filters]="filters"
+          [serverSearch]="!!col.pageData"
+          [serverQueryError]="col.pageData?.queryError ?? ''"
           [facets]="true"
           [ownableTypes]="true"
-          [sortControls]="false"
+          [sortControls]="true"
           [setOptions]="setFilterOptions(col)"
           [suggestions]="filterSuggestions(col)"
           placeholder="Filter cards in collection…"
@@ -243,7 +249,10 @@
       <!-- Empty collection -->
       <div
         class="empty-state"
-        *ngIf="(loading$ | async) === false && (collection$ | async)?.cards?.length === 0"
+        *ngIf="
+          (loading$ | async) === false &&
+          ((collection$ | async)?.pageData?.totalRows ?? (collection$ | async)?.cards?.length) === 0
+        "
       >
         <div class="empty-icon"><i class="bi bi-collection"></i></div>
         <p class="empty-title">No cards yet</p>
@@ -253,174 +262,214 @@
 
       <!-- Card grid, cut into the sections Group By names. One header per section, then
            the same tiles as before — the tile markup is untouched by grouping. -->
-      <ng-container *ngIf="collection$ | async as col">
-        <div
-          class="col-groups"
-          *ngIf="col.cards.length > 0"
-          [class.is-text]="textStyle"
-          [class.is-list]="!textStyle && layout === 'list'"
-          [class.density-half]="!textStyle && layout === 'visual' && density === 'half'"
-          [class.density-name]="!textStyle && layout === 'visual' && density === 'name'"
-        >
-          <section class="col-group" *ngFor="let group of getGroups(col); trackBy: trackByGroupKey">
-            <!-- "No grouping" is one unlabelled section; a heading with no name would
+      <ng-container *ngIf="collection$ | async as col"
+        ><ng-container *ngIf="getGroups(col) as pageGroups">
+          <nav
+            class="collection-paging"
+            aria-label="Collection pages"
+            *ngIf="paging.total > paging.size"
+          >
+            <button (click)="paging.go(paging.index - 1)" [disabled]="paging.index === 0">
+              Previous</button
+            ><span
+              >Page {{ paging.index + 1 }} of {{ paging.pages }} · {{ paging.total }} matching
+              rows</span
+            ><button
+              (click)="paging.go(paging.index + 1)"
+              [disabled]="paging.index + 1 >= paging.pages"
+            >
+              Next
+            </button>
+          </nav>
+          <div
+            class="col-groups"
+            *ngIf="(col.pageData?.totalRows ?? col.cards.length) > 0"
+            [class.is-text]="textStyle"
+            [class.is-list]="!textStyle && layout === 'list'"
+            [class.density-half]="!textStyle && layout === 'visual' && density === 'half'"
+            [class.density-name]="!textStyle && layout === 'visual' && density === 'name'"
+          >
+            <section class="col-group" *ngFor="let group of pageGroups; trackBy: trackByGroupKey">
+              <!-- "No grouping" is one unlabelled section; a heading with no name would
                  read as a section that failed to render. -->
-            <header class="col-group-header" *ngIf="group.label">
-              <span class="col-group-label">{{ group.label }}</span>
-              <span class="col-group-count">{{ group.totalCount }}</span>
-            </header>
+              <header class="col-group-header" *ngIf="group.label">
+                <span class="col-group-label">{{ group.label }}</span>
+                <span class="col-group-count">{{ group.totalCount }}</span>
+              </header>
 
-            <!-- Text rows: no art at all, for scanning a large collection by name. Select
+              <!-- Text rows: no art at all, for scanning a large collection by name. Select
                  mode still has to work here — a control that silently stops applying when
                  you change layout reads as broken, so the row itself is the checkbox. -->
-            <div class="col-text-rows" *ngIf="textStyle">
-              <button
-                class="col-text-row"
-                *ngFor="let card of group.cards; trackBy: trackByCardId"
-                [class.is-selectable]="selectMode"
-                [class.is-selected]="selectMode && isSelected(card)"
-                (click)="selectMode ? toggleSelected(card, $event) : openCard(card)"
-                (mouseenter)="onCardHover(card)"
-                (mouseleave)="onCardLeave()"
-              >
-                <span class="col-text-check" *ngIf="selectMode">
-                  <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
-                </span>
-                <span class="col-text-qty">{{ card.quantity + card.quantityFoil }}</span>
-                <span class="col-text-name">{{ card.cardDetails?.name }}</span>
-                <app-mana-cost
-                  class="col-text-cost"
-                  [cost]="card.cardDetails?.manaCost ?? ''"
-                ></app-mana-cost>
-                <span class="col-text-set">
-                  <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
-                </span>
-              </button>
-            </div>
-
-            <div class="card-grid" *ngIf="!textStyle">
-              <div
-                class="card-wrap"
-                *ngFor="let card of group.cards; trackBy: trackByCardId"
-                [attr.data-card-id]="card.id"
-                (mouseenter)="onCardHover(card)"
-                (mouseleave)="onCardLeave()"
-              >
-                <!-- Selection checkbox, only while picking cards for a bulk move -->
+              <div class="col-text-rows" *ngIf="textStyle">
                 <button
-                  class="tile-select"
-                  *ngIf="selectMode"
-                  [class.is-checked]="isSelected(card)"
-                  (click)="toggleSelected(card, $event)"
-                  [attr.aria-pressed]="isSelected(card)"
-                  [title]="isSelected(card) ? 'Deselect' : 'Select'"
-                >
-                  <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
-                </button>
-                <!-- Visual tile -->
-                <app-card-tile
-                  class="card-tile"
+                  class="col-text-row"
+                  *ngFor="let card of group.cards; trackBy: trackByCardId"
                   [class.is-selectable]="selectMode"
                   [class.is-selected]="selectMode && isSelected(card)"
-                  (click)="selectMode && toggleSelected(card, $event)"
-                  [class.is-foil]="card.quantityFoil > 0"
-                  [class.has-info]="tileInfoId === card.id"
-                  [card]="card"
-                  [image]="tileImage(card)"
-                  [hasBack]="tileHasBack(card)"
-                  [flipped]="flippedCardIds.has(card.id)"
-                  [showInfo]="tileInfoId === card.id"
-                  (flip)="toggleTileFlip(card, $event)"
-                  (artClick)="onTileClick(card, $event)"
+                  (click)="selectMode ? toggleSelected(card, $event) : openCard(card)"
+                  (mouseenter)="onCardHover(card)"
+                  (mouseleave)="onCardLeave()"
                 >
-                  <div class="tile-badges" tileBadges>
-                    <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
-                    <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0"
-                      >✦{{ card.quantityFoil }}</span
-                    >
-                  </div>
-
-                  <!-- Hover strip: set picker + normal/foil quantities -->
-                  <div class="card-bottom" tileBottom (click)="$event.stopPropagation()">
-                    <!-- A dropdown that can only ever pick what is already selected is
-                     noise; one printing renders as a plain label instead. -->
-                    <span class="set-single-label" *ngIf="singlePrintingLabel(card) as only">
-                      <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
-                      {{ only }}
+                  <ng-container *appVirtualContent>
+                    <span class="col-text-check" *ngIf="selectMode">
+                      <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
                     </span>
-                    <app-select-menu
-                      *ngIf="!singlePrintingLabel(card)"
-                      class="set-select-menu"
-                      [options]="printingOptions(card)"
-                      [value]="pickerValue(card)"
-                      [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
-                      (opened)="onSelectFocus(card)"
-                      (valueChange)="onSetChange(card, $event)"
-                    ></app-select-menu>
-
-                    <div class="ctrl-strip-row">
-                      <div class="ctrl-row">
-                        <button
-                          class="ctrl-btn ctrl-dec"
-                          (click)="decrementNormal(card)"
-                          title="Remove regular"
-                        >
-                          −
-                        </button>
-                        <span class="ctrl-label"
-                          ><i class="bi bi-layers"></i> {{ card.quantity }}</span
-                        >
-                        <button
-                          class="ctrl-btn ctrl-inc"
-                          (click)="incrementNormal(card)"
-                          title="Add regular"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      <div class="ctrl-row ctrl-row-foil" [class.has-foil]="card.quantityFoil > 0">
-                        <button
-                          class="ctrl-btn ctrl-dec"
-                          (click)="decrementFoil(card)"
-                          title="Remove foil"
-                        >
-                          −
-                        </button>
-                        <span class="ctrl-label ctrl-label-foil">✦ {{ card.quantityFoil }}</span>
-                        <button
-                          class="ctrl-btn ctrl-inc"
-                          (click)="incrementFoil(card)"
-                          title="Add foil"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </app-card-tile>
+                    <span class="col-text-qty">{{
+                      card.quantity + card.quantityFoil + (card.quantityEtched ?? 0)
+                    }}</span>
+                    <span class="col-text-name">{{ card.cardDetails?.name }}</span>
+                    <app-mana-cost
+                      class="col-text-cost"
+                      [cost]="card.cardDetails?.manaCost ?? ''"
+                    ></app-mana-cost>
+                    <span class="col-text-set">
+                      <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
+                    </span>
+                  </ng-container>
+                </button>
               </div>
-            </div>
-          </section>
 
-          <!-- No filter results -->
-          <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filters.query">
-            No cards match "{{ filters.query }}"
+              <div class="card-grid" *ngIf="!textStyle">
+                <div
+                  class="card-wrap"
+                  *ngFor="let card of group.cards; trackBy: trackByCardId"
+                  [attr.data-card-id]="card.id"
+                  (mouseenter)="onCardHover(card)"
+                  (mouseleave)="onCardLeave()"
+                >
+                  <ng-container *appVirtualContent>
+                    <!-- Selection checkbox, only while picking cards for a bulk move -->
+                    <button
+                      class="tile-select"
+                      *ngIf="selectMode"
+                      [class.is-checked]="isSelected(card)"
+                      (click)="toggleSelected(card, $event)"
+                      [attr.aria-pressed]="isSelected(card)"
+                      [title]="isSelected(card) ? 'Deselect' : 'Select'"
+                    >
+                      <i class="bi" [class.bi-check-lg]="isSelected(card)"></i>
+                    </button>
+                    <!-- Visual tile -->
+                    <app-card-tile
+                      class="card-tile"
+                      [class.is-selectable]="selectMode"
+                      [class.is-selected]="selectMode && isSelected(card)"
+                      (click)="selectMode && toggleSelected(card, $event)"
+                      [class.is-foil]="card.quantityFoil > 0"
+                      [class.has-info]="tileInfoId === card.id"
+                      [card]="card"
+                      [image]="tileImage(card)"
+                      [hasBack]="tileHasBack(card)"
+                      [flipped]="flippedCardIds.has(card.id)"
+                      [showInfo]="tileInfoId === card.id"
+                      (flip)="toggleTileFlip(card, $event)"
+                      (artClick)="onTileClick(card, $event)"
+                    >
+                      <div class="tile-badges" tileBadges>
+                        <span class="qty-pill" *ngIf="card.quantity > 0">×{{ card.quantity }}</span>
+                        <span class="qty-pill qty-pill--foil" *ngIf="card.quantityFoil > 0"
+                          >✦{{ card.quantityFoil }}</span
+                        ><span
+                          class="qty-pill qty-pill--foil"
+                          *ngIf="(card.quantityEtched ?? 0) > 0"
+                          >{{ card.quantityEtched }} etched</span
+                        >
+                      </div>
+
+                      <!-- Hover strip: set picker + normal/foil quantities -->
+                      <div class="card-bottom" tileBottom (click)="$event.stopPropagation()">
+                        <!-- A dropdown that can only ever pick what is already selected is
+                     noise; one printing renders as a plain label instead. -->
+                        <span class="set-single-label" *ngIf="singlePrintingLabel(card) as only">
+                          <app-set-icon [setCode]="card.cardDetails?.setCode"></app-set-icon>
+                          {{ only }}
+                        </span>
+                        <app-select-menu
+                          *ngIf="!singlePrintingLabel(card)"
+                          class="set-select-menu"
+                          [options]="printingOptions(card)"
+                          [value]="pickerValue(card)"
+                          [placeholder]="card.cardDetails?.setCode?.toUpperCase() ?? '···'"
+                          (opened)="onSelectFocus(card)"
+                          (valueChange)="onSetChange(card, $event)"
+                        ></app-select-menu>
+
+                        <div class="ctrl-strip-row">
+                          <div class="ctrl-row">
+                            <button
+                              class="ctrl-btn ctrl-dec"
+                              (click)="decrementNormal(card)"
+                              title="Remove regular"
+                            >
+                              −
+                            </button>
+                            <span class="ctrl-label"
+                              ><i class="bi bi-layers"></i> {{ card.quantity }}</span
+                            >
+                            <button
+                              class="ctrl-btn ctrl-inc"
+                              (click)="incrementNormal(card)"
+                              title="Add regular"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div
+                            class="ctrl-row ctrl-row-foil"
+                            [class.has-foil]="card.quantityFoil > 0"
+                          >
+                            <button
+                              class="ctrl-btn ctrl-dec"
+                              (click)="decrementFoil(card)"
+                              title="Remove foil"
+                            >
+                              −
+                            </button>
+                            <span class="ctrl-label ctrl-label-foil"
+                              >✦ {{ card.quantityFoil }}</span
+                            >
+                            <button
+                              class="ctrl-btn ctrl-inc"
+                              (click)="incrementFoil(card)"
+                              title="Add foil"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </app-card-tile>
+                  </ng-container>
+                </div>
+              </div>
+            </section>
+
+            <!-- No filter results -->
+            <div class="no-filter-results" *ngIf="filteredCards(col).length === 0 && filters.query">
+              No cards match "{{ filters.query }}"
+            </div>
           </div>
-        </div>
-      </ng-container>
+        </ng-container></ng-container
+      >
     </main>
 
     <!-- Cover sidebar -->
 
     <!-- Search panel (shared component, slides in from right; fills the main area in swap mode) -->
     <app-card-search-panel
+      [collectionId]="(collection$ | async)?.id ?? null"
       [isOpen]="showSearchPanel"
       [boardMode]="swapMode"
       [ownedCards]="(collection$ | async)?.cards ?? []"
       (cardAdd)="onPanelCardAdd($event)"
       (cardRemove)="onPanelCardRemove($event)"
       (cardDecrementNormal)="onPanelDecrementNormal($event)"
+      (copyDecrement)="
+        $event.foil
+          ? onPanelDecrementFoil($event.oracleId, $event)
+          : onPanelDecrementNormal($event.oracleId, $event)
+      "
       (cardDecrementFoil)="onPanelDecrementFoil($event)"
       (panelClose)="onSearchPanelClose()"
     ></app-card-search-panel>
@@ -445,7 +494,9 @@
             </button>
           </div>
           <span class="side-list-count"
-            >{{ col.cards.length }} card{{ col.cards.length !== 1 ? 's' : '' }}</span
+            >{{ col.pageData?.totalRows ?? col.cards.length }} card{{
+              (col.pageData?.totalRows ?? col.cards.length) !== 1 ? 's' : ''
+            }}</span
           >
         </div>
       </app-card-side-list>
@@ -481,7 +532,7 @@
         [alsoOwnedIds]="getAlsoOwnedIds(modalCol)"
         [countBadge]="modalCount(modalCol, card)"
         [foilCountBadge]="modalFoilCount(modalCol, card)"
-        [infoTabLabel]="viewedEntry(modalCol, card) ? 'Notes' : null"
+        [infoTabLabel]="viewedEntry(modalCol, card) ? 'Owned details' : null"
         [ownedEntry]="viewedEntry(modalCol, card)"
         (closed)="closeCard()"
       >
@@ -498,6 +549,13 @@
           <i class="bi bi-box-arrow-right"></i> Move to…
         </button>
         <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
+          <app-copy-language-picker
+            [value]="modalLanguage ?? card.language ?? 'en'"
+            (valueChange)="modalLanguage = $event"
+            [normalCount]="viewedEntry(modalCol, card)?.quantity ?? 0"
+            [foilCount]="viewedEntry(modalCol, card)?.quantityFoil ?? 0"
+            [etchedCount]="viewedEntry(modalCol, card)?.quantityEtched ?? 0"
+          />
           <ng-container *ngIf="modalViewScryfallId; else noScryfallHint">
             <div class="modal-btn-pair">
               <button class="modal-action-btn" (click)="modalIncrementNormal(modalCol, card)">
@@ -505,6 +563,9 @@
               </button>
               <button class="modal-action-btn" (click)="modalIncrementFoil(modalCol, card)">
                 <i class="bi bi-plus-lg"></i> ✦ Foil
+              </button>
+              <button class="modal-action-btn" (click)="modalChangeEtched(modalCol, card, 1)">
+                + Etched
               </button>
             </div>
           </ng-container>
@@ -528,6 +589,13 @@
             >
               <i class="bi bi-dash-lg"></i> ✦ Foil
             </button>
+            <button
+              class="modal-action-btn modal-action-btn--remove"
+              [disabled]="(viewed.quantityEtched ?? 0) <= 0"
+              (click)="modalChangeEtched(modalCol, card, -1)"
+            >
+              − Etched
+            </button>
           </div>
         </div>
         <!-- Notes live in a tab beside the card details -->
@@ -537,9 +605,16 @@
             [value]="noteDraftValue(viewed)"
             (input)="setNoteDraft(viewed.id, $any($event.target).value)"
             (blur)="saveNotes(viewed)"
-            placeholder="Add personal notes…"
+            placeholder="Notes for all finishes…"
             rows="6"
           ></textarea>
+          <app-collection-metadata
+            [collectionId]="modalCol.id"
+            [rowId]="viewed.id"
+            [quantities]="viewed"
+            (languageChanged)="modalLanguage = $event"
+            (saved)="refreshDetails(modalCol.id)"
+          />
         </div>
       </app-card-modal>
     </ng-container>
@@ -556,6 +631,9 @@
     <span class="select-fill"></span>
     <button class="select-move-btn" [disabled]="!selectedIds.size" (click)="openBulkMove()">
       <i class="bi bi-box-arrow-right"></i> Move to…
+    </button>
+    <button class="select-link" [disabled]="!selectedIds.size" (click)="bulkDetailsOpen = true">
+      Edit selected…
     </button>
     <button class="select-link" (click)="toggleSelectMode()">Done</button>
   </div>
@@ -580,7 +658,20 @@
     [targets]="(moveTargets$ | async) ?? []"
     confirmLabel="Move"
     emptyText="You need another collection to move this card to."
-    (confirmed)="confirmMove(moving, $event.targetId)"
+    [quantities]="moving"
+    [allowCreate]="true"
+    [error]="moveError"
+    [busy]="moveBusy"
+    (confirmed)="confirmMove(moving, $event.targetId, $event)"
     (closed)="closeMove()"
   ></app-collection-picker-dialog>
 </div>
+
+<app-collection-bulk-tools
+  *ngIf="collection$ | async as toolsCollection"
+  [open]="bulkDetailsOpen"
+  [collectionId]="toolsCollection.id"
+  [selectedIds]="selectedIds"
+  (closed)="bulkDetailsOpen = false"
+  (changed)="refreshDetails(toolsCollection.id)"
+/>

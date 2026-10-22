@@ -1,0 +1,110 @@
+@use '../../../styles/breakpoints' as *;
+.community-charts {
+  margin: 18px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text-primary);
+}
+summary {
+  cursor: pointer;
+  min-height: $tap-min;
+  display: flex;
+  align-items: center;
+}
+h2 {
+  font-size: calc(16px * var(--text-scale, 1));
+  margin: 10px 0;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 20px;
+}
+section {
+  min-width: 0;
+}
+dl {
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+}
+dl > div {
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 7px 0 11px;
+  font-size: calc(12px * var(--text-scale, 1));
+}
+dt {
+  overflow-wrap: anywhere;
+  max-width: 75%;
+}
+dd {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.bar {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+svg {
+  display: block;
+  width: 100%;
+  max-height: 250px;
+  overflow: visible;
+}
+polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+line {
+  stroke: var(--border-subtle);
+  stroke-width: 0.3;
+}
+circle {
+  fill: var(--accent);
+  cursor: default;
+}
+circle:hover,
+circle:focus {
+  stroke: var(--text-primary);
+  stroke-width: 0.6;
+  outline: none;
+}
+.scatter {
+  margin-top: 24px;
+}
+.scatter p {
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--text-secondary);
+}
+.scatter svg {
+  max-height: 360px;
+}
+
+.scatter-card {
+  min-width: $tap-min;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  min-height: $tap-min;
+  padding: 6px 0;
+  text-align: left;
+}
+
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

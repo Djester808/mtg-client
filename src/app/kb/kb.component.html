@@ -10,15 +10,18 @@
     class="relative z-[1] flex items-center gap-4 px-6 py-3.5 border-b border-solid border-dim bg-[rgba(8,8,8,0.7)] backdrop-blur-[8px] shrink-0"
   >
     <button
-      class="back-btn bg-transparent border border-solid border-subtle rounded-[7px] text-parchment-muted font-display text-[10px] tracking-[0.1em] px-3 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-[180ms] hover:border-gold hover:text-gold"
+      class="back-btn bg-transparent border border-solid border-subtle rounded-[7px] text-parchment-muted font-display text-[length:calc(10px*var(--text-scale,1))] tracking-[0.1em] px-3 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-[180ms] hover:border-gold hover:text-gold"
       (click)="back()"
     >
       ← Back
     </button>
     <div class="flex items-center gap-2.5 min-w-0">
-      <span class="text-gold text-[18px] drop-shadow-[0_0_8px_rgba(201,168,76,0.5)]">✦</span>
       <span
-        class="font-display text-[13px] tracking-[0.12em] uppercase text-parchment-muted truncate"
+        class="text-gold text-[length:calc(18px*var(--text-scale,1))] drop-shadow-[0_0_8px_rgba(184,0,224,0.5)]"
+        >✦</span
+      >
+      <span
+        class="font-display text-[length:calc(13px*var(--text-scale,1))] tracking-[0.12em] uppercase text-parchment-muted truncate"
       >
         <span class="text-gold">MTG</span> Rules
       </span>
@@ -27,7 +30,7 @@
     <!-- Provenance, not decoration: a rules reference is only trustworthy if it says
          which release it is. -->
     <span
-      class="kb-effective font-display text-[9px] tracking-[0.1em] text-parchment-faint"
+      class="kb-effective font-display text-[length:calc(9px*var(--text-scale,1))] tracking-[0.1em] text-parchment-faint"
       *ngIf="meta"
     >
       {{ meta.effectiveDate }}
@@ -213,11 +216,13 @@
   <ng-template #notReady>
     <div class="kb-state">
       <ng-container *ngIf="loading">
-        <div class="text-[28px] text-gold animate-pulse-gold">✦</div>
+        <div class="text-[length:calc(28px*var(--text-scale,1))] text-gold animate-pulse-gold">
+          ✦
+        </div>
         <span class="kb-state-label">Loading the rules…</span>
       </ng-container>
       <ng-container *ngIf="failed">
-        <div class="text-[28px] text-gold-dim opacity-50">✦</div>
+        <div class="text-[length:calc(28px*var(--text-scale,1))] text-gold-dim opacity-50">✦</div>
         <span class="kb-state-label">The rules could not be loaded.</span>
         <button type="button" class="kb-retry" (click)="retry()">Try again</button>
       </ng-container>

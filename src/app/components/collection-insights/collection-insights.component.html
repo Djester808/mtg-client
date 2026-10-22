@@ -1,0 +1,23 @@
+<section class="collection-insights" aria-label="Collection insights">
+  <article *ngFor="let section of summary ?? insights.compute(cards)">
+    <h3>{{ section.title }}</h3>
+    <ng-container *ngIf="!section.money || !preferences.state().hideCollectionValue; else hidden">
+      <p *ngIf="!section.points.length">No recorded data available.</p>
+      <div class="insight-row" *ngFor="let point of section.points">
+        <div class="insight-label">
+          <span>{{ point.label }}</span
+          ><strong>{{
+            section.money ? (point.value | currency: 'USD') : (point.value | number)
+          }}</strong>
+        </div>
+        <div class="insight-track" aria-hidden="true">
+          <div
+            [class.negative]="point.value < 0"
+            [style.width.%]="((point.value < 0 ? -point.value : point.value) / section.max) * 100"
+          ></div>
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #hidden><p>Show collection value to see this chart.</p></ng-template>
+  </article>
+</section>

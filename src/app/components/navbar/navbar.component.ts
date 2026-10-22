@@ -2,6 +2,7 @@ import {
   Component,
   ChangeDetectionStrategy,
   HostListener,
+  inject,
   computed,
   effect,
   signal,
@@ -14,6 +15,7 @@ import { AuthActions } from '../../store/auth/auth.actions';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointsService } from '../../shared/breakpoints.service';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
+import { UiPreferencesService } from '../../services/ui-preferences.service';
 import { ProfileApiService } from '../../services/profile-api.service';
 
 /** One destination in the primary nav. */
@@ -33,6 +35,8 @@ interface NavLink {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
+  readonly preferences = inject(UiPreferencesService);
+  readonly navSymbols = ['⌕', '▶', '▤', '▣', '♧', '◇', '?'];
   isLoggedIn$ = this.store.select(selectIsLoggedIn);
   accountOpen = signal(false);
 

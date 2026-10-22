@@ -44,7 +44,7 @@
   border: 1px solid var(--gold-dim);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-primary);
 
   @include upto($bp-phone) {
@@ -66,15 +66,15 @@
 
 .mp-title {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   letter-spacing: 0.04em;
-  color: var(--gold);
+  color: var(--accent-text);
   text-transform: uppercase;
 }
 
 .mp-note {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   line-height: 1.35;
 }
 
@@ -107,7 +107,7 @@
 
 .mp-state {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 // The two admissions, told apart at a glance. The same two words appear on the card itself
@@ -116,14 +116,14 @@
 .mp-badge {
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.03em;
   text-transform: uppercase;
 
   &.is-honour {
     background: rgb(214 158 46 / 18%);
     border: 1px solid var(--gold-dim);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -154,7 +154,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   cursor: pointer;
 
   &:hover,
@@ -196,7 +196,7 @@
   border: 0;
   border-radius: 6px;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   text-align: left;
   cursor: pointer;
 
@@ -213,7 +213,7 @@
 
 .mp-tap.is-tapped {
   border-color: var(--gold);
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .mp-counters {
@@ -230,7 +230,7 @@
 
 .mp-kind-label {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .mp-kind-input {
@@ -246,12 +246,12 @@
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .mp-step {
   min-width: 28px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   line-height: 1;
 
   @include touch {
@@ -264,7 +264,7 @@
   gap: 6px;
   flex-wrap: wrap;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .mp-lives {
@@ -291,7 +291,7 @@
 .mp-life-total {
   min-width: 28px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   text-align: center;
-  color: var(--gold);
+  color: var(--accent-text);
 }

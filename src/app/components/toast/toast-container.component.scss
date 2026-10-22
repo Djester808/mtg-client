@@ -11,7 +11,11 @@
 }
 
 .toast {
-  @apply flex items-center gap-2 py-2 px-3.5 rounded-lg border border-solid border-subtle bg-raised shadow-[0_4px_20px_rgba(0,0,0,0.5)] cursor-pointer pointer-events-auto whitespace-nowrap max-w-[280px];
+  @apply flex items-center gap-2 py-2 px-3.5 rounded-lg border border-solid border-subtle bg-raised shadow-[0_4px_20px_rgba(0,0,0,0.5)] cursor-default pointer-events-none whitespace-nowrap max-w-[280px];
+
+  &.is-persistent {
+    @apply cursor-pointer pointer-events-auto;
+  }
 
   &.success {
     border-color: rgba(39, 174, 96, 0.4);

@@ -33,15 +33,15 @@ import { selectHasPriority, selectPriorityPlayerId, selectPlayers } from '../../
         transition: all 0.3s;
       }
       .priority.has-priority {
-        background: rgba(201, 168, 76, 0.12);
-        border-color: rgba(201, 168, 76, 0.3);
+        background: rgba(184, 0, 224, 0.12);
+        border-color: rgba(184, 0, 224, 0.3);
         .dot {
           background: var(--gold);
           box-shadow: 0 0 6px var(--gold);
           animation: pulse-gold 1.5s ease-in-out infinite;
         }
         .label {
-          color: var(--gold);
+          color: var(--accent-text);
         }
       }
       .dot {
@@ -53,7 +53,7 @@ import { selectHasPriority, selectPriorityPlayerId, selectPlayers } from '../../
       }
       .label {
         font-family: var(--font-display);
-        font-size: 10px;
+        font-size: calc(10px * var(--text-scale, 1));
         color: var(--text-secondary);
         letter-spacing: 0.08em;
         white-space: nowrap;

@@ -62,11 +62,11 @@ async function signIn(player) {
     ).token;
   } catch {
     return (
-      await api(null, 'POST', '/api/auth/register', {
+      await api(null, 'POST', '/api/auth/register', {...({
         username: player.username,
         email: player.email || player.username + '@example.invalid',
         password: player.password,
-      })
+      }), acceptedTerms:true})
     ).token;
   }
 }

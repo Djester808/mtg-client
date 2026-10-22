@@ -110,6 +110,30 @@ describe('AiDeckBuilderComponent', () => {
     return fixture;
   }
 
+  it('restores a complete proposal without generating another paid plan', () => {
+    localStorage.setItem('auth_token', 'x.' + btoa(JSON.stringify({ sub: 'plan-owner' })) + '.x');
+    const first = create();
+    first.componentInstance.plan = planFor('old');
+    first.componentInstance.step = 'plan';
+    first.componentInstance.picked = commander();
+    first.destroy();
+    const second = create();
+    expect(second.componentInstance.plan?.commanderName).toBe('Test Commander');
+    expect(second.componentInstance.step).toBe('plan');
+    expect(second.componentInstance.deckId).toBeNull();
+    second.destroy();
+    localStorage.removeItem('compleat.draft.v1.plan-owner.builder.current');
+  });
+  it('restores an owner-scoped brief after leaving and returning', () => {
+    localStorage.setItem('auth_token', 'x.' + btoa(JSON.stringify({ sub: 'draft-owner' })) + '.x');
+    const first = create();
+    first.componentInstance.brief = 'Keep this draft';
+    first.destroy();
+    const second = create();
+    expect(second.componentInstance.brief).toBe('Keep this draft');
+    second.destroy();
+    localStorage.removeItem('compleat.draft.v1.draft-owner.builder.current');
+  });
   function suggest(fixture: ReturnType<typeof create>, commanders: CommanderSuggestion[]) {
     fixture.componentInstance.suggestCommanders();
     http.expectOne('/api/decks/commander-suggestions').flush({

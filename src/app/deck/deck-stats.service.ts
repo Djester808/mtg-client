@@ -42,7 +42,7 @@ export class DeckStatsService {
   private cache: { deck: DeckDetailDto; stats: DeckStats } | null = null;
 
   private cardCount(card: CollectionCardDto): number {
-    return card.quantity + card.quantityFoil;
+    return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
   }
 
   private isLand(card: CollectionCardDto): boolean {
@@ -89,7 +89,7 @@ export class DeckStatsService {
       const cmc = Math.min(c.cardDetails?.manaValue ?? 0, 7);
       curveData.set(cmc, (curveData.get(cmc) ?? 0) + this.cardCount(c));
     }
-    const curve = [1, 2, 3, 4, 5, 6, 7].map((cmc) => ({
+    const curve = [0, 1, 2, 3, 4, 5, 6, 7].map((cmc) => ({
       cmc,
       count: curveData.get(cmc) ?? 0,
       label: cmc === 7 ? '7+' : String(cmc),
@@ -127,6 +127,13 @@ export class DeckStatsService {
     // Mana production — parse oracle text for "add {X}" patterns
     const prodCounts: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
     for (const c of cards) {
+      const structured = c.cardDetails?.producedMana;
+      if (structured) {
+        for (const color of new Set(structured))
+          if (Object.prototype.hasOwnProperty.call(prodCounts, color))
+            prodCounts[color] += this.cardCount(c);
+        continue;
+      }
       const text = c.cardDetails?.oracleText ?? '';
       if (!text.toLowerCase().includes('add')) continue;
       const qty = this.cardCount(c);
@@ -134,19 +141,15 @@ export class DeckStatsService {
         for (const col of ALL_COLORS) prodCounts[col] += qty;
         continue;
       }
-      const addRe = /add[^.;\n]*?\{([^}]+)\}/gi;
-      let am: RegExpExecArray | null;
-      while ((am = addRe.exec(text)) !== null) {
-        const sym = am[1].toUpperCase();
-        if (sym.includes('/')) {
-          const parts = sym
-            .split('/')
-            .filter((p) => Object.prototype.hasOwnProperty.call(prodCounts, p));
-          for (const p of parts) prodCounts[p] += qty;
-        } else if (Object.prototype.hasOwnProperty.call(prodCounts, sym)) {
-          prodCounts[sym] += qty;
+      const produced = new Set<string>();
+      for (const clause of text.matchAll(/\badd\b[^.;\n]*/gi)) {
+        for (const symbol of clause[0].matchAll(/\{([^}]+)\}/g)) {
+          for (const color of symbol[1].toUpperCase().split('/')) {
+            if (Object.prototype.hasOwnProperty.call(prodCounts, color)) produced.add(color);
+          }
         }
       }
+      for (const color of produced) prodCounts[color] += qty;
     }
     const manaProduction = ALL_COLORS_C.map((color) => ({
       color,

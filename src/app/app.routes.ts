@@ -7,6 +7,53 @@ import { authGuard } from './guards/auth.guard';
 // never open them.
 export const routes: Routes = [
   {
+    path: 'account/sharing',
+    canActivate: [authGuard],
+    data: { owner: true },
+    loadComponent: () =>
+      import('./community/public-collection/public-collection.component').then(
+        (m) => m.PublicCollectionComponent,
+      ),
+  },
+  {
+    path: 'u/:username/collection',
+    loadComponent: () =>
+      import('./community/public-collection/public-collection.component').then(
+        (m) => m.PublicCollectionComponent,
+      ),
+  },
+  { path: 'explore', redirectTo: '/community/explore', pathMatch: 'full' },
+  {
+    path: 'explore/commanders/:id/average',
+    data: { kind: 'average' },
+    loadComponent: () => import('./explore/explore.component').then((m) => m.ExploreComponent),
+  },
+  {
+    path: 'explore/commanders/:id',
+    data: { kind: 'commander' },
+    loadComponent: () => import('./explore/explore.component').then((m) => m.ExploreComponent),
+  },
+  {
+    path: 'explore/cards/:id',
+    data: { kind: 'card' },
+    loadComponent: () => import('./explore/explore.component').then((m) => m.ExploreComponent),
+  },
+  {
+    path: 'settings',
+    loadComponent: () => import('./settings/settings.component').then((m) => m.SettingsComponent),
+  },
+  {
+    path: 'recover-account',
+    loadComponent: () =>
+      import('./account/account-recovery.component').then((m) => m.AccountRecoveryComponent),
+  },
+  {
+    path: 'account/security',
+    loadComponent: () =>
+      import('./account/account-security.component').then((m) => m.AccountSecurityComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: '',
     loadComponent: () => import('./home/home.component').then((m) => m.HomeComponent),
     pathMatch: 'full',
@@ -99,6 +146,10 @@ export const routes: Routes = [
       import('./community/community.component').then((m) => m.CommunityComponent),
     children: [
       { path: '', redirectTo: 'forum', pathMatch: 'full' },
+      {
+        path: 'explore',
+        loadComponent: () => import('./explore/explore.component').then((m) => m.ExploreComponent),
+      },
       {
         path: 'forum',
         loadComponent: () =>

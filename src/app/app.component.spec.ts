@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { provideMockStore } from '@ngrx/store/testing';
@@ -23,6 +23,18 @@ describe('AppComponent', () => {
     const sheets = fixture.nativeElement.querySelectorAll('app-keyword-sheet');
     expect(sheets.length).withContext('exactly one keyword sheet in the shell').toBe(1);
   });
+
+  it('keeps the app inert until the Compleat intro completes', fakeAsync(() => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.app-shell').hasAttribute('inert')).toBeTrue();
+    fixture.nativeElement.querySelector('.intro-skip').click();
+    tick(320);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-brand-intro')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.app-shell').hasAttribute('inert')).toBeFalse();
+    fixture.destroy();
+  }));
 
   it('keeps the shell chrome it already had', () => {
     const fixture = TestBed.createComponent(AppComponent);

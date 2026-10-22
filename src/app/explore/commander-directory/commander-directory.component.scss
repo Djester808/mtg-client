@@ -1,0 +1,73 @@
+@use '../../../styles/breakpoints' as *;
+:host {
+  display: block;
+  min-width: 0;
+}
+.commander-directory {
+  padding: 16px 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+.directory-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: calc(12px * var(--text-scale, 1));
+}
+input,
+select,
+button {
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  min-height: $tap-min;
+  padding: 8px 12px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.directory-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+}
+a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  text-decoration: none;
+  min-width: 0;
+}
+img {
+  width: 42px;
+  border-radius: 4px;
+}
+span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+small {
+  display: block;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+button:disabled {
+  opacity: 0.4;
+}

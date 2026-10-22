@@ -75,7 +75,7 @@ export interface PieSlice {
         display: flex;
         align-items: center;
         gap: 7px;
-        font-size: 11px;
+        font-size: calc(11px * var(--text-scale, 1));
         animation: pc-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
         animation-delay: calc(var(--i, 0) * 45ms);
       }
@@ -92,7 +92,7 @@ export interface PieSlice {
         flex-shrink: 0;
       }
       .pc-ms {
-        font-size: 14px;
+        font-size: calc(14px * var(--text-scale, 1));
         flex-shrink: 0;
       }
       .pc-label {
@@ -101,10 +101,10 @@ export interface PieSlice {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 10px;
+        font-size: calc(10px * var(--text-scale, 1));
       }
       .pc-pct {
-        font-size: 10px;
+        font-size: calc(10px * var(--text-scale, 1));
         font-weight: 700;
         color: var(--text-primary);
       }

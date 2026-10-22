@@ -12,8 +12,14 @@
     "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
     "verify": "npm run format:check && ng lint && node tools/check-dead-styles.js && node tools/check-shared-treatments.js && node tools/check-ui-states.js && ng test --watch=false --browsers=ChromeHeadless --code-coverage && node tools/check-new-coverage.js && ng build --configuration production",
-    "verify:ui": "cd e2e && node shoot.js --dpr=1 && node shoot-states.js && node verify-same.js && node sheet.js && cd .. && node tools/check-ui-audit.js",
-    "verify:ui:update": "node tools/check-ui-audit.js --update"
+    "verify:ui": "cd e2e && node shoot.js --dpr=1 && node shoot-states.js && node shoot-states.js --devices=desktop --only=board,commander-charts,settings-accessibility,deck-type-pie,profile-format-menu && node verify-same.js && node sheet.js && cd .. && node tools/check-ui-audit.js && npm run verify:brand && npm run verify:parity-port && npm run verify:collection-scale && npm run verify:explore-port && npm run verify:draft-port",
+    "verify:ui:update": "node tools/check-ui-audit.js --update",
+    "verify:brand": "node e2e/verify-brand.js",
+    "verify:responsive": "node e2e/verify-responsive.js",
+    "verify:parity-port": "node e2e/verify-parity-port.js",
+    "verify:explore-port": "node e2e/verify-explore-port.js",
+    "verify:collection-scale": "node e2e/verify-collection-scale.js",
+    "verify:draft-port": "node e2e/verify-draft-port.js"
   },
   "dependencies": {
     "@angular/animations": "^17.3.0",

@@ -53,6 +53,21 @@ describe('CardHistoryPanelComponent', () => {
 
   // ---- Loading ---------------------------------------------------------
 
+  it('reports etched changes and remaining copies with the correct direction', () => {
+    component.entries = [
+      entry({
+        eventType: 'QuantityChanged',
+        quantityDelta: 0,
+        quantityFoilDelta: 0,
+        quantityEtchedDelta: -2,
+        quantityAfter: 0,
+        quantityEtchedAfter: 3,
+      }),
+    ];
+    expect(component.rows[0].headline).toBe('Removed 2 etched');
+    expect(component.rows[0].detail).toContain('3 etched after');
+    expect(component.rows[0].tone).toBe('loss');
+  });
   it('fetches history for the oracle id on init', () => {
     init();
     expect(api.getCardHistory).toHaveBeenCalledWith('oracle-1');

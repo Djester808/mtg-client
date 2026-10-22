@@ -2,25 +2,25 @@
   <div
     class="w-full max-w-[400px] px-10 py-12 bg-surface border border-solid border-dim rounded-2xl animate-fade-up"
   >
-    <div class="text-[28px] text-gold text-center mb-5 drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]">
-      &#9670;
-    </div>
+    <img class="compleat-auth-logo" src="assets/brand/logo.png" alt="Compleat" />
     <h1
-      class="font-display text-[28px] font-bold tracking-[0.1em] uppercase text-parchment text-center mb-2"
+      class="font-display text-[length:calc(28px*var(--text-scale,1))] font-bold tracking-[0.1em] uppercase text-parchment text-center mb-2"
     >
       Create Account
     </h1>
-    <p class="text-[13px] text-parchment-muted text-center mb-8">Join MTG Engine</p>
+    <p class="text-[length:calc(13px*var(--text-scale,1))] text-parchment-muted text-center mb-8">
+      Join Compleat
+    </p>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form flex flex-col gap-5">
       <div class="flex flex-col gap-1.5">
         <label
-          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          class="font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
           for="username"
         >
           Username
           <span class="font-body font-normal normal-case tracking-normal text-parchment-faint"
-            >(min 3 characters)</span
+            >(3–32 letters, numbers or underscores)</span
           >
         </label>
         <input
@@ -35,7 +35,7 @@
 
       <div class="flex flex-col gap-1.5">
         <label
-          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          class="font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
           for="email"
           >Email</label
         >
@@ -51,12 +51,12 @@
 
       <div class="flex flex-col gap-1.5">
         <label
-          class="font-display text-[11px] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
+          class="font-display text-[length:calc(11px*var(--text-scale,1))] font-semibold tracking-[0.12em] uppercase text-parchment-muted"
           for="password"
         >
           Password
           <span class="font-body font-normal normal-case tracking-normal text-parchment-faint"
-            >(min 6 characters)</span
+            >(8–128 characters)</span
           >
         </label>
         <input
@@ -69,8 +69,30 @@
         />
       </div>
 
+      <p class="auth-strength" aria-live="polite">Password strength: {{ passwordStrength }}</p>
+      <label class="confirm-label" for="confirmPassword">Confirm password</label>
+      <input
+        id="confirmPassword"
+        class="field-input"
+        type="password"
+        formControlName="confirmPassword"
+        autocomplete="new-password"
+      />
       <p
-        class="auth-error text-[13px] text-[#e74c3c] text-center m-0"
+        class="auth-error"
+        *ngIf="form.controls.confirmPassword.touched && form.hasError('passwordMismatch')"
+      >
+        Passwords must match.
+      </p>
+      <details class="auth-terms">
+        <summary>Read the terms of use</summary>
+        <pre>{{ termsText }}</pre>
+      </details>
+      <label class="terms-choice"
+        ><input type="checkbox" formControlName="acceptedTerms" /> I accept the terms of use</label
+      >
+      <p
+        class="auth-error text-[length:calc(13px*var(--text-scale,1))] text-[#e74c3c] text-center m-0"
         *ngIf="error$ | async as error"
       >
         {{ error }}
@@ -86,7 +108,9 @@
       </button>
     </form>
 
-    <p class="auth-link text-[13px] text-parchment-muted text-center mt-6">
+    <p
+      class="auth-link text-[length:calc(13px*var(--text-scale,1))] text-parchment-muted text-center mt-6"
+    >
       Already have an account?
       <a routerLink="/login" class="text-gold no-underline hover:underline">Sign in</a>
     </p>

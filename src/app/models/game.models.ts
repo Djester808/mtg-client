@@ -54,6 +54,9 @@ export interface SynergyScore {
 }
 
 export interface CardDto {
+  collectorNumber?: string | null;
+  producedMana?: string[] | null;
+  colors?: ManaColor[] | null;
   cardId: string;
   oracleId: string;
   name: string;

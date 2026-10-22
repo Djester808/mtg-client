@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { OwnerDraftsService } from '../../services/owner-drafts.service';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
@@ -9,6 +11,7 @@ import { describeHttpError } from '../../utils/http-error.utils';
 
 @Injectable()
 export class ForumEffects {
+  private readonly drafts = inject(OwnerDraftsService);
   loadPosts$ = createEffect(() =>
     this.actions$.pipe(
       ofType(ForumActions.loadPosts),
@@ -49,7 +52,10 @@ export class ForumEffects {
     () =>
       this.actions$.pipe(
         ofType(ForumActions.publishDeckSuccess),
-        tap(({ post }) => this.router.navigate(['/forum', post.id])),
+        tap(({ post }) => {
+          this.drafts.remove('publish', post.deckId);
+          void this.router.navigate(['/forum', post.id]);
+        }),
       ),
     { dispatch: false },
   );

@@ -122,7 +122,12 @@ export const deckReducer = createReducer(
         ...state.activeDeck,
         cards: state.activeDeck.cards.map((c) =>
           c.id === cardId
-            ? { ...c, quantity: request.quantity, quantityFoil: request.quantityFoil }
+            ? {
+                ...c,
+                quantity: request.quantity,
+                quantityFoil: request.quantityFoil,
+                quantityEtched: request.quantityEtched ?? c.quantityEtched,
+              }
             : c,
         ),
       },
@@ -171,7 +176,12 @@ export const deckReducer = createReducer(
           c.id === card.id
             ? authoritative
               ? card
-              : { ...card, quantity: c.quantity, quantityFoil: c.quantityFoil }
+              : {
+                  ...card,
+                  quantity: c.quantity,
+                  quantityFoil: c.quantityFoil,
+                  quantityEtched: c.quantityEtched,
+                }
             : c,
         ),
       },

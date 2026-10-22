@@ -1,3 +1,4 @@
+import { storedAuth } from '../../services/auth-storage';
 import { createReducer, on } from '@ngrx/store';
 import { AuthActions } from './auth.actions';
 
@@ -40,8 +41,8 @@ export const authReducer = createReducer(
   on(AuthActions.logout, () => initialState),
 
   on(AuthActions.restoreSession, (state) => {
-    const token = localStorage.getItem('auth_token');
-    const username = localStorage.getItem('auth_username');
+    const token = storedAuth('auth_token');
+    const username = storedAuth('auth_username');
     return token && username ? { ...state, token, username } : state;
   }),
 );

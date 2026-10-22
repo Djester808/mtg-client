@@ -3,6 +3,8 @@
  * button (a search row, a suggestion row, the card modal) and carried on the add event,
  * so the component that owns the destination can run the flight.
  */
+import { motionReduced } from './reorder-motion.directive';
+
 export interface FlightSource {
   from: DOMRect;
   imageUrl: string | null;
@@ -40,7 +42,7 @@ export function flyCardGhost(opts: {
   let { from } = opts;
   const { to, imageUrl } = opts;
   if (!from || !to || !imageUrl || from.width === 0) return Promise.resolve(false);
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (motionReduced(document)) {
     return Promise.resolve(false);
   }
 

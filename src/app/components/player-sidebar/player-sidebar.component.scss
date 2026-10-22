@@ -31,7 +31,7 @@
 
 .player-name {
   @include upto($bp-phone) {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     max-width: 8ch;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -39,15 +39,15 @@
   }
 
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--text-primary);
   text-transform: uppercase;
 
   .active-dot {
-    color: var(--gold);
-    font-size: 10px;
+    color: var(--accent-text);
+    font-size: calc(10px * var(--text-scale, 1));
   }
 }
 
@@ -76,23 +76,19 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-      ellipse at center top,
-      rgba(201, 168, 76, 0.05) 0%,
-      transparent 70%
-    );
+    background: radial-gradient(ellipse at center top, rgba(184, 0, 224, 0.05) 0%, transparent 70%);
     pointer-events: none;
   }
 }
 
 .life-number {
   @include upto($bp-phone) {
-    font-size: 22px;
+    font-size: calc(22px * var(--text-scale, 1));
     line-height: 1;
   }
 
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: calc(36px * var(--text-scale, 1));
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
@@ -100,7 +96,7 @@
 }
 
 .life-label {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.2em;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -128,7 +124,7 @@
 
   background: var(--bg-hover);
   border-radius: 4px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 400;
 
   &:hover {
@@ -150,7 +146,7 @@
 
 .poison-count {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: #9b59b6;
 }
 
@@ -192,13 +188,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 .cd-amount {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   color: #e74c3c;
 }
@@ -222,8 +218,8 @@
     box-shadow 0.3s;
 
   &.has-mana {
-    border-color: rgba(201, 168, 76, 0.4);
-    box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
+    border-color: rgba(184, 0, 224, 0.4);
+    box-shadow: 0 0 12px rgba(184, 0, 224, 0.1);
     animation: mana-glow 2s ease-in-out infinite;
   }
 }
@@ -233,7 +229,7 @@
     display: none;
   }
 
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.15em;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -249,7 +245,7 @@
 }
 
 .mana-pip-icon {
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   cursor: default;
   transition: transform 0.15s;
   &:hover {
@@ -263,10 +259,10 @@
 @keyframes mana-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.08);
+    box-shadow: 0 0 8px rgba(184, 0, 224, 0.08);
   }
   50% {
-    box-shadow: 0 0 18px rgba(201, 168, 76, 0.2);
+    box-shadow: 0 0 18px rgba(184, 0, 224, 0.2);
   }
 }
 
@@ -314,7 +310,7 @@
     display: none;
   }
 
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -323,7 +319,7 @@
 
 .zone-num {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-secondary);
 }

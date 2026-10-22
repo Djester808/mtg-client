@@ -1,0 +1,135 @@
+@use '../../styles/preferences' as *;
+@use '../../styles/detail-page' as *;
+@use '../../styles/breakpoints' as *;
+
+.settings-page {
+  @include preferences-page;
+  h1 {
+    @include preferences-title;
+  }
+  h2 {
+    @include preferences-section;
+  }
+  h3 {
+    @include preferences-section;
+  }
+  p {
+    color: var(--text-secondary);
+    margin: 8px 0 16px;
+  }
+  header {
+    margin-bottom: 24px;
+  }
+  header label {
+    display: block;
+    margin-bottom: 8px;
+  }
+  input[type='search'],
+  select {
+    width: 100%;
+    min-height: $tap-min;
+    border: 1px solid var(--border-subtle);
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+  input[type='range'] {
+    width: 100%;
+    min-height: $tap-min;
+    accent-color: var(--accent);
+  }
+  select {
+    display: block;
+    margin-top: 8px;
+  }
+  button,
+  a {
+    @include preferences-action;
+  }
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 24px;
+  }
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  nav button {
+    display: flex;
+    justify-content: space-between;
+    text-align: left;
+  }
+  button[aria-current='page'] {
+    border-color: var(--accent-text);
+  }
+  .settings-results {
+    min-width: 0;
+  }
+  .setting-card {
+    @include preferences-card;
+    margin-bottom: 16px;
+    overflow-wrap: anywhere;
+  }
+  .setting-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: $tap-min;
+  }
+  .setting-toggle input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent);
+  }
+  .setting-actions,
+  .setting-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .setting-preview {
+    padding: 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+  .settings-back {
+    margin-bottom: 16px;
+  }
+  @include upto($bp-phone) {
+    padding: 16px;
+    .settings-layout {
+      display: block;
+    }
+    .setting-card {
+      padding: 16px;
+    }
+  }
+}
+
+.settings-page header p {
+  font-size: calc(13px * var(--text-scale, 1));
+  color: var(--text-dim);
+}
+.settings-page header label {
+  font: 700 calc(10px * var(--text-scale, 1)) var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.settings-page nav button {
+  justify-content: space-between;
+}
+.settings-page nav button[aria-current='page'] {
+  background: rgba(184, 0, 224, 0.08);
+  border-color: var(--gold-dim);
+  color: var(--accent-text);
+}
+.settings-page .setting-card p {
+  font-size: calc(13px * var(--text-scale, 1));
+  line-height: 1.6;
+  color: var(--text-dim);
+}

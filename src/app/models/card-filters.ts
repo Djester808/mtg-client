@@ -1,4 +1,4 @@
-export type SortBy = 'name' | 'cmc';
+export type SortBy = 'name' | 'cmc' | 'set' | 'rarity' | 'price' | 'quantity' | 'added';
 export type SortDir = 'asc' | 'desc';
 
 /**
@@ -7,6 +7,14 @@ export type SortDir = 'asc' | 'desc';
  * rules can be a pure function of their inputs.
  */
 export interface CardFilterState {
+  finish?: string;
+  condition?: string;
+  language?: string;
+  tag?: string;
+  duplicatesOnly?: boolean;
+  matchCase?: boolean;
+  matchWord?: boolean;
+  regex?: boolean;
   query: string;
   colors: ReadonlySet<string>;
   types: ReadonlySet<string>;
@@ -42,6 +50,14 @@ export const EMPTY_FILTER: CardFilterState = {
  * collection row carries its printing's rarity, so the grid filters on it like any other.
  */
 export class CardFilters {
+  finish = '';
+  condition = '';
+  language = '';
+  tag = '';
+  duplicatesOnly = false;
+  matchCase = false;
+  matchWord = false;
+  regex = false;
   query = '';
   readonly colors = new Set<string>();
   readonly types = new Set<string>();
@@ -86,6 +102,14 @@ export class CardFilters {
   }
 
   clear(): void {
+    this.finish = '';
+    this.condition = '';
+    this.language = '';
+    this.tag = '';
+    this.duplicatesOnly = false;
+    this.matchCase = false;
+    this.matchWord = false;
+    this.regex = false;
     this.query = '';
     this.colors.clear();
     this.types.clear();
@@ -98,6 +122,11 @@ export class CardFilters {
 
   get hasAny(): boolean {
     return (
+      !!this.finish ||
+      !!this.condition ||
+      !!this.language ||
+      !!this.tag ||
+      this.duplicatesOnly ||
       this.colors.size > 0 ||
       this.types.size > 0 ||
       this.rarities.size > 0 ||
@@ -110,6 +139,14 @@ export class CardFilters {
   /** A snapshot for the pure filter service, which takes data and not this object. */
   toState(): CardFilterState {
     return {
+      finish: this.finish,
+      condition: this.condition,
+      language: this.language,
+      tag: this.tag,
+      duplicatesOnly: this.duplicatesOnly,
+      matchCase: this.matchCase,
+      matchWord: this.matchWord,
+      regex: this.regex,
       query: this.query,
       colors: this.colors,
       types: this.types,

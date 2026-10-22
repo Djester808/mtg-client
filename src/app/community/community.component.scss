@@ -129,7 +129,7 @@
   }
 
   &.active {
-    color: #c9a84c;
-    border-bottom-color: #c9a84c;
+    color: var(--accent-text);
+    border-bottom-color: #b800e0;
   }
 }

@@ -1,0 +1,74 @@
+@if (model.charts.length || model.scatter.length) {
+  <details class="community-charts">
+    <summary>Detailed insights</summary>
+    <div class="chart-grid">
+      @for (chart of model.charts; track chart.title) {
+        <section>
+          <h2>{{ chart.title }}</h2>
+          @if (chart.timeline) {
+            <svg viewBox="0 0 300 105" role="img" [attr.aria-label]="chart.title">
+              <polyline [attr.points]="chart.line" />
+            </svg>
+          }
+          <dl>
+            @for (point of chart.points; track point.label) {
+              <div>
+                <dt>
+                  @if (chart.title.includes('mana pips')) {
+                    <app-mana-cost [cost]="'{' + point.label + '}'" />
+                  } @else {
+                    {{ point.label }}
+                  }
+                </dt>
+                <dd>{{ point.value | number: '1.0-2' }}</dd>
+                <span class="bar" [style.width.%]="point.width"></span>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+    </div>
+    @if (model.scatter.length) {
+      <section class="scatter">
+        <h2>Synergy and inclusion</h2>
+        <p>
+          Right of the line: played more often here than in decks of these colors. Higher: included
+          in more eligible decks. Up to 60 cards, highest inclusion first.
+        </p>
+        <svg viewBox="0 0 100 100" role="img" aria-label="Synergy and inclusion">
+          <line x1="50" y1="4" x2="50" y2="94" />
+          @for (point of model.scatter; track point.entry.name) {
+            <circle [attr.cx]="point.x" [attr.cy]="point.y" r="1.4">
+              <title>
+                {{ point.entry.name }} · synergy {{ point.entry.synergy | percent: '1.0-1' }} ·
+                inclusion {{ point.entry.inclusion | percent: '1.0-1' }}
+              </title>
+            </circle>
+          }
+        </svg>
+        <details>
+          <summary>Read chart values</summary>
+          <dl>
+            @for (point of model.scatter; track point.entry.name) {
+              <div>
+                <dt>
+                  @if (point.entry.card; as card) {
+                    <button type="button" class="scatter-card" (click)="preview.emit(card)">
+                      {{ point.entry.name }}
+                    </button>
+                  } @else {
+                    {{ point.entry.name }}
+                  }
+                </dt>
+                <dd>
+                  {{ point.entry.synergy | percent: '1.0-1' }} synergy ·
+                  {{ point.entry.inclusion | percent: '1.0-1' }} inclusion
+                </dd>
+              </div>
+            }
+          </dl>
+        </details>
+      </section>
+    }
+  </details>
+}

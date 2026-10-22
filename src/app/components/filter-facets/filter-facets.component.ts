@@ -99,7 +99,7 @@ export class FilterFacetsComponent {
    * shows the pill and never collapses). Session-local on purpose; a filter you hid is
    * not a preference.
    */
-  collapsed = false;
+  collapsed = true;
 
   get hasActive(): boolean {
     return (

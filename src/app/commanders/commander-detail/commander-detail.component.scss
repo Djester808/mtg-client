@@ -6,8 +6,8 @@
 .spinner {
   width: 28px;
   height: 28px;
-  border: 2px solid rgba(201, 168, 76, 0.2);
-  border-top-color: #c9a84c;
+  border: 2px solid rgba(184, 0, 224, 0.2);
+  border-top-color: #b800e0;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -83,7 +83,7 @@
   background: rgba(0, 0, 0, 0.35);
   opacity: 0;
   transition: opacity 0.2s;
-  font-size: 28px;
+  font-size: calc(28px * var(--text-scale, 1));
   color: rgba(255, 255, 255, 0.85);
   pointer-events: none;
 }
@@ -98,7 +98,7 @@
   align-items: center;
   justify-content: center;
   font-size: 4rem;
-  color: rgba(201, 168, 76, 0.2);
+  color: rgba(184, 0, 224, 0.2);
 }
 
 // ── Hero info ────────────────────────────────────────────────────────────────
@@ -123,14 +123,14 @@
   transition: color 0.15s;
 
   &:hover {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
 }
 
 .cd-name {
   font-size: 2rem;
   font-weight: 700;
-  color: #e6dcc3;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.1;
 }
@@ -192,7 +192,7 @@
 .cd-stat-value {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #c9a84c;
+  color: var(--accent-text);
   line-height: 1;
 }
 
@@ -224,7 +224,7 @@
 
 .cd-tag-count {
   font-size: 0.68rem;
-  color: #c9a84c;
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -245,10 +245,10 @@
   align-items: center;
   gap: 7px;
   padding: 9px 18px;
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.15), rgba(201, 168, 76, 0.08));
-  border: 1px solid rgba(201, 168, 76, 0.35);
+  background: linear-gradient(135deg, rgba(184, 0, 224, 0.15), rgba(184, 0, 224, 0.08));
+  border: 1px solid rgba(184, 0, 224, 0.35);
   border-radius: 8px;
-  color: #c9a84c;
+  color: var(--accent-text);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -258,8 +258,8 @@
   align-self: flex-start;
 
   &:hover {
-    background: rgba(201, 168, 76, 0.2);
-    border-color: rgba(201, 168, 76, 0.55);
+    background: rgba(184, 0, 224, 0.2);
+    border-color: rgba(184, 0, 224, 0.55);
   }
 
   i {
@@ -305,14 +305,14 @@
 .cd-section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #e6dcc3;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
 
   i {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
 }
 
@@ -373,7 +373,7 @@
     background: rgba(255, 255, 255, 0.04);
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(201, 168, 76, 0.2);
+    background: rgba(184, 0, 224, 0.2);
     border-radius: 2px;
   }
 }
@@ -390,7 +390,7 @@
     transform 0.15s;
 
   &:hover {
-    border-color: rgba(201, 168, 76, 0.3);
+    border-color: rgba(184, 0, 224, 0.3);
     transform: translateY(-2px);
   }
 }
@@ -416,7 +416,7 @@
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  color: rgba(201, 168, 76, 0.2);
+  color: rgba(184, 0, 224, 0.2);
 }
 
 .suggest-card-info {
@@ -451,7 +451,7 @@
 
   span {
     font-size: 0.68rem;
-    color: #c9a84c;
+    color: var(--accent-text);
     font-weight: 600;
     min-width: 20px;
     text-align: right;
@@ -460,7 +460,7 @@
 
 .score-bar {
   height: 3px;
-  background: linear-gradient(90deg, #c9a84c, #e8c96a);
+  background: linear-gradient(90deg, #b800e0, #df80f5);
   border-radius: 2px;
   max-width: 80px;
   transition: width 0.3s;
@@ -494,9 +494,9 @@
   }
 
   &.active {
-    background: rgba(201, 168, 76, 0.15);
-    border-color: rgba(201, 168, 76, 0.4);
-    color: #c9a84c;
+    background: rgba(184, 0, 224, 0.15);
+    border-color: rgba(184, 0, 224, 0.4);
+    color: var(--accent-text);
   }
 }
 
@@ -531,9 +531,9 @@
     border-color: rgba(255, 255, 255, 0.18);
   }
   &.active {
-    background: rgba(201, 168, 76, 0.12);
-    border-color: rgba(201, 168, 76, 0.35);
-    color: #c9a84c;
+    background: rgba(184, 0, 224, 0.12);
+    border-color: rgba(184, 0, 224, 0.35);
+    color: var(--accent-text);
   }
 }
 
@@ -558,7 +558,7 @@
   border: none;
   background: none;
   color: #8a7a60;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
   cursor: pointer;
   padding: 0 2px;
@@ -566,7 +566,7 @@
   transition: color 0.12s;
 
   &:hover:not([disabled]) {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
   &[disabled] {
     opacity: 0.3;
@@ -575,9 +575,9 @@
 }
 
 .cd-zoom-label {
-  font-size: 10px;
-  color: #a09070;
-  font-family: 'Cinzel', serif;
+  font-size: calc(10px * var(--text-scale, 1));
+  color: var(--text-secondary);
+  font-family: var(--font-display);
   min-width: 32px;
   text-align: center;
 }
@@ -592,7 +592,7 @@
   font-size: 0.875rem;
 
   a {
-    color: #c9a84c;
+    color: var(--accent-text);
     text-decoration: none;
     &:hover {
       text-decoration: underline;
@@ -618,9 +618,9 @@
   transition: background 0.12s;
 
   &:hover {
-    background: rgba(201, 168, 76, 0.06);
+    background: rgba(184, 0, 224, 0.06);
     .cd-card-name {
-      color: #c9a84c;
+      color: var(--accent-text);
     }
   }
 }
@@ -669,7 +669,7 @@
 }
 
 .cd-mana {
-  color: rgba(201, 168, 76, 0.55);
+  color: rgba(184, 0, 224, 0.55);
 }
 
 .cd-card-stats {
@@ -697,7 +697,7 @@
 
 .cd-inclusion-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7a5c1a, #c9a84c);
+  background: linear-gradient(90deg, #73008c, #b800e0);
   border-radius: 3px;
   transition: width 0.3s;
 }
@@ -705,7 +705,7 @@
 .cd-inclusion-pct {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #c9a84c;
+  color: var(--accent-text);
   min-width: 38px;
   text-align: right;
 }
@@ -723,7 +723,7 @@
 }
 
 .badge-gc {
-  color: #c9a84c;
+  color: var(--accent-text);
   font-size: 0.85rem;
   opacity: 0.8;
 }
@@ -809,7 +809,7 @@
     color: rgba(230, 220, 195, 0.3);
   }
   &:focus {
-    border-color: rgba(201, 168, 76, 0.4);
+    border-color: rgba(184, 0, 224, 0.4);
   }
 }
 
@@ -853,13 +853,13 @@
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 168, 76, 0.15) transparent;
+  scrollbar-color: rgba(184, 0, 224, 0.15) transparent;
 
   &::-webkit-scrollbar {
     height: 3px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(201, 168, 76, 0.2);
+    background: rgba(184, 0, 224, 0.2);
     border-radius: 2px;
   }
 }
@@ -880,9 +880,9 @@
   }
 
   &.active {
-    background: rgba(201, 168, 76, 0.15);
-    border-color: rgba(201, 168, 76, 0.45);
-    color: #c9a84c;
+    background: rgba(184, 0, 224, 0.15);
+    border-color: rgba(184, 0, 224, 0.45);
+    color: var(--accent-text);
   }
 
   &.bracket-1.active {
@@ -919,7 +919,7 @@
   max-height: 680px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 168, 76, 0.2) transparent;
+  scrollbar-color: rgba(184, 0, 224, 0.2) transparent;
 }
 
 .cd-deck-card {
@@ -938,7 +938,7 @@
 
   &:hover {
     background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(201, 168, 76, 0.3);
+    border-color: rgba(184, 0, 224, 0.3);
   }
 }
 
@@ -966,7 +966,7 @@
   justify-content: center;
   font-size: 1.2rem;
   font-weight: 700;
-  color: rgba(201, 168, 76, 0.4);
+  color: rgba(184, 0, 224, 0.4);
 }
 
 .cd-deck-info {
@@ -1039,9 +1039,9 @@
 .cd-deck-tag {
   font-size: 0.63rem;
   padding: 1px 6px;
-  background: rgba(201, 168, 76, 0.1);
-  border: 1px solid rgba(201, 168, 76, 0.2);
+  background: rgba(184, 0, 224, 0.1);
+  border: 1px solid rgba(184, 0, 224, 0.2);
   border-radius: 10px;
-  color: rgba(201, 168, 76, 0.65);
+  color: rgba(184, 0, 224, 0.65);
   text-transform: capitalize;
 }

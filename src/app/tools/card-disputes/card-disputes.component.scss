@@ -37,7 +37,7 @@
   max-width: 70ch;
   margin: 6px 0 0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
 }
 
@@ -48,7 +48,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 // The queue beside the card being read. A derived list reflows rather than pans, so on a phone
@@ -88,7 +88,7 @@
   border-radius: 6px;
   background: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   text-align: left;
   cursor: pointer;
 
@@ -101,7 +101,7 @@
   &.is-selected {
     background: rgba(214, 158, 46, 0.16);
     box-shadow: inset 2px 0 0 var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -127,23 +127,23 @@
   margin: 0;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale, 1));
 }
 
 .cd-oracle {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .cd-path {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 
   code {
     padding: 1px 4px;
     border-radius: 3px;
     background: rgba(214, 158, 46, 0.18);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -159,7 +159,7 @@
   border-radius: 4px;
   background: rgba(197, 48, 48, 0.14);
   color: #ffd9d9;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 // Both readings at once, which is the entire reason this screen exists. auto-fit rather than
@@ -189,7 +189,7 @@
 .cd-model {
   color: var(--text-secondary);
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .cd-choose {
@@ -203,8 +203,8 @@
   border: 1px solid rgba(214, 158, 46, 0.55);
   border-radius: 4px;
   background: rgba(214, 158, 46, 0.16);
-  color: var(--gold);
-  font-size: 12px;
+  color: var(--accent-text);
+  font-size: calc(12px * var(--text-scale, 1));
   cursor: pointer;
 
   &:hover:not(:disabled) {
@@ -239,7 +239,7 @@
   max-height: 420px;
   overflow: auto;
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.45;
   color: var(--text-secondary);
   white-space: pre;

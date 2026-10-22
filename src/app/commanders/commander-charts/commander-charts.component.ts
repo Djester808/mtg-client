@@ -97,7 +97,7 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
   // CSS conic-gradient string for ring chart
   get ringGradient(): string {
     if (!this.typeDistData.length || !this.typeTotal) return '';
-    const colors = ['#c9a84c', '#7a8fa8', '#5c3d6e', '#c44e4e', '#4e8a5c', '#8a7a5c', '#a0a0a0'];
+    const colors = ['#b800e0', '#7a8fa8', '#5c3d6e', '#c44e4e', '#4e8a5c', '#8a7a5c', '#a0a0a0'];
     let pct = 0;
     const stops = this.typeDistData.map((d, i) => {
       const start = pct;
@@ -108,7 +108,7 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
   }
 
   readonly typeColors = [
-    '#c9a84c',
+    '#b800e0',
     '#7a8fa8',
     '#5c3d6e',
     '#c44e4e',

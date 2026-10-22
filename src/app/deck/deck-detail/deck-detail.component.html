@@ -535,7 +535,8 @@
            had, where free view is a canvas and the bar stayed off it. `available` narrows
            the chips to what the deck holds, which is also desktop-only: see `offered()`. -->
       <app-card-grid-filters
-        class="filter-bar cgf-stacked"
+        class="filter-bar"
+        [class.cgf-stacked]="viewMode !== 'free'"
         [filters]="filters"
         [suggestions]="filterSuggestions"
         [showQuery]="isPhone || viewMode !== 'free'"
@@ -561,55 +562,58 @@
           <!-- Free mode's own controls ride the same projected controls line as Group
                By and Layout, instead of forming a second, differently-styled row below
                the bar — which is what made free view read as a different design. -->
-          <div class="free-toolbar" *ngIf="viewMode === 'free'">
-            <button
-              class="free-save-btn"
-              [class.is-saved]="layoutSaved"
-              (click)="saveLayoutExplicit()"
-            >
-              <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i>
-              {{ layoutSaved ? 'Saved' : 'Save Layout' }}
-            </button>
-            <button
-              class="free-reset-btn"
-              (click)="resetFreeLayout(deck)"
-              title="Reset columns to CMC groups"
-            >
-              <i class="bi bi-arrow-counterclockwise"></i> Reset
-            </button>
-            <div class="density-picker">
+          <div class="cgf-group" *ngIf="viewMode === 'free'">
+            <span class="cgf-label">Arrange</span>
+            <div class="free-toolbar">
               <button
-                class="density-btn"
-                [class.is-active]="!textStyle && stackDensity === 'full'"
-                (click)="setStackDensity('full')"
-                title="Full card"
+                class="free-save-btn"
+                [class.is-saved]="layoutSaved"
+                (click)="saveLayoutExplicit()"
               >
-                <i class="bi bi-grid-fill"></i>
+                <i class="bi" [class.bi-check-lg]="layoutSaved" [class.bi-save]="!layoutSaved"></i>
+                {{ layoutSaved ? 'Saved' : 'Save Layout' }}
               </button>
               <button
-                class="density-btn"
-                [class.is-active]="!textStyle && stackDensity === 'half'"
-                (click)="setStackDensity('half')"
-                title="Half card"
+                class="free-reset-btn"
+                (click)="resetFreeLayout(deck)"
+                title="Reset columns to CMC groups"
               >
-                <i class="bi bi-layers-half"></i>
+                <i class="bi bi-arrow-counterclockwise"></i> Reset
               </button>
-              <button
-                class="density-btn"
-                [class.is-active]="!textStyle && stackDensity === 'name'"
-                (click)="setStackDensity('name')"
-                title="Name only"
-              >
-                <i class="bi bi-text-left"></i>
-              </button>
-              <button
-                class="density-btn"
-                [class.is-active]="textStyle"
-                (click)="setTextStyle(true)"
-                title="Text list"
-              >
-                <i class="bi bi-list"></i>
-              </button>
+              <div class="density-picker">
+                <button
+                  class="density-btn"
+                  [class.is-active]="!textStyle && stackDensity === 'full'"
+                  (click)="setStackDensity('full')"
+                  title="Full card"
+                >
+                  <i class="bi bi-grid-fill"></i>
+                </button>
+                <button
+                  class="density-btn"
+                  [class.is-active]="!textStyle && stackDensity === 'half'"
+                  (click)="setStackDensity('half')"
+                  title="Half card"
+                >
+                  <i class="bi bi-layers-half"></i>
+                </button>
+                <button
+                  class="density-btn"
+                  [class.is-active]="!textStyle && stackDensity === 'name'"
+                  (click)="setStackDensity('name')"
+                  title="Name only"
+                >
+                  <i class="bi bi-text-left"></i>
+                </button>
+                <button
+                  class="density-btn"
+                  [class.is-active]="textStyle"
+                  (click)="setTextStyle(true)"
+                  title="Text list"
+                >
+                  <i class="bi bi-list"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -987,6 +991,8 @@
       <ng-container *ngIf="viewMode === 'free' && (loading$ | async) === false">
         <div
           class="groups-list is-free"
+          [style.--free-column-count]="freeColumns.length || 1"
+          [appReorderMotion]="freeColumns"
           (click)="clearFreeColSelection()"
           (mousedown)="onGroupsListMouseDown($event)"
           (dragover)="onGroupsListDragOver($event)"
@@ -1564,6 +1570,50 @@
                   [type]="getChartType('subtypes')"
                 ></app-stats-chart>
               </ng-container>
+              <section class="stats-extras" *ngIf="stats.landSubtypes.length">
+                <h3 class="curve-header">Land subtypes</h3>
+                <button
+                  class="stats-extra-row"
+                  *ngFor="let land of stats.landSubtypes"
+                  [disabled]="!land.deckCard"
+                  (click)="land.deckCard && openCard(land.deckCard)"
+                >
+                  <span>{{ land.name }}</span
+                  ><strong>{{ land.count }}</strong>
+                </button>
+              </section>
+              <section class="stats-extras" *ngIf="stats.tokensNeeded.length">
+                <h3 class="curve-header">Tokens needed</h3>
+                <button
+                  class="stats-extra-row"
+                  *ngFor="let token of stats.tokensNeeded"
+                  (click)="openCard(token.creatorCard)"
+                >
+                  <img
+                    *ngIf="tokenCardCache.get(token.tokenName)?.imageUriSmall as image"
+                    [src]="image"
+                    alt=""
+                  /><span
+                    ><strong>{{ token.tokenName }}</strong
+                    ><small
+                      >{{ token.description }} token ·
+                      {{ token.creatorCard.cardDetails?.name }}</small
+                    ></span
+                  >
+                </button>
+              </section>
+              <section class="stats-extras" *ngIf="stats.emblemSources.length">
+                <h3 class="curve-header">Emblem sources</h3>
+                <button
+                  class="stats-extra-row"
+                  *ngFor="let emblem of stats.emblemSources"
+                  (click)="openCard(emblem.sourceCard)"
+                >
+                  <img *ngIf="emblem.imageUri" [src]="emblem.imageUri" alt="" /><span>{{
+                    emblem.name
+                  }}</span>
+                </button>
+              </section>
             </ng-container>
           </div>
         </div>
@@ -1693,6 +1743,7 @@
   <ng-container *ngIf="deck$ | async as modalDeck">
     <ng-container *ngIf="selectedCard as card">
       <app-card-modal
+        [commanderOracleId]="(deck$ | async)?.commanderOracleId ?? null"
         [card]="card.cardDetails ?? null"
         [printings]="modalPrintings"
         [(viewedScryfallId)]="modalViewScryfallId"

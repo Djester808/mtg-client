@@ -181,7 +181,7 @@
   flex: 1 1 0;
   min-width: 0;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -204,20 +204,20 @@
   border-radius: 999px;
   background: var(--bg-surface);
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
   white-space: nowrap;
   flex-shrink: 0;
 
   .bi {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     opacity: 0.7;
   }
 }
 
 .modal-added-label {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -262,7 +262,7 @@
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   padding: 3px 6px;
   border-radius: 4px;
   flex-shrink: 0;
@@ -316,14 +316,14 @@
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(201, 168, 76, 0.2),
-      0 0 6px rgba(201, 168, 76, 0.1);
+      0 0 0 1px rgba(184, 0, 224, 0.2),
+      0 0 6px rgba(184, 0, 224, 0.1);
   }
   50% {
     box-shadow:
-      0 0 0 3px rgba(201, 168, 76, 1),
-      0 0 28px rgba(201, 168, 76, 0.8),
-      0 0 50px rgba(201, 168, 76, 0.35);
+      0 0 0 3px rgba(184, 0, 224, 1),
+      0 0 28px rgba(184, 0, 224, 0.8),
+      0 0 50px rgba(184, 0, 224, 0.35);
   }
 }
 @keyframes modal-gc-icon-pulse {
@@ -394,7 +394,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 160px;
+    font-size: calc(160px * var(--text-scale, 1));
     line-height: 1;
     color: rgba(240, 192, 64, 0.25);
     text-shadow:
@@ -417,7 +417,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 160px;
+    font-size: calc(160px * var(--text-scale, 1));
     line-height: 1;
     color: rgba(220, 38, 38, 0.5);
     animation: modal-banned-icon-pulse 2s ease-in-out infinite;
@@ -467,7 +467,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
+  font-size: calc(40px * var(--text-scale, 1));
   color: var(--text-dim);
   opacity: 0.2;
   width: 100%;
@@ -482,7 +482,7 @@
   border: 1.5px solid var(--border-lit);
   border-radius: 10px;
   color: var(--text-primary);
-  font-size: 26px;
+  font-size: calc(26px * var(--text-scale, 1));
   line-height: 1;
   padding: 10px 12px;
   cursor: pointer;
@@ -492,12 +492,12 @@
   z-index: 5;
 
   &.is-flipped {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold);
   }
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -538,7 +538,7 @@
 
 .modal-card-name {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-primary);
@@ -552,7 +552,7 @@
   vertical-align: middle;
   margin-left: 9px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0;
   color: #4ade80;
@@ -563,15 +563,15 @@
   white-space: nowrap;
 
   &--foil {
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
-    border-color: rgba(201, 168, 76, 0.3);
+    color: var(--accent-text);
+    background: rgba(184, 0, 224, 0.12);
+    border-color: rgba(184, 0, 224, 0.3);
   }
 }
 
 .modal-mv {
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
   letter-spacing: 0.06em;
   display: flex;
@@ -580,7 +580,7 @@
 }
 
 .modal-mv-label {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -602,7 +602,7 @@
   color: var(--text-dim);
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -618,7 +618,7 @@
   }
 
   &.is-active {
-    color: var(--gold);
+    color: var(--accent-text);
     border-bottom-color: var(--gold);
   }
 }
@@ -631,7 +631,7 @@
 
 .modal-type-line {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.07em;
   color: var(--text-secondary);
@@ -644,13 +644,13 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
 .modal-set-code {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   background: var(--bg-raised);
@@ -672,7 +672,7 @@
 
 .modal-oracle {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.8;
   color: var(--text-secondary);
   border-top: 1px solid var(--border-dim);
@@ -688,7 +688,7 @@
 
 .modal-flavor {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-style: italic;
   line-height: 1.55;
   color: var(--text-dim);
@@ -704,13 +704,13 @@
 
 .modal-kw-chip {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: rgba(201, 168, 76, 0.1);
-  border: 1px solid rgba(201, 168, 76, 0.25);
-  color: var(--gold);
+  background: rgba(184, 0, 224, 0.1);
+  border: 1px solid rgba(184, 0, 224, 0.25);
+  color: var(--accent-text);
   border-radius: 4px;
   padding: 3px 7px;
 }
@@ -728,7 +728,7 @@
 .modal-pt,
 .modal-loyalty {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 700;
   color: var(--text-primary);
   background: var(--bg-raised);
@@ -739,7 +739,7 @@
 
 .modal-artist {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
   margin-left: auto;
@@ -754,7 +754,7 @@
 
 .modal-legalities-header {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -775,7 +775,7 @@
   padding: 3px 8px;
   border-radius: 5px;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   border: 1px solid transparent;
@@ -787,9 +787,9 @@
   }
 
   &.is-restricted {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: rgba(201, 168, 76, 0.3);
-    color: var(--gold);
+    background: rgba(184, 0, 224, 0.1);
+    border-color: rgba(184, 0, 224, 0.3);
+    color: var(--accent-text);
   }
 
   &.is-not-legal {
@@ -804,7 +804,7 @@
 }
 
 .legal-chip-status {
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   flex-shrink: 0;
 }
 
@@ -824,14 +824,14 @@
 
 .modal-rulings-empty {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   font-style: italic;
 }
 
 .modal-rulings-loading {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   font-style: italic;
 }
@@ -848,7 +848,7 @@
 
 .modal-ruling-date {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-dim);
@@ -856,7 +856,7 @@
 
 .modal-ruling-text {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.55;
   color: var(--text-secondary);
 }
@@ -883,7 +883,7 @@
 .owned-label,
 .price-cell-label {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -896,7 +896,7 @@
 
 .owned-value {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-secondary);
 }
 
@@ -908,11 +908,11 @@
 // Green when the card has gained value since it was added, red when it has lost.
 .owned-change {
   margin-left: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
 
   i {
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
   }
 }
 
@@ -932,7 +932,7 @@
 .owned-note,
 .modal-prices-empty {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
 }
@@ -948,7 +948,7 @@
 
 .modal-printings-header {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -981,7 +981,7 @@
 .carousel-page-label {
   margin-left: auto;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-dim);
   font-style: italic;
 }
@@ -992,7 +992,7 @@
   border-radius: 6px;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 32px;
+  font-size: calc(32px * var(--text-scale, 1));
   line-height: 1;
   padding: 4px 14px;
   flex-shrink: 0;
@@ -1048,8 +1048,8 @@
 
   &.is-owned {
     border-color: var(--gold);
-    background: rgba(201, 168, 76, 0.08);
-    box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.3);
+    background: rgba(184, 0, 224, 0.08);
+    box-shadow: 0 0 0 1px rgba(184, 0, 224, 0.3);
   }
 
   &.is-also-owned {
@@ -1090,7 +1090,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   color: var(--text-dim);
   opacity: 0.3;
 }
@@ -1102,7 +1102,7 @@
   left: 0;
   right: 0;
   font-family: var(--font-display);
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1120,8 +1120,8 @@
 
 .chip-owned-banner {
   bottom: 0;
-  background: rgba(201, 168, 76, 0.92);
-  color: #0e0c08;
+  background: rgba(184, 0, 224, 0.92);
+  color: #ffffff;
 }
 
 .chip-also-owned-banner {
@@ -1138,7 +1138,7 @@
   border: 1px solid var(--border-lit);
   border-radius: 4px;
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   line-height: 1;
   padding: 2px 3px;
   cursor: pointer;
@@ -1148,18 +1148,18 @@
     border-color 0.15s;
 
   &.is-flipped {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold);
   }
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
 .chip-code {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
@@ -1168,7 +1168,7 @@
 
 .chip-num {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   text-align: center;
 }
@@ -1200,5 +1200,17 @@
     padding: 5px 14px;
     min-width: $tap-min;
     min-height: $tap-min;
+  }
+}
+
+// Owned metadata can be taller than the card art. Keep it in the phone sheet's body scroll.
+.modal-info-tab-body {
+  flex-shrink: 0;
+}
+@include upto($bp-nav) {
+  .modal-info-col {
+    flex: 0 0 auto;
+    min-width: 0;
+    overflow: visible;
   }
 }

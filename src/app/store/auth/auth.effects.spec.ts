@@ -12,8 +12,9 @@ describe('AuthEffects', () => {
   let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
-    auth = jasmine.createSpyObj('AuthService', ['login', 'register']);
+    auth = jasmine.createSpyObj('AuthService', ['login', 'register', 'logout']);
 
+    auth.logout.and.returnValue(of(undefined));
     TestBed.configureTestingModule({
       providers: [
         AuthEffects,
@@ -30,15 +31,30 @@ describe('AuthEffects', () => {
     // Login accepts a username OR an email address. Echoing the request put people's email
     // addresses in the navbar, into the avatar's colour hash, and into every /u/:username
     // link built from the store — where it 404s, because no profile is keyed on an email.
-    auth.login.and.returnValue(of({ token: 'jwt', username: 'Djester808' }));
-    actions$ = of(AuthActions.login({ username: 'jzikajr@outlook.com', password: 'pw' }));
+    auth.login.and.returnValue(of({ token: 'jwt', username: 'TestUser' }));
+    actions$ = of(AuthActions.login({ username: 'tester@example.test', password: 'pw' }));
 
     TestBed.inject(AuthEffects).login$.subscribe((action) => {
-      expect(action).toEqual(AuthActions.loginSuccess({ token: 'jwt', username: 'Djester808' }));
+      expect(action).toEqual(AuthActions.loginSuccess({ token: 'jwt', username: 'TestUser' }));
       done();
     });
   });
 
+  it('keeps a session-only sign-in out of persistent storage', (done) => {
+    actions$ = of(
+      AuthActions.loginSuccess({
+        token: 'session-jwt',
+        username: 'SessionUser',
+        rememberMe: false,
+      }),
+    );
+    TestBed.inject(AuthEffects).persistOnSuccess$.subscribe(() => {
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(sessionStorage.getItem('auth_token')).toBe('session-jwt');
+      sessionStorage.clear();
+      done();
+    });
+  });
   it('does the same on register', (done) => {
     auth.register.and.returnValue(of({ token: 'jwt', username: 'Nissa' }));
     actions$ = of(
@@ -70,11 +86,11 @@ describe('AuthEffects', () => {
   });
 
   it('persists the server username so a restored session is not stale', (done) => {
-    auth.login.and.returnValue(of({ token: 'jwt', username: 'Djester808' }));
-    actions$ = of(AuthActions.loginSuccess({ token: 'jwt', username: 'Djester808' }));
+    auth.login.and.returnValue(of({ token: 'jwt', username: 'TestUser' }));
+    actions$ = of(AuthActions.loginSuccess({ token: 'jwt', username: 'TestUser' }));
 
     TestBed.inject(AuthEffects).persistOnSuccess$.subscribe(() => {
-      expect(localStorage.getItem('auth_username')).toBe('Djester808');
+      expect(localStorage.getItem('auth_username')).toBe('TestUser');
       localStorage.removeItem('auth_username');
       localStorage.removeItem('auth_token');
       done();

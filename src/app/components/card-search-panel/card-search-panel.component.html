@@ -13,6 +13,8 @@
   <button class="panel-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
 </div>
 
+<app-collection-undo *ngIf="collectionId" [collectionId]="collectionId" />
+<app-copy-language-picker *ngIf="collectionId" [(value)]="addLanguage" />
 <!-- Search input -->
 <div class="search-wrap">
   <div class="search-input-row">
@@ -223,7 +225,7 @@
       <!-- Board mode: full card tile, controls slide up on hover (same language as the deck grid) -->
       <div
         class="result-tile"
-        *ngIf="boardMode"
+        *ngIf="boardMode && !breakpoints.isNavCollapsed()"
         [style.--i]="i"
         [class.has-info]="tileInfoId === card.oracleId"
         draggable="true"
@@ -278,8 +280,8 @@
             <span
               class="qty-pill"
               *ngIf="!isDeckContext && ownedEntry(card.oracleId) as owned"
-              [title]="owned.quantity + owned.quantityFoil + ' owned'"
-              >×{{ owned.quantity + owned.quantityFoil }}</span
+              [title]="owned.quantity + owned.quantityFoil + (owned.quantityEtched ?? 0) + ' owned'"
+              >×{{ owned.quantity + owned.quantityFoil + (owned.quantityEtched ?? 0) }}</span
             >
           </div>
           <div class="tile-flags">
@@ -365,7 +367,7 @@
               <button
                 class="ctrl-btn ctrl-dec"
                 [disabled]="!ownedEntry(card.oracleId)?.quantity"
-                (click)="cardDecrementNormal.emit(card.oracleId)"
+                (click)="decrementOwned(card.oracleId, false)"
                 title="Remove regular"
               >
                 −
@@ -384,7 +386,7 @@
               <button
                 class="ctrl-btn ctrl-dec"
                 [disabled]="!ownedEntry(card.oracleId)?.quantityFoil"
-                (click)="cardDecrementFoil.emit(card.oracleId)"
+                (click)="decrementOwned(card.oracleId, true)"
                 title="Remove foil"
               >
                 −
@@ -402,6 +404,14 @@
             </div>
           </div>
 
+          <button
+            *ngIf="collectionId"
+            class="ctrl-btn ctrl-inc"
+            (click)="addCard(card, $event, false, true)"
+            title="Add etched"
+          >
+            + Etched
+          </button>
           <div class="fit-reason tile-fit-reason" *ngIf="getSynergyScore(card.oracleId) as score">
             {{ score.reason }}
           </div>
@@ -411,7 +421,7 @@
       <!-- Drawer mode: compact row -->
       <div
         class="result-row"
-        *ngIf="!boardMode"
+        *ngIf="!boardMode || breakpoints.isNavCollapsed()"
         draggable="true"
         (dragstart)="onDragStart(card, $event)"
       >
@@ -505,10 +515,11 @@
           </div>
 
           <!-- Add / remove -->
+          <app-owned-card-badge [oracleId]="card.oracleId" />
           <div class="result-action">
             <!-- Collection context: show owned count -->
             <span class="owned-qty" *ngIf="!isDeckContext && ownedEntry(card.oracleId) as owned">
-              ×{{ owned.quantity + owned.quantityFoil }}
+              ×{{ owned.quantity + owned.quantityFoil + (owned.quantityEtched ?? 0) }}
             </span>
             <!-- Deck context: show in-deck count + remove. Hidden while picking a commander —
                they crowd the row, and removing deck cards is not what that mode is for. -->
@@ -573,6 +584,12 @@
 >
   <!-- Adds ride above the art; counts sit beside the name; removes below. -->
   <div extra-top class="modal-extra-wrap modal-extra-wrap--top">
+    <app-copy-language-picker
+      *ngIf="collectionId && previewCard"
+      [(value)]="addLanguage"
+      [normalCount]="ownedEntry(previewCard.oracleId, previewScryfallId)?.quantity ?? 0"
+      [foilCount]="ownedEntry(previewCard.oracleId, previewScryfallId)?.quantityFoil ?? 0"
+    />
     <button
       *ngIf="isDeckContext"
       class="modal-action-btn"

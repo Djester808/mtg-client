@@ -1,0 +1,44 @@
+<section class="card-community" aria-label="Community usage">
+  <h3>Community <small>EDHREC</small></h3>
+  <p *ngIf="loading()" role="status">Loading community usage…</p>
+  <ng-container *ngIf="data() as usage">
+    <ng-container *ngIf="usage.global as page"
+      ><p *ngIf="page.hasPage && page.deckCount != null">
+        {{ page.deckCount | number }} decks<span
+          *ngIf="page.potentialDecks != null && page.potentialDecks! > 0"
+        >
+          · {{ page.deckCount! / page.potentialDecks! | percent: '1.0-1' }} of eligible decks</span
+        >
+      </p>
+      <p *ngIf="!page.hasPage">No community page is available for this card.</p></ng-container
+    >
+    <p *ngIf="usage.context as context">
+      In this commander’s decks:
+      <span *ngIf="context.inclusion != null"
+        >{{ context.inclusion | percent: '1.0-1' }} inclusion</span
+      ><span *ngIf="context.synergy != null">
+        · {{ context.synergy | percent: '1.0-1' }} synergy</span
+      ><span *ngIf="context.decks != null"> · {{ context.decks | number }} decks</span>
+    </p>
+    <p *ngIf="usage.contextRequested && !usage.context && !usage.failed">
+      This card is not listed on this commander’s community page.
+    </p>
+    <p *ngIf="usage.failed">
+      Community usage could not be loaded. <button (click)="retry()">Retry</button>
+    </p>
+    <ng-container *ngIf="usage.commanders.length"
+      ><h4>Commanders using this card</h4>
+      <ul>
+        <li *ngFor="let commander of usage.commanders">
+          <a [routerLink]="['/explore/commanders', commander.card!.oracleId]"
+            >{{ commander.name
+            }}<small *ngIf="commander.decks != null">{{ commander.decks | number }} decks</small></a
+          >
+        </li>
+      </ul></ng-container
+    >
+  </ng-container>
+  <a class="community-open" [routerLink]="['/explore/cards', oracleId]"
+    >Explore this card <span aria-hidden="true">↗</span></a
+  >
+</section>

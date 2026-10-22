@@ -12,12 +12,15 @@ const { headless } = require('../config');
  * @param {number} [opts.dpr] Overrides the profile's device pixel ratio. Only affects
  *   screenshot resolution, never layout, so it is safe to drop to 1 for smaller files.
  */
-async function buildDriver({ device, dpr } = {}) {
+async function buildDriver({ device, dpr, disableLcdText = false } = {}) {
   const options = new chrome.Options();
   if (headless) {
     options.addArguments('--headless=new');
   }
   options.addArguments('--no-sandbox', '--disable-dev-shm-usage');
+  // Pixel comparisons need the same glyph rasterization in composited drawers and
+  // ordinary page content. Other captures retain the browser's normal text rendering.
+  if (disableLcdText) options.addArguments('--disable-lcd-text');
 
   if (device && device.os !== 'desktop') {
     options.setMobileEmulation({

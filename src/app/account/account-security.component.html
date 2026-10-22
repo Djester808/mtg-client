@@ -1,0 +1,125 @@
+<main class="account-security account-page">
+  <app-account-nav />
+  <header>
+    <h1>Account &amp; security</h1>
+    <a routerLink="/account/sharing">Collection sharing →</a>
+    <p>Manage your email, password and signed-in devices.</p>
+  </header>
+  <p class="account-error" role="alert" *ngIf="error()">
+    {{ error() }} <button type="button" (click)="load()" *ngIf="!account()">Try again</button>
+  </p>
+  <p class="account-notice" role="status" *ngIf="notice()">{{ notice() }}</p>
+  <p role="status" *ngIf="busy()">Working…</p>
+  <ng-container *ngIf="account() as me">
+    <app-account-identity />
+    <section>
+      <h2>Email verification</h2>
+      <p>{{ me.email }} · {{ me.emailVerified ? 'Verified' : 'Not verified' }}</p>
+      <form *ngIf="!me.emailVerified" #verification="ngForm" (ngSubmit)="verify()">
+        <label for="verification-code">Six-digit email code</label
+        ><input
+          id="verification-code"
+          name="code"
+          [(ngModel)]="code"
+          required
+          pattern="[0-9]{6}"
+          maxlength="6"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+        />
+        <div class="account-actions">
+          <button [disabled]="busy() || verification.invalid">Verify email</button
+          ><button type="button" (click)="resend()" [disabled]="busy()">Send new code</button>
+        </div>
+      </form>
+    </section>
+    <section>
+      <h2>Change password</h2>
+      <p>Changing your password signs out every device, including this one.</p>
+      <form #passwordForm="ngForm" (ngSubmit)="changePassword()">
+        <label for="current-password">Current password</label
+        ><input
+          id="current-password"
+          name="currentPassword"
+          type="password"
+          [(ngModel)]="password"
+          required
+          maxlength="128"
+          autocomplete="current-password"
+        />
+        <label for="new-password">New password</label
+        ><input
+          id="new-password"
+          name="newPassword"
+          type="password"
+          [(ngModel)]="newPassword"
+          required
+          minlength="8"
+          maxlength="128"
+          autocomplete="new-password"
+        />
+        <button [disabled]="busy() || passwordForm.invalid">Change password</button>
+      </form>
+    </section>
+    <section>
+      <h2>Change email</h2>
+      <p>Confirm your current password above. You will sign in again and verify the new address.</p>
+      <form #emailForm="ngForm" (ngSubmit)="changeEmail()">
+        <label for="new-email">New email address</label
+        ><input
+          id="new-email"
+          name="email"
+          type="email"
+          email
+          [(ngModel)]="email"
+          required
+          maxlength="254"
+          autocomplete="email"
+        /><button [disabled]="busy() || emailForm.invalid || !password">Change email</button>
+      </form>
+    </section>
+    <section>
+      <h2>Signed-in devices</h2>
+      <p *ngIf="!sessions().length">
+        This sign-in predates device tracking. Sign out and sign in again to track this device.
+      </p>
+      <article class="account-session" *ngFor="let session of sessions(); trackBy: trackSession">
+        <div>
+          <strong>{{ session.current ? 'This device' : 'Another device' }}</strong>
+          <p class="device-label">{{ session.deviceLabel || 'Unknown browser' }}</p>
+          <p>Last active {{ session.lastUsedAt | date: 'medium' }}</p>
+        </div>
+        <button type="button" (click)="revoke(session)" [disabled]="busy()">Sign out</button>
+      </article>
+      <button type="button" (click)="signOutAll()" [disabled]="busy()">Sign out everywhere</button>
+    </section>
+    <section class="account-danger">
+      <h2>Delete account</h2>
+      <p>
+        This permanently removes your collections, decks, profile and forum contributions. Shared
+        game history may remain. This cannot be undone.
+      </p>
+      <form #deletion="ngForm" (ngSubmit)="deleteAccount()">
+        <label for="delete-password">Current password</label
+        ><input
+          id="delete-password"
+          name="deletePassword"
+          type="password"
+          [(ngModel)]="deletePassword"
+          required
+          maxlength="128"
+          autocomplete="current-password"
+        /><label for="delete-confirmation">Type {{ me.username }} to confirm</label
+        ><input
+          id="delete-confirmation"
+          name="deleteConfirmation"
+          [(ngModel)]="deleteConfirmation"
+          required
+          autocomplete="off"
+        /><button [disabled]="busy() || deletion.invalid || deleteConfirmation !== me.username">
+          Delete my account
+        </button>
+      </form>
+    </section>
+  </ng-container>
+</main>

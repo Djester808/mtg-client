@@ -1,3 +1,4 @@
+@use '../../../styles/detail-page' as *;
 @use '../../../styles/breakpoints' as *;
 
 :host {
@@ -91,7 +92,7 @@
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -101,7 +102,7 @@
 
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -113,13 +114,13 @@
 
 .header-mark {
   color: #a78bfa;
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.5));
 }
 
 .header-title h1 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -129,11 +130,11 @@
 
 .create-btn {
   padding: 10px 22px;
-  background: #7c3aed;
+  background: #b800e0;
   border: none;
   border-radius: 8px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -142,7 +143,7 @@
   transition: all 0.2s;
 
   &:hover {
-    background: #6d28d9;
+    background: #9800ba;
     box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
     transform: translateY(-1px);
   }
@@ -173,7 +174,7 @@
   text-align: center;
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 80px 0;
@@ -190,14 +191,14 @@
 }
 
 .empty-icon {
-  font-size: 52px;
-  color: #7c3aed;
+  font-size: calc(52px * var(--text-scale, 1));
+  color: #b800e0;
   opacity: 0.4;
 }
 
 .empty-title {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
@@ -206,7 +207,7 @@
 
 .empty-sub {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 0 0 8px;
 }
@@ -274,7 +275,7 @@
 }
 
 .no-cover-icon {
-  font-size: 42px;
+  font-size: calc(42px * var(--text-scale, 1));
   color: rgba(167, 139, 250, 0.3);
 }
 
@@ -287,7 +288,7 @@
 
 .deck-name {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--text-primary);
@@ -305,7 +306,7 @@
 
 .card-count {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -323,7 +324,7 @@
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale, 1));
   line-height: 1;
   padding: 2px 6px;
   border-radius: 4px;
@@ -370,7 +371,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   padding: 10px 16px;
   text-align: left;
   transition:
@@ -404,7 +405,7 @@
   border-radius: 6px;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 5px 8px;
@@ -464,7 +465,7 @@
 
   h2 {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -478,7 +479,7 @@
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   padding: 4px 6px;
   border-radius: 4px;
   transition: color 0.2s;
@@ -502,7 +503,7 @@
 
 .form-label {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -510,16 +511,11 @@
 }
 
 .form-input {
+  @include filter-input;
+
   background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
+
   padding: 10px 14px;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.2s;
 
   &::placeholder {
     color: var(--text-dim);
@@ -542,7 +538,7 @@
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -557,11 +553,11 @@
 
 .submit-btn {
   padding: 10px 24px;
-  background: #7c3aed;
+  background: #b800e0;
   border: none;
   border-radius: 8px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -570,7 +566,7 @@
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    background: #6d28d9;
+    background: #9800ba;
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
   }
 
@@ -595,7 +591,7 @@
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -628,7 +624,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -638,7 +634,7 @@
 
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -646,7 +642,7 @@
 
 .format-badge {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: calc(9px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -681,7 +677,7 @@
   border-radius: 6px;
   color: var(--text-dim);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -705,19 +701,17 @@
 }
 
 .import-textarea {
+  @include filter-input;
+
   background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 13px;
+
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.6;
   padding: 10px 14px;
-  width: 100%;
+
   min-height: 180px;
   resize: vertical;
-  outline: none;
-  transition: border-color 0.2s;
+
   box-sizing: border-box;
 
   &::placeholder {
@@ -734,7 +728,7 @@
 
 .form-hint {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   font-weight: 400;
   letter-spacing: 0;
@@ -763,7 +757,7 @@
 }
 
 .import-result-icon {
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   line-height: 1;
   flex-shrink: 0;
 
@@ -777,7 +771,7 @@
 
 .import-result-title {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-primary);
@@ -786,7 +780,7 @@
 
 .import-result-sub {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-secondary);
 }
 
@@ -799,7 +793,7 @@
 
 .import-unresolved-label {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -818,7 +812,7 @@
 
   li {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     color: var(--text-secondary);
   }
 
@@ -832,4 +826,12 @@
     background: var(--border-subtle);
     border-radius: 2px;
   }
+}
+
+.back-btn,
+.import-btn,
+.create-btn,
+.menu-btn {
+  min-height: 44px;
+  min-width: 44px;
 }

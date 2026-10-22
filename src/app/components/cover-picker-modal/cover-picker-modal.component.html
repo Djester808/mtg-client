@@ -1,11 +1,13 @@
 <div class="cp-overlay" (click)="overlayClick($event)">
   <div class="cp-modal">
     <div class="cp-header flex items-center justify-between pt-5 px-6">
-      <h2 class="font-display text-[16px] font-bold tracking-[0.1em] uppercase text-parchment m-0">
+      <h2
+        class="font-display text-[length:calc(16px*var(--text-scale,1))] font-bold tracking-[0.1em] uppercase text-parchment m-0"
+      >
         Set Cover Image
       </h2>
       <button
-        class="cp-close bg-transparent border-none text-parchment-faint cursor-pointer text-[16px] py-1 px-1.5 rounded transition-colors duration-200 hover:text-parchment"
+        class="cp-close bg-transparent border-none text-parchment-faint cursor-pointer text-[length:calc(16px*var(--text-scale,1))] py-1 px-1.5 rounded transition-colors duration-200 hover:text-parchment"
         (click)="close()"
       >
         <i class="bi bi-x-lg"></i>
@@ -14,11 +16,11 @@
 
     <div class="cp-search-wrap relative flex items-center px-6 pt-3.5 pb-2.5">
       <span
-        class="cp-search-icon absolute left-[38px] text-parchment-faint text-[18px] pointer-events-none"
+        class="cp-search-icon absolute left-[38px] text-parchment-faint text-[length:calc(18px*var(--text-scale,1))] pointer-events-none"
         ><i class="bi bi-search"></i
       ></span>
       <input
-        class="cp-search-input w-full bg-raised border border-solid border-subtle rounded-lg text-parchment font-body text-[14px] py-[9px] pl-9 pr-3.5 outline-none transition-[border-color] duration-200"
+        class="cp-search-input w-full bg-raised border border-solid border-subtle rounded-lg text-parchment font-body text-[length:calc(14px*var(--text-scale,1))] py-[9px] pl-9 pr-3.5 outline-none transition-[border-color] duration-200"
         type="text"
         [(ngModel)]="searchText"
         (input)="onInput()"
@@ -29,19 +31,19 @@
 
     <div class="cp-body flex-1 overflow-y-auto px-6 pb-6 pt-1 min-h-0">
       <div
-        class="font-body text-[13px] text-parchment-faint text-center py-10 italic"
+        class="font-body text-[length:calc(13px*var(--text-scale,1))] text-parchment-faint text-center py-10 italic"
         *ngIf="!searched && !loading"
       >
         Type a card name to search.
       </div>
       <div
-        class="cp-loading font-display text-[11px] font-bold tracking-[0.12em] uppercase text-parchment-faint text-center py-10"
+        class="cp-loading font-display text-[length:calc(11px*var(--text-scale,1))] font-bold tracking-[0.12em] uppercase text-parchment-faint text-center py-10"
         *ngIf="loading"
       >
         Searching…
       </div>
       <div
-        class="font-body text-[13px] text-parchment-faint text-center py-10 italic"
+        class="font-body text-[length:calc(13px*var(--text-scale,1))] text-parchment-faint text-center py-10 italic"
         *ngIf="searched && !loading && results.length === 0"
       >
         No results found.
@@ -61,13 +63,13 @@
         >
           <img *ngIf="cardImageUri(card)" [src]="cardImageUri(card)" [alt]="card.name" />
           <div
-            class="w-full aspect-[5/7] flex items-center justify-center bg-raised rounded-[6px] text-[28px] text-parchment-faint opacity-30"
+            class="w-full aspect-[5/7] flex items-center justify-center bg-raised rounded-[6px] text-[length:calc(28px*var(--text-scale,1))] text-parchment-faint opacity-30"
             *ngIf="!cardImageUri(card)"
           >
             <i class="bi bi-image"></i>
           </div>
           <div
-            class="absolute top-1 right-1 bg-[#a78bfa] text-white text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center"
+            class="absolute top-1 right-1 bg-[#a78bfa] text-white text-[length:calc(10px*var(--text-scale,1))] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center"
             *ngIf="isSelected(card)"
           >
             <i class="bi bi-check-lg"></i>

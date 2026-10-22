@@ -1,0 +1,133 @@
+@use '../../styles/preferences' as *;
+@use '../../styles/detail-page' as *;
+@use '../../styles/breakpoints' as *;
+
+.account-page {
+  @include preferences-page;
+  h1 {
+    @include preferences-title;
+  }
+  h2 {
+    @include preferences-section;
+  }
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+  }
+  a {
+    color: var(--accent-text);
+  }
+  section {
+    @include preferences-card;
+    margin-top: 20px;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  input {
+    @include filter-input;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    font: inherit;
+  }
+  button {
+    @include preferences-action;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  form > button {
+    align-self: flex-start;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .account-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .account-error {
+    color: #ff8a5b;
+  }
+  .account-notice {
+    color: #6fcf8f;
+  }
+  .account-session {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-dim);
+    padding: 16px 0;
+    margin-bottom: 16px;
+    min-width: 0;
+  }
+  .account-session > div {
+    min-width: 0;
+  }
+  .device-label {
+    overflow-wrap: anywhere;
+    font-size: calc(12px * var(--text-scale, 1));
+  }
+  .account-danger {
+    border-color: #ff8a5b;
+  }
+  @include upto($bp-phone) {
+    padding: 16px;
+    section {
+      padding: 16px;
+    }
+    .account-session {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+}
+
+.account-page header a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.account-page header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 24px;
+}
+.account-page header h1 {
+  flex: 1 1 260px;
+}
+.account-page header p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: calc(13px * var(--text-scale, 1));
+}
+.account-page label {
+  font: 700 calc(10px * var(--text-scale, 1)) var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.account-page header a {
+  @include preferences-action;
+  margin: 0;
+}
+.account-page form > button {
+  border-color: var(--accent);
+}
+.account-page .account-danger {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.account-page .account-danger h2 {
+  color: #f87171;
+}

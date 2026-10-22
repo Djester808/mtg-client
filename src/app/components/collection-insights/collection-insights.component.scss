@@ -1,0 +1,69 @@
+@use '../../../styles/breakpoints' as *;
+:host {
+  display: block;
+}
+.collection-insights {
+  max-height: 45dvh;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+}
+article {
+  min-width: 0;
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  padding: 16px;
+}
+h3 {
+  font: 700 calc(13px * var(--text-scale, 1)) var(--font-display);
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+p,
+.insight-label {
+  color: var(--text-secondary);
+  font-size: calc(12px * var(--text-scale, 1));
+}
+.insight-row {
+  margin-top: 12px;
+}
+.insight-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  strong {
+    white-space: nowrap;
+  }
+}
+.insight-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  margin-top: 6px;
+  overflow: hidden;
+  div {
+    height: 100%;
+    background: var(--gold);
+    min-width: 1px;
+  }
+  .negative {
+    background: #dc8e6a;
+  }
+}
+@include from($bp-phone) {
+  .collection-insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@include from($bp-wide) {
+  .collection-insights {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

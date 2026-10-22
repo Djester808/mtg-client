@@ -1,3 +1,5 @@
+@use '../../../styles/detail-page' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -7,7 +9,7 @@
 
 .prices-header {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -44,25 +46,21 @@
 }
 
 .price-cell-label {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 600;
+  @include header-count;
+  font-size: calc(9px * var(--text-scale, 1));
   letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
 
   i {
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
     opacity: 0.55;
   }
 }
 
 .price-cell-value {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
-  color: var(--gold);
+  color: var(--accent-text);
   font-variant-numeric: tabular-nums;
   justify-self: end;
 }
@@ -82,7 +80,7 @@
   color: var(--text-dim);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 600;
   padding: 2px 8px;
   transition:
@@ -96,7 +94,7 @@
   }
 
   &.is-active {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold-dim);
     background: var(--gold-glow);
   }
@@ -108,7 +106,7 @@
 
 .view-btn {
   padding: 2px 7px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 // ---- All printings -----------------------------------------
@@ -140,14 +138,14 @@
     border-left-color: var(--gold);
 
     .price-row-set {
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 }
 
 .price-row-set {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
@@ -156,7 +154,7 @@
 .price-row-num,
 .price-row-foil {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -166,7 +164,7 @@
 
 .price-row-usd {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -178,14 +176,14 @@
 
 .price-row-link {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   padding: 2px 4px;
   border-radius: 3px;
   text-decoration: none;
   transition: color 0.12s;
 
   &:hover {
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -193,13 +191,13 @@
 
 .prices-empty {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
 }
 
 .prices-source {
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--text-dim);
 }

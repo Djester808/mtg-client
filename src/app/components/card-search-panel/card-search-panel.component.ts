@@ -1,5 +1,11 @@
+import { CollectionApiService } from '../../services/collection-api.service';
+import { CopyLanguagePickerComponent } from '../copy-language-picker/copy-language-picker.component';
+import { CardGridFilterService } from '../../services/card-grid-filter.service';
+import { CollectionUndoComponent } from '../collection-undo/collection-undo.component';
+import { OwnedCardBadgeComponent } from '../owned-card-badge/owned-card-badge.component';
 import {
   Component,
+  inject,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   OnInit,
@@ -12,10 +18,11 @@ import {
   ElementRef,
   ViewChild,
 } from '@angular/core';
+import { BreakpointsService } from '../../shared/breakpoints.service';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { escapeRegExp } from '../../utils/regex.utils';
-import { Subject, combineLatest } from 'rxjs';
+import { Subject, combineLatest, forkJoin } from 'rxjs';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -75,6 +82,9 @@ export function setMenuPlacement(
   selector: 'app-card-search-panel',
   standalone: true,
   imports: [
+    CopyLanguagePickerComponent,
+    CollectionUndoComponent,
+    OwnedCardBadgeComponent,
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
@@ -91,7 +101,49 @@ export function setMenuPlacement(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardSearchPanelComponent extends CardSearchBase implements OnInit, OnDestroy {
-  @Input() ownedCards: CollectionCardDto[] = [];
+  @Input() collectionId: string | null = null;
+  private readonly gridRules = inject(CardGridFilterService);
+  addLanguage = 'en';
+  @Output() copyDecrement = new EventEmitter<{
+    oracleId: string;
+    scryfallId?: string | null;
+    language: string;
+    foil: boolean;
+  }>();
+  private currentOwnedCards: CollectionCardDto[] = [];
+  @Input() set ownedCards(rows: CollectionCardDto[]) {
+    if (rows === this.currentOwnedCards) return;
+    this.currentOwnedCards = rows;
+    if (this.results.length) this.loadResultOwnership(this.results.map((c) => c.oracleId));
+  }
+  get ownedCards(): CollectionCardDto[] {
+    return this.currentOwnedCards;
+  }
+  private readonly collectionApi = inject(CollectionApiService);
+  private resultOwned: CollectionCardDto[] = [];
+  private ownershipKey = '';
+  private loadResultOwnership(oracleIds: string[]): void {
+    if (!this.collectionId || !oracleIds.length) return;
+    const key = JSON.stringify([this.collectionId, oracleIds]);
+    this.ownershipKey = key;
+    const requests = Array.from({ length: Math.ceil(oracleIds.length / 100) }, (_, i) =>
+      this.collectionApi.lookupRows(this.collectionId!, oracleIds.slice(i * 100, (i + 1) * 100)),
+    );
+    forkJoin(requests)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          if (this.ownershipKey === key) {
+            this.resultOwned = rows.flat();
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => {
+          this.resultOwned = [];
+          this.cdr.markForCheck();
+        },
+      });
+  }
   @Input() deckCards: CollectionCardDto[] = [];
   @Input() isDeckContext = false;
   @Input() deckFormat: string | null = null;
@@ -169,6 +221,8 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     scryfallId: string;
     isCommanderEligible: boolean;
     foil?: boolean;
+    etched?: boolean;
+    language?: string;
     /** Where the add was clicked, so a deck-context parent can fly the card into its deck. */
     flight?: FlightSource;
   }>();
@@ -218,6 +272,8 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
   // ---- Internal -----------------------------------------------------
 
   private destroy$ = new Subject<void>();
+
+  readonly breakpoints = inject(BreakpointsService);
 
   constructor(
     private api: GameApiService,
@@ -345,6 +401,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       .subscribe((res) => {
         if (res !== null) {
           this.results = res;
+          this.loadResultOwnership(res.map((c) => c.oracleId));
           this.hasMore = res.length === this.PAGE_SIZE;
           this.loading = false;
           this.flippedIds.clear();
@@ -380,6 +437,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       )
       .subscribe((res) => {
         this.results = [...this.results, ...res];
+        this.loadResultOwnership(this.results.map((c) => c.oracleId));
         this.hasMore = res.length === this.PAGE_SIZE;
         this.loadingMore = false;
         res.forEach((c) => this.loadPrintings(c.oracleId));
@@ -525,8 +583,26 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     this.cdr.markForCheck();
   }
 
-  ownedEntry(oracleId: string): CollectionCardDto | undefined {
-    return this.ownedCards.find((c) => c.oracleId === oracleId);
+  ownedEntry(oracleId: string, printing?: string | null): CollectionCardDto | undefined {
+    return (
+      this.gridRules.ownedEntry(
+        this.resultOwned.length ? this.resultOwned : this.ownedCards,
+        oracleId,
+        printing ?? this.searchSelectedScryfallId.get(oracleId),
+        this.addLanguage,
+      ) ?? undefined
+    );
+  }
+  decrementOwned(oracleId: string, foil: boolean, printing?: string | null): void {
+    if (this.collectionId)
+      this.copyDecrement.emit({
+        oracleId,
+        scryfallId: printing ?? this.searchSelectedScryfallId.get(oracleId),
+        language: this.addLanguage,
+        foil,
+      });
+    else if (foil) this.cardDecrementFoil.emit(oracleId);
+    else this.cardDecrementNormal.emit(oracleId);
   }
 
   isInDeck(card: CardDto): boolean {
@@ -536,7 +612,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
   deckCount(oracleId: string): number {
     return this.deckCards
       .filter((c) => c.oracleId === oracleId)
-      .reduce((sum, c) => sum + c.quantity + c.quantityFoil, 0);
+      .reduce((sum, c) => sum + c.quantity + c.quantityFoil + (c.quantityEtched ?? 0), 0);
   }
 
   removeFromDeck(card: CardDto): void {
@@ -555,7 +631,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     return !isBasic && this.deckCount(card.oracleId) >= 1;
   }
 
-  addCard(card: CardDto, e?: Event, foil = false): void {
+  addCard(card: CardDto, e?: Event, foil = false, etched = false): void {
     let scryfallId = this.searchSelectedScryfallId.get(card.oracleId);
     if (!scryfallId) {
       const printings = this.printings.cached(card.oracleId);
@@ -577,6 +653,8 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       scryfallId,
       isCommanderEligible: isLegendary && isCreatureOrPw,
       foil,
+      ...(etched ? { etched: true } : {}),
+      ...(this.addLanguage === 'en' ? {} : { language: this.addLanguage }),
       flight: this.rowFlight(e, card),
     });
     if (card.name) this.saveSearchTerm(card.name);
@@ -617,7 +695,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.setData(
         'application/x-search-card',
-        JSON.stringify({ oracleId: card.oracleId, scryfallId }),
+        JSON.stringify({ oracleId: card.oracleId, scryfallId, language: this.addLanguage }),
       );
       const isLegendary = card.supertypes?.includes('Legendary') ?? false;
       const isCreatureOrPw =
@@ -682,6 +760,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       scryfallId,
       isCommanderEligible: isLegendary && isCreatureOrPw,
       foil: this.previewFoil,
+      ...(this.addLanguage === 'en' ? {} : { language: this.addLanguage }),
       flight: from ? { from, imageUrl: this.previewModal?.artImageUrl ?? null } : undefined,
     });
   }
@@ -702,12 +781,12 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
 
   decrementPreviewNormal(): void {
     if (!this.previewCard) return;
-    this.cardDecrementNormal.emit(this.previewCard.oracleId);
+    this.decrementOwned(this.previewCard.oracleId, false, this.previewScryfallId);
   }
 
   decrementPreviewFoil(): void {
     if (!this.previewCard) return;
-    this.cardDecrementFoil.emit(this.previewCard.oracleId);
+    this.decrementOwned(this.previewCard.oracleId, true, this.previewScryfallId);
   }
 
   close(): void {

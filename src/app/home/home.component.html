@@ -2,8 +2,9 @@
   <!-- Header: logo + search + filters + sets -->
   <div class="search-header">
     <div class="search-logo">
-      <span class="logo-diamond">&#9670;</span>
-      <span class="logo-text">MTG Engine</span>
+      <span class="compleat-brand" role="img" aria-label="Compleat"
+        ><img class="compleat-sigil" src="assets/brand/sigil.png" alt=""
+      /></span>
     </div>
 
     <!-- Search bar -->
@@ -223,12 +224,12 @@
 
   <!-- Idle state -->
   <div class="search-idle" *ngIf="!searched && !loading">
-    <div class="idle-mana">
-      <span class="mana-orb orb-W"></span>
-      <span class="mana-orb orb-U"></span>
-      <span class="mana-orb orb-B"></span>
-      <span class="mana-orb orb-R"></span>
-      <span class="mana-orb orb-G"></span>
+    <div class="idle-mana" role="img" aria-label="White, blue, black, red, and green mana">
+      <i class="ms ms-w ms-cost ms-shadow" aria-hidden="true"></i>
+      <i class="ms ms-u ms-cost ms-shadow" aria-hidden="true"></i>
+      <i class="ms ms-b ms-cost ms-shadow" aria-hidden="true"></i>
+      <i class="ms ms-r ms-cost ms-shadow" aria-hidden="true"></i>
+      <i class="ms ms-g ms-cost ms-shadow" aria-hidden="true"></i>
     </div>
     <p class="idle-text">Search across thousands of Magic: The Gathering cards</p>
   </div>

@@ -39,8 +39,74 @@ describe('CardGridFilterService', () => {
   let svc: CardGridFilterService;
   beforeEach(() => (svc = new CardGridFilterService()));
 
-  // ---- matches ---------------------------------------------------
-
+  it('filters independent finish conditions and tags on the same owned finish', () => {
+    const rows = [
+      card({
+        condition: 'NM',
+        tags: ['Normal'],
+        quantity: 1,
+        quantityEtched: 2,
+        finishData: {
+          nonfoil: { condition: 'NM', tags: ['Normal'], addedAt: null, priceAtAdd: null },
+          etched: { condition: 'LP', tags: ['Etched'], addedAt: null, priceAtAdd: null },
+        },
+      }),
+    ];
+    expect(svc.apply(rows, state({ finish: 'etched', condition: 'LP', tag: 'Etched' }))).toEqual(
+      rows,
+    );
+    expect(svc.apply(rows, state({ condition: 'NM', tag: 'Etched' }))).toEqual([]);
+  });
+  it('supports anchored regular expressions and leaves malformed patterns visible as no matches', () => {
+    const rows = [card({}, { name: 'Sol Ring' }), card({ id: 'second' }, { name: 'Solar Ring' })];
+    expect(svc.apply(rows, state({ query: '^Sol Ring$', regex: true })).map((c) => c.id)).toEqual([
+      'r1',
+    ]);
+    expect(svc.apply(rows, state({ query: '[', regex: true }))).toEqual([]);
+  });
+  it('filters owned metadata and invalidates its memo when metadata filters change', () => {
+    const rows = [
+      card({ id: 'a', quantity: 2, language: 'ja', condition: 'NM', tags: ['Trade'] }),
+      card({ id: 'b', quantity: 1, quantityFoil: 1, language: 'en', condition: 'LP', tags: [] }),
+    ];
+    expect(
+      svc
+        .apply(
+          rows,
+          state({
+            language: 'ja',
+            condition: 'NM',
+            tag: 'trade',
+            finish: 'nonfoil',
+            duplicatesOnly: true,
+          }),
+        )
+        .map((c) => c.id),
+    ).toEqual(['a']);
+    expect(svc.apply(rows, state({ finish: 'foil' })).map((c) => c.id)).toEqual(['b']);
+    expect(
+      svc.matches(card({}, { name: 'Sol Ring' }), state({ query: 'sol', matchCase: true })),
+    ).toBeFalse();
+    expect(
+      svc.matches(card({}, { name: 'Sol Ring' }), state({ query: 'Ring', matchWord: true })),
+    ).toBeTrue();
+    expect(
+      svc.matches(card({}, { name: 'Sol Ring' }), state({ query: 'Rin', matchWord: true })),
+    ).toBeFalse();
+  });
+  it('sorts quantity and addition date, and offers price and acquisition-month groups', () => {
+    const rows = [
+      card({ id: 'a', quantity: 1, addedAt: '2026-10-01' }, { name: 'Alpha', prices: { usd: 12 } }),
+      card({ id: 'b', quantity: 3, addedAt: '2026-09-01' }, { name: 'Beta', prices: { usd: 2 } }),
+    ];
+    expect(svc.apply(rows, state({ sort: 'quantity', sortDir: 'desc' })).map((c) => c.id)).toEqual([
+      'b',
+      'a',
+    ]);
+    expect(svc.apply(rows, state({ sort: 'added' })).map((c) => c.id)).toEqual(['b', 'a']);
+    expect(svc.sections(rows, 'month').length).toBe(2);
+    expect(svc.sections(rows, 'price').length).toBe(2);
+  });
   it('matches everything when no filter is set', () => {
     expect(svc.matches(card(), state())).toBeTrue();
   });

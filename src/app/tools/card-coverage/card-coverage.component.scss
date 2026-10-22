@@ -36,7 +36,7 @@
   max-width: 70ch;
   margin: 6px 0 0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.5;
 }
 
@@ -56,7 +56,7 @@
   margin: 0;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -64,18 +64,18 @@
 .cc-block-sub {
   max-width: 60ch;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .cc-total {
   margin-left: auto;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .cc-total-count {
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
 }
 
 // Five figures across. auto-fit rather than a fixed five, so the row is still a row if a status
@@ -104,7 +104,7 @@
 
   &:hover .cc-figure-count,
   &:focus-visible .cc-figure-count {
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -116,7 +116,7 @@
   display: block;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: calc(26px * var(--text-scale, 1));
   line-height: 1.1;
 }
 
@@ -124,7 +124,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 // One bar idiom for both the figures and the backlog: the same track, a different denominator
@@ -178,7 +178,7 @@
   min-width: 0;
   color: var(--text-secondary);
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   // The reason is the sentence the translator refused on. It keeps its own shape and pans rather
   // than being ellipsised into a column of "Cannot express…" lines that name nothing.
   overflow-x: auto;
@@ -195,7 +195,7 @@
 
 .cc-blocked {
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -203,7 +203,7 @@
 .cc-none {
   margin: 0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 .cc-run {
@@ -243,7 +243,7 @@
   display: block;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   line-height: 1.1;
 }
 
@@ -251,7 +251,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .cc-run-meta {
@@ -260,7 +260,7 @@
   gap: 3px;
   min-width: 0;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   overflow-wrap: anywhere;
 
   @include upto($bp-phone) {
@@ -269,7 +269,7 @@
 
   code {
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
   }
 }
 
@@ -279,7 +279,7 @@
   max-width: 80ch;
   margin: 4px 0 0;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   line-height: 1.5;
 }
 

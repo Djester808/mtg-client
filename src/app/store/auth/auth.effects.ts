@@ -1,3 +1,4 @@
+import { saveAuth, clearAuth } from '../../services/auth-storage';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
@@ -11,14 +12,20 @@ export class AuthEffects {
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.login),
-      switchMap(({ username, password }) =>
-        this.authService.login(username, password).pipe(
+      switchMap(({ username, password, rememberMe }) =>
+        this.authService.login(username, password, rememberMe).pipe(
           // The username comes from the RESPONSE, never from what was typed. Login accepts
           // either a username or an email address, so echoing the request put people's
           // email addresses in the navbar, in the avatar's colour hash, and into every
           // /u/:username link built from the store — where it 404s, because no profile is
           // keyed on an email.
-          map((res) => AuthActions.loginSuccess({ token: res.token, username: res.username })),
+          map((res) =>
+            AuthActions.loginSuccess({
+              token: res.token,
+              username: res.username,
+              ...(rememberMe === undefined ? {} : { rememberMe }),
+            }),
+          ),
           catchError((err) =>
             of(AuthActions.loginFailure({ error: describeHttpError(err, 'Login failed') })),
           ),
@@ -30,8 +37,8 @@ export class AuthEffects {
   register$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.register),
-      switchMap(({ username, email, password }) =>
-        this.authService.register(username, email, password).pipe(
+      switchMap(({ username, email, password, acceptedTerms }) =>
+        this.authService.register(username, email, password, acceptedTerms).pipe(
           // Same rule as login: the server's spelling of the username wins.
           map((res) => AuthActions.registerSuccess({ token: res.token, username: res.username })),
           catchError((err) =>
@@ -48,9 +55,9 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.loginSuccess, AuthActions.registerSuccess),
-        tap(({ token, username }) => {
-          localStorage.setItem('auth_token', token);
-          localStorage.setItem('auth_username', username);
+        tap((action) => {
+          const { token, username } = action;
+          saveAuth(token, username, !('rememberMe' in action) || action.rememberMe !== false);
           this.router.navigate(['/']);
         }),
       ),
@@ -62,8 +69,8 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.logout),
         tap(() => {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_username');
+          this.authService.logout().subscribe({ error: () => undefined });
+          clearAuth();
           this.router.navigate(['/login']);
         }),
       ),

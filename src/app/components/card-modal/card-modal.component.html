@@ -97,6 +97,7 @@
         </div>
       </div>
 
+      <app-owned-card-badge *ngIf="card" [oracleId]="card.oracleId" />
       <!-- Info tabs: Details and Rulings always; hosts may add one more (e.g. Notes) -->
       <div class="modal-info-tabs">
         <button
@@ -166,9 +167,21 @@
            history chart and printing list (their own component). -->
       <ng-container *ngIf="infoTab === 'prices'">
         <div class="modal-owned-box" *ngIf="ownedEntry as owned">
-          <div class="owned-row" *ngIf="owned.priceUsdAtAdd != null">
+          <div class="owned-row">
+            <span class="owned-label">Finish</span
+            ><select
+              aria-label="Price finish"
+              [value]="priceFinish"
+              (change)="priceFinish = $any($event.target).value"
+            >
+              <option value="nonfoil">Nonfoil</option>
+              <option value="foil">Foil</option>
+              <option value="etched">Etched</option>
+            </select>
+          </div>
+          <div class="owned-row" *ngIf="priceAtAdd != null">
             <span class="owned-label">Price when added</span>
-            <span class="owned-value">{{ owned.priceUsdAtAdd | currency: 'USD' }}</span>
+            <span class="owned-value">{{ priceAtAdd | currency: 'USD' }}</span>
           </div>
           <div
             class="owned-row owned-row--delta"
@@ -193,7 +206,7 @@
               <span class="owned-change" *ngIf="d.direction === 'flat'">unchanged</span>
             </span>
           </div>
-          <div class="owned-note" *ngIf="owned.priceUsdAtAdd == null">
+          <div class="owned-note" *ngIf="priceAtAdd == null">
             No price was recorded when this copy was added.
           </div>
         </div>
@@ -273,7 +286,12 @@
               <span class="legal-chip-label">{{ f.label }}</span>
             </div>
           </div>
-        </div> </ng-container
+        </div>
+        <app-card-community
+          *ngIf="card"
+          [oracleId]="card.oracleId"
+          [commanderOracleId]="commanderOracleId"
+        /> </ng-container
       ><!-- /details tab -->
     </div>
   </div>
@@ -304,8 +322,8 @@
           class="modal-printing-chip"
           *ngFor="let p of carouselSlice"
           [class.is-viewed]="p.scryfallId === viewedScryfallId"
-          [class.is-owned]="p.scryfallId === primaryScryfallId"
-          [class.is-also-owned]="alsoOwnedIds.includes(p.scryfallId)"
+          [class.is-owned]="p.scryfallId === primaryScryfallId && ownsPrinting(p.scryfallId)"
+          [class.is-also-owned]="p.scryfallId !== primaryScryfallId && ownsPrinting(p.scryfallId)"
           (click)="selectPrinting(p)"
           [title]="p.setName + (p.collectorNumber ? ' #' + p.collectorNumber : '')"
         >
@@ -321,10 +339,16 @@
           >
             <div class="chip-placeholder" *ngIf="!p.imageUriSmall">◈</div>
             <div class="chip-viewing-banner" *ngIf="p.scryfallId === viewedScryfallId">Viewing</div>
-            <div class="chip-owned-banner" *ngIf="p.scryfallId === primaryScryfallId">
+            <div
+              class="chip-owned-banner"
+              *ngIf="p.scryfallId === primaryScryfallId && ownsPrinting(p.scryfallId)"
+            >
               <i class="bi bi-check-lg"></i> Owned
             </div>
-            <div class="chip-also-owned-banner" *ngIf="alsoOwnedIds.includes(p.scryfallId)">
+            <div
+              class="chip-also-owned-banner"
+              *ngIf="p.scryfallId !== primaryScryfallId && ownsPrinting(p.scryfallId)"
+            >
               <i class="bi bi-check-lg"></i> Owned
             </div>
             <button

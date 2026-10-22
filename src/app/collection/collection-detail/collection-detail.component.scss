@@ -1,3 +1,4 @@
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/add-controls' as *;
 @use '../../../styles/detail-page' as *;
 
@@ -13,7 +14,7 @@
   @include detail-shell;
 }
 
-@include detail-bg(rgba(201, 168, 76, 0.08));
+@include detail-bg(rgba(184, 0, 224, 0.08));
 
 .detail-header {
   @include detail-header;
@@ -59,7 +60,7 @@
 
 .col-group-label {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -67,7 +68,7 @@
 }
 
 .col-group-count {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -151,7 +152,7 @@
   height: 15px;
   border: 1px solid var(--border);
   border-radius: 3px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: #a78bfa;
 
   .is-selected & {
@@ -181,7 +182,7 @@
   text-align: center;
   color: var(--text-dim);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-style: italic;
   padding: 40px 0;
 }
@@ -211,8 +212,8 @@
   }
 
   &.is-foil {
-    border-color: rgba(201, 168, 76, 0.22);
-    box-shadow: 0 0 10px rgba(201, 168, 76, 0.06);
+    border-color: rgba(184, 0, 224, 0.22);
+    box-shadow: 0 0 10px rgba(184, 0, 224, 0.06);
   }
 }
 
@@ -271,7 +272,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -283,7 +284,7 @@
     background 0.15s;
 
   &:hover {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold-dim);
     background: var(--gold-glow);
   }
@@ -306,7 +307,7 @@
   border-radius: 5px;
   color: transparent;
   cursor: pointer;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   transition:
     background 0.12s,
     border-color 0.12s,
@@ -326,7 +327,7 @@
 .card-tile.is-selected {
   outline: 2px solid var(--gold);
   outline-offset: -2px;
-  box-shadow: 0 0 18px rgba(201, 168, 76, 0.35);
+  box-shadow: 0 0 18px rgba(184, 0, 224, 0.35);
 }
 
 .select-bar {
@@ -360,11 +361,11 @@
 
 .select-count {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 
@@ -378,7 +379,7 @@
   color: var(--text-dim);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   padding: 2px 4px;
   transition: color 0.12s;
 
@@ -401,7 +402,7 @@
   color: #12100a;
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -420,6 +421,7 @@
 // A card with exactly one printing shows the set as a label, not a picker. Matches the
 // dropdown's metrics so the strip does not shift when one collapses into the other.
 .set-single-label {
+  @include header-count;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -429,13 +431,8 @@
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border-dim);
   border-radius: 5px;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -448,7 +445,7 @@
 
 .modal-qty-not-owned {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
   white-space: nowrap;
@@ -474,7 +471,7 @@
   border-radius: 6px;
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.5;
   padding: 6px 8px;
   resize: vertical;
@@ -520,7 +517,7 @@
   position: relative;
 
   &.no-cover-art {
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.18) 0%, rgba(30, 27, 15, 0.85) 100%);
+    background: linear-gradient(135deg, rgba(184, 0, 224, 0.18) 0%, rgba(30, 27, 15, 0.85) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -528,8 +525,8 @@
 }
 
 .cover-art-placeholder {
-  font-size: 40px;
-  color: rgba(201, 168, 76, 0.25);
+  font-size: calc(40px * var(--text-scale, 1));
+  color: rgba(184, 0, 224, 0.25);
 }
 
 .cover-edit-overlay {
@@ -546,13 +543,13 @@
 }
 
 .cover-edit-icon {
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   color: #fff;
 }
 
 .cover-edit-label {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -579,4 +576,39 @@
   // Nothing above it on this page, so it pins to the top of .grid-area. The deck sets its
   // own offset for the board tabs above its bar.
   --cgf-sticky-top: 0;
+}
+
+.select-bar {
+  flex-wrap: wrap;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.select-bar {
+  min-width: 0;
+  width: min(760px, calc(100% - 32px));
+}
+
+.collection-paging {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: calc(12px * var(--text-scale, 1));
+  button {
+    min-height: $tap-min;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 }

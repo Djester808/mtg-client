@@ -215,7 +215,10 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   private deckKey(deck: DeckDetailDto): string {
     return (
       deck.cards
-        .map((c) => `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil}`)
+        .map(
+          (c) =>
+            `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil + (c.quantityEtched ?? 0)}`,
+        )
         .sort()
         .join('|') +
       '|' +
@@ -239,7 +242,7 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   private compute(deck: DeckDetailDto): ManaAnalysis {
     const isLand = (c: CollectionCardDto) =>
       c.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
-    const qty = (c: CollectionCardDto) => c.quantity + c.quantityFoil;
+    const qty = (c: CollectionCardDto) => c.quantity + c.quantityFoil + (c.quantityEtched ?? 0);
 
     const nonLands = deck.cards.filter((c) => !isLand(c));
     const lands = deck.cards.filter((c) => isLand(c));

@@ -1,3 +1,7 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
+import { BreakpointsService } from '../../shared/breakpoints.service';
 import { TestBed, ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -9,7 +13,7 @@ import { PrintingsService } from '../../services/printings.service';
 import { ManaCostComponent } from '../mana-cost/mana-cost.component';
 import { CardModalComponent } from '../card-modal/card-modal.component';
 import { makeCard } from '../../testing/test-factories';
-import { CardDto } from '../../models/game.models';
+import { CardDto, CollectionCardDto } from '../../models/game.models';
 import { PrintingDto } from '../../models/collection.models';
 
 /**
@@ -70,6 +74,8 @@ function buildModule(gameApi: jasmine.SpyObj<GameApiService>, printings: Printin
   return TestBed.configureTestingModule({
     imports: [CardSearchPanelComponent, CommonModule, ReactiveFormsModule, FormsModule],
     providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: GameApiService, useValue: gameApi },
       { provide: PrintingsService, useValue: printings },
     ],
@@ -110,6 +116,47 @@ describe('CardSearchPanelComponent — search flags (state)', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
+  it('preserves etched finish and language when adding from search', () => {
+    component.searchSelectedScryfallId.set('o', 'p');
+    component.addLanguage = 'ja';
+    const emit = spyOn(component.cardAdd, 'emit');
+    component.addCard(makeCard({ oracleId: 'o' }), undefined, false, true);
+    expect(emit).toHaveBeenCalledWith(
+      jasmine.objectContaining({ etched: true, foil: false, language: 'ja', scryfallId: 'p' }),
+    );
+  });
+  it('shows quantities and adds copies in the selected language', () => {
+    component.ownedCards = [
+      {
+        id: 'english',
+        oracleId: 'o',
+        scryfallId: 'p',
+        language: 'en',
+        quantity: 2,
+        quantityFoil: 0,
+        notes: null,
+        addedAt: '',
+        cardDetails: null,
+      },
+      {
+        id: 'japanese',
+        oracleId: 'o',
+        scryfallId: 'p',
+        language: 'ja',
+        quantity: 4,
+        quantityFoil: 0,
+        notes: null,
+        addedAt: '',
+        cardDetails: null,
+      },
+    ] as CollectionCardDto[];
+    component.addLanguage = 'ja';
+    component.searchSelectedScryfallId.set('o', 'p');
+    expect(component.ownedEntry('o')?.id).toBe('japanese');
+    const emit = spyOn(component.cardAdd, 'emit');
+    component.addCard(makeCard({ oracleId: 'o' }));
+    expect(emit).toHaveBeenCalledWith(jasmine.objectContaining({ language: 'ja' }));
+  });
   it('defaults matchCase, matchWord, useRegex to false', () => {
     expect(component.matchCase).toBeFalse();
     expect(component.matchWord).toBeFalse();
@@ -819,5 +866,26 @@ describe('CardSearchPanelComponent — set menu open', () => {
     const menu = fixture.nativeElement.querySelector('.set-dropdown') as HTMLElement;
     expect(menu.style.maxHeight).toBe('140px');
     expect(menu.classList).toContain('is-up');
+  }));
+});
+
+describe('Card search build results at narrow widths', () => {
+  it('keeps add controls in compact rows and restores tiles after resizing wide', fakeAsync(() => {
+    const { gameApi, printings } = makeSpies();
+    buildModule(gameApi, printings);
+    const narrow = signal(true);
+    TestBed.overrideProvider(BreakpointsService, { useValue: { isNavCollapsed: narrow } });
+    const fixture = TestBed.createComponent(CardSearchPanelComponent);
+    fixture.componentInstance.boardMode = true;
+    fixture.componentInstance.isOpen = true;
+    initComponent(fixture);
+    fixture.componentInstance.results = makeCards(2);
+    fixture.changeDetectorRef.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.result-row').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.result-tile').length).toBe(0);
+    narrow.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.result-tile').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.result-row').length).toBe(0);
   }));
 });

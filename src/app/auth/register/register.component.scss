@@ -2,3 +2,32 @@
   display: block;
   height: 100%;
 }
+
+.auth-terms {
+  color: var(--parchment-muted);
+  min-width: 0;
+  summary {
+    cursor: pointer;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: inherit;
+    max-height: 20rem;
+    overflow: auto;
+  }
+}
+.terms-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+}
+.auth-strength,
+.confirm-label,
+.terms-choice {
+  color: var(--parchment-muted);
+}

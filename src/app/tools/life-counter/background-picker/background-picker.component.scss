@@ -86,8 +86,8 @@
 }
 
 .upload-glyph {
-  font-size: 20px;
-  color: var(--gold);
+  font-size: calc(20px * var(--text-scale, 1));
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -99,13 +99,13 @@
 
 .upload-title {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .upload-note {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -116,7 +116,7 @@
   border: 1px solid var(--border-subtle);
   background: var(--bg-raised);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   cursor: pointer;
   text-align: left;
 
@@ -128,7 +128,7 @@
 
 .picker-error {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: #ff8a7a;
 }
 
@@ -143,7 +143,7 @@
 .group-title {
   margin: 4px 0 0;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -151,7 +151,7 @@
 
 .picker-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -189,7 +189,7 @@
   inset: auto 0 0;
   padding: 10px 6px 4px;
   background: linear-gradient(rgb(0 0 0 / 0), rgb(0 0 0 / 0.85));
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   line-height: 1.2;
   color: var(--text-primary);
   text-align: left;

@@ -1,0 +1,71 @@
+<div class="account-page identity-controls">
+  <p role="alert" class="account-error" *ngIf="error()">{{ error() }}</p>
+  <p role="status" class="account-notice" *ngIf="notice()">{{ notice() }}</p>
+  <section>
+    <h2>Change username</h2>
+    <p>
+      Your username is used to sign in and in your public profile link. You can change it once every
+      30 days. Existing profile links stop working. You will be signed out on every device.
+    </p>
+    <form #identity="ngForm" (ngSubmit)="changeUsername()">
+      <label for="new-username">New username</label
+      ><input
+        id="new-username"
+        #usernameInput="ngModel"
+        name="username"
+        [(ngModel)]="username"
+        (ngModelChange)="available.set(null)"
+        required
+        pattern="[A-Za-z0-9_]{3,32}"
+        minlength="3"
+        maxlength="32"
+        autocomplete="username"
+      />
+      <button
+        type="button"
+        (click)="checkUsername()"
+        [disabled]="busy() || !username || !usernameInput.valid"
+      >
+        Check availability
+      </button>
+      <p role="status" *ngIf="available()">{{ available() }} is available.</p>
+      <label for="username-password">Current password</label
+      ><input
+        id="username-password"
+        name="password"
+        type="password"
+        [(ngModel)]="password"
+        required
+        maxlength="128"
+        autocomplete="current-password"
+      />
+      <button [disabled]="busy() || identity.invalid || available() !== username.trim()">
+        Change username and sign out
+      </button>
+    </form>
+  </section>
+  <section>
+    <h2>Deck privacy</h2>
+    <p>
+      Hide deck lists, deck counts, commanders, and deck activity from your public profile. Your own
+      account still shows them. Forum posts you already published stay public; unpublish them
+      separately to remove them from the forum.
+    </p>
+    <p role="status" *ngIf="privacy() === null">Loading privacy settings…</p>
+    <button type="button" *ngIf="privacy() === null && error()" (click)="loadPrivacy()">
+      Try again
+    </button>
+    <button
+      id="deck-privacy"
+      type="button"
+      *ngIf="privacy() !== null"
+      [attr.aria-pressed]="privacy()"
+      [disabled]="busy()"
+      (click)="togglePrivacy()"
+    >
+      {{
+        privacy() ? 'Decks hidden from profile — show decks' : 'Decks shown on profile — hide decks'
+      }}
+    </button>
+  </section>
+</div>

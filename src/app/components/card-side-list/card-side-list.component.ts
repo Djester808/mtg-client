@@ -133,7 +133,7 @@ export class CardSideListComponent implements OnDestroy {
   }
 
   qty(card: CollectionCardDto): number {
-    return card.quantity + card.quantityFoil;
+    return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
   }
 
   art(card: CollectionCardDto): string | null {

@@ -1,3 +1,4 @@
+import { OwnerDraftsService } from '../../services/owner-drafts.service';
 import {
   Component,
   ElementRef,
@@ -47,6 +48,7 @@ import { CardTileComponent } from '../../components/card-tile/card-tile.componen
 import { ScrollEdgesDirective } from '../../directives/scroll-edges.directive';
 import { BreakpointsService } from '../../shared/breakpoints.service';
 import { flyCardGhost, FlightSource } from '../../shared/fly-card';
+import { ReorderMotionDirective, motionReduced } from '../../shared/reorder-motion.directive';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { AdmissionBadgeComponent } from '../../components/admission-badge/admission-badge.component';
 import { CardModalComponent } from '../../components/card-modal/card-modal.component';
@@ -92,6 +94,7 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
   selector: 'app-deck-detail',
   standalone: true,
   imports: [
+    ReorderMotionDirective,
     CommonModule,
     FormsModule,
     ManaCostComponent,
@@ -213,7 +216,15 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   showDetailCoverPicker = false;
 
   showPublishModal = false;
-  publishDescription = '';
+  private readonly publicationDrafts = inject(OwnerDraftsService);
+  private publicationText = '';
+  get publishDescription(): string {
+    return this.publicationText;
+  }
+  set publishDescription(value: string) {
+    this.publicationText = value;
+    this.publicationDrafts.write('publish', this.deckId, value);
+  }
   publishLoading = false;
 
   tokenCardCache = new Map<string, CardDto | null>();
@@ -454,7 +465,12 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
   openPublishModal(): void {
     this.showPublishModal = true;
-    this.publishDescription = '';
+    this.publicationText =
+      this.publicationDrafts.read(
+        'publish',
+        this.deckId,
+        (value): value is string => typeof value === 'string' && value.length <= 20000,
+      ) ?? '';
   }
 
   closePublishModal(): void {
@@ -1014,6 +1030,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     grabOffsetY: number,
     done: () => void,
   ): void {
+    if (motionReduced(document)) {
+      done();
+      return;
+    }
     ghost.style.transition = 'transform 0.18s cubic-bezier(0.2,0,0.2,1), opacity 0.15s ease';
     ghost.style.transform = `translate3d(${x - grabOffsetX}px,${y - grabOffsetY}px,0) rotate(0deg) scale(0.8)`;
     ghost.style.opacity = '0';
@@ -1028,6 +1048,10 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
    * or targetless drop.
    */
   private glideGhostTo(ghost: HTMLElement, x: number, y: number, done: () => void): void {
+    if (motionReduced(document)) {
+      done();
+      return;
+    }
     ghost.style.transition =
       'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease 0.12s';
     ghost.style.transform = `translate3d(${x}px,${y}px,0) rotate(0deg) scale(1)`;
@@ -1074,7 +1098,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       ghost.style.backgroundPosition = 'center';
       ghost.style.backgroundColor = '#1a1728';
       ghost.style.borderRadius = '6px';
-      ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(201,168,76,0.4)';
+      ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(184,0,224,0.4)';
     } else {
       // Text-only row — show a compact name badge
       const label =
@@ -1091,13 +1115,13 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
       ghost.style.display = 'flex';
       ghost.style.alignItems = 'center';
       ghost.style.backgroundColor = '#1a1728';
-      ghost.style.border = '1px solid rgba(201,168,76,0.5)';
+      ghost.style.border = '1px solid rgba(184,0,224,0.5)';
       ghost.style.borderRadius = '17px';
-      ghost.style.color = 'rgba(201,168,76,0.95)';
+      ghost.style.color = 'rgba(184,0,224,0.95)';
       ghost.style.fontSize = '13px';
       ghost.style.fontWeight = '500';
       ghost.style.whiteSpace = 'nowrap';
-      ghost.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2)';
+      ghost.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(184,0,224,0.2)';
       ghost.textContent = label;
     }
 
@@ -1218,7 +1242,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         ghost.style.opacity = '0.9';
         ghost.style.zIndex = '9999';
         ghost.style.pointerEvents = 'none';
-        ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(201,168,76,0.4)';
+        ghost.style.boxShadow = '0 24px 48px rgba(0,0,0,0.6), 0 0 0 2px rgba(184,0,224,0.4)';
         ghost.style.transform = `translate3d(${startX - grabOffsetX}px,${startY - grabOffsetY}px,0) rotate(2deg) scale(1.04)`;
         document.body.appendChild(ghost);
 
@@ -1681,11 +1705,11 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   totalCount(deck: DeckDetailDto): number {
     return deck.cards
       .filter((c) => (c.board ?? 'main') === 'main')
-      .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
+      .reduce((s, c) => s + c.quantity + c.quantityFoil + (c.quantityEtched ?? 0), 0);
   }
 
   cardCount(card: CollectionCardDto): number {
-    return card.quantity + card.quantityFoil;
+    return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
   }
 
   /**
@@ -2148,7 +2172,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   boardCount(deck: DeckDetailDto, board: 'main' | 'side' | 'maybe'): number {
     return deck.cards
       .filter((c) => (c.board ?? 'main') === board)
-      .reduce((s, c) => s + c.quantity + c.quantityFoil, 0);
+      .reduce((s, c) => s + c.quantity + c.quantityFoil + (c.quantityEtched ?? 0), 0);
   }
 
   // Stats are computed by DeckStatsService (pure, memoized by deck identity); this

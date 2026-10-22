@@ -157,7 +157,7 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
   }
 
   cardCount(card: CollectionCardDto): number {
-    return card.quantity + card.quantityFoil;
+    return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
   }
 
   // ---- The shared filter bar --------------------------------------

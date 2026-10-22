@@ -233,7 +233,7 @@ $nav-morph: 160ms;
   min-height: $tap-min;
   padding: 0 12px;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -250,11 +250,11 @@ $nav-morph: 160ms;
     background: var(--bg-raised);
   }
   &.active {
-    color: var(--gold);
+    color: var(--accent-text);
     background: var(--bg-raised);
   }
   &.accent {
-    color: var(--gold);
+    color: var(--accent-text);
   }
   &.danger {
     color: #e74c3c;
@@ -279,7 +279,7 @@ $nav-morph: 160ms;
   margin: 4px 0 0;
   padding: 0 12px;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -349,7 +349,7 @@ $nav-morph: 160ms;
   }
 
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -365,7 +365,7 @@ $nav-morph: 160ms;
     background: var(--bg-raised);
   }
   &.active {
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -418,7 +418,7 @@ $nav-morph: 160ms;
 
 .account-name {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-primary);
@@ -429,7 +429,7 @@ $nav-morph: 160ms;
 }
 
 .account-caret {
-  font-size: 8px;
+  font-size: calc(8px * var(--text-scale, 1));
   color: var(--text-dim);
   transition: transform 0.2s;
   &.open {
@@ -460,7 +460,7 @@ $nav-morph: 160ms;
   display: block;
   width: 100%;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--text-secondary);
   text-decoration: none;
   background: transparent;
@@ -489,18 +489,91 @@ $nav-morph: 160ms;
   background: var(--gold);
   border-radius: 7px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #0e0c08;
+  color: #ffffff;
   text-decoration: none;
   transition:
     background 0.15s,
     box-shadow 0.15s;
 
   &:hover {
-    background: #dbb954;
-    box-shadow: 0 2px 16px rgba(201, 168, 76, 0.3);
+    background: #ca33e9;
+    box-shadow: 0 2px 16px rgba(184, 0, 224, 0.3);
+  }
+}
+
+.nav-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: $tap-min;
+  min-height: $tap-min;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: calc(20px * var(--text-scale, 1));
+  flex-shrink: 0;
+}
+.desktop-rail {
+  display: none;
+}
+@include from($bp-nav) {
+  .desktop-rail {
+    position: fixed;
+    left: 0;
+    top: 52px;
+    bottom: 0;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    width: 64px;
+    padding: 12px 8px;
+    gap: 8px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    overflow-y: auto;
+  }
+  .desktop-rail.is-expanded {
+    width: 208px;
+  }
+  .desktop-rail a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: $tap-min;
+    padding: 8px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .desktop-rail a.active {
+    color: var(--accent-text);
+    background: var(--bg-raised);
+  }
+  .rail-symbol {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 28px;
+    font-size: calc(20px * var(--text-scale, 1));
+  }
+  .rail-label {
+    display: none;
+  }
+  .is-expanded .rail-label {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+}
+@include upto($bp-nav) {
+  .nav-settings {
+    display: none;
+  }
+}
+@include upto($bp-wide) {
+  .nav-link {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }

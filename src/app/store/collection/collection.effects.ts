@@ -244,6 +244,24 @@ export class CollectionEffects {
     ),
   );
 
+  refreshPageAfterMutation$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        CollectionActions.addCardSuccess,
+        CollectionActions.updateCardSuccess,
+        CollectionActions.removeCardSuccess,
+        CollectionActions.moveCardSuccess,
+        CollectionActions.moveCardsSuccess,
+        CollectionActions.mergeCollectionsSuccess,
+        CollectionActions.updateCollectionMetaSuccess,
+      ),
+      withLatestFrom(this.store.select(selectActiveCollection)),
+      withLatestFrom(this.store.select((state) => state.collection.pendingCardUpdates)),
+      filter(([[, active], pending]) => !!active?.pageData && !Object.keys(pending ?? {}).length),
+      map(([[, active]]) => CollectionActions.refreshCollection({ id: active!.id })),
+    ),
+  );
+
   notifyFailure$ = createEffect(
     () =>
       this.actions$.pipe(

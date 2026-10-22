@@ -1,0 +1,479 @@
+@use 'breakpoints' as *;
+
+@mixin workspace-layouts {
+  // Computed grids reflow. A saved free board keeps its authored coordinates.
+  app-collection-detail .detail-shell {
+    .grid-area {
+      min-width: 0;
+    }
+    .card-grid {
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(160px * var(--card-zoom, 1))), 1fr)
+      );
+    }
+    .col-groups.is-list .card-grid {
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(300px * var(--card-zoom, 1))), 1fr)
+      );
+    }
+    .col-groups.density-half .card-grid {
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(112px * var(--card-zoom, 1))), 1fr)
+      );
+    }
+    .col-groups.density-name .card-grid {
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(78px * var(--card-zoom, 1))), 1fr)
+      );
+    }
+    .detail-header {
+      flex-wrap: wrap;
+      gap: 12px 16px;
+    }
+    .header-center {
+      flex: 1 1 240px;
+    }
+    .header-name,
+    .header-desc {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .header-right {
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+  }
+
+  app-deck-detail {
+    .groups-area,
+    .detail-body {
+      min-width: 0;
+    }
+    .groups-list.is-visual:not(.is-vert) {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, calc(160px * var(--card-zoom, 1))), 1fr)
+      );
+      .cmc-group {
+        min-width: 0;
+        max-width: none;
+        width: auto;
+      }
+      .visual-card {
+        width: 100%;
+        max-width: 260px;
+      }
+    }
+    .groups-list.is-visual.is-vert .visual-stack {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(140px * var(--card-zoom, 1))), 1fr)
+      );
+      .visual-card {
+        width: 100%;
+      }
+    }
+    .detail-header {
+      flex-wrap: wrap;
+    }
+    .header-name-wrap {
+      flex: 1 1 240px;
+    }
+    .header-name {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .rename-btn {
+      opacity: 1;
+      min-width: $tap-min;
+      min-height: $tap-min;
+    }
+  }
+
+  app-card-search-panel.is-open:not(.is-board) {
+    width: clamp(360px, 42vw, 600px);
+    min-width: 360px;
+  }
+
+  @include upto($bp-nav) {
+    app-card-search-panel.is-board .results-list .result-row {
+      flex: 0 0 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    app-card-search-panel .result-row :is(.add-result-btn, .remove-deck-btn) {
+      min-width: $tap-min;
+      min-height: $tap-min;
+    }
+    // Drawers must escape BOTH pages' header stacking contexts.
+    :is(app-collection-detail, app-deck-detail) .detail-body:has(> .is-open:not(.is-board)) {
+      z-index: 70;
+    }
+    :is(app-collection-detail, app-deck-detail) .detail-body {
+      min-height: 0;
+    }
+    app-card-search-panel.is-open:not(.is-board),
+    app-deck-detail .side-panel.is-open,
+    app-mana-suggest-panel.is-open,
+    app-deck-suggestions-panel.is-open {
+      position: fixed;
+      inset: 52px 0 0;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      height: calc(100dvh - 52px);
+      z-index: 400;
+      border-left: 0;
+      transition: none;
+    }
+    :is(app-card-search-panel, app-mana-suggest-panel, app-deck-suggestions-panel) .panel-close,
+    app-deck-detail .panel-close {
+      min-width: $tap-min;
+      min-height: $tap-min;
+    }
+
+    app-collection-detail .detail-shell > .detail-header {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      padding: 10px 16px;
+      gap: 8px 12px;
+      .header-cover {
+        display: none;
+      }
+      .header-center {
+        grid-column: 1 / -1;
+        grid-row: 1;
+      }
+      .header-name {
+        font-size: calc(17px * var(--text-scale, 1));
+        line-height: 1.25;
+      }
+      .back-btn {
+        grid-column: 1;
+        grid-row: 2;
+        padding: 8px 10px;
+        min-height: $tap-min;
+      }
+      .header-right {
+        grid-column: 2;
+        grid-row: 2;
+        justify-content: end;
+        gap: 8px;
+      }
+      .header-count {
+        display: none;
+      }
+      .scan-btn-header,
+      .add-btn {
+        padding: 8px 10px;
+        min-height: $tap-min;
+        letter-spacing: 0.04em;
+      }
+    }
+
+    app-deck-detail {
+      .detail-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content;
+        padding: 8px 16px;
+        gap: 6px 10px;
+        > .back-btn {
+          display: inline-flex;
+          grid-column: 1;
+          grid-row: 1;
+          width: max-content;
+          min-height: 36px;
+          padding: 6px 10px;
+        }
+        > .header-spacer {
+          display: none;
+        }
+        .header-name-wrap {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+        .header-name {
+          font-size: calc(16px * var(--text-scale, 1));
+          line-height: 1.25;
+        }
+        .header-labeled-group:has(.format-caret) {
+          grid-column: 2;
+          grid-row: 1;
+        }
+        .header-labeled-group:has(.deck-tag-input) {
+          grid-column: 1;
+          grid-row: 3;
+          min-width: 0;
+        }
+        .deck-tags-row {
+          min-width: 0;
+        }
+        .header-label {
+          display: none;
+        }
+        .publish-btn {
+          grid-column: 2;
+          grid-row: 3;
+          margin-left: 0;
+          min-height: 36px;
+          padding: 6px 10px;
+        }
+      }
+      .validation-bar {
+        min-height: 0;
+        max-height: 22dvh;
+        overflow-y: auto;
+      }
+      .vbar-cover-group,
+      .vbar-section-label {
+        display: none;
+      }
+      .vbar-right {
+        padding: 8px 16px;
+        min-width: 0;
+        gap: 4px;
+      }
+      .vbar-row {
+        gap: 5px;
+      }
+      .vbar-add-btn {
+        min-height: $tap-min;
+        margin-left: 0;
+      }
+      .vbar-legend-row {
+        flex-wrap: wrap;
+      }
+      .board-row {
+        z-index: 1;
+        position: relative;
+        top: auto;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-top: 8px;
+      }
+      .board-tabs {
+        flex: 1 1 100%;
+        display: flex;
+      }
+      .board-tab {
+        flex: 1;
+        min-width: 0;
+        padding-inline: 6px;
+        min-height: $tap-min;
+      }
+      .vbar-panel-btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+      }
+      .tool-btn {
+        flex: 1 1 auto;
+        min-height: $tap-min;
+        padding: 6px 8px;
+      }
+      app-card-grid-filters.filter-bar {
+        --cgf-sticky-top: 0px;
+        position: relative !important;
+        top: auto !important;
+        margin-inline: 0;
+      }
+    }
+
+    // Search is the primary task in build mode; validation returns with the board.
+    app-deck-detail .detail-shell:has(app-card-search-panel.is-board.is-open) .validation-bar {
+      display: none;
+    }
+    // Search and the owned-card list share the viewport in build mode.
+    :is(app-collection-detail, app-deck-detail)
+      .detail-body:has(> app-card-search-panel.is-board.is-open) {
+      flex-direction: column;
+      > :is(.side-panel, app-mana-suggest-panel, app-deck-suggestions-panel):not(.is-open) {
+        display: none;
+      }
+      > app-card-search-panel.is-board.is-open {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 0;
+        min-height: 0;
+        z-index: auto;
+      }
+      > app-card-side-list {
+        flex: 0 0 28%;
+        min-height: 130px;
+        max-height: 32dvh;
+        width: 100%;
+        min-width: 0;
+        border-left: 0;
+        border-top: 1px solid var(--border-subtle);
+      }
+    }
+    .cgf-clusters .cgf-controls-line {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .cgf-clusters .cgf-group {
+      min-width: 0;
+    }
+    .cgf-clusters
+      :is(.sort-btn, .zoom-btn, .density-picker button, .free-save-btn, .free-reset-btn) {
+      min-height: $tap-min;
+      min-width: $tap-min;
+      font-size: calc(12px * var(--text-scale, 1));
+    }
+  }
+
+  // Short landscape windows scroll the header away instead of squeezing cards out.
+  @media (max-height: 540px) {
+    @include upto($bp-nav) {
+      :is(app-collection-detail, app-deck-detail):has(> .detail-shell) {
+        height: auto;
+        min-height: 100%;
+        overflow: visible;
+      }
+      :is(app-collection-detail, app-deck-detail) .detail-shell {
+        height: auto;
+        min-height: 100%;
+        overflow: visible;
+      }
+      :is(app-collection-detail, app-deck-detail) .detail-body {
+        flex: 0 0 auto;
+        height: calc(100dvh - 52px);
+        min-height: 360px;
+      }
+      :is(app-collection-detail, app-deck-detail)
+        .detail-body:has(> app-card-search-panel.is-board.is-open) {
+        flex-direction: row;
+        height: calc(100dvh - 52px);
+        min-height: 0;
+        > app-card-search-panel.is-board.is-open {
+          height: 100%;
+        }
+        > app-card-side-list {
+          flex: 0 0 280px;
+          width: 280px;
+          min-height: 0;
+          max-height: none;
+          border-left: 1px solid var(--border-subtle);
+          border-top: 0;
+        }
+      }
+    }
+  }
+  // Both hosts reserve the same space for their printing picker.
+  @include upto($bp-phone) {
+    app-card-grid-filters .cgf-row > .cgf-clusters {
+      width: calc(100vw - 16px);
+      max-width: calc(100vw - 16px);
+      left: 50%;
+      translate: -50% 0;
+      padding: 12px 8px;
+      box-sizing: border-box;
+    }
+    app-filter-facets [facetTrail] {
+      flex: 0 0 80px;
+      width: 80px;
+      min-width: 0;
+    }
+    app-filter-facets [facetTrail] :is(.set-filter-menu, .set-dropdown-wrap, .set-trigger) {
+      width: 100%;
+      min-width: 0;
+      max-width: 80px;
+    }
+  }
+
+  app-deck-detail .groups-area.is-free {
+    container-type: inline-size;
+    .board-row {
+      padding-top: 8px;
+      margin-bottom: 0;
+    }
+    .filter-bar {
+      padding-block: 8px 12px;
+    }
+    .free-toolbar {
+      margin: 0;
+      flex-wrap: wrap;
+    }
+    .free-toolbar :is(.free-save-btn, .free-reset-btn, .density-btn) {
+      min-height: $tap-min;
+    }
+    .free-col:not(.has-fixed-width):not(.is-text-style) {
+      flex-basis: clamp(
+        calc(140px * var(--card-zoom, 1)),
+        calc(
+          (100cqi - var(--free-column-count) * 26px - 110px) / var(--free-column-count) *
+            var(--card-zoom, 1)
+        ),
+        calc(260px * var(--card-zoom, 1))
+      );
+    }
+  }
+
+  app-deck-detail .groups-area.is-free {
+    .cgf-group > .sort-group,
+    .zoom-group,
+    .free-toolbar {
+      height: $tap-min;
+      min-height: $tap-min;
+    }
+    .free-toolbar {
+      display: flex;
+      align-items: stretch;
+    }
+    .cgf-group .sort-btn,
+    .sort-select-menu .asm-btn {
+      height: $tap-min;
+      min-height: $tap-min;
+    }
+    .free-toolbar .density-picker {
+      height: $tap-min;
+      box-sizing: border-box;
+      align-items: stretch;
+    }
+    .free-toolbar .density-picker .density-btn {
+      height: 100%;
+      min-height: 0;
+    }
+    @include from($bp-wide) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      grid-template-rows: auto auto;
+      align-content: start;
+      column-gap: 16px;
+      > .board-row {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: end;
+        position: relative;
+        top: auto;
+        margin: 0;
+        padding: 8px 0 12px;
+      }
+      > app-card-grid-filters.filter-bar {
+        grid-column: 1;
+        grid-row: 1;
+        position: relative !important;
+        top: auto !important;
+        margin: 0;
+        padding-inline: 0;
+      }
+      > .groups-list.is-free {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-height: 0;
+      }
+    }
+  }
+}

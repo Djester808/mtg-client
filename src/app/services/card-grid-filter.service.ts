@@ -1,3 +1,5 @@
+import { ownedPattern } from '../utils/owned-query';
+import { escapeRegExp } from '../utils/regex.utils';
 import { Injectable } from '@angular/core';
 import { CollectionCardDto, CardType, ManaColor } from '../models/game.models';
 import { CardFilterState } from '../models/card-filters';
@@ -9,6 +11,8 @@ import { matchesColorSelection } from '../utils/color-filter';
  * grid offer all of these.
  */
 export type CardGroupMode =
+  | 'price'
+  | 'month'
   | 'none'
   | 'cmc'
   | 'name'
@@ -61,6 +65,8 @@ export const CARD_GROUP_OPTIONS: SelectMenuOption[] = [
   { value: 'rarity', label: 'Rarity' },
   { value: 'artist', label: 'Artist' },
   { value: 'set', label: 'Set' },
+  { value: 'price', label: 'Price' },
+  { value: 'month', label: 'Month added' },
 ];
 
 /**
@@ -133,7 +139,7 @@ function matchesCmc(value: number, cmc: string | null): boolean {
 }
 
 function count(card: CollectionCardDto): number {
-  return card.quantity + card.quantityFoil;
+  return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
 }
 
 function section(label: string, key: string, cards: CollectionCardDto[]): CardSection {
@@ -170,10 +176,52 @@ function bucket(
  */
 @Injectable({ providedIn: 'root' })
 export class CardGridFilterService {
+  private ownedCards: CollectionCardDto[] | null = null;
+  private readonly ownedMemo = new Map<string, CollectionCardDto | null>();
+  ownedEntry(
+    cards: CollectionCardDto[],
+    oracleId: string,
+    printing: string | null | undefined,
+    language = 'en',
+    preferredId?: string,
+  ): CollectionCardDto | null {
+    if (this.ownedCards !== cards) {
+      this.ownedCards = cards;
+      this.ownedMemo.clear();
+    }
+    const key = JSON.stringify([
+      oracleId,
+      printing === undefined ? '@any' : printing,
+      language,
+      preferredId,
+    ]);
+    if (this.ownedMemo.has(key)) return this.ownedMemo.get(key)!;
+    const rows = cards.filter((c) => c.oracleId === oracleId && (c.language ?? 'en') === language);
+    const preferred = rows.find((c) => c.id === preferredId);
+    const pinned = printing
+      ? (rows.find((c) => c.id === preferredId && c.scryfallId === printing) ??
+        rows.find((c) => c.scryfallId === printing))
+      : undefined;
+    const value =
+      printing === undefined
+        ? (preferred ?? rows[0] ?? null)
+        : (pinned ?? (rows.some((c) => c.scryfallId) ? null : (preferred ?? rows[0] ?? null)));
+    this.ownedMemo.set(key, value);
+    return value;
+  }
+
   /** Serialises the state for memo comparison; Sets have no useful identity across edits. */
   stateKey(s: CardFilterState): string {
     return [
-      s.query.trim().toLowerCase(),
+      s.query.trim(),
+      s.finish,
+      s.condition,
+      s.language,
+      s.tag,
+      s.duplicatesOnly,
+      s.matchCase,
+      s.matchWord,
+      s.regex,
       [...s.colors].sort().join(''),
       [...s.types].sort().join('|'),
       [...s.rarities].sort().join('|'),
@@ -187,7 +235,16 @@ export class CardGridFilterService {
   matches(card: CollectionCardDto, s: CardFilterState): boolean {
     const d = card.cardDetails;
     return (
-      matchesQuery(card, s.query) &&
+      this.matchesOwnedQuery(card, s) &&
+      (!s.finish ||
+        (s.finish === 'etched'
+          ? (card.quantityEtched ?? 0) > 0
+          : s.finish === 'foil'
+            ? card.quantityFoil > 0
+            : s.finish === 'nonfoil' && card.quantity > 0)) &&
+      this.matchesFinishMetadata(card, s) &&
+      (!s.language || card.language?.toLowerCase() === s.language.toLowerCase()) &&
+      (!s.duplicatesOnly || count(card) > 1) &&
       (!s.set || d?.setCode?.toLowerCase() === s.set) &&
       matchesColorSelection(d?.colorIdentity ?? [], s.colors) &&
       (s.types.size === 0 || (d?.cardTypes ?? []).some((t) => s.types.has(t))) &&
@@ -196,6 +253,46 @@ export class CardGridFilterService {
       (s.rarities.size === 0 || s.rarities.has(d?.rarity ?? '')) &&
       matchesCmc(d?.manaValue ?? 0, s.cmc)
     );
+  }
+
+  private matchesFinishMetadata(card: CollectionCardDto, s: CardFilterState): boolean {
+    if (!s.condition && !s.tag) return true;
+    const finishes = s.finish ? [s.finish] : ['nonfoil', 'foil', 'etched'];
+    return finishes.some((f) => {
+      const quantity =
+        f === 'nonfoil'
+          ? card.quantity
+          : f === 'foil'
+            ? card.quantityFoil
+            : (card.quantityEtched ?? 0);
+      if (quantity <= 0) return false;
+      const data = card.finishData?.[f] ?? card;
+      return (
+        (!s.condition || data.condition?.toLowerCase() === s.condition.toLowerCase()) &&
+        (!s.tag || !!data.tags?.some((t) => t.toLowerCase() === s.tag!.toLowerCase()))
+      );
+    });
+  }
+  private matchesOwnedQuery(card: CollectionCardDto, s: CardFilterState): boolean {
+    if (s.regex) {
+      const result = ownedPattern(s.query, s.matchCase, s.matchWord);
+      return (
+        !result.error &&
+        (!result.pattern ||
+          [card.cardDetails?.name ?? '', card.oracleId].some((v) =>
+            result.pattern!.test(v.slice(0, 300)),
+          ))
+      );
+    }
+    if (!s.matchCase && !s.matchWord) return matchesQuery(card, s.query);
+    const query = s.query.trim();
+    if (!query) return true;
+    const values = [card.cardDetails?.name ?? '', card.oracleId];
+    if (s.matchWord) {
+      const pattern = new RegExp('\\b' + escapeRegExp(query) + '\\b', s.matchCase ? '' : 'i');
+      return values.some((v) => pattern.test(v));
+    }
+    return values.some((v) => v.includes(query));
   }
 
   private applyMemo: {
@@ -214,8 +311,34 @@ export class CardGridFilterService {
     const value = cards
       .filter((c) => this.matches(c, s))
       .sort((a, b) => {
-        if (s.sort === 'cmc') {
-          const d = mv(a) - mv(b);
+        if (s.sort !== 'name') {
+          const values = (c: CollectionCardDto): number | string | null => {
+            switch (s.sort) {
+              case 'cmc':
+                return mv(c);
+              case 'quantity':
+                return count(c);
+              case 'added':
+                return c.addedAt;
+              case 'set':
+                return c.cardDetails?.setCode ?? null;
+              case 'rarity':
+                return RARITY_ORDER.indexOf(c.cardDetails?.rarity ?? '');
+              case 'price':
+                return c.quantity > 0
+                  ? (c.cardDetails?.prices?.usd ?? null)
+                  : (c.cardDetails?.prices?.usdFoil ?? null);
+              default:
+                return name(c);
+            }
+          };
+          const x = values(a),
+            y = values(b);
+          if (x === null || y === null) return x === y ? byName(a, b) : x === null ? 1 : -1;
+          const d =
+            typeof x === 'number' && typeof y === 'number'
+              ? x - y
+              : String(x).localeCompare(String(y));
           if (d !== 0) return d * dir;
         }
         return byName(a, b) * dir;
@@ -260,6 +383,7 @@ export class CardGridFilterService {
         ...display,
         quantity: group.reduce((n, r) => n + r.quantity, 0),
         quantityFoil: group.reduce((n, r) => n + r.quantityFoil, 0),
+        quantityEtched: group.reduce((n, r) => n + (r.quantityEtched ?? 0), 0),
       });
     }
 
@@ -426,6 +550,32 @@ export class CardGridFilterService {
           cards,
           (c) => (c.cardDetails?.setCode ?? 'unknown').toUpperCase(),
           'set',
+        );
+      case 'price':
+        return this.bySortedKey(
+          cards,
+          (c) => {
+            const price =
+              c.quantity > 0 ? c.cardDetails?.prices?.usd : c.cardDetails?.prices?.usdFoil;
+            return price == null
+              ? 'Unpriced'
+              : price < 1
+                ? 'Under $1'
+                : price < 5
+                  ? '$1–$4.99'
+                  : price < 10
+                    ? '$5–$9.99'
+                    : price < 25
+                      ? '$10–$24.99'
+                      : '$25+';
+          },
+          'price',
+        );
+      case 'month':
+        return this.bySortedKey(
+          cards,
+          (c) => (/^\d{4}-\d{2}/.test(c.addedAt) ? c.addedAt.slice(0, 7) : 'Unknown date'),
+          'month',
         );
       case 'creature-split':
         return this.byCreatureSplit(cards);

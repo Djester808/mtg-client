@@ -1,3 +1,6 @@
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
@@ -39,7 +42,12 @@ describe('CardModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [CardModalComponent],
       schemas: [NO_ERRORS_SCHEMA],
-      providers: [{ provide: GameApiService, useValue: gameApi }],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: GameApiService, useValue: gameApi },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardModalComponent);
@@ -48,6 +56,9 @@ describe('CardModalComponent', () => {
     fixture.detectChanges();
   });
 
+  it('embeds the community information with the card details', () => {
+    expect(fixture.nativeElement.querySelector('app-card-community')).not.toBeNull();
+  });
   it('creates the component', () => {
     expect(component).toBeTruthy();
   });

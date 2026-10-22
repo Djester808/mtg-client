@@ -817,5 +817,328 @@
     "smallTargets": 0,
     "smallSelectors": 0,
     "truncated": 0
+  },
+  "route:iphone-se:settings": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-se:account-recovery": {
+    "overflows": false,
+    "smallTargets": 2,
+    "smallSelectors": 2
+  },
+  "route:iphone-se:collection-sharing": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-se:explore": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:desktop:settings": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "route:desktop:account-recovery": {
+    "overflows": false,
+    "smallTargets": 10,
+    "smallSelectors": 4
+  },
+  "route:desktop:collection-sharing": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "route:desktop:explore": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "route:iphone-se:account-security": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:desktop:account-security": {
+    "overflows": false,
+    "smallTargets": 9,
+    "smallSelectors": 3
+  },
+  "state:desktop:board": {
+    "overflows": false,
+    "smallTargets": 19,
+    "smallSelectors": 8,
+    "truncated": 0
+  },
+  "state:desktop:board-ability-menu": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3,
+    "truncated": 0
+  },
+  "state:desktop:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3,
+    "truncated": 0
+  },
+  "state:desktop:board-manual-controls": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 4,
+    "truncated": 0
+  },
+  "state:desktop:board-manual-move-menu": {
+    "overflows": false,
+    "smallTargets": 21,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:commander-charts": {
+    "overflows": false,
+    "smallTargets": 6,
+    "smallSelectors": 2,
+    "truncated": 0
+  },
+  "state:iphone-se:settings-accessibility": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:deck-type-pie": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:profile-format-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:settings-accessibility": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:deck-type-pie": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:profile-format-menu": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1,
+    "truncated": 0
+  },
+  "route:iphone-15-pro:settings": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:account-security": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:account-recovery": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:collection-sharing": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:iphone-15-pro:explore": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:settings": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:account-security": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:account-recovery": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:collection-sharing": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:pixel-8:explore": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:settings": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:account-security": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:account-recovery": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:collection-sharing": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "route:ipad-mini:explore": {
+    "overflows": false,
+    "smallTargets": 1,
+    "smallSelectors": 1
+  },
+  "state:iphone-se:commander-charts": {
+    "overflows": false,
+    "smallTargets": 6,
+    "smallSelectors": 2,
+    "truncated": 0
+  },
+  "state:pixel-8:settings-accessibility": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:deck-type-pie": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:profile-format-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:commander-charts": {
+    "overflows": false,
+    "smallTargets": 6,
+    "smallSelectors": 2,
+    "truncated": 0
+  },
+  "state:iphone-se:explore-directory": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:explore-insights": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:deck-mana-analysis": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:collection-mutation-toast": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:registration-terms": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:collection-insights": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:collection-partial-move": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:collection-export": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:explore-directory": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:explore-insights": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:deck-mana-analysis": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:collection-mutation-toast": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:registration-terms": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:collection-insights": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:collection-partial-move": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:collection-export": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
   }
 }

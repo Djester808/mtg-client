@@ -1,5 +1,6 @@
+@use 'workspace-responsive' as *;
 // ============================================================
-// MTG ENGINE — Global Styles
+// COMPLEAT — Global Styles
 // ============================================================
 
 @use 'add-controls' as *;
@@ -8,8 +9,6 @@
 @use 'detail-page' as *;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
 
 // ---- Design Tokens ----------------------------------------
 :root {
@@ -24,21 +23,25 @@
   color-scheme: dark;
 
   // Backgrounds
-  --bg-void: #080808;
-  --bg-deep: #0e0e0f;
-  --bg-surface: #141416;
-  --bg-raised: #1c1c20;
-  --bg-hover: #242428;
+  --bg-void: #0a0a0b;
+  --bg-deep: #111113;
+  --bg-surface: #111113;
+  --bg-raised: #1b1b1f;
+  --bg-hover: #32323a;
 
   // Borders
-  --border-dim: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --border-lit: rgba(255, 255, 255, 0.18);
+  --border-dim: #232328;
+  --border-subtle: #6a6a76;
+  --border-lit: #c4b8a8;
 
-  // Accent colors
-  --gold: #c9a84c;
-  --gold-dim: #8a6f2e;
-  --gold-glow: rgba(201, 168, 76, 0.15);
+  // Compleat brand. Legacy gold aliases keep existing controls on the same palette.
+  --accent: #b800e0;
+  --accent-text: #df80f5;
+  --on-accent: #ffffff;
+  --focus: #ffffff;
+  --gold: #b800e0;
+  --gold-dim: #df80f5;
+  --gold-glow: rgba(184, 0, 224, 0.15);
   --red-accent: #c0392b;
   --red-glow: rgba(192, 57, 43, 0.2);
 
@@ -53,7 +56,7 @@
   // Text
   --text-primary: #f0e8d8;
   --text-secondary: #c4b8a8;
-  --text-dim: #8a8070;
+  --text-dim: #9a8f7c;
 
   // Card dimensions — scale with viewport so the board always fits
   --card-w: clamp(60px, 8.5vmin, 100px);
@@ -63,13 +66,13 @@
   --card-radius: clamp(12px, 1.8vmin, 20px);
 
   // Glow effects
-  --glow-priority: 0 0 0 2px #c9a84c, 0 0 20px rgba(201, 168, 76, 0.4);
+  --glow-priority: 0 0 0 2px #b800e0, 0 0 20px rgba(184, 0, 224, 0.4);
   --glow-attack: 0 0 0 2px #e74c3c, 0 0 18px rgba(231, 76, 60, 0.45);
-  --glow-select: 0 0 0 2px #c9a84c, 0 0 16px rgba(201, 168, 76, 0.35);
+  --glow-select: 0 0 0 2px #b800e0, 0 0 16px rgba(184, 0, 224, 0.35);
   --glow-castable: 0 0 0 1px rgba(39, 174, 96, 0.5), 0 0 12px rgba(39, 174, 96, 0.2);
 
   // Typography
-  --font-display: 'Cinzel', serif;
+  --font-display: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -93,22 +96,11 @@ body {
   background: var(--bg-void);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
-}
-
-// ---- Film-grain overlay -----------------------------------
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  pointer-events: none;
-  z-index: 9999;
 }
 
 // ---- Scrollbars -------------------------------------------
@@ -140,8 +132,9 @@ body::before {
 .text-dim {
   color: var(--text-dim);
 }
-.text-gold {
-  color: var(--gold);
+.text-gold,
+.text-gold-dim {
+  color: var(--accent-text);
 }
 
 // ---- Card image standard corners (applies globally across all views) ----------
@@ -169,7 +162,7 @@ a.kw-link {
   height: 20px;
   border-radius: 4px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   padding: 0 4px;
   margin-right: 4px;
@@ -177,7 +170,7 @@ a.kw-link {
 
   &.loyalty-up {
     background: var(--gold);
-    color: #0e0c08;
+    color: #ffffff;
   }
   &.loyalty-down {
     background: #5b8dd9;
@@ -205,17 +198,17 @@ body.is-dragging-card * {
     border: none;
     border-radius: 10px;
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #0e0c08;
+    color: #ffffff;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover:not(:disabled) {
-      background: #dbb954;
-      box-shadow: 0 4px 24px rgba(201, 168, 76, 0.35);
+      background: #ca33e9;
+      box-shadow: 0 4px 24px rgba(184, 0, 224, 0.35);
       transform: translateY(-1px);
     }
 
@@ -232,7 +225,7 @@ body.is-dragging-card * {
     border: 1px solid var(--border-dim);
     border-radius: 8px;
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     color: var(--text-primary);
     outline: none;
     transition: border-color 0.2s;
@@ -352,8 +345,8 @@ body.is-dragging-card * {
 .spinner {
   width: 22px;
   height: 22px;
-  border: 2px solid rgba(201, 168, 76, 0.2);
-  border-top-color: var(--gold, #c9a84c);
+  border: 2px solid rgba(184, 0, 224, 0.2);
+  border-top-color: var(--gold, #b800e0);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -392,7 +385,7 @@ body.is-dragging-card * {
   color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   padding: 8px 12px;
   text-align: left;
   white-space: nowrap;
@@ -413,7 +406,7 @@ body.is-dragging-card * {
 }
 
 .app-menu-empty {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
   padding: 8px 12px;
 }
@@ -455,9 +448,9 @@ body.is-dragging-card * {
 }
 
 .qty-pill--foil {
-  color: var(--gold, #c9a84c);
+  color: var(--gold, #b800e0);
   background: rgba(24, 18, 6, 0.85);
-  border-color: rgba(201, 168, 76, 0.5);
+  border-color: rgba(184, 0, 224, 0.5);
 }
 
 /*
@@ -495,7 +488,7 @@ body.is-dragging-card * {
 
 .info-name {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--text-primary);
@@ -508,7 +501,7 @@ body.is-dragging-card * {
 
 .info-type {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
@@ -524,7 +517,7 @@ body.is-dragging-card * {
   pointer-events: auto;
   width: 100%;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   line-height: 1.55;
   color: var(--text-secondary);
   text-align: left;
@@ -565,7 +558,7 @@ body.is-dragging-card * {
 .info-pt,
 .info-loyalty {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--text-primary);
@@ -577,7 +570,7 @@ body.is-dragging-card * {
 
 .info-artist {
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-style: italic;
   color: var(--text-dim);
 }
@@ -587,11 +580,11 @@ body.is-dragging-card * {
 // Global rather than component-scoped: these are plain, distinctive class names and the
 // collection component's stylesheet was over its 16 kB budget. Budgets count *emitted*
 // CSS, so sharing via a mixin does not help — the rules have to leave the component.
-@include cover-block('cbar', rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.15));
+@include cover-block('cbar', rgba(184, 0, 224, 0.25), rgba(184, 0, 224, 0.15));
 
 // The collection's cover, leading the page header ahead of the back button. Same block
 // as the one the mixin draws, sized down to the header's height.
-@include cover-block('header', rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.15));
+@include cover-block('header', rgba(184, 0, 224, 0.25), rgba(184, 0, 224, 0.15));
 
 .header-cover {
   width: 62px;
@@ -614,7 +607,7 @@ body.is-dragging-card * {
 
 .header-desc {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--text-dim);
   margin: 3px 0 0;
   white-space: nowrap;
@@ -639,26 +632,26 @@ body.is-dragging-card * {
   gap: 6px;
   padding: 9px 16px;
   background: transparent;
-  border: 1px solid rgba(201, 168, 76, 0.35);
+  border: 1px solid rgba(184, 0, 224, 0.35);
   border-radius: 8px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c9a84c;
+  color: var(--accent-text);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 
   &:hover {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: rgba(201, 168, 76, 0.6);
+    background: rgba(184, 0, 224, 0.1);
+    border-color: rgba(184, 0, 224, 0.6);
   }
 }
 
 .add-btn {
-  @include page-add-btn(var(--gold), #dbb954, #0e0c08, rgba(201, 168, 76, 0.3));
+  @include page-add-btn(var(--gold), #ca33e9, #ffffff, rgba(184, 0, 224, 0.3));
 }
 
 // ---- Body layout -----------------------------------------
@@ -805,11 +798,11 @@ body.is-dragging-card * {
   .cgf-clusters :is(app-select-menu button, .sort-btn, .zoom-btn) {
     min-height: 26px;
     padding: 2px 7px;
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
   }
 
   .cgf-clusters .cgf-label {
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
     letter-spacing: 0.1em;
   }
 
@@ -841,7 +834,7 @@ body.is-dragging-card * {
 
 .cgf-label {
   font-family: var(--font-display);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -871,7 +864,7 @@ body.is-dragging-card * {
   color: var(--text-dim);
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -879,7 +872,7 @@ body.is-dragging-card * {
   transition: all 0.15s;
 
   &:hover {
-    color: var(--gold);
+    color: var(--accent-text);
   }
   &.is-active {
     background: rgba(167, 139, 250, 0.15);
@@ -889,7 +882,7 @@ body.is-dragging-card * {
 
 // Icon buttons rather than words, so they need the room a glyph wants.
 .view-toggle .sort-btn {
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   padding: 4px 9px;
 }
 
@@ -933,14 +926,14 @@ app-select-menu.sort-select-menu {
     background: none;
     border: none;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-dim);
     &:hover:not(:disabled),
     &.is-open {
-      color: var(--gold);
+      color: var(--accent-text);
       border: none;
     }
   }
@@ -962,18 +955,18 @@ app-select-menu.sort-select-menu {
 // ---- Swap mode (Arena-style: search fills the grid area, collection as a side list) ----
 
 .disp-btn {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 
   &.is-active {
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.1);
+    color: var(--accent-text);
+    background: rgba(184, 0, 224, 0.1);
   }
 }
 
 @include side-list-header-chrome;
 
 .side-list-count {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-dim);
 }
 
@@ -983,17 +976,17 @@ app-select-menu.sort-select-menu {
   border: none;
   border-radius: 10px;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #0e0c08;
+  color: #ffffff;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #dbb954;
-    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.3);
+    background: #ca33e9;
+    box-shadow: 0 4px 20px rgba(184, 0, 224, 0.3);
   }
 }
 
@@ -1089,7 +1082,7 @@ app-card-search-panel {
 
     &:hover {
       transform: translateY(-3px);
-      border-color: rgba(201, 168, 76, 0.45);
+      border-color: rgba(184, 0, 224, 0.45);
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
     }
 
@@ -1157,7 +1150,7 @@ app-card-search-panel {
     justify-content: center;
     gap: 5px;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.06em;
     color: var(--text-secondary);
@@ -1169,7 +1162,7 @@ app-card-search-panel {
   @include tile-ctrl-family;
 
   .tile-fit-reason {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     line-height: 1.35;
     color: var(--text-dim);
     display: -webkit-box;
@@ -1197,7 +1190,7 @@ app-card-search-panel {
 
   .panel-cmdr-badge {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1241,7 +1234,7 @@ app-card-search-panel {
     border-radius: 8px;
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     padding: 8px 74px 8px 30px;
     outline: none;
     transition: border-color 0.2s;
@@ -1267,7 +1260,7 @@ app-card-search-panel {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-mono, monospace);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 600;
     line-height: 1;
     padding: 3px 5px;
@@ -1280,9 +1273,9 @@ app-card-search-panel {
       border-color: var(--border-subtle);
     }
     &.is-active {
-      color: var(--gold);
+      color: var(--accent-text);
       border-color: var(--gold-dim);
-      background: rgba(201, 168, 76, 0.08);
+      background: rgba(184, 0, 224, 0.08);
     }
   }
 
@@ -1291,7 +1284,7 @@ app-card-search-panel {
     right: 8px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     transition: color 0.15s;
     &:hover {
       color: var(--text-primary);
@@ -1354,7 +1347,7 @@ app-card-search-panel {
 
   .filter-label {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1393,8 +1386,8 @@ app-card-search-panel {
       background: var(--bg-raised);
     }
     &.is-active {
-      border-color: rgba(201, 168, 76, 0.6);
-      background: rgba(201, 168, 76, 0.08);
+      border-color: rgba(184, 0, 224, 0.6);
+      background: rgba(184, 0, 224, 0.08);
     }
   }
 
@@ -1409,16 +1402,16 @@ app-card-search-panel {
 
   .set-trigger-code {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--gold);
+    color: var(--accent-text);
     flex-shrink: 0;
   }
 
   .set-trigger-name {
     font-family: var(--font-body);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -1427,14 +1420,14 @@ app-card-search-panel {
 
   .set-trigger-placeholder {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.06em;
     color: var(--text-dim);
   }
 
   .set-trigger-arrow {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-dim);
     flex-shrink: 0;
   }
@@ -1444,7 +1437,7 @@ app-card-search-panel {
     border: none;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 3px;
     border-radius: 3px;
     transition: color 0.15s;
@@ -1498,7 +1491,7 @@ app-card-search-panel {
     border-radius: 6px;
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     padding: 6px 10px;
     outline: none;
     box-sizing: border-box;
@@ -1535,13 +1528,13 @@ app-card-search-panel {
       background: var(--bg-surface);
     }
     &.is-active {
-      background: rgba(201, 168, 76, 0.08);
+      background: rgba(184, 0, 224, 0.08);
     }
   }
 
   .set-opt-code {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     color: var(--gold-dim);
@@ -1551,7 +1544,7 @@ app-card-search-panel {
 
   .set-opt-name {
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     color: var(--text-secondary);
     flex: 1;
     min-width: 0;
@@ -1562,7 +1555,7 @@ app-card-search-panel {
 
   .set-opt-count {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-dim);
     flex-shrink: 0;
   }
@@ -1571,7 +1564,7 @@ app-card-search-panel {
     padding: 12px;
     text-align: center;
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     color: var(--text-dim);
     font-style: italic;
   }
@@ -1583,7 +1576,7 @@ app-card-search-panel {
     border: 1px solid var(--border-subtle);
     border-radius: 5px;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1618,7 +1611,7 @@ app-card-search-panel {
     text-align: center;
     padding: 24px 16px;
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     color: var(--text-dim);
     font-style: italic;
   }
@@ -1631,7 +1624,7 @@ app-card-search-panel {
     flex-shrink: 0;
     padding: 6px 16px 2px;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1707,7 +1700,7 @@ app-card-search-panel {
     border: 1px solid var(--border-lit);
     border-radius: 3px;
     color: var(--text-primary);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     line-height: 1;
     padding: 2px 3px;
     cursor: pointer;
@@ -1716,12 +1709,12 @@ app-card-search-panel {
       border-color 0.15s;
     z-index: 2;
     &.is-flipped {
-      color: var(--gold);
+      color: var(--accent-text);
       border-color: var(--gold);
     }
     &:hover {
       border-color: var(--gold);
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
@@ -1731,7 +1724,7 @@ app-card-search-panel {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     color: var(--text-dim);
     opacity: 0.25;
   }
@@ -1745,7 +1738,7 @@ app-card-search-panel {
 
   .result-name {
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.03em;
     color: var(--text-primary);
@@ -1756,7 +1749,7 @@ app-card-search-panel {
 
     mark.hl {
       background: none;
-      color: var(--gold);
+      color: var(--accent-text);
       font-weight: 800;
     }
   }
@@ -1790,7 +1783,7 @@ app-card-search-panel {
 
   .result-set-error {
     font-family: var(--font-body);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: rgba(231, 76, 60, 0.85);
     text-align: center;
     line-height: 1.2;
@@ -1810,7 +1803,7 @@ app-card-search-panel {
     border-radius: 5px;
     color: #818cf8;
     cursor: pointer;
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     padding: 4px 6px;
     line-height: 1;
     transition:
@@ -1825,7 +1818,7 @@ app-card-search-panel {
 
   .fit-loading {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     i {
       display: inline-block;
       animation: fit-spin 0.8s linear infinite;
@@ -1834,7 +1827,7 @@ app-card-search-panel {
 
   .fit-score {
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 3px 6px;
@@ -1854,9 +1847,9 @@ app-card-search-panel {
       background: rgba(74, 222, 128, 0.08);
     }
     &.score-mid {
-      color: var(--gold);
-      border-color: rgba(201, 168, 76, 0.3);
-      background: rgba(201, 168, 76, 0.08);
+      color: var(--accent-text);
+      border-color: rgba(184, 0, 224, 0.3);
+      background: rgba(184, 0, 224, 0.08);
     }
     &.score-low {
       color: #f87171;
@@ -1866,7 +1859,7 @@ app-card-search-panel {
   }
 
   .fit-reason {
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     line-height: 1.4;
     color: var(--text-secondary);
     padding: 4px 0 2px 46px;
@@ -1885,11 +1878,11 @@ app-card-search-panel {
 
   .owned-qty {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
-    border: 1px solid rgba(201, 168, 76, 0.3);
+    color: var(--accent-text);
+    background: rgba(184, 0, 224, 0.12);
+    border: 1px solid rgba(184, 0, 224, 0.3);
     border-radius: 8px;
     padding: 2px 6px;
     white-space: nowrap;
@@ -1906,7 +1899,7 @@ app-card-search-panel {
       width: auto;
       gap: 5px;
       padding: 0 10px;
-      font-size: 11px;
+      font-size: calc(11px * var(--text-scale, 1));
       font-weight: 600;
       white-space: nowrap;
     }
@@ -1925,7 +1918,7 @@ app-card-search-panel {
     color: var(--text-secondary);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1935,7 +1928,7 @@ app-card-search-panel {
       border-color 0.15s;
 
     &:hover:not(:disabled) {
-      color: var(--gold);
+      color: var(--accent-text);
       border-color: var(--gold-dim);
     }
     &:disabled {
@@ -1945,7 +1938,7 @@ app-card-search-panel {
   }
 
   .deck-qty-badge {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     color: #4ade80;
     background: rgba(74, 222, 128, 0.12);
@@ -1962,7 +1955,7 @@ app-card-search-panel {
 
   .violation-badge {
     display: inline-block;
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.04em;
     border-radius: 4px;
@@ -1985,10 +1978,10 @@ app-card-search-panel {
 
   .modal-foil-toggle {
     padding: 5px 10px;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     border-radius: 6px;
-    border: 1px solid rgba(201, 168, 76, 0.3);
+    border: 1px solid rgba(184, 0, 224, 0.3);
     background: transparent;
     color: var(--text-dim);
     cursor: pointer;
@@ -1997,14 +1990,14 @@ app-card-search-panel {
     flex-shrink: 0;
 
     &.is-foil {
-      background: rgba(201, 168, 76, 0.15);
+      background: rgba(184, 0, 224, 0.15);
       border-color: var(--gold);
-      color: var(--gold);
+      color: var(--accent-text);
     }
 
     &:hover {
       border-color: var(--gold-dim);
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
@@ -2073,7 +2066,7 @@ app-deck-detail {
 
   .header-label {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2103,7 +2096,7 @@ app-deck-detail {
     border: none;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 15px;
+    font-size: calc(15px * var(--text-scale, 1));
     padding: 4px;
     border-radius: 4px;
     opacity: 0;
@@ -2127,7 +2120,7 @@ app-deck-detail {
     border-radius: 6px;
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: calc(17px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.07em;
     padding: 6px 12px;
@@ -2157,8 +2150,8 @@ app-deck-detail {
     border-radius: 12px;
     background: color-mix(in srgb, var(--gold) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
-    color: var(--gold);
-    font-size: 11px;
+    color: var(--accent-text);
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.04em;
   }
@@ -2171,7 +2164,7 @@ app-deck-detail {
     padding: 0;
     line-height: 1;
     opacity: 0.6;
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     &:hover {
       opacity: 1;
     }
@@ -2182,7 +2175,7 @@ app-deck-detail {
     border: 1px dashed var(--border-subtle);
     border-radius: 12px;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 2px 10px;
     outline: none;
     width: 72px;
@@ -2212,7 +2205,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -2223,7 +2216,7 @@ app-deck-detail {
     white-space: nowrap;
 
     i {
-      font-size: 13px;
+      font-size: calc(13px * var(--text-scale, 1));
     }
 
     &:hover {
@@ -2251,12 +2244,12 @@ app-deck-detail {
 
     &.tool-btn--suggest {
       &.is-active {
-        color: var(--gold);
-        border-color: rgba(201, 168, 76, 0.3);
-        background: rgba(201, 168, 76, 0.1);
+        color: var(--accent-text);
+        border-color: rgba(184, 0, 224, 0.3);
+        background: rgba(184, 0, 224, 0.1);
       }
       &:hover:not(.is-active) {
-        color: var(--gold);
+        color: var(--accent-text);
       }
     }
   }
@@ -2266,20 +2259,20 @@ app-deck-detail {
   }
 
   .add-btn {
-    @include page-add-btn(#7c3aed, #6d28d9, #fff, rgba(124, 58, 237, 0.4));
+    @include page-add-btn(#b800e0, #9800ba, #fff, rgba(124, 58, 237, 0.4));
   }
 
   .publish-btn {
     padding: 9px 16px;
     background: transparent;
-    border: 1px solid rgba(201, 168, 76, 0.4);
+    border: 1px solid rgba(184, 0, 224, 0.4);
     border-radius: 8px;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #c9a84c;
+    color: var(--accent-text);
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.15s;
@@ -2288,9 +2281,9 @@ app-deck-detail {
     gap: 6px;
 
     &:hover {
-      background: rgba(201, 168, 76, 0.1);
-      border-color: rgba(201, 168, 76, 0.7);
-      box-shadow: 0 2px 12px rgba(201, 168, 76, 0.15);
+      background: rgba(184, 0, 224, 0.1);
+      border-color: rgba(184, 0, 224, 0.7);
+      box-shadow: 0 2px 12px rgba(184, 0, 224, 0.15);
     }
 
     &.is-published {
@@ -2320,8 +2313,8 @@ app-deck-detail {
   }
 
   .publish-modal {
-    background: #141210;
-    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: #111113;
+    border: 1px solid rgba(184, 0, 224, 0.3);
     border-radius: 14px;
     padding: 28px;
     width: 440px;
@@ -2331,16 +2324,16 @@ app-deck-detail {
 
   .publish-modal-title {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: #c9a84c;
+    color: var(--accent-text);
     margin: 0 0 6px;
   }
 
   .publish-modal-hint {
-    font-size: 12px;
-    color: #7a6e5e;
+    font-size: calc(12px * var(--text-scale, 1));
+    color: var(--text-dim);
     margin: 0 0 16px;
     line-height: 1.5;
   }
@@ -2350,8 +2343,8 @@ app-deck-detail {
     background: #1a1816;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: #e8e0ce;
-    font-size: 13px;
+    color: var(--text-primary);
+    font-size: calc(13px * var(--text-scale, 1));
     font-family: inherit;
     padding: 10px 12px;
     resize: vertical;
@@ -2362,7 +2355,7 @@ app-deck-detail {
 
     &:focus {
       outline: none;
-      border-color: rgba(201, 168, 76, 0.4);
+      border-color: rgba(184, 0, 224, 0.4);
     }
 
     &::placeholder {
@@ -2377,18 +2370,18 @@ app-deck-detail {
 
   .publish-modal-submit {
     padding: 9px 20px;
-    background: #c9a84c;
+    background: #b800e0;
     border: none;
     border-radius: 8px;
-    color: #0e0c08;
-    font-size: 12px;
+    color: #ffffff;
+    font-size: calc(12px * var(--text-scale, 1));
     font-weight: 700;
     font-family: var(--font-display);
     letter-spacing: 0.08em;
     cursor: pointer;
     transition: background 0.15s;
     &:hover:not(:disabled) {
-      background: #dbb954;
+      background: #ca33e9;
     }
     &:disabled {
       opacity: 0.5;
@@ -2401,13 +2394,13 @@ app-deck-detail {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: #7a6e5e;
-    font-size: 12px;
+    color: var(--text-dim);
+    font-size: calc(12px * var(--text-scale, 1));
     cursor: pointer;
     transition: all 0.15s;
     &:hover {
       border-color: rgba(255, 255, 255, 0.2);
-      color: #e8e0ce;
+      color: var(--text-primary);
     }
   }
 
@@ -2492,7 +2485,7 @@ app-deck-detail {
     }
 
     &.is-search-drop {
-      outline: 2px dashed rgba(201, 168, 76, 0.45);
+      outline: 2px dashed rgba(184, 0, 224, 0.45);
       outline-offset: -4px;
       border-radius: 8px;
     }
@@ -2520,7 +2513,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -2556,7 +2549,7 @@ app-deck-detail {
     background: var(--bg-raised);
     border-radius: 10px;
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0;
     line-height: 1;
@@ -2603,7 +2596,7 @@ app-deck-detail {
     border-bottom: 2px solid transparent;
     padding: 5px 6px;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -2629,7 +2622,7 @@ app-deck-detail {
     background: var(--bg-raised);
     border-radius: 10px;
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0;
     padding: 1px 6px;
@@ -2704,17 +2697,17 @@ app-deck-detail {
     border-radius: 4px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     line-height: 1;
     padding: 4px 8px;
     transition: all 0.15s;
 
     &:hover {
-      color: var(--gold);
+      color: var(--accent-text);
     }
     &.is-active {
-      background: rgba(201, 168, 76, 0.15);
-      color: var(--gold);
+      background: rgba(184, 0, 224, 0.15);
+      color: var(--accent-text);
     }
   }
 
@@ -2723,16 +2716,16 @@ app-deck-detail {
   }
 
   .empty-state {
-    @include empty-state(#7c3aed);
+    @include empty-state(#b800e0);
   }
 
   .add-btn-primary {
     padding: 10px 24px;
-    background: #7c3aed;
+    background: #b800e0;
     border: none;
     border-radius: 8px;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2740,7 +2733,7 @@ app-deck-detail {
     cursor: pointer;
     transition: all 0.2s;
     &:hover {
-      background: #6d28d9;
+      background: #9800ba;
       box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
     }
   }
@@ -2797,29 +2790,29 @@ app-deck-detail {
     align-items: center;
     justify-content: space-between;
     padding: 4px 8px 5px;
-    border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+    border-bottom: 1px solid rgba(184, 0, 224, 0.2);
     margin-bottom: 6px;
-    background: linear-gradient(to right, rgba(201, 168, 76, 0.07), transparent);
+    background: linear-gradient(to right, rgba(184, 0, 224, 0.07), transparent);
     border-radius: 4px 4px 0 0;
   }
 
   .group-label {
     font-family: var(--font-display);
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: var(--accent-text);
     opacity: 0.85;
   }
 
   .group-count {
     font-family: var(--font-display);
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
     font-weight: 700;
-    color: var(--gold);
-    background: rgba(201, 168, 76, 0.12);
-    border: 1px solid rgba(201, 168, 76, 0.2);
+    color: var(--accent-text);
+    background: rgba(184, 0, 224, 0.12);
+    border: 1px solid rgba(184, 0, 224, 0.2);
     border-radius: 4px;
     padding: 1px 6px;
     opacity: 0.85;
@@ -2890,7 +2883,7 @@ app-deck-detail {
       outline-offset: -1px;
     }
     &.is-game-changer {
-      background: rgba(201, 168, 76, 0.07);
+      background: rgba(184, 0, 224, 0.07);
       animation: gc-pulse 2s ease-in-out infinite;
     }
   }
@@ -2948,7 +2941,7 @@ app-deck-detail {
     border-radius: 4px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     font-weight: 700;
     line-height: 1;
     width: 20px;
@@ -2988,7 +2981,7 @@ app-deck-detail {
     transition: box-shadow 0.25s ease;
 
     &:hover {
-      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.5);
+      box-shadow: 0 0 0 2px rgba(184, 0, 224, 0.5);
     }
 
     &.no-image {
@@ -2999,7 +2992,7 @@ app-deck-detail {
   }
 
   .thumb-placeholder {
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     color: var(--text-dim);
     opacity: 0.3;
   }
@@ -3019,7 +3012,7 @@ app-deck-detail {
     align-items: center;
     gap: 6px;
     font-family: var(--font-display);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.03em;
     color: var(--text-primary);
@@ -3034,7 +3027,7 @@ app-deck-detail {
 
   .card-type {
     font-family: var(--font-body);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: var(--text-dim);
     white-space: nowrap;
     overflow: hidden;
@@ -3066,7 +3059,7 @@ app-deck-detail {
     border-radius: 4px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     font-weight: 700;
     line-height: 1;
     width: 22px;
@@ -3093,7 +3086,7 @@ app-deck-detail {
 
   .qty-num {
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     font-weight: 700;
     color: var(--text-primary);
     min-width: 22px;
@@ -3128,13 +3121,13 @@ app-deck-detail {
   }
 
   .free-save-btn {
-    background: rgba(201, 168, 76, 0.1);
-    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: rgba(184, 0, 224, 0.1);
+    border: 1px solid rgba(184, 0, 224, 0.3);
     border-radius: 6px;
-    color: var(--gold);
+    color: var(--accent-text);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -3142,7 +3135,7 @@ app-deck-detail {
     transition: all 0.2s;
 
     &:hover {
-      background: rgba(201, 168, 76, 0.18);
+      background: rgba(184, 0, 224, 0.18);
       border-color: var(--gold);
     }
 
@@ -3161,7 +3154,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -3169,7 +3162,7 @@ app-deck-detail {
     transition: all 0.15s;
     &:hover {
       border-color: var(--gold-dim);
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
@@ -3185,8 +3178,8 @@ app-deck-detail {
 
   .selection-box {
     position: absolute;
-    border: 1px solid rgba(201, 168, 76, 0.6);
-    background: rgba(201, 168, 76, 0.07);
+    border: 1px solid rgba(184, 0, 224, 0.6);
+    background: rgba(184, 0, 224, 0.07);
     border-radius: 3px;
     pointer-events: none;
     z-index: 50;
@@ -3201,8 +3194,8 @@ app-deck-detail {
     margin: 0 1px;
 
     &.active {
-      background: rgba(201, 168, 76, 0.9);
-      box-shadow: 0 0 10px rgba(201, 168, 76, 0.6);
+      background: rgba(184, 0, 224, 0.9);
+      box-shadow: 0 0 10px rgba(184, 0, 224, 0.6);
     }
   }
 
@@ -3235,19 +3228,19 @@ app-deck-detail {
     will-change: border-color;
 
     &:not(.is-dragging-col):hover:not(:has(.free-card:hover)) {
-      border-color: rgba(201, 168, 76, 0.4);
+      border-color: rgba(184, 0, 224, 0.4);
       box-shadow:
-        0 0 0 1px rgba(201, 168, 76, 0.1),
-        0 4px 20px rgba(201, 168, 76, 0.12);
-      background: rgba(201, 168, 76, 0.02);
+        0 0 0 1px rgba(184, 0, 224, 0.1),
+        0 4px 20px rgba(184, 0, 224, 0.12);
+      background: rgba(184, 0, 224, 0.02);
     }
 
     &.is-drag-over {
-      border-color: rgba(201, 168, 76, 0.7);
+      border-color: rgba(184, 0, 224, 0.7);
       box-shadow:
-        0 0 0 2px rgba(201, 168, 76, 0.25),
-        0 4px 24px rgba(201, 168, 76, 0.2);
-      background: rgba(201, 168, 76, 0.05);
+        0 0 0 2px rgba(184, 0, 224, 0.25),
+        0 4px 24px rgba(184, 0, 224, 0.2);
+      background: rgba(184, 0, 224, 0.05);
     }
 
     &.is-dragging-col {
@@ -3256,11 +3249,11 @@ app-deck-detail {
     }
 
     &.is-selected-col {
-      border-color: rgba(201, 168, 76, 0.55);
+      border-color: rgba(184, 0, 224, 0.55);
       box-shadow:
-        0 0 0 1px rgba(201, 168, 76, 0.2),
-        0 4px 20px rgba(201, 168, 76, 0.1);
-      background: rgba(201, 168, 76, 0.03);
+        0 0 0 1px rgba(184, 0, 224, 0.2),
+        0 4px 20px rgba(184, 0, 224, 0.1);
+      background: rgba(184, 0, 224, 0.03);
     }
   }
 
@@ -3277,7 +3270,7 @@ app-deck-detail {
 
     &:hover,
     &.is-resizing {
-      background: rgba(201, 168, 76, 0.35);
+      background: rgba(184, 0, 224, 0.35);
     }
   }
 
@@ -3299,12 +3292,12 @@ app-deck-detail {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
     letter-spacing: 0.12em;
   }
 
   .col-edit-hint {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-dim);
     opacity: 0;
     cursor: pointer;
@@ -3319,14 +3312,14 @@ app-deck-detail {
       opacity: 1;
     }
     &:hover {
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
   .col-drag-handle {
     cursor: grab;
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 0 2px;
     margin-right: 2px;
     opacity: 0.3;
@@ -3340,7 +3333,7 @@ app-deck-detail {
       opacity: 1;
     }
     &:hover {
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
@@ -3352,7 +3345,7 @@ app-deck-detail {
     border: none;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 0 2px;
     line-height: 1;
     opacity: 0;
@@ -3375,7 +3368,7 @@ app-deck-detail {
     border-radius: 4px;
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -3400,11 +3393,11 @@ app-deck-detail {
     &.active {
       height: 6px;
       margin: 2px 0;
-      background: rgba(201, 168, 76, 1);
+      background: rgba(184, 0, 224, 1);
       box-shadow:
-        0 0 0 1px rgba(201, 168, 76, 0.4),
-        0 0 14px rgba(201, 168, 76, 0.8),
-        0 0 28px rgba(201, 168, 76, 0.4);
+        0 0 0 1px rgba(184, 0, 224, 0.4),
+        0 0 14px rgba(184, 0, 224, 0.8),
+        0 0 28px rgba(184, 0, 224, 0.4);
 
       &::before {
         content: '';
@@ -3415,8 +3408,8 @@ app-deck-detail {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: rgba(201, 168, 76, 1);
-        box-shadow: 0 0 8px rgba(201, 168, 76, 0.9);
+        background: rgba(184, 0, 224, 1);
+        box-shadow: 0 0 8px rgba(184, 0, 224, 0.9);
       }
     }
   }
@@ -3442,7 +3435,7 @@ app-deck-detail {
       opacity: 0.15;
       transform: scale(0.95);
       box-shadow: none;
-      outline: 2px dashed rgba(201, 168, 76, 0.3);
+      outline: 2px dashed rgba(184, 0, 224, 0.3);
       outline-offset: -2px;
     }
     &.violation-banned {
@@ -3457,7 +3450,7 @@ app-deck-detail {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 120px;
+        font-size: calc(120px * var(--text-scale, 1));
         line-height: 1;
         color: rgba(220, 38, 38, 0.5);
         animation: banned-icon-pulse 2s ease-in-out infinite;
@@ -3512,7 +3505,7 @@ app-deck-detail {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 120px;
+      font-size: calc(120px * var(--text-scale, 1));
       line-height: 1;
       color: rgba(240, 192, 64, 0.25);
       text-shadow:
@@ -3524,13 +3517,13 @@ app-deck-detail {
       pointer-events: none;
     }
     &.is-selected-card {
-      outline: 2px solid rgba(201, 168, 76, 0.75);
+      outline: 2px solid rgba(184, 0, 224, 0.75);
       outline-offset: 1px;
-      box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
+      box-shadow: 0 0 8px rgba(184, 0, 224, 0.3);
       z-index: 999 !important;
     }
     &:hover {
-      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.5);
+      box-shadow: 0 0 0 2px rgba(184, 0, 224, 0.5);
       z-index: 999 !important;
     }
 
@@ -3549,7 +3542,7 @@ app-deck-detail {
       }
       &:hover .ct-art {
         box-shadow:
-          0 0 0 2px rgba(201, 168, 76, 0.5),
+          0 0 0 2px rgba(184, 0, 224, 0.5),
           0 4px 20px rgba(0, 0, 0, 0.7);
       }
     }
@@ -3568,7 +3561,7 @@ app-deck-detail {
 
   .free-empty {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -3595,7 +3588,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -3604,7 +3597,7 @@ app-deck-detail {
     transition: all 0.15s;
     &:hover {
       border-color: var(--gold-dim);
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
@@ -3624,7 +3617,7 @@ app-deck-detail {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: calc(16px * var(--text-scale, 1));
     font-weight: 400;
     padding: 0 8px;
     height: 26px;
@@ -3640,7 +3633,7 @@ app-deck-detail {
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     color: var(--text-secondary);
@@ -3769,10 +3762,10 @@ app-deck-detail {
       box-shadow 0.15s;
 
     &.is-drag-active {
-      outline-color: rgba(201, 168, 76, 0.5);
+      outline-color: rgba(184, 0, 224, 0.5);
       box-shadow:
-        0 0 0 3px rgba(201, 168, 76, 0.08),
-        0 0 20px rgba(201, 168, 76, 0.12);
+        0 0 0 3px rgba(184, 0, 224, 0.08),
+        0 0 20px rgba(184, 0, 224, 0.12);
     }
   }
 
@@ -3824,7 +3817,7 @@ app-deck-detail {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 120px;
+        font-size: calc(120px * var(--text-scale, 1));
         line-height: 1;
         color: rgba(220, 38, 38, 0.25);
         text-shadow:
@@ -3864,7 +3857,7 @@ app-deck-detail {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 120px;
+      font-size: calc(120px * var(--text-scale, 1));
       line-height: 1;
       color: rgba(240, 192, 64, 0.25);
       text-shadow:
@@ -3910,7 +3903,7 @@ app-deck-detail {
         z-index: 999 !important;
         .ct-art {
           box-shadow:
-            0 0 0 2px rgba(201, 168, 76, 0.5),
+            0 0 0 2px rgba(184, 0, 224, 0.5),
             0 4px 20px rgba(0, 0, 0, 0.7);
         }
       }
@@ -3919,7 +3912,7 @@ app-deck-detail {
         .ct-art {
           box-shadow:
             0 0 0 2px var(--gold),
-            0 0 12px rgba(201, 168, 76, 0.5);
+            0 0 12px rgba(184, 0, 224, 0.5);
         }
       }
     }
@@ -4229,7 +4222,7 @@ app-deck-detail {
     border-radius: 4px;
     background: transparent;
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     cursor: pointer;
     transition:
       background 0.15s,
@@ -4240,14 +4233,14 @@ app-deck-detail {
     }
     &.is-active {
       background: var(--bg-raised);
-      color: var(--gold);
+      color: var(--accent-text);
     }
   }
 
   .stats-header,
   .curve-header {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -4269,13 +4262,13 @@ app-deck-detail {
 
   .stat-label {
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     color: var(--text-secondary);
   }
 
   .stat-val {
     font-family: var(--font-display);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     font-weight: 700;
     color: var(--text-primary);
 
@@ -4319,7 +4312,7 @@ app-deck-detail {
 
   .curve-count {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     color: var(--text-dim);
     line-height: 1;
@@ -4334,13 +4327,13 @@ app-deck-detail {
     transition: height 0.3s ease;
 
     &.has-count {
-      background: linear-gradient(to top, #7c3aed, #a78bfa);
+      background: linear-gradient(to top, #b800e0, #a78bfa);
     }
   }
 
   .curve-label {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--text-dim);
@@ -4377,7 +4370,7 @@ app-deck-detail {
   }
 
   .cover-art-placeholder {
-    font-size: 40px;
+    font-size: calc(40px * var(--text-scale, 1));
     color: rgba(167, 139, 250, 0.25);
   }
 
@@ -4395,13 +4388,13 @@ app-deck-detail {
   }
 
   .cover-edit-icon {
-    font-size: 22px;
+    font-size: calc(22px * var(--text-scale, 1));
     color: #fff;
   }
 
   .cover-edit-label {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -4433,16 +4426,16 @@ app-deck-detail {
 
   .unsaved-modal-title {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: calc(15px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--gold);
+    color: var(--accent-text);
     margin-bottom: 10px;
   }
 
   .unsaved-modal-body {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     color: var(--text-secondary);
     margin: 0 0 20px;
     line-height: 1.5;
@@ -4459,7 +4452,7 @@ app-deck-detail {
     border-radius: 7px;
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -4467,11 +4460,11 @@ app-deck-detail {
     transition: all 0.15s;
 
     &.is-save {
-      background: rgba(201, 168, 76, 0.18);
-      border: 1px solid rgba(201, 168, 76, 0.4);
-      color: var(--gold);
+      background: rgba(184, 0, 224, 0.18);
+      border: 1px solid rgba(184, 0, 224, 0.4);
+      color: var(--accent-text);
       &:hover {
-        background: rgba(201, 168, 76, 0.28);
+        background: rgba(184, 0, 224, 0.28);
       }
     }
 
@@ -4521,7 +4514,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     padding: 5px 9px;
@@ -4547,7 +4540,7 @@ app-deck-detail {
   }
 
   .format-caret {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     opacity: 0.7;
   }
 
@@ -4580,7 +4573,7 @@ app-deck-detail {
     color: var(--text-secondary);
     cursor: pointer;
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     padding: 9px 14px;
     text-align: left;
     transition:
@@ -4668,7 +4661,7 @@ app-deck-detail {
   }
 
   .vbar-cover-placeholder {
-    font-size: 20px;
+    font-size: calc(20px * var(--text-scale, 1));
     color: rgba(167, 139, 250, 0.2);
   }
 
@@ -4680,14 +4673,14 @@ app-deck-detail {
     justify-content: center;
     background: rgba(0, 0, 0, 0.5);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     opacity: 0;
     transition: opacity 0.15s;
   }
 
   .vbar-section-label {
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -4767,7 +4760,7 @@ app-deck-detail {
         min-width: 0;
         justify-content: center;
         padding: 10px 2px;
-        font-size: 9.5px;
+        font-size: calc(9.5px * var(--text-scale, 1));
         letter-spacing: 0.04em;
         white-space: nowrap;
       }
@@ -4787,12 +4780,12 @@ app-deck-detail {
           min-width: 0;
           justify-content: center;
           padding: 7px 2px;
-          font-size: 8.5px;
+          font-size: calc(8.5px * var(--text-scale, 1));
           letter-spacing: 0.05em;
           white-space: nowrap;
 
           i {
-            font-size: 12px;
+            font-size: calc(12px * var(--text-scale, 1));
           }
         }
       }
@@ -4846,7 +4839,7 @@ app-deck-detail {
   }
 
   .cp-cover-placeholder {
-    font-size: 36px;
+    font-size: calc(36px * var(--text-scale, 1));
     color: rgba(167, 139, 250, 0.2);
   }
 
@@ -4937,11 +4930,11 @@ app-deck-detail {
 
   .cp-cmdr-label {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.25em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: var(--accent-text);
     text-align: center;
     padding: 10px 14px 6px;
     width: 100%;
@@ -4955,7 +4948,7 @@ app-deck-detail {
     color: #a78bfa;
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -4980,7 +4973,7 @@ app-deck-detail {
     color: var(--text-secondary);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5007,7 +5000,7 @@ app-deck-detail {
     color: #fca5a5;
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5029,7 +5022,7 @@ app-deck-detail {
 
   .cp-no-cmdr {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5040,7 +5033,7 @@ app-deck-detail {
 
   .cp-name {
     font-family: var(--font-display);
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: 0.03em;
@@ -5051,7 +5044,7 @@ app-deck-detail {
 
   .cp-type {
     font-family: var(--font-body);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -5079,7 +5072,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5101,7 +5094,7 @@ app-deck-detail {
     color: var(--text-dim);
     cursor: pointer;
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5118,7 +5111,7 @@ app-deck-detail {
   }
 
   .cp-color {
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
     opacity: 0.9;
 
     &[data-color='W'] {
@@ -5173,7 +5166,7 @@ app-deck-detail {
 
   .cp-picker-header {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -5183,7 +5176,7 @@ app-deck-detail {
 
   .cp-picker-empty {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     color: var(--text-dim);
     padding: 8px 14px 12px;
     font-style: italic;
@@ -5199,7 +5192,7 @@ app-deck-detail {
     color: var(--text-secondary);
     cursor: pointer;
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     padding: 6px 14px;
     text-align: left;
     transition:
@@ -5239,7 +5232,7 @@ app-deck-detail {
     color: #f87171;
     cursor: pointer;
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     padding: 7px 14px 10px;
     text-align: left;
     transition: background 0.1s;
@@ -5262,7 +5255,7 @@ app-deck-detail {
     align-items: center;
     gap: 6px;
     font-family: var(--font-display);
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5303,7 +5296,7 @@ app-deck-detail {
     align-items: center;
     gap: 4px;
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5342,15 +5335,15 @@ app-deck-detail {
       font-weight: 700;
     }
     &.info-gc {
-      color: var(--gold);
-      border-color: rgba(201, 168, 76, 0.3);
-      background: rgba(201, 168, 76, 0.08);
+      color: var(--accent-text);
+      border-color: rgba(184, 0, 224, 0.3);
+      background: rgba(184, 0, 224, 0.08);
       cursor: help;
     }
   }
 
   .cp-check-icon {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
   }
 
   .cp-ai-build {
@@ -5374,7 +5367,7 @@ app-deck-detail {
   }
 
   .cp-ai-label {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-family: var(--font-display);
     color: var(--text-dim);
     letter-spacing: 0.06em;
@@ -5385,7 +5378,7 @@ app-deck-detail {
 
   .cp-ai-select {
     flex: 1;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-family: var(--font-display);
     background: var(--bg-raised);
     color: var(--text-primary);
@@ -5417,7 +5410,7 @@ app-deck-detail {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-family: var(--font-display);
     color: var(--text-dim);
     background: none;
@@ -5428,13 +5421,13 @@ app-deck-detail {
     transition: all 0.15s;
 
     i {
-      font-size: 14px;
+      font-size: calc(14px * var(--text-scale, 1));
     }
 
     &.is-active {
-      color: var(--gold);
-      border-color: rgba(201, 168, 76, 0.4);
-      background: rgba(201, 168, 76, 0.08);
+      color: var(--accent-text);
+      border-color: rgba(184, 0, 224, 0.4);
+      background: rgba(184, 0, 224, 0.08);
     }
 
     &:hover:not(:disabled):not(.is-active) {
@@ -5456,23 +5449,19 @@ app-deck-detail {
     gap: 6px;
     padding: 9px 14px;
     border-radius: 6px;
-    border: 1px solid rgba(201, 168, 76, 0.4);
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.12) 0%, rgba(201, 168, 76, 0.06) 100%);
-    color: var(--gold);
+    border: 1px solid rgba(184, 0, 224, 0.4);
+    background: linear-gradient(135deg, rgba(184, 0, 224, 0.12) 0%, rgba(184, 0, 224, 0.06) 100%);
+    color: var(--accent-text);
     font-family: var(--font-display);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     cursor: pointer;
     transition: all 0.15s;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(
-        135deg,
-        rgba(201, 168, 76, 0.22) 0%,
-        rgba(201, 168, 76, 0.12) 100%
-      );
-      border-color: rgba(201, 168, 76, 0.7);
+      background: linear-gradient(135deg, rgba(184, 0, 224, 0.22) 0%, rgba(184, 0, 224, 0.12) 100%);
+      border-color: rgba(184, 0, 224, 0.7);
     }
 
     &:disabled {
@@ -5496,7 +5485,7 @@ app-deck-detail {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: #4ade80;
     font-family: var(--font-display);
     letter-spacing: 0.05em;
@@ -5506,7 +5495,7 @@ app-deck-detail {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     color: #f87171;
     font-family: var(--font-display);
   }
@@ -5518,7 +5507,7 @@ app-deck-detail {
 
   .cp-notes-label {
     display: block;
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-family: var(--font-display);
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5533,7 +5522,7 @@ app-deck-detail {
     border: 1px solid var(--border-dim);
     border-radius: 6px;
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     font-family: var(--font-body);
     line-height: 1.5;
     padding: 8px 10px;
@@ -5563,7 +5552,7 @@ app-deck-detail {
     align-items: center;
     gap: 4px;
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -5591,9 +5580,9 @@ app-deck-detail {
       background: rgba(56, 189, 248, 0.07);
     }
     &.bracket-3 {
-      color: var(--gold);
-      border-color: rgba(201, 168, 76, 0.35);
-      background: rgba(201, 168, 76, 0.09);
+      color: var(--accent-text);
+      border-color: rgba(184, 0, 224, 0.35);
+      background: rgba(184, 0, 224, 0.09);
     }
     &.bracket-4 {
       color: #fb923c;
@@ -5648,7 +5637,7 @@ app-deck-detail {
 
   .vp-title {
     font-family: var(--font-display);
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5656,7 +5645,7 @@ app-deck-detail {
   }
 
   .vp-hint {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-secondary);
   }
 
@@ -5665,7 +5654,7 @@ app-deck-detail {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 2px 5px;
     border-radius: 4px;
     margin-left: auto;
@@ -5735,7 +5724,7 @@ app-deck-detail {
   }
 
   .vp-thumb-placeholder {
-    font-size: 22px;
+    font-size: calc(22px * var(--text-scale, 1));
     color: rgba(255, 255, 255, 0.12);
   }
 
@@ -5748,7 +5737,7 @@ app-deck-detail {
   }
 
   .vp-card-name {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
@@ -5761,7 +5750,7 @@ app-deck-detail {
   }
 
   .vp-card-type {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -5769,7 +5758,7 @@ app-deck-detail {
   }
 
   .vp-card-note {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -5790,7 +5779,7 @@ app-deck-detail {
     border: 1px solid rgba(220, 38, 38, 0.25);
     color: #f87171;
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 3px 10px;
     border-radius: 4px;
     width: 100%;
@@ -5837,7 +5826,7 @@ app-deck-detail {
 
   .bip-title {
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: calc(13px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -5852,7 +5841,7 @@ app-deck-detail {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     padding: 2px 4px;
     border-radius: 4px;
     &:hover {
@@ -5862,7 +5851,7 @@ app-deck-detail {
   }
 
   .bip-note {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-secondary);
     margin-bottom: 12px;
     line-height: 1.4;
@@ -5894,8 +5883,8 @@ app-deck-detail {
         border-color: rgba(56, 189, 248, 0.25);
       }
       &.bip-row-3 {
-        background: rgba(201, 168, 76, 0.09);
-        border-color: rgba(201, 168, 76, 0.3);
+        background: rgba(184, 0, 224, 0.09);
+        border-color: rgba(184, 0, 224, 0.3);
       }
       &.bip-row-4 {
         background: rgba(251, 146, 60, 0.08);
@@ -5914,7 +5903,7 @@ app-deck-detail {
 
   .bip-num {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: calc(15px * var(--text-scale, 1));
     font-weight: 800;
     min-width: 18px;
     text-align: center;
@@ -5927,7 +5916,7 @@ app-deck-detail {
       color: #38bdf8;
     }
     .bip-row-3 & {
-      color: var(--gold);
+      color: var(--accent-text);
     }
     .bip-row-4 & {
       color: #fb923c;
@@ -5946,7 +5935,7 @@ app-deck-detail {
 
   .bip-name {
     font-family: var(--font-display);
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -5954,14 +5943,14 @@ app-deck-detail {
   }
 
   .bip-criteria {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     color: var(--text-secondary);
     line-height: 1.4;
   }
 
   .bip-flags-title {
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5979,7 +5968,7 @@ app-deck-detail {
     display: flex;
     align-items: flex-start;
     gap: 7px;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
     line-height: 1.4;
     padding: 5px 8px;
     border-radius: 5px;
@@ -5997,9 +5986,9 @@ app-deck-detail {
     }
 
     &.bip-flag-gc {
-      background: rgba(201, 168, 76, 0.07);
+      background: rgba(184, 0, 224, 0.07);
       i {
-        color: var(--gold);
+        color: var(--accent-text);
       }
     }
     &.bip-flag-mld {
@@ -6059,7 +6048,7 @@ app-deck-detail {
   }
   35% {
     transform: scale(1.12);
-    color: var(--gold);
+    color: var(--accent-text);
   }
   100% {
     transform: scale(1);
@@ -6105,14 +6094,14 @@ app-deck-detail {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(201, 168, 76, 0.2),
-      0 0 6px rgba(201, 168, 76, 0.1);
+      0 0 0 1px rgba(184, 0, 224, 0.2),
+      0 0 6px rgba(184, 0, 224, 0.1);
   }
   50% {
     box-shadow:
-      0 0 0 3px rgba(201, 168, 76, 1),
-      0 0 28px rgba(201, 168, 76, 0.8),
-      0 0 50px rgba(201, 168, 76, 0.35);
+      0 0 0 3px rgba(184, 0, 224, 1),
+      0 0 28px rgba(184, 0, 224, 0.8),
+      0 0 50px rgba(184, 0, 224, 0.35);
   }
 }
 
@@ -6169,7 +6158,7 @@ app-deck-detail {
   padding: 3px 7px;
   border-radius: 5px;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -6244,12 +6233,12 @@ app-deck-detail {
     border-color 0.15s;
 
   &.is-flipped {
-    color: var(--gold);
+    color: var(--accent-text);
     border-color: var(--gold);
   }
   &:hover {
     border-color: var(--gold);
-    color: var(--gold);
+    color: var(--accent-text);
   }
 }
 
@@ -6302,7 +6291,7 @@ app-deck-detail {
   .filter-pill {
     min-height: 24px;
     padding: 3px 8px;
-    font-size: 8px;
+    font-size: calc(8px * var(--text-scale, 1));
   }
 
   // The search panel's filters, compressed to five rows. The template's three
@@ -6374,327 +6363,7 @@ app-deck-detail {
     .set-trigger {
       min-height: 24px;
       padding: 2px 7px;
-      font-size: 9px;
-    }
-  }
-
-  // ---- The deck/collection toolbar presents like the search panel ----
-  //
-  // Same idea, same look: controls visible under the search field, not behind a sliders
-  // button. The fold-behind-a-button was the desktop bar's answer to a narrow CONTAINER;
-  // on a phone it made the two toolbars read as different designs, and it cost a tap to
-  // see controls the search panel just shows.
-  app-card-grid-filters .cgf-row .cgf-menu-btn {
-    display: none;
-  }
-
-  // The bar becomes one column: search box first — the same top slot it has in the card
-  // search panel — then the control rows in their natural order (Group By, Layout, Set,
-  // Zoom, Display), then the facet chips. The first attempt flattened the cluster
-  // wrappers with display:contents, which scrambled that order (Zoom jumped to the top)
-  // and left the search box — which sits AFTER the clusters in the DOM — buried at the
-  // bottom, off the first screen.
-  app-card-grid-filters .cgf-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-
-  // Canonical order for every filter area in the app:
-  //   1 search box · 2 mana pips + rarities · 3 types · 4 CMC + set  (the shared block)
-  //   9 anything the HOST adds on top of that
-  // Group By / Layout / Zoom / Display / Save / Reset are deck-grid controls, not
-  // filters, so they sit under the filters rather than pushing them down the screen.
-  // This is what makes the deck bar and the card search panel read as one design even
-  // though one of them carries five extra controls.
-  app-card-grid-filters .cgf-row .cgf-center {
-    order: 1;
-    padding: 0;
-    width: 100%;
-  }
-
-  app-card-grid-filters .cgf-row .cgf-facets {
-    order: 2;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  // The input speaks for itself, as it does in the search panel — no caption above it.
-  app-card-grid-filters .cgf-row .cgf-group--filter > .cgf-label {
-    display: none;
-  }
-
-  app-card-grid-filters .cgf-row .cgf-group--filter,
-  app-card-grid-filters .cgf-row .filter-wrap {
-    width: 100%;
-    max-width: none;
-  }
-
-  // One search-field height across every filter bar. The deck bar's was 44 and the card
-  // search panel's 37 — the single most visible size difference between two blocks that
-  // are meant to read as the same control.
-  // The Aa \b .* flags stay visible wherever the search feature exists (Home and the
-  // card search panel). They were hidden for a while in the panel only, which made the
-  // two search-capable bars disagree with each other — the exact inconsistency this
-  // whole pass exists to remove. The deck bar has no flags because its filter has no
-  // such feature, which is a real difference, not a styling one.
-
-  :is(
-    app-card-grid-filters .cgf-row .filter-input,
-    app-card-search-panel .search-input,
-    app-card-search-panel input[type='text'],
-    app-home .search-input
-  ) {
-    min-height: 40px !important;
-    height: 40px !important;
-    font-size: 14px !important;
-    border-radius: 8px !important;
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border-subtle) !important;
-    padding: 8px 74px 8px 30px !important;
-
-    &:focus {
-      border-color: var(--gold-dim) !important;
-    }
-  }
-
-  // One wrap flow, short controls pairing on shared lines — the same compression that
-  // took the search panel to five rows. One control per line was seven rows of toolbar
-  // before a single card. Order is pinned per group via :has() on each one's distinctive
-  // control, because the groups arrive by content projection and DOM order varies by
-  // page — trusting it is what scrambled Zoom to the top last time.
-  app-card-grid-filters .cgf-row .cgf-clusters {
-    position: static;
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    justify-content: center;
-    // Group By + Layout + Zoom + Display measured 344px against 343 available — a single
-    // pixel was keeping Display on a row of its own. 6px gaps buy back 6.
-    column-gap: 5px;
-    row-gap: 7px;
-    width: 100%;
-    max-width: none;
-    padding: 2px 0 4px;
-    background: none;
-    border: none;
-    box-shadow: none;
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-    animation: none;
-    transition: none;
-
-    :is(.cgf-left, .cgf-right, .cgf-stack, .cgf-facets, .cgf-chips) {
-      display: contents;
-    }
-
-    // The control groups share ONE line in every view. Sizing them per-view kept failing
-    // because each view projects a different set (2 display buttons in list, 3 in visual,
-    // none in free) into a different available width — a target that moves. Nowrap plus
-    // shrinkable groups removes the arithmetic entirely: the line cannot break, so the
-    // row count is identical across views by construction.
-    .cgf-controls-line {
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      justify-content: center;
-      // 3px and a 343px cap: the five groups total ~340px, and at 5px gaps they ran to
-      // 373 against 367 available — the All Sets dropdown clipped at the frame edge and
-      // the row sat flush left-to-right while every row above it is a centred block.
-      gap: 3px 5px;
-      flex-wrap: wrap;
-      width: 100%;
-      max-width: 343px;
-      margin-inline: auto;
-      min-width: 0;
-      // Bottom: host controls come after the shared filter block.
-      order: 9;
-    }
-
-    // Icon-only controls at thumb-minimum, not desktop size. Display's six buttons
-    // measured 203px, which alone made Zoom(85) + Display + Set(108) impossible to fit
-    // on one line at 343px; at 24px each the three pack onto one row.
-    // Everything in this bar sits at the chip scale. The wrappers were the problem, not
-    // the buttons: the layout and zoom BUTTONS were already 26px, but their groups
-    // carried desktop padding and borders that inflated them to 34-36px, so the control
-    // rows towered over 22px chips two rows below and read as a different design.
-    :is(.fbar-display-controls, .view-toggle, .density-picker) button,
-    :is(.fbar-display-controls, .view-toggle) .sort-btn,
-    .zoom-btn {
-      min-width: 20px;
-      width: 20px;
-      min-height: 22px;
-      height: 22px;
-      padding: 0;
-      font-size: 10px;
-    }
-
-    // The groups themselves: no padding, no border, no min-height of their own.
-    :is(.sort-group, .view-toggle, .fbar-display-controls, .zoom-group, .density-picker) {
-      padding: 1px;
-      min-height: 0;
-      gap: 1px;
-      align-items: center;
-      // Groups must be allowed to shrink onto a shared line. Without this they keep
-      // their content width and the last one wraps to a row of its own even when the
-      // line has room for it.
-      flex: 0 1 auto;
-      min-width: 0;
-    }
-
-    // Four control groups on one line: 100 + 95 + 79 + display, in 343px. Display gives
-    // up the most because it is icon-only and the least frequently used.
-    // The three views project different Display controls — 2 buttons in list, 3 in
-    // visual, none in free — and the available width differs too (321 vs 313). Sized so
-    // the widest case still packs: 84 + 95 + 58 + 49 + gaps = 301 of 313. The row is now
-    // one line in every view instead of one in list, two in visual and one in free.
-    .fbar-display-controls {
-      max-width: 51px;
-      overflow: hidden;
-
-      button {
-        min-width: 17px;
-        width: 17px;
-      }
-    }
-
-    // "CMC" does not need 100px, and the row misses by 4px without this. Targets the
-    // element directly — the previous child-combinator form never matched, because the
-    // select is not a direct child of .cgf-group.
-    // Cap the WRAPPER, not the select: an element-qualified desktop rule keeps the
-    // select itself at ~96px no matter what a bare max-width here says, so the Group By
-    // cluster stayed 100px wide and pushed the line 40px past its box. With the wrapper
-    // capped and the select told to fill it, the caret stays visible and the maths
-    // finally closes: 60+87+58+48+45 + four 3px gaps = 310 in a 313px box.
-    .cgf-controls-line .sort-group:has(app-select-menu) {
-      max-width: 60px;
-      overflow: hidden;
-    }
-
-    .cgf-controls-line .sort-group app-select-menu,
-    .cgf-controls-line .sort-group app-select-menu button {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-    }
-
-    .fbar-display-controls {
-      max-width: 48px;
-    }
-
-    // The percentage readout goes: the card size on screen already shows the zoom level,
-    // and at 30px it was the difference between Display sharing this line and taking one
-    // of its own. The - and + buttons stay.
-    .zoom-label {
-      display: none;
-    }
-
-    // The select triggers match too.
-    app-select-menu button {
-      min-height: 24px;
-      height: 24px;
-      padding: 0 7px;
-      font-size: 8.5px;
-    }
-
-    // 18px was the whole gap between "All Sets on its own row" and "All Sets sharing the
-    // Zoom/Display line". Trimming the trigger closes it: 85 + 132 + 90 + gaps = 331.
-    .cgf-group:has(.set-filter-menu) app-select-menu button {
-      padding: 1px 5px;
-      font-size: 8px;
-    }
-
-    // Captions off. They are what kept every control on a row of its own: "GROUP BY" +
-    // its select is ~180px and "LAYOUT" + its four icons ~220px, so at 343px nothing
-    // could pair and the block ran to ten rows. The reference panel labels only CMC and
-    // Sort for exactly this reason — a select showing "CMC", four layout icons, a zoom
-    // stepper and six display icons all read without being told what they are.
-    .cgf-group > .cgf-label {
-      display: none;
-    }
-
-    // Free mode: Group By has nothing to group — the columns are arranged by hand — and
-    // its 60px is exactly what forced the controls onto a ragged second line there. The
-    // free controls take pinned slots at the line's end, echoing the other views' order.
-    &:has(.free-save-btn) .cgf-group:has(app-select-menu):not(:has(.set-filter-menu)) {
-      display: none;
-    }
-
-    .free-save-btn {
-      order: 6;
-    }
-    .free-reset-btn {
-      order: 7;
-    }
-    .density-picker {
-      order: 8;
-    }
-
-    // Row 1: Group By + Layout. Row 2: Set + Zoom. Row 3: Display. Row 4: facet chips.
-    .cgf-group:has(app-select-menu):not(:has(.set-filter-menu)) {
-      order: 1;
-    }
-    .cgf-group:has(.view-toggle) {
-      order: 2;
-    }
-    // Set rides beside CMC at the bottom, matching the search panel, instead of taking
-    // a control row of its own. Its caption goes — the trigger already reads "All Sets".
-    .cgf-group:has(.set-filter-menu) {
-      order: 6;
-
-      // Compact on the shared controls line — "All Sets" at natural width plus the four
-      // other groups overshot the row and clipped the display toggle at the right edge.
-      app-select-menu,
-      app-select-menu button {
-        max-width: 58px;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      width: auto;
-
-      > .cgf-label {
-        display: none;
-      }
-
-      // 5px decides whether this shares the CMC line or wraps under it.
-      app-select-menu button {
-        padding: 1px 6px;
-        font-size: 8.5px;
-        min-height: 24px;
-      }
-    }
-    .cgf-group.cgf-zoom {
-      order: 4;
-    }
-    .cgf-group:has(.fbar-display-controls) {
-      order: 5;
-    }
-    .cgf-group:has(.cgf-sort-chips) {
-      order: 6;
-    }
-    .cgf-chips {
-      order: 7;
-    }
-
-    // The chips row speaks for itself, like the search panel's colour row.
-    .cgf-facets > .cgf-label {
-      display: none;
-    }
-
-    // The facet arrangement lives inside app-filter-facets — the same component the
-    // card search panel mounts — replacing the :has()/order apparatus that used to
-    // fight the projection boundary here. Only the block's slot in the toolbar remains.
-    .cgf-facets {
-      order: 7;
-      width: 100%;
-      display: flex;
+      font-size: calc(9px * var(--text-scale, 1));
     }
   }
 
@@ -6821,7 +6490,7 @@ app-deck-detail {
     }
 
     .header-name {
-      font-size: 16px;
+      font-size: calc(16px * var(--text-scale, 1));
     }
 
     // Format group: the one whose button carries the dropdown caret.
@@ -6873,7 +6542,7 @@ app-deck-detail {
       font-size: 0;
 
       i {
-        font-size: 12px;
+        font-size: calc(12px * var(--text-scale, 1));
       }
     }
   }
@@ -6964,3 +6633,95 @@ app-deck-detail {
     }
   }
 }
+
+// Existing Compleat artwork is shared by navigation, account screens and the table.
+.compleat-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+.compleat-sigil {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.compleat-wordmark {
+  display: block;
+  width: 116px;
+  height: 30px;
+  object-fit: contain;
+}
+.compleat-auth-logo {
+  display: block;
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  margin: 0 auto 20px;
+}
+::selection {
+  background: rgba(184, 0, 224, 0.35);
+}
+:focus-visible {
+  outline-color: var(--focus);
+}
+
+html {
+  font-size: calc(16px * var(--text-scale, 1));
+}
+html.high-contrast {
+  --text-primary: #fff;
+  --text-secondary: #fff;
+  --text-dim: #eee;
+  --border-dim: #777;
+  --border-subtle: #fff;
+  --border-lit: #fff;
+  --accent-text: #f2bfff;
+}
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.12s !important;
+  scroll-behavior: auto !important;
+}
+@include from($bp-nav) {
+  html[data-navigation='compact'] .app-content:not(.is-full-screen) {
+    margin-left: 64px;
+  }
+  html[data-navigation='expanded'] .app-content:not(.is-full-screen) {
+    margin-left: 208px;
+  }
+  html:not([data-navigation='top']) app-navbar .nav-links {
+    display: none;
+  }
+}
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  transition-property: opacity !important;
+}
+@include from($bp-nav) {
+  html[data-large-text] app-navbar .nav-links {
+    display: none;
+  }
+  html[data-large-text] app-navbar .nav-toggle {
+    display: flex;
+    opacity: 1;
+    transform: none;
+  }
+  html[data-large-text] app-navbar .account-menu {
+    margin-right: 52px;
+  }
+  html[data-large-text] app-navbar .mobile-nav {
+    display: flex;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@include workspace-layouts;

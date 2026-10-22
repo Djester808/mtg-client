@@ -119,10 +119,11 @@ export class CardHistoryPanelComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /** "2", "1 foil", or "2 + 1 foil" — never "0", which no event should carry. */
-  static copies(qty: number, foil: number): string {
+  static copies(qty: number, foil: number, etched = 0): string {
     const parts: string[] = [];
     if (qty) parts.push(`${qty}`);
     if (foil) parts.push(`${foil} foil`);
+    if (etched) parts.push(`${etched} etched`);
     return parts.join(' + ') || '0';
   }
 
@@ -134,6 +135,7 @@ export class CardHistoryPanelComponent implements OnInit, OnChanges, OnDestroy {
     const moved = CardHistoryPanelComponent.copies(
       Math.abs(entry.quantityDelta),
       Math.abs(entry.quantityFoilDelta),
+      Math.abs(entry.quantityEtchedDelta ?? 0),
     );
     const other = entry.counterpartCollectionName ?? 'another collection';
 
@@ -142,7 +144,7 @@ export class CardHistoryPanelComponent implements OnInit, OnChanges, OnDestroy {
         return `Added ${moved}`;
       case 'QuantityChanged':
         // The same event type covers both directions; the sign is the only thing that says which.
-        return entry.quantityDelta + entry.quantityFoilDelta >= 0
+        return entry.quantityDelta + entry.quantityFoilDelta + (entry.quantityEtchedDelta ?? 0) >= 0
           ? `Added ${moved} more`
           : `Removed ${moved}`;
       case 'PrintingChanged':
@@ -162,7 +164,11 @@ export class CardHistoryPanelComponent implements OnInit, OnChanges, OnDestroy {
     const parts = [CardHistoryPanelComponent.place(entry)];
     if (entry.board && entry.board !== 'main') parts.push(entry.board);
 
-    const left = CardHistoryPanelComponent.copies(entry.quantityAfter, entry.quantityFoilAfter);
+    const left = CardHistoryPanelComponent.copies(
+      entry.quantityAfter,
+      entry.quantityFoilAfter,
+      entry.quantityEtchedAfter ?? 0,
+    );
     // A removal's "0 left" is noise; the headline already said it went to zero.
     parts.push(entry.eventType === 'Removed' && left === '0' ? 'none left' : `${left} after`);
     return parts.join(' · ');
@@ -185,7 +191,7 @@ export class CardHistoryPanelComponent implements OnInit, OnChanges, OnDestroy {
   };
 
   private static toRow(entry: CardHistoryEntryDto): HistoryRow {
-    const delta = entry.quantityDelta + entry.quantityFoilDelta;
+    const delta = entry.quantityDelta + entry.quantityFoilDelta + (entry.quantityEtchedDelta ?? 0);
     return {
       entry,
       headline: CardHistoryPanelComponent.headlineFor(entry),

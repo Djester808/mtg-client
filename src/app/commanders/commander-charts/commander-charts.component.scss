@@ -16,13 +16,13 @@
 .charts-section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #e6dcc3;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
   i {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
 }
 
@@ -84,22 +84,22 @@
     border-color: rgba(255, 255, 255, 0.16);
   }
   &.active {
-    background: rgba(201, 168, 76, 0.15);
-    border-color: rgba(201, 168, 76, 0.4);
-    color: #c9a84c;
+    background: rgba(184, 0, 224, 0.15);
+    border-color: rgba(184, 0, 224, 0.4);
+    color: var(--accent-text);
   }
 }
 
 .chart-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #e6dcc3;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 7px;
   i {
-    color: #c9a84c;
+    color: var(--accent-text);
   }
 }
 
@@ -136,7 +136,7 @@
 .bar-fill {
   width: 100%;
   min-height: 4px;
-  background: linear-gradient(180deg, #e8c96a, #c9a84c);
+  background: linear-gradient(180deg, #df80f5, #b800e0);
   border-radius: 4px 4px 0 0;
   display: flex;
   align-items: flex-start;
@@ -187,7 +187,7 @@
 .type-count {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #c9a84c;
+  color: var(--accent-text);
 }
 
 .type-bar-wrap {
@@ -199,7 +199,7 @@
 
 .type-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7a5c1a, #c9a84c);
+  background: linear-gradient(90deg, #73008c, #b800e0);
   border-radius: 3px;
   transition: width 0.4s ease;
 }
@@ -232,7 +232,7 @@
 .history-bar-fill {
   width: 100%;
   min-height: 2px;
-  background: linear-gradient(180deg, #e8c96a, #9a7a2e);
+  background: linear-gradient(180deg, #df80f5, #9a7a2e);
   border-radius: 3px 3px 0 0;
   transition: height 0.4s ease;
   cursor: default;
@@ -293,7 +293,7 @@
 
 .ring-label-pct {
   font-size: 0.7rem;
-  color: #c9a84c;
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -343,8 +343,8 @@
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(201, 168, 76, 0.2);
-  border-top-color: #c9a84c;
+  border: 2px solid rgba(184, 0, 224, 0.2);
+  border-top-color: #b800e0;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -372,7 +372,7 @@
 
   &:hover {
     background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(201, 168, 76, 0.3);
+    border-color: rgba(184, 0, 224, 0.3);
   }
 }
 
@@ -400,7 +400,7 @@
   justify-content: center;
   font-size: 1.2rem;
   font-weight: 700;
-  color: rgba(201, 168, 76, 0.4);
+  color: rgba(184, 0, 224, 0.4);
 }
 
 .similar-info {
@@ -427,7 +427,7 @@
 
 .similar-shared {
   font-size: 0.68rem;
-  color: #c9a84c;
+  color: var(--accent-text);
 }
 
 .similar-pips {
