@@ -89,3 +89,34 @@ describe('uiReducer — combat declarations', () => {
     });
   });
 });
+
+describe('four-player attack and blocker drafts', () => {
+  const initial = () => uiReducer(undefined, { type: '@@init' });
+  it('retains a distinct defender for each attacker through confirmation', () => {
+    let state = uiReducer(initial(), UIActions.enterAttackMode());
+    state = uiReducer(state, UIActions.setAttackDefender({ playerId: 'p1' }));
+    state = uiReducer(state, UIActions.toggleAttacker({ permanentId: 'o1' }));
+    state = uiReducer(state, UIActions.setAttackDefender({ playerId: 'p2' }));
+    state = uiReducer(state, UIActions.toggleAttacker({ permanentId: 'o2' }));
+    state = uiReducer(state, UIActions.confirmAttackers());
+    expect(state.pendingAttackerTargets).toEqual({ o1: 'p1', o2: 'p2' });
+  });
+  it('clears sent targets without touching the authoritative game state', () => {
+    let state = uiReducer(initial(), UIActions.setAttackDefender({ playerId: 'p1' }));
+    state = uiReducer(state, UIActions.toggleAttacker({ permanentId: 'o1' }));
+    state = uiReducer(
+      state,
+      GameActions.declareAttackers({ attackerIds: ['o1'], defenders: { o1: 'p1' } }),
+    );
+    expect(state.pendingAttackerTargets).toEqual({});
+    expect(state.pendingAttackerIds).toEqual([]);
+  });
+  it('keeps a selected blocker independent from card inspection and stores its assignment', () => {
+    let state = uiReducer(initial(), UIActions.enterBlockMode());
+    state = uiReducer(state, UIActions.selectBlocker({ permanentId: 'o3' }));
+    expect(state.selectedPermanentId).toBeNull();
+    state = uiReducer(state, UIActions.assignBlocker({ blockerId: 'o3', attackerId: 'o1' }));
+    expect(state.pendingBlockerAssignments).toEqual({ o3: 'o1' });
+    expect(state.selectedBlockerId).toBeNull();
+  });
+});

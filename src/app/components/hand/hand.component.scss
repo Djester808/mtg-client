@@ -2,131 +2,138 @@
 :host {
   display: block;
   height: 100%;
+  min-width: 0;
 }
-
 .hand-zone {
-  background: var(--bg-deep);
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  position: relative;
-  overflow: visible;
   height: 100%;
-  padding: 20px 20px 80px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
-    opacity: 0.4;
-  }
+  position: relative;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 4px 106px 0 72px;
 }
-
 .hand-label {
   position: absolute;
-  top: 12px;
-  left: 16px;
-  font-family: var(--font-display);
-  font-size: calc(8px * var(--text-scale, 1));
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  left: 8px;
+  top: 10px;
+  width: 60px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.hand-cards {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  padding: 3px;
+  scrollbar-width: thin;
+}
+.hand-cards.can-scroll-right {
+  mask-image: linear-gradient(to right, var(--bg-void) calc(100% - 12px), transparent);
+}
+.hand-cards.can-scroll-left {
+  mask-image: linear-gradient(to right, transparent, var(--bg-void) 12px);
+}
+.hand-cards.can-scroll-left.can-scroll-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    var(--bg-void) 12px,
+    var(--bg-void) calc(100% - 12px),
+    transparent
+  );
+}
+.hand-card-wrapper {
+  flex: none;
+  width: 104px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--frame-color);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--frame-color) 12%, var(--bg-raised));
+  color: var(--text-primary);
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  position: relative;
+}
+.hand-card-wrapper.castable {
+  outline: 2px solid var(--mana-G);
+  outline-offset: -1px;
+}
+.hand-card-wrapper.selected,
+.hand-card-wrapper:focus-visible {
+  outline: 2px solid var(--focus);
+}
+.hand-card-wrapper.is-dragging {
+  opacity: 0.4;
+}
+.hand-card-title {
+  font-size: 11px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.hand-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  overflow: auto;
+  min-height: 0;
+}
+.hand-card-body b {
+  align-self: flex-end;
+  margin-top: auto;
+}
+.raised .hand-cards {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  height: 224px;
+  padding: 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px 10px 0 0;
+}
+.raised .hand-card-wrapper {
+  width: 140px;
+  height: 198px;
+}
+@include short-viewport {
+  .hand-zone {
+    padding: 0 96px 0 76px;
+  }
+  .hand-cards {
+    display: none;
+  }
+  .raised .hand-cards {
+    display: flex;
+    height: 184px;
+  }
+  .raised .hand-card-wrapper {
+    width: 120px;
+    height: 158px;
+  }
+  .hand-label {
+    top: 8px;
+    width: auto;
+  }
 }
 
 .hand-cards {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-
-  // The hand is a layout the player arranged — the cards can be dragged into an order — so it
-  // pans rather than reflowing (mtg-client/CLAUDE.md, "Derived layouts reflow; authored layouts
-  // pan"). Reflowing it into rows would throw away the arrangement it exists to keep.
-  @include upto($bp-phone) {
-    overflow-x: auto;
-    overflow-y: hidden;
-    // A flex item's automatic minimum is its content, so without this the scroll container is
-    // as wide as the hand and nothing ever scrolls — it just overflows.
-    min-width: 0;
-    max-width: 100%;
-    justify-content: flex-start;
-    padding: 0 8px;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-
-    &.can-scroll-right {
-      mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
-    }
-
-    &.can-scroll-left {
-      mask-image: linear-gradient(to right, transparent 0, #000 28px);
-    }
-
-    &.can-scroll-left.can-scroll-right {
-      mask-image: linear-gradient(
-        to right,
-        transparent 0,
-        #000 28px,
-        #000 calc(100% - 28px),
-        transparent 100%
-      );
-    }
-  }
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
-
-// Each wrapper provides the fan rotation
 .hand-card-wrapper {
-  margin-left: -18px;
-
-  &:first-child {
-    margin-left: 0;
-  }
-  transition: transform 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-  transform-origin: bottom center;
-
-  // Fan rotations for up to 8 cards
-  &.rot-0 {
-    transform: rotate(-10deg) translateY(6px);
-  }
-  &.rot-1 {
-    transform: rotate(-7deg) translateY(3px);
-  }
-  &.rot-2 {
-    transform: rotate(-4deg) translateY(1px);
-  }
-  &.rot-3 {
-    transform: rotate(-1.5deg) translateY(0);
-  }
-  &.rot-4 {
-    transform: rotate(1.5deg) translateY(0);
-  }
-  &.rot-5 {
-    transform: rotate(4deg) translateY(1px);
-  }
-  &.rot-6 {
-    transform: rotate(7deg) translateY(3px);
-  }
-  &.rot-7 {
-    transform: rotate(10deg) translateY(6px);
-  }
-
-  &:hover {
-    transform: rotate(0deg) translateY(-24px) scale(1.08) !important;
-    z-index: 100;
-  }
-
-  &.is-dragging {
-    opacity: 0.35;
-    z-index: 50;
-  }
-
-  // Size is set via [style.width/height] binding in the template
+  padding: 4px;
+}
+.raised .hand-card-body {
+  scrollbar-width: thin;
 }

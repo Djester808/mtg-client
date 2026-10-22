@@ -11,7 +11,7 @@ import { ToastContainerComponent } from './components/toast/toast-container.comp
 import { KeywordSheetComponent } from './components/keyword-sheet/keyword-sheet.component';
 
 /** A game in progress takes the whole screen; every other route sits under the navbar. */
-const FULL_SCREEN = /^\/play\/[^/]+/;
+const FULL_SCREEN = /^\/(?:play|game)\/[^/]+/;
 
 @Component({
   selector: 'app-root',

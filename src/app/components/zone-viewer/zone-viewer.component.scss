@@ -1,126 +1,166 @@
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/add-controls' as *;
 @use '../../../styles/detail-page' as *;
-
 :host {
   display: block;
 }
-
 .viewer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 400;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-void) 80%, transparent);
+}
+.viewer-backdrop[open] {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fade-in 0.15s ease;
 }
-
+.viewer-backdrop::backdrop {
+  background: transparent;
+}
 .viewer-panel {
-  background: var(--bg-deep);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  width: min(760px, 90vw);
-  max-height: 70vh;
+  width: min(760px, 100%);
+  max-height: 84dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
-  animation: scale-in 0.18s cubic-bezier(0.34, 1.2, 0.64, 1);
-
-  &.exile {
-    border-color: rgba(230, 126, 34, 0.3);
-
-    .viewer-title {
-      color: #e67e22;
-    }
-  }
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
 }
-
 .viewer-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-dim);
-  flex-shrink: 0;
+  padding: 12px 18px;
+  flex: none;
 }
-
 .viewer-title {
-  font-family: var(--font-display);
-  font-size: calc(14px * var(--text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  flex: 1;
+  font: 600 18px var(--font-body);
+  margin: 0;
+  overflow-wrap: anywhere;
 }
-
 .viewer-count {
-  font-family: var(--font-display);
-  font-size: calc(11px * var(--text-scale, 1));
-  color: var(--text-dim);
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
 }
-
 .viewer-close {
   @include icon-action-btn;
-
-  background: var(--bg-hover);
-  font-size: calc(11px * var(--text-scale, 1));
-
-  &:hover {
-    background: var(--bg-raised);
-    color: var(--text-primary);
-    border-color: var(--border-lit);
-  }
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 24px;
 }
-
-.viewer-body {
+.viewer-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 20px;
-  overflow-y: auto;
+  gap: 4px;
+  padding: 0 18px 10px;
+  flex: none;
 }
-
+.viewer-tabs button,
+.viewer-cast {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.viewer-tabs button {
+  flex: 1;
+}
+.viewer-tabs button[aria-pressed='true'] {
+  border-color: var(--accent-text);
+  background: var(--accent-dim);
+}
+.viewer-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+  padding: 4px 18px 18px;
+  overflow: auto;
+  min-height: 0;
+}
 .viewer-card-slot {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
+}
+.zone-card {
+  min-height: 150px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--zone-color) 12%, var(--bg-surface));
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--zone-color);
+  border-radius: 7px;
+  padding: 8px;
+  font: inherit;
+  font-size: 11px;
   cursor: pointer;
-
-  app-card {
-    width: var(--card-w);
-    height: var(--card-h);
-  }
-
-  &:hover app-card {
-    filter: brightness(1.1);
-  }
+  overflow-wrap: anywhere;
 }
-
 .viewer-card-name {
-  font-family: var(--font-display);
-  font-size: calc(8px * var(--text-scale, 1));
-  letter-spacing: 0.08em;
-  color: var(--text-dim);
-  text-align: center;
-  max-width: var(--card-w);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 13px;
 }
-
-// The app's treatment for a panel with nothing in it, minus the pulse: this zone is empty,
-// not loading, and a pulsing line reads as "still fetching".
+.newest {
+  margin-top: auto;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
 .viewer-empty {
   @include loading-state;
-
-  width: 100%;
-  padding: 40px;
-  letter-spacing: 0.15em;
-  font-style: italic;
   animation: none;
+  padding: 30px 18px;
+  font-size: 14px;
+  letter-spacing: normal;
+}
+.viewer-cast:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@include short-viewport {
+  .viewer-backdrop {
+    padding: 8px;
+  }
+  .viewer-panel {
+    max-height: calc(100dvh - 16px);
+    width: 100%;
+  }
+  .viewer-header {
+    padding: 4px 12px;
+  }
+  .viewer-title {
+    font-size: 15px;
+  }
+  .viewer-tabs {
+    padding: 0 12px 6px;
+  }
+  .viewer-body {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    padding: 4px 12px 12px;
+  }
+  .zone-card {
+    min-height: 116px;
+  }
 }

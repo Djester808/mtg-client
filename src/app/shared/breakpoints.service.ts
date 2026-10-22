@@ -4,6 +4,7 @@ import { Injectable, Signal, signal } from '@angular/core';
  * The viewport widths, mirroring `styles/_breakpoints.scss`. Exported so a spec can ask the
  * same question the app does rather than restating the number.
  */
+export const SHORT_VIEWPORT_QUERY = '(max-height: 480px)';
 export const PHONE_QUERY = '(max-width: 639.98px)';
 export const NAV_COLLAPSED_QUERY = '(max-width: 899.98px)';
 
@@ -24,6 +25,7 @@ export const NAV_COLLAPSED_QUERY = '(max-width: 899.98px)';
  */
 @Injectable({ providedIn: 'root' })
 export class BreakpointsService {
+  readonly isShortViewport = this.watch(SHORT_VIEWPORT_QUERY);
   /** `$bp-phone`. Below this the narrow layouts apply. */
   readonly isPhone = this.watch(PHONE_QUERY);
 

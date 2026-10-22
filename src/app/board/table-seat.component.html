@@ -1,0 +1,106 @@
+<section
+  class="table-seat"
+  [class.local]="isLocal"
+  [class.table-mode]="tableMode"
+  [class.is-active]="isActive"
+  [attr.data-player-id]="player.playerId"
+  [attr.aria-label]="player.name + ' player area'"
+>
+  <div class="player-panel" *ngIf="isLocal">
+    <button class="player-name" (click)="nameClick()">{{ player.name }} · You</button>
+    <span class="priority-tag" *ngIf="hasPriority">Priority</span>
+    <div class="life-controls">
+      <button aria-label="Lose 1 life" [disabled]="lifePending" (click)="life(-1)">−</button>
+      <strong class="life" [attr.aria-label]="player.life + ' life'">{{ player.life }}</strong>
+      <button aria-label="Gain 1 life" [disabled]="lifePending" (click)="life(1)">+</button>
+    </div>
+    <p>Poison {{ player.poisonCounters }}</p>
+    <p title="Commander cast history is not supplied by the game view">Tax unavailable</p>
+    <ng-container *ngTemplateOutlet="zones"></ng-container>
+    <div class="commander-damage">
+      <span>Commander damage taken</span>
+      <p *ngFor="let d of damage; trackBy: trackName">
+        {{ d.name }} <b>{{ d.count }} / 21</b>
+      </p>
+      <p *ngIf="!damage.length">None yet</p>
+    </div>
+  </div>
+  <div class="seat-field">
+    <button *ngIf="!isLocal && showHeader" class="seat-heading" (click)="nameClick()">
+      <strong class="player-name">{{ player.name }}</strong>
+      <strong class="life">{{ player.life }}</strong>
+      <span>Hand {{ player.handCount }}</span>
+      <span *ngIf="player.poisonCounters">Poison {{ player.poisonCounters }}</span>
+      <span *ngIf="isActive">Active</span><span *ngIf="hasPriority">Priority</span>
+      <span *ngIf="player.hasLost">Eliminated</span>
+    </button>
+    <div class="seat-body">
+      <app-zones
+        [permanents]="permanents"
+        [compact]="breakpoints.isShortViewport()"
+        [isOpponent]="!isLocal"
+        [role]="isLocal ? 'local' : tableMode ? 'table' : 'opponent'"
+        [label]="player.name + ' battlefield'"
+      ></app-zones>
+      <ng-container *ngIf="!isLocal"
+        ><ng-container *ngTemplateOutlet="zones"></ng-container
+      ></ng-container>
+    </div>
+    <output
+      class="floating-mana"
+      *ngIf="mana.length"
+      [attr.aria-label]="player.name + ' available mana'"
+    >
+      <span *ngFor="let pip of mana; trackBy: trackMana">{{ pip.color }} {{ pip.count }}</span>
+    </output>
+  </div>
+  <ng-template #zones>
+    <nav class="zone-rail" [attr.aria-label]="player.name + ' zones'">
+      <button
+        *ngFor="let pile of zonePiles; trackBy: trackZone"
+        class="zone-pile"
+        [class.library]="pile.key === 'library'"
+        [class.exile]="pile.key === 'exile'"
+        [style.--zone-color]="'var(--mana-' + pile.color + ')'"
+        [attr.data-zone]="pile.key"
+        [attr.aria-label]="
+          player.name +
+          ' ' +
+          pile.name +
+          ', ' +
+          pile.count +
+          ' cards' +
+          (pile.top ? ', top card ' + pile.top.name : '')
+        "
+        (click)="zone(pile.key)"
+      >
+        <span class="zone-label"
+          >{{ pile.name }} <b>{{ pile.count }}</b></span
+        >
+        <span class="zone-top" *ngIf="pile.top">{{ pile.top.name.split(',')[0] }}</span>
+        <span class="zone-empty" *ngIf="!pile.top">{{
+          pile.key === 'library' ? 'Face down' : 'Empty'
+        }}</span>
+      </button>
+    </nav>
+  </ng-template>
+  <dialog
+    #details
+    class="player-details"
+    [attr.aria-label]="player.name + ' details'"
+    (cancel)="closeDetails()"
+    (click)="$event.target === details && closeDetails()"
+  >
+    <button (click)="closeDetails()" aria-label="Close player details">×</button>
+    <h2>{{ player.name }}</h2>
+    <p>Seat {{ seat + 1 }} · {{ player.life }} life</p>
+    <p *ngIf="isActive">Active player</p>
+    <p *ngIf="hasPriority">Has priority</p>
+    <p>Poison: {{ player.poisonCounters }}</p>
+    <p>Commander tax: unavailable</p>
+    <p *ngFor="let d of damage; trackBy: trackName">
+      {{ d.name }}: {{ d.count }} / 21 commander damage
+    </p>
+    <p *ngIf="player.commanderName">Commander: {{ player.commanderName }}</p>
+  </dialog>
+</section>

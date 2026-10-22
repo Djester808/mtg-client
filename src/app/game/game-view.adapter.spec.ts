@@ -558,4 +558,33 @@ describe('GameViewAdapter', () => {
     expect(pyre?.announcesVariable).toBe(true);
     expect(pyre?.manaCost).toBe('1R');
   });
+
+  it('keeps a four-player game running when one player is eliminated', () => {
+    const state = adapter.toGameState(
+      view({
+        players: [
+          player({ hasLost: true }),
+          player({ playerId: 'p1' }),
+          player({ playerId: 'p2' }),
+          player({ playerId: 'p3' }),
+        ],
+      }),
+    );
+    expect(state.result).toBe(GameResult.InProgress);
+  });
+  it('uses the explicit engine outcome for a winner while other seats remain', () => {
+    const state = adapter.toGameState(
+      view({ outcome: { winners: ['alice'], draw: false, reason: 'Effect' } }),
+    );
+    expect(state.outcome?.reason).toBe('Effect');
+    expect(state.result).not.toBe(GameResult.InProgress);
+  });
+});
+
+describe('casting offer adaptation', () => {
+  it('preserves server casting offers for public-zone controls', () => {
+    expect(
+      new GameViewAdapter().toGameState(view({ castableCards: ['o9'] })).castableCards,
+    ).toEqual(['o9']);
+  });
 });

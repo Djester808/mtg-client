@@ -1,55 +1,152 @@
-<div class="board" [style.--hand-h.px]="handHeight" *ngIf="vm$ | async as vm">
+<div class="portrait-notice" role="status">
+  <strong>Turn your phone sideways</strong>
+  <p>The game board is designed for landscape.</p>
+</div>
+<div
+  class="board"
+  [class.hand-raised]="!handCollapsed"
+  [class.stack-collapsed]="stackCollapsed"
+  [style.--stack-width.px]="stackCollapsed ? 84 : vm.stackCount > 1 ? 216 : 184"
+  *ngIf="vm$ | async as vm"
+>
   <!-- ====================================================
        TOP BAR
   ==================================================== -->
   <header class="top-bar">
-    <div class="logo">
-      <span class="compleat-brand" role="img" aria-label="Compleat"
-        ><img class="compleat-sigil" src="assets/brand/sigil.png" alt="" /><img
-          class="compleat-wordmark"
-          src="assets/brand/wordmark.png"
-          alt=""
-      /></span>
-    </div>
-
     <div class="center-controls">
-      <app-phase-track></app-phase-track>
+      <strong role="status" *ngIf="outcome$ | async as outcome; else phaseTrack">{{
+        outcome
+      }}</strong>
+      <ng-template #phaseTrack><app-phase-track></app-phase-track></ng-template>
     </div>
 
     <div class="right-controls">
-      <app-priority-indicator></app-priority-indicator>
+      <div
+        class="view-switch"
+        *ngIf="vm.opponents.length > 1 && !breakpoints.isShortViewport()"
+        role="group"
+        aria-label="How opponents are shown"
+      >
+        <button
+          [attr.aria-pressed]="shownOpponentView === 'focus'"
+          (click)="setOpponentView('focus')"
+        >
+          Focus
+        </button>
+        <button
+          [attr.aria-pressed]="shownOpponentView === 'table'"
+          (click)="setOpponentView('table')"
+        >
+          Table
+        </button>
+        <button (click)="followTurn()">Follow turn</button>
+      </div>
+      <button
+        class="board-settings-button"
+        (click)="boardSettings.showModal()"
+        aria-label="Board settings"
+        title="Board settings"
+      >
+        ⚙
+      </button>
     </div>
   </header>
 
-  <!-- ====================================================
-       OPPONENT SIDEBAR
-  ==================================================== -->
-  <aside class="sidebar-col opponent-sidebar">
-    <app-player-sidebar
-      *ngIf="vm.opponent"
-      [player]="vm.opponent"
-      [isLocal]="false"
-      [isActive]="!vm.isActive"
+  <section
+    class="opponents-row"
+    aria-label="Opponents"
+    [class.table-view]="shownOpponentView === 'table' && vm.opponents.length > 1"
+  >
+    <nav
+      class="opponent-rail"
+      *ngIf="shownOpponentView === 'focus' && vm.opponents.length > 1"
+      aria-label="Opponents in turn order"
     >
-    </app-player-sidebar>
-  </aside>
-
-  <!-- ====================================================
-       OPPONENT BATTLEFIELD
-  ==================================================== -->
-  <main class="battlefield-col opponent-field">
-    <app-zones [permanents]="vm.opponentPerms" [isOpponent]="true" label="Opponent Battlefield">
-    </app-zones>
-  </main>
-
+      <button
+        class="rail-step"
+        aria-label="Previous opponent in turn order"
+        (click)="stepOpponent(vm.opponents, vm.focusedId, -1)"
+      >
+        ‹
+      </button>
+      <button
+        *ngFor="let seat of vm.opponents; trackBy: trackSeat"
+        class="opponent-plate"
+        [class.selected]="seat.player.playerId === vm.focusedId"
+        [attr.aria-pressed]="seat.player.playerId === vm.focusedId"
+        (click)="focusOpponent(seat.player.playerId)"
+      >
+        <span class="plate-main"
+          ><strong>{{ seat.player.name }}</strong
+          ><b>{{ seat.player.life }}</b></span
+        >
+        <span class="plate-meta"
+          >Hand {{ seat.player.handCount }} · Commander damage to you {{ seat.damageToYou }}</span
+        >
+        <span class="plate-pills"
+          ><span *ngIf="seat.attackingYou" class="attack-pill">Attacking you</span>
+          <span *ngIf="seat.player.poisonCounters">Poison {{ seat.player.poisonCounters }}</span>
+          <span *ngIf="seat.player.playerId === vm.activePlayerId">Active</span>
+          <span *ngIf="seat.player.hasLost">Eliminated</span></span
+        >
+      </button>
+      <button
+        class="rail-step"
+        aria-label="Next opponent in turn order"
+        (click)="stepOpponent(vm.opponents, vm.focusedId, 1)"
+      >
+        ›
+      </button>
+    </nav>
+    <div class="opponent-boards">
+      <ng-container *ngFor="let seat of vm.opponents; trackBy: trackSeat">
+        <app-table-seat
+          *ngIf="
+            vm.opponents.length === 1 ||
+            shownOpponentView === 'table' ||
+            seat.player.playerId === vm.focusedId
+          "
+          [player]="seat.player"
+          [seat]="seat.seat"
+          [permanents]="seat.permanents"
+          [isActive]="seat.player.playerId === vm.activePlayerId"
+          [hasPriority]="seat.player.playerId === vm.priorityPlayerId"
+          [targeting]="vm.uiMode === 'targeting'"
+          [tableMode]="shownOpponentView === 'table' && vm.opponents.length > 1"
+          [showHeader]="vm.opponents.length === 1 || shownOpponentView === 'table'"
+          (focusSeat)="focusOpponent(seat.player.playerId)"
+          (targetPlayer)="targetPlayer($event)"
+        ></app-table-seat>
+      </ng-container>
+    </div>
+  </section>
   <!-- ====================================================
        STACK PANEL + CARD PREVIEW (spans both halves)
   ==================================================== -->
   <aside class="stack-col">
-    <app-stack></app-stack>
+    <button class="stack-toggle" (click)="toggleStack()" [attr.aria-expanded]="!stackCollapsed">
+      {{ stackCollapsed ? '‹' : '›' }} Stack · {{ vm.stackCount }}
+    </button>
+    <app-stack *ngIf="!stackCollapsed"></app-stack>
+    <div class="stack-priority">
+      <app-priority-indicator
+        *ngIf="!stackCollapsed && (outcome$ | async) === null"
+      ></app-priority-indicator>
+      <button
+        class="action-btn pass"
+        [disabled]="!vm.hasPriority || vm.uiMode !== 'idle' || vm.stopped || !!(outcome$ | async)"
+        (click)="passPriority()"
+      >
+        {{ stackCollapsed ? 'Pass' : 'Pass priority' }}
+      </button>
+    </div>
 
-    <div
+    <dialog
+      #cardDetails
+      (cancel)="closePreview()"
       class="card-preview-panel"
+      role="region"
+      aria-label="Card inspector"
       *ngIf="vm.previewCard"
       [style.width.px]="previewWidth"
       [style.height.px]="previewHeight"
@@ -67,6 +164,7 @@
       <!-- Close button floats over the image -->
       <button
         class="preview-close-btn"
+        aria-label="Close card inspector"
         (mousedown)="$event.stopPropagation()"
         (click)="closePreview()"
       >
@@ -113,35 +211,45 @@
           >
         </div>
       </div>
-    </div>
+    </dialog>
   </aside>
 
-  <!-- ====================================================
-       YOUR BATTLEFIELD
-  ==================================================== -->
-  <main class="battlefield-col self-field">
-    <app-zones [permanents]="vm.localPerms" [isOpponent]="false" label="Your Battlefield">
-    </app-zones>
-  </main>
-
-  <!-- ====================================================
-       YOUR SIDEBAR
-  ==================================================== -->
-  <aside class="sidebar-col self-sidebar">
-    <app-player-sidebar
-      *ngIf="vm.localPlayer"
-      [player]="vm.localPlayer"
-      [isLocal]="true"
-      [isActive]="vm.isActive"
-    >
-    </app-player-sidebar>
-  </aside>
-
+  <section class="self-table" aria-label="Your battlefield">
+    <ng-container *ngFor="let seat of vm.tableSeats; trackBy: trackSeat"
+      ><app-table-seat
+        *ngIf="seat.isLocal"
+        [player]="seat.player"
+        [seat]="seat.seat"
+        [permanents]="seat.permanents"
+        [isLocal]="true"
+        [isActive]="vm.isActive"
+        [hasPriority]="vm.hasPriority"
+        [targeting]="vm.uiMode === 'targeting'"
+        (targetPlayer)="targetPlayer($event)"
+      ></app-table-seat
+    ></ng-container>
+  </section>
   <!-- ====================================================
        STATUS BAR
   ==================================================== -->
-  <div class="status-bar">
-    <div class="status-message" [innerHTML]="vm.statusMessage"></div>
+  <div
+    class="status-bar"
+    *ngIf="
+      vm.choice ||
+      vm.uiMode !== 'idle' ||
+      vm.showDeclareAttackersBtn ||
+      vm.showDeclareBlockersBtn ||
+      vm.waitingDefenderName
+    "
+  >
+    <div class="status-message" *ngIf="vm.step === 'DeclareBlockers' && vm.waitingDefenderName">
+      {{ vm.waitingDefenderName }}: select blockers, then the attackers they block.
+    </div>
+    <div
+      class="status-message"
+      *ngIf="vm.step !== 'DeclareBlockers' || !vm.waitingDefenderName"
+      [innerHTML]="(outcome$ | async) ? 'Game complete' : vm.statusMessage"
+    ></div>
 
     <div class="status-actions">
       <!-- The decision the game has stopped for. It is the same shape the bar already is — a
@@ -149,7 +257,7 @@
       <ng-container *ngIf="vm.choice as choice">
         <ng-container *ngIf="vm.isMyChoice">
           <button
-            *ngFor="let option of choice.options"
+            *ngFor="let option of choice.options; trackBy: trackId"
             class="action-btn choice"
             [class.is-picked]="
               choice.isDivision ? assigned(option.id) > 0 : pickOrder(option.id) > 0
@@ -165,6 +273,13 @@
             {{ option.label }}
           </button>
 
+          <button
+            *ngIf="choice.minPicks === 0"
+            class="action-btn cancel"
+            (click)="skipChoice(choice)"
+          >
+            {{ choice.kind === 'commander-return' ? 'Leave in current zone' : 'Choose none' }}
+          </button>
           <ng-container *ngIf="choice.maxPicks > 1">
             <button
               class="action-btn confirm"
@@ -220,11 +335,12 @@
            picked by tapping it on either battlefield; a player has no card to tap, so they are
            offered here — as is giving up on the spell. -->
       <ng-container *ngIf="vm.uiMode === 'targeting'">
-        <button class="action-btn choice" (click)="targetPlayer(vm.opponent?.playerId)">
-          {{ vm.opponent?.name || 'Opponent' }}
-        </button>
-        <button class="action-btn choice" (click)="targetPlayer(vm.localPlayer?.playerId)">
-          You
+        <button
+          *ngFor="let seat of vm.tableSeats; trackBy: trackSeat"
+          class="action-btn choice"
+          (click)="targetPlayer(seat.player.playerId)"
+        >
+          {{ seat.isLocal ? 'You' : seat.player.name }}
         </button>
         <button class="action-btn cancel" (click)="cancelTargeting()">Cancel</button>
       </ng-container>
@@ -233,11 +349,25 @@
       <button
         *ngIf="vm.showDeclareAttackersBtn && !vm.stopped"
         class="action-btn combat"
-        (click)="enterAttackMode()"
+        (click)="enterAttackMode(vm.firstOpponentId)"
       >
         Declare Attackers
       </button>
 
+      <label class="defender-choice" *ngIf="vm.uiMode === 'declaring-attackers'"
+        >Attack
+        <select
+          #defender
+          [value]="vm.attackDefenderId ?? vm.firstOpponentId"
+          (change)="setAttackDefender(defender.value)"
+        >
+          <ng-container *ngFor="let seat of vm.tableSeats; trackBy: trackSeat"
+            ><option *ngIf="!seat.isLocal && !seat.player.hasLost" [value]="seat.player.playerId">
+              {{ seat.player.name }}
+            </option></ng-container
+          >
+        </select></label
+      >
       <!-- Confirm / cancel attackers -->
       <ng-container *ngIf="vm.showConfirmAttackersBtn && !vm.stopped">
         <button class="action-btn confirm" (click)="confirmAttackers()">
@@ -261,26 +391,38 @@
         <button class="action-btn cancel" (click)="cancelBlockMode()">Cancel</button>
       </ng-container>
 
-      <button
-        *ngIf="vm.hasPriority && vm.uiMode === 'idle' && !vm.stopped"
-        class="action-btn pass"
-        (click)="passPriority()"
-      >
-        Pass Priority
-      </button>
-
-      <button class="action-btn concede" (click)="concede()">Concede</button>
+      <button *ngIf="(outcome$ | async) === null" class="action-btn concede" (click)="concede()">
+        Concede</button
+      ><a *ngIf="outcome$ | async" class="action-btn" routerLink="/lobby">Return to lobby</a>
     </div>
   </div>
 
+  <dialog
+    #boardSettings
+    class="board-settings-panel"
+    aria-label="Board settings"
+    (click)="$event.target === boardSettings && boardSettings.close()"
+  >
+    <button
+      class="close-settings"
+      (click)="boardSettings.close()"
+      aria-label="Close board settings"
+    >
+      ×
+    </button>
+    <h2>Board settings</h2>
+    <button (click)="concede(); boardSettings.close()">Concede</button>
+    <p>Matching permanents form counted piles. Open a pile to choose an individual card.</p>
+    <a routerLink="/lobby">Return to lobby</a>
+  </dialog>
   <!-- ====================================================
        HAND
   ==================================================== -->
   <div class="hand-row">
-    <div class="hand-resize-handle" (mousedown)="startHandResize($event)">
-      <div class="hand-resize-grip"></div>
-    </div>
-    <app-hand [handHeight]="handHeight"></app-hand>
+    <button class="hand-collapse" (click)="toggleHand()" [attr.aria-expanded]="!handCollapsed">
+      {{ handCollapsed ? 'Raise hand' : 'Lower hand' }}
+    </button>
+    <app-hand [raised]="!handCollapsed"></app-hand>
   </div>
 
   <!-- ====================================================
@@ -288,7 +430,10 @@
        The cards the engine does not play. Pinned over the table rather than placed in the
        grid: the board's track list is the geometry every capture is measured against.
   ==================================================== -->
-  <app-manual-controls [permanents]="vm.manualObjects" [players]="vm.seats"></app-manual-controls>
+  <details class="manual-dock" *ngIf="vm.manualObjects.length">
+    <summary>Manual adjustments · {{ vm.manualObjects.length }}</summary>
+    <app-manual-controls [permanents]="vm.manualObjects" [players]="vm.seats"></app-manual-controls>
+  </details>
 
   <!-- ====================================================
        ATTACK ARROWS
@@ -301,8 +446,7 @@
   <app-zone-viewer *ngIf="vm.zoneViewerOpen"></app-zone-viewer>
 </div>
 
-<!-- Toast notifications (outside board grid) -->
-<app-toast-container></app-toast-container>
+<!-- Toast notifications are rendered once by the application shell. -->
 
 <!-- Concede confirmation modal -->
 <div

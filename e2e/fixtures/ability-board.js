@@ -153,3 +153,37 @@ function abilityFixture() {
 }
 
 module.exports = { abilityFixture, GAME_ID, ALICE };
+
+/** Roomy table capture: every non-local hand stays private; object ids remain unique. */
+function roomyFixture(seats = 4, crowded = false) {
+  const view = { ...base(), ...abilityFixture() };
+  const bob = view.players[1];
+  const bobField = view.battlefield.filter(p => p.controllerId === bob.playerId);
+  for (let i = 2; i < seats; i++) {
+    const playerId = 'roomy-player-' + i;
+    view.players.push({...JSON.parse(JSON.stringify(bob)), playerId,
+      name: i === 2 ? 'Sefa_the_Archivist_of_Lorehold' : 'Tobias', life: 40 - i, hand: null});
+    view.battlefield.push(...bobField.map(p => ({...JSON.parse(JSON.stringify(p)), id:p.id+'-'+i,controllerId:playerId})));
+  }
+  view.activePlayerId = bob.playerId;
+  view.priorityPlayerId = view.viewer;
+  if (seats === 2) view.stack = view.stack.slice(0,1);
+  const creature = view.battlefield.find(p => p.controllerId === view.viewer && p.isCreature);
+  if (creature) {
+    view.battlefield.push({...JSON.parse(JSON.stringify(creature)),id:'roomy-copy',isTapped:false});
+    view.battlefield.push({...JSON.parse(JSON.stringify(creature)),id:'roomy-tapped',isTapped:true});
+    if (crowded) for(let i=0;i<12;i++) view.battlefield.push({...JSON.parse(JSON.stringify(creature)),
+      id:'roomy-overflow-'+i,name:'Legendary creature '+i,oracleId:'roomy-oracle-'+i,isTapped:false});
+  }
+  const me = view.players[0];
+  const sample = me.hand[0];
+  me.graveyard = [
+    {...sample, id:'roomy-gy-new', name:'Swords to Plowshares', colors:['White'], manaCost:'{W}', oracleText:'Exile target creature. Its controller gains life equal to its power.'},
+    {...sample, id:'roomy-gy-old', name:'Nature’s Lore', colors:['Green'], manaCost:'{1}{G}', typeLine:'Sorcery', oracleText:'Search your library for a Forest card, put that card onto the battlefield, then shuffle.'}
+  ];
+  me.graveyardCount = me.graveyard.length;
+  view.exile = [{...sample,id:'roomy-exile',name:'Atraxa, Praetors’ Voice',colors:['White','Blue','Black','Green'],typeLine:'Legendary Creature — Phyrexian Angel Horror',printedPower:4,printedToughness:4}];
+  view.command = [{...sample,id:'roomy-command',name:'The Ur-Dragon',colors:['White','Blue','Black','Red','Green'],typeLine:'Legendary Creature — Dragon Avatar',printedPower:10,printedToughness:10}];
+  return view;
+}
+module.exports.roomyFixture = roomyFixture;

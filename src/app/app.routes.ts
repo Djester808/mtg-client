@@ -206,8 +206,8 @@ export const routes: Routes = [
   // removed. Both are lazy so the game slice is not paid for on every other page.
   {
     path: 'lobby',
-    loadComponent: () => import('./lobby/lobby.component').then((m) => m.LobbyComponent),
-    canActivate: [authGuard],
+    redirectTo: 'play',
+    pathMatch: 'full',
   },
   {
     path: 'game/:gameId',

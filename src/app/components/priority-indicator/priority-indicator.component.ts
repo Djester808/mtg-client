@@ -13,7 +13,11 @@ import { selectHasPriority, selectPriorityPlayerId, selectPlayers } from '../../
     <div class="priority" *ngIf="vm$ | async as vm" [class.has-priority]="vm.hasPriority">
       <div class="dot"></div>
       <span class="label">{{
-        vm.hasPriority ? 'Your Priority' : vm.priorityPlayerName + ' has Priority'
+        vm.hasPriority
+          ? 'Your priority'
+          : vm.priorityPlayerName
+            ? vm.priorityPlayerName + ' has priority'
+            : 'No priority · step action'
       }}</span>
     </div>
   `,
@@ -30,7 +34,7 @@ import { selectHasPriority, selectPriorityPlayerId, selectPlayers } from '../../
         border-radius: 12px;
         background: rgba(90, 82, 72, 0.2);
         border: 1px solid rgba(90, 82, 72, 0.3);
-        transition: all 0.3s;
+        transition: opacity 0.15s;
       }
       .priority.has-priority {
         background: rgba(184, 0, 224, 0.12);
@@ -56,7 +60,9 @@ import { selectHasPriority, selectPriorityPlayerId, selectPlayers } from '../../
         font-size: calc(10px * var(--text-scale, 1));
         color: var(--text-secondary);
         letter-spacing: 0.08em;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
       }
     `,
   ],

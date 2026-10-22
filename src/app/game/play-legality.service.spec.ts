@@ -231,4 +231,45 @@ describe('PlayLegalityService', () => {
     const one = { amounts: { R: 1 }, total: 1 } as never;
     expect(legality.canAfford('{X}{R}', one)).toBe(true);
   });
+  it('does not start another hand action while a target or other choice is pending', () => {
+    const timing: CastingWindow = {
+      isActivePlayer: true,
+      hasPriority: true,
+      inMainPhase: true,
+      stackIsEmpty: true,
+      uiIsIdle: false,
+      hasPlayedLandThisTurn: false,
+    };
+    const pool = { amounts: {}, total: 0 };
+    expect(
+      legality.isCastable(makeCard({ cardTypes: [CardType.Creature], manaCost: '' }), timing, pool),
+    ).toBeFalse();
+    expect(
+      legality.isCastable(makeCard({ cardTypes: [CardType.Land], manaCost: '' }), timing, pool),
+    ).toBeFalse();
+  });
+
+  it('explains the land limit using the same gate as castability', () => {
+    const card = makeCard({ cardTypes: [CardType.Land] });
+    expect(
+      legality.castingProblem(card, window({ hasPlayedLandThisTurn: true }), undefined),
+    ).toContain('already played a land');
+    expect(
+      legality.isCastable(card, window({ hasPlayedLandThisTurn: true }), undefined),
+    ).toBeFalse();
+  });
+  it('explains missing priority before payment', () =>
+    expect(
+      legality.castingProblem(makeCard(), window({ hasPriority: false }), undefined),
+    ).toContain('priority'));
+  it('explains colored mana shortfalls', () =>
+    expect(
+      legality.castingProblem(
+        makeCard({ cardTypes: [CardType.Instant], manaCost: '{R}' }),
+        window(),
+        { amounts: {}, total: 0 },
+      ),
+    ).toContain('required colors'));
+  it('permits a free spell with an absent empty mana pool', () =>
+    expect(legality.canAfford('{0}', undefined)).toBeTrue());
 });

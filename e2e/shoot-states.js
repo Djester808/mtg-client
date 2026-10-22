@@ -12,11 +12,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { By, until } = require('selenium-webdriver');
+const { By, until, Key } = require('selenium-webdriver');
 const { buildDriver } = require('./helpers/driver');
 const { armAiBuildReplay, paceAiBuildReplay } = require('./helpers/ai-build-replay');
 const { armGameReplay } = require('./helpers/game-replay');
-const { abilityFixture, GAME_ID: ABILITY_GAME_ID } = require('./fixtures/ability-board');
+const { roomyFixture, abilityFixture, GAME_ID: ABILITY_GAME_ID } = require('./fixtures/ability-board');
 const { baseUrl, username, password } = require('./config');
 const DEVICES = require('./devices');
 
@@ -242,7 +242,7 @@ async function toAbilityBoard(d) {
 /** Taps the named permanent on the local battlefield. */
 async function tapPermanent(d, name) {
   await d.executeScript(
-    `const hit = [...document.querySelectorAll('.self-field .card-name')]
+    `const hit = [...document.querySelectorAll('.self-table .card-name')]
        .find((n) => n.textContent.trim() === arguments[0]);
      if (!hit) throw new Error('not on the board: ' + arguments[0]);
      hit.closest('.card').click();`,
@@ -259,7 +259,71 @@ async function toOwnedCollection(d,needsCards=false){
 }
 
 /** Each state: navigate, drive it open, then audit the named root element. */
+
+const ROOMY_AUDIT = `return {
+  documentFits:document.documentElement.scrollWidth === innerWidth,
+  playerPanelFits:[...document.querySelectorAll(".player-panel")].every(e=>e.scrollHeight<=e.clientHeight+1),
+  cutOffNames:[...document.querySelectorAll('.flat-card .card-name')].filter(e=>{const r=e.getBoundingClientRect(),p=e.closest('.flat-card').getBoundingClientRect();return e.scrollHeight>e.clientHeight+1||e.scrollWidth>e.clientWidth+1||r.left<p.left-1||r.right>p.right+1||r.top<p.top-1||r.bottom>p.bottom+1;}).map(e=>e.textContent),
+  outOfBounds:[...document.querySelectorAll('.opponent-plate,.flat-card,.more-permanents,.stack-toggle')].filter(e=>{const r=e.getBoundingClientRect();return r.left<0||r.right>innerWidth||r.top<0||r.bottom>innerHeight;}).map(e=>e.getAttribute('aria-label')||e.textContent),
+  smallPrimaryTargets:[...document.querySelectorAll('.rail-step,.opponent-plate,.view-switch button,.stack-priority button,.life-controls button,.zone-rail button,.more-permanents')].filter(e=>{const r=e.getBoundingClientRect();return r.width<44||r.height<44;}).map(e=>e.getAttribute('aria-label')||e.textContent)
+};`;
+async function toRoomyBoard(d,seats,crowded=false) {
+ await armGameReplay(d,roomyFixture(seats,crowded));
+ await d.get(baseUrl+'/game/'+ABILITY_GAME_ID);
+ await d.wait(until.elementLocated(By.css('.self-table .flat-card')),20000);
+ await sleep(500);
+}
+
+
+async function openRoomyZone(d, zone='graveyard') {
+  await toRoomyBoard(d,4);
+  await d.findElement(By.css('.self-table [data-zone="'+zone+'"]')).click();
+  await d.wait(until.elementLocated(By.css('.viewer-backdrop[open]')),5000);
+}
 const STATES = [
+  {id:'board-roomy-text',label:'Board with enlarged text',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,4);await d.executeScript('document.documentElement.style.setProperty("--text-scale","1.6")');}},
+  {id:'board-roomy-hand-options',label:'Hand card options',root:'.board',
+    async drive(d){await toRoomyBoard(d,4);await d.findElement(By.css('.hand-collapse')).click();
+      await d.findElement(By.css('.hand-card-wrapper')).sendKeys(Key.chord(Key.SHIFT,Key.F10));
+      await d.wait(until.elementLocated(By.css('[role="menu"]')),5000);}},
+
+  {id:'board-portrait',label:'Turn phone sideways',root:'.portrait-notice',async drive(d){await armGameReplay(d,roomyFixture(4));await d.get(baseUrl+'/game/'+ABILITY_GAME_ID);await d.wait(until.elementLocated(By.css('.portrait-notice')),20000);}},
+  {id:'board-roomy-zone',label:'Public zone, newest first',root:'.viewer-panel',
+    async drive(d){await openRoomyZone(d);}},
+  {id:'board-roomy-library',label:'Private library count',root:'.viewer-panel',
+    async drive(d){await openRoomyZone(d);await d.findElement(By.css('.viewer-tabs [data-zone="library"]')).click();
+      if(await d.findElements(By.css('.zone-card')).then(x=>x.length))throw Error('Library exposed cards');}},
+  {id:'board-roomy-exile',label:'Exile tab',root:'.viewer-panel',
+    async drive(d){await openRoomyZone(d);await d.findElement(By.css('.viewer-tabs [data-zone="exile"]')).click();}},
+  {id:'board-roomy-details',label:'Details over zone modal',root:'.card-preview-panel',
+    async drive(d){await openRoomyZone(d);await d.findElement(By.css('.zone-card')).click();
+      await d.wait(until.elementLocated(By.css('.card-preview-panel[open]')),5000);
+      if(!await d.findElement(By.css('.viewer-backdrop')).getAttribute('open'))throw Error('Zone closed during inspection');}},
+  {id:'board-roomy-zone-return',label:'Escape restores focus to zone pile',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await openRoomyZone(d);await d.actions().sendKeys(Key.ESCAPE).perform();
+      await d.wait(async()=>!(await d.findElements(By.css('.viewer-backdrop'))).length,5000);
+      if(!await d.executeScript('return document.activeElement.matches(".self-table [data-zone=graveyard]")'))throw Error('Pile focus not restored');}},
+  {id:'board-roomy-hand-raised',label:'Raised hand, keyboard and pointer reorder',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,4);await d.findElement(By.css('.hand-collapse')).click();
+      const first=await d.findElement(By.css('.hand-card-wrapper')).getAttribute('aria-label');
+      await d.findElement(By.css('.hand-card-wrapper')).sendKeys(Key.chord(Key.ALT,Key.ARROW_RIGHT));
+      if(await d.findElement(By.css('.hand-card-wrapper')).getAttribute('aria-label')===first)throw Error('Keyboard reorder failed');
+      await d.executeScript('const cards=[...document.querySelectorAll(".hand-card-wrapper")];const a=cards[0].getBoundingClientRect(),b=cards[1].getBoundingClientRect();cards[0].dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,button:0,pointerId:1,clientX:a.x+10,clientY:a.y+10}));document.dispatchEvent(new PointerEvent("pointermove",{bubbles:true,pointerId:1,clientX:b.x+10,clientY:b.y+10}));document.dispatchEvent(new PointerEvent("pointerup",{bubbles:true,pointerId:1}));');
+      if(await d.findElement(By.css('.hand-card-wrapper')).getAttribute('aria-label')!==first)throw Error('Pointer reorder failed');
+    }},
+
+
+  ...[[2,'focus'],[3,'focus'],[4,'focus'],[3,'table'],[4,'table']].map(([seats,mode])=>({
+    id:'board-roomy-'+seats+'-'+mode, label:'Roomy board '+seats+' players '+mode,root:'.board',
+    extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,seats);if(mode==='table' && await d.executeScript('return innerHeight>480'))await d.findElement(By.css('.view-switch button:nth-child(2)')).click();}
+  })),
+  {id:'board-roomy-stack-hidden',label:'Roomy hidden stack with Pass',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,4);await d.findElement(By.css('.stack-toggle')).click();}},
+  {id:'board-roomy-more',label:'Roomy battlefield overflow list',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,4,true);await d.findElement(By.css('.self-table .more-permanents')).click();}},
+
  {id:'explore-directory',label:'Commander directory filters',root:'app-commander-directory',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/community/explore');await skipFeatureIntro(d);await d.wait(until.elementLocated(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')),20000);await d.findElement(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')).click();await d.wait(until.elementLocated(By.css('app-commander-directory .directory-rows a')),60000);}},
  {id:'explore-insights',label:'Detailed community insights',root:'app-explore-insights',async drive(d){await ensureSignedIn(d);const id=await d.executeAsyncScript("const done=arguments[0];fetch('/api/cards/by-name?name=Atraxa%2C%20Praetors%27%20Voice',{headers:{Authorization:'Bearer '+localStorage.getItem('auth_token')}}).then(r=>r.json()).then(c=>done(c.oracleId)).catch(()=>done(null))");if(!id)throw Error('Commander fixture unavailable');await d.get(baseUrl+'/explore/commanders/'+id);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('app-explore-insights summary')),60000);await d.findElement(By.css('app-explore-insights summary')).click();}},
  {id:'deck-mana-analysis',label:'Mana analysis panel',root:'app-mana-suggest-panel',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/deck/'+process.env.E2E_DECK_ID);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('button[title="Mana analysis"]')),15000);await d.findElement(By.css('button[title="Mana analysis"]')).click();await d.wait(until.elementLocated(By.css('app-mana-suggest-panel')),10000);}},
@@ -283,8 +347,8 @@ const STATES = [
     label: 'Game board — a permanent with abilities on it',
     root: '.board',
     extra: `return {
-      permanents: document.querySelectorAll('.self-field .permanents-row .card').length,
-      lands: document.querySelectorAll('.self-field .lands-row .card').length,
+      permanents: document.querySelectorAll('.self-table [data-area="creatures"] .card').length,
+      lands: document.querySelectorAll('.self-table [data-area="lands"] .card').length,
       handCards: document.querySelectorAll('.hand-cards .card').length,
       zoneLabels: [...document.querySelectorAll('.zone-label')].map((z) => z.textContent.trim()),
       statusActions: [...document.querySelectorAll('.status-actions button')].map((b) =>
@@ -334,6 +398,34 @@ const STATES = [
            .find((b) => b.textContent.includes('Remove X')).click();`,
       );
       await sleep(600);
+    },
+  },
+  {
+    id: 'board-card-options',
+    label: 'Game board — a card’s options menu',
+    root: '.card-options',
+    // The menu is placed at the pointer, so what can go wrong is the edge: opened on a card at
+    // the right of the hand it has to stay on the screen, and both items must stay touchable.
+    extra: `const menu = document.querySelector('app-card-options-menu .card-options');
+      const box = menu && menu.getBoundingClientRect();
+      return {
+        items: [...document.querySelectorAll('.card-options [role=menuitem]')].map((b) =>
+          b.textContent.trim(),
+        ),
+        menuBox: box ? { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width), h: Math.round(box.height) } : null,
+        onScreen: !!box && box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight,
+      };`,
+    async drive(d) {
+      await toAbilityBoard(d);
+      await d.executeScript(
+        `const cards = document.querySelectorAll('.hand-cards .hand-card-wrapper');
+         const card = cards[cards.length - 1];
+         if (!card) throw new Error('no card in hand to open options on');
+         const r = card.getBoundingClientRect();
+         card.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.right - 4, clientY: r.top + 8 }));`,
+      );
+      await d.wait(until.elementLocated(By.css('app-card-options-menu .card-options')), 5000);
+      await sleep(300);
     },
   },
   // ---- The honour system ------------------------------------------------------------------
@@ -1142,6 +1234,9 @@ function parseArgs(argv) {
 
 async function freshStateDriver(device,dpr) {
     const d = await buildDriver({ device, dpr });
+    if(device.id === 'board-desktop') await d.sendDevToolsCommand('Emulation.setDeviceMetricsOverride', {
+      width:device.width,height:device.height,deviceScaleFactor:dpr ?? device.dpr,mobile:false
+    });
     // Each document opens the branded intro and makes its application content inert.
     // Finish that transition before a state types into or clicks its controls.
     const navigate=d.get.bind(d);

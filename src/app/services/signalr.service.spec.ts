@@ -65,29 +65,19 @@ describe('SignalRService target kinds', () => {
   });
 });
 
-/**
- * The shape of a hub call, argument for argument.
- *
- * SignalR binds hub arguments by position and does not fill in a server-side default for one the
- * client left off, so a hub method that grows a parameter stops accepting the old call entirely.
- * That is invisible from every other kind of test here: the in-process hub tests on the server
- * call the method in C#, where the default *does* apply, and everything on this side stops at the
- * service boundary. On the board it showed up as a spell that stayed in hand with no refusal and
- * no line in the game log, because the invocation never reached the method.
- */
-describe('SignalRService hub arity', () => {
+/** Verify the public service boundary against the server's single Command endpoint. */
+describe('SignalRService engine commands', () => {
   let service: SignalRService;
   const sent: unknown[][] = [];
-
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideMockStore()] });
     service = TestBed.inject(SignalRService);
-
     sent.length = 0;
     (service as unknown as { latest: GameView }).latest = {
-      viewer: 'alice',
-      players: [{ playerId: 'alice' }],
-      stack: [],
+      viewer: 'p0',
+      players: [{ playerId: 'p0' }, { playerId: 'p1' }, { playerId: 'p2' }],
+      stack: [{ id: 'o9' }],
+      choice: { id: 'c4' },
     } as unknown as GameView;
     (service as unknown as { gameId: string }).gameId = 'game-1';
     (service as unknown as { hub: unknown }).hub = {
@@ -99,114 +89,97 @@ describe('SignalRService hub arity', () => {
       stop: () => Promise.resolve(),
     };
   });
-
-  it('sends CastSpell every argument the hub declares', async () => {
-    await service.castSpell('card-1', []);
-
-    // name, gameId, cardId, targets, X, options — the options slot is sent even when nothing
-    // was chosen, because leaving it off is not "the default", it is a failed invocation.
+  const command = () => {
     expect(sent.length).toBe(1);
-    expect(sent[0][0]).toBe('CastSpell');
-    expect(sent[0].length).toBe(6);
-    expect(sent[0][5]).toBeNull();
+    expect(sent[0].slice(0, 2)).toEqual(['Command', 'game-1']);
+    expect(sent[0].length).toBe(3);
+    return sent[0][2];
+  };
+  it('sends a cast with separated object/player targets and announced X', async () => {
+    await service.castSpell('o7', ['p1', 'o9', 'o8'], 4);
+    expect(command()).toEqual({
+      kind: 'cast',
+      card: 7,
+      faceIndex: 0,
+      targets: [9, 8],
+      targetPlayers: [1],
+      modes: null,
+      x: 4,
+      costChoices: null,
+    });
   });
-
-  it('passes the options through when a cost was chosen', async () => {
-    await service.castSpell('card-1', [], 0, { kicked: true });
-
-    expect(sent[0][5]).toEqual({ kicked: true });
+  it('sends the engine ability index and chosen X', async () => {
+    await service.activateAbility('o6', '2', ['p2'], 3);
+    expect(command()).toEqual({
+      kind: 'activate',
+      source: 6,
+      abilityIndex: 2,
+      targets: [],
+      targetPlayers: [2],
+      modes: null,
+      x: 3,
+      costChoices: null,
+    });
   });
-
-  it('sends the announced X rather than a hardcoded zero (CR 601.2b)', async () => {
-    // The zero was written into the call itself, so every cast succeeded and every X spell was
-    // cast for nothing — Harvest Pyre exiling no cards and dealing no damage — while the engine
-    // charged the announced number correctly the whole time.
-    await service.castSpell('card-1', [], 4);
-
-    expect(sent[0][4]).toBe(4);
+  it('preserves separate defending players for attackers', async () => {
+    await service.declareAttackers(['o5', 'o6'], { o5: 'p1', o6: 'p2' });
+    expect(command()).toEqual({
+      kind: 'attack',
+      attacks: [
+        { attacker: 5, defendingPlayer: 1, defendingPermanent: null },
+        { attacker: 6, defendingPlayer: 2, defendingPermanent: null },
+      ],
+    });
   });
-
-  it('sends ActivateAbility every argument the hub declares', async () => {
-    await service.activateAbility('perm-1', 'mana');
-
-    // name, gameId, permanentId, abilityId, targets, X — the number slot is sent even for an
-    // ability that asks for nothing, because a hub call binds by position and the server does
-    // not fill in what was left off.
-    expect(sent.length).toBe(1);
-    expect(sent[0][0]).toBe('ActivateAbility');
-    expect(sent[0].length).toBe(6);
-    expect(sent[0][5]).toBe(0);
+  it('flattens blocker assignments without losing multiple blockers', async () => {
+    await service.declareBlockers({ o5: 'o8', o6: 'o8' });
+    expect(command()).toEqual({
+      kind: 'block',
+      blocks: [
+        { attacker: 8, blocker: 5 },
+        { attacker: 8, blocker: 6 },
+      ],
+    });
   });
-
-  it('passes the chosen number through for a cost that asks for one', async () => {
-    await service.activateAbility('perm-1', 'a', [], 3);
-
-    expect(sent[0][5]).toBe(3);
+  it('answers the current choice', async () => {
+    await service.choose(['keep']);
+    expect(command()).toEqual({ kind: 'answer', choice: 4, answer: ['keep'] });
   });
-
-  // ---- The honour system's four commands ------------------------------------------------
-  //
-  // These are the ones most at risk of the positional bug, because three of their four
-  // arguments are values a caller would naturally leave off: a position that only a library
-  // cares about, a tapped flag that only the battlefield does, a delta of one. Every one of
-  // them is sent — null included — and counted here.
-
-  it('sends ManualMove every argument the hub declares', async () => {
-    await service.manualMove('obj-1', 'Graveyard');
-
-    // name, gameId, objectId, zone, position, tapped. The two trailing slots are filled with the
-    // engine's own defaults — `int Position = -1, bool Tapped = false` — rather than with null: a
-    // JSON null arriving at a non-nullable parameter fails the invocation exactly as an omitted
-    // argument does, so "send everything" cannot be honoured by sending a null into a slot that
-    // cannot hold one.
-    expect(sent.length).toBe(1);
-    expect(sent[0][0]).toBe('ManualMove');
-    expect(sent[0].length).toBe(6);
-    expect(sent[0][4]).toBe(-1);
-    expect(sent[0][5]).toBeFalse();
+  it('sends manual movement defaults as values', async () => {
+    await service.manualMove('o7', 'Graveyard');
+    expect(command()).toEqual({
+      kind: 'manualMove',
+      object: 7,
+      to: { zone: 'Graveyard', player: 0 },
+      position: -1,
+      tapped: false,
+    });
   });
-
-  it('still sends a null a caller passed on purpose rather than dropping the argument', async () => {
-    await service.manualMove('obj-1', 'Exile', null, null);
-
-    // Whether the hub types these nullable is the hub's to say; swallowing an argument here is
-    // the bug this whole section exists for.
-    expect(sent[0].length).toBe(6);
-    expect(sent[0][4]).toBeNull();
-    expect(sent[0][5]).toBeNull();
+  it('retains explicit library position and tapped state', async () => {
+    await service.manualMove('o7', 'Library', 0, true);
+    expect(command()).toEqual({
+      kind: 'manualMove',
+      object: 7,
+      to: { zone: 'Library', player: 0 },
+      position: 0,
+      tapped: true,
+    });
   });
-
-  it('sends the position and the tapped flag a move was given', async () => {
-    await service.manualMove('obj-1', 'Library', 0, false);
-
-    expect(sent[0].slice(2)).toEqual(['obj-1', 'Library', 0, false]);
+  it('sends manual tapping including false', async () => {
+    await service.manualTap('o7', false);
+    expect(command()).toEqual({ kind: 'manualTap', object: 7, tapped: false });
   });
-
-  it('sends ManualTap every argument the hub declares', async () => {
-    await service.manualTap('obj-1', true);
-
-    // name, gameId, objectId, tapped. `false` is a value here, not an omission — untapping is
-    // the same command with the other answer.
-    expect(sent[0][0]).toBe('ManualTap');
-    expect(sent[0].length).toBe(4);
-    expect(sent[0][3]).toBeTrue();
+  it('separates the counter name from the command discriminator', async () => {
+    await service.manualCounters('o7', '+1/+1', -2);
+    expect(command()).toEqual({
+      kind: 'manualCounters',
+      object: 7,
+      counterKind: '+1/+1',
+      delta: -2,
+    });
   });
-
-  it('sends ManualCounters every argument the hub declares', async () => {
-    await service.manualCounters('obj-1', '+1/+1', -2);
-
-    // name, gameId, objectId, kind, delta.
-    expect(sent[0][0]).toBe('ManualCounters');
-    expect(sent[0].length).toBe(5);
-    expect(sent[0].slice(2)).toEqual(['obj-1', '+1/+1', -2]);
-  });
-
-  it('sends ManualLife every argument the hub declares', async () => {
-    await service.manualLife('bob', -3);
-
-    // name, gameId, targetPlayerId, delta — any seat's life, not only the caller's.
-    expect(sent[0][0]).toBe('ManualLife');
-    expect(sent[0].length).toBe(4);
-    expect(sent[0].slice(2)).toEqual(['bob', -3]);
+  it('sends a chosen player life adjustment', async () => {
+    await service.manualLife('p2', -3);
+    expect(command()).toEqual({ kind: 'manualLife', target: 2, delta: -3 });
   });
 });

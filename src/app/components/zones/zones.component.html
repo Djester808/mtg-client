@@ -1,62 +1,123 @@
 <div
   class="battlefield"
   [class.opponent]="isOpponent"
-  [class.drop-target]="!isOpponent && dropActive"
   *ngIf="ui$ | async as ui"
-  (click)="onBattlefieldClick()"
   (dragover)="onZoneDragOver($event)"
   (dragleave)="onZoneDragLeave()"
   (drop)="onZoneDrop($event)"
 >
-  <div class="zone-label">{{ label }}</div>
-
-  <!-- Creatures + non-land permanents -->
-  <div class="permanents-row">
-    <ng-container *ngFor="let p of nonCreatureNonLand; trackBy: trackByPermanent">
-      <app-card
-        [permanent]="p"
-        [isSelected]="ui.selectedPermId === p.permanentId"
-        [isAttacking]="isAttacking(p.permanentId, ui.combat)"
-        [isBlocking]="isBlocking(p.permanentId, ui.combat)"
-        [isPendingAttacker]="isPendingAttacker(p.permanentId, ui.pendingAttackers)"
-        (click)="$event.stopPropagation()"
-        (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
-        (hoverEnter)="onCardHover($event)"
-        (hoverLeave)="onCardHoverLeave()"
+  <section
+    *ngFor="let row of rows; trackBy: trackRow"
+    class="arrange-area"
+    [attr.data-area]="row.id"
+    [attr.aria-label]="row.id === 'support' ? 'Other permanents' : row.id"
+    [style.min-height.px]="row.height"
+    [style.gap.px]="row.gap"
+  >
+    <div
+      *ngFor="let tile of row.tiles; trackBy: trackTile"
+      class="card-pile"
+      [style.width.px]="tile.slotWidth"
+      [style.height.px]="row.height"
+    >
+      <button
+        class="flat-card card"
+        [class.land]="tile.kind === 'land'"
+        [class.land-chip]="tile.kind === 'chip'"
+        [class.tapped]="tile.tapped"
+        [class.attacking]="isAttacking(tile.id, ui.combat)"
+        [class.selected]="
+          ui.selectedPermId === tile.id ||
+          ui.blocker === tile.id ||
+          isPendingAttacker(tile.id, ui.pendingAttackers)
+        "
+        [class.targetable]="ui.mode === 'targeting'"
+        [style.width.px]="tile.width"
+        [style.height.px]="tile.height"
+        [style.--frame-color]="'var(--mana-' + tile.color + ')'"
+        [attr.data-permanent-id]="tile.id"
+        [attr.aria-label]="
+          tile.name + ', ' + tile.count + ' copies' + (tile.tapped ? ', tapped' : '')
+        "
+        (click)="
+          $event.stopPropagation();
+          tile.cards.length > 1 || tile.kind === 'chip'
+            ? showList(tile.cards, tile.name)
+            : onCardClick(
+                tile.cards[0],
+                ui.mode,
+                ui.isActive,
+                ui.pendingAttackers,
+                ui.blocker,
+                ui.canAct
+              )
+        "
+        (contextmenu)="openOptions($event, tile.cards[0])"
+        (keydown)="arrangeKey($event, tile.cards[0])"
+        (mouseenter)="onCardHover(tile.cards[0].sourceCard)"
+        (mouseleave)="onCardHoverLeave()"
       >
-      </app-card>
-    </ng-container>
-
-    <ng-container *ngFor="let p of creatures; trackBy: trackByPermanent">
-      <app-card
-        [permanent]="p"
-        [isSelected]="ui.selectedPermId === p.permanentId"
-        [isAttacking]="isAttacking(p.permanentId, ui.combat)"
-        [isBlocking]="isBlocking(p.permanentId, ui.combat)"
-        [isPendingAttacker]="isPendingAttacker(p.permanentId, ui.pendingAttackers)"
-        (click)="$event.stopPropagation()"
-        (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
-        (hoverEnter)="onCardHover($event)"
-        (hoverLeave)="onCardHoverLeave()"
+        <span class="card-name" [style.font-size.px]="tile.nameFontSize">{{ tile.name }}</span>
+        <span class="card-subtype" *ngIf="tile.subtype">{{ tile.subtype }}</span>
+        <span class="card-foot">
+          <span class="card-badge" *ngIf="isAttacking(tile.id, ui.combat); else otherBadge"
+            >Attacking</span
+          >
+          <ng-template #otherBadge
+            ><span class="card-badge" *ngIf="tile.badge">{{ tile.badge }}</span></ng-template
+          >
+          <b class="card-stats" *ngIf="tile.stats">{{ tile.stats }}</b>
+        </span>
+        <b class="pile-count" *ngIf="tile.count > 1">×{{ tile.count }}</b>
+      </button>
+    </div>
+    <button
+      *ngIf="row.hiddenCount"
+      class="more-permanents"
+      (click)="showList(row.hidden, 'More permanents')"
+      [attr.aria-label]="row.hiddenCount + ' more permanents. Open the list.'"
+    >
+      <b>+{{ row.hiddenCount }}</b
+      ><span>more</span>
+    </button>
+  </section>
+  <dialog
+    #permanentList
+    class="permanent-list"
+    aria-label="Battlefield permanents"
+    (cancel)="closeList()"
+    (click)="$event.target === permanentList && closeList()"
+  >
+    <header>
+      <h2>{{ listTitle }}</h2>
+      <button (click)="closeList()" aria-label="Close permanent list">×</button>
+    </header>
+    <div class="list-grid">
+      <button
+        *ngFor="let p of listCards; trackBy: trackByPermanent"
+        class="list-card"
+        (click)="
+          $event.stopPropagation();
+          onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers, ui.blocker, ui.canAct);
+          closeList()
+        "
+        (contextmenu)="openOptions($event, p)"
+        (keydown)="arrangeKey($event, p)"
       >
-      </app-card>
-    </ng-container>
-  </div>
-
-  <div class="zone-divider"></div>
-
-  <!-- Lands -->
-  <div class="lands-row">
-    <ng-container *ngFor="let p of lands; trackBy: trackByPermanent">
-      <app-card
-        [permanent]="p"
-        [isSelected]="ui.selectedPermId === p.permanentId"
-        (click)="$event.stopPropagation()"
-        (clicked)="onCardClick(p, ui.mode, ui.isActive, ui.pendingAttackers)"
-        (hoverEnter)="onCardHover($event)"
-        (hoverLeave)="onCardHoverLeave()"
-      >
-      </app-card>
-    </ng-container>
-  </div>
+        <strong>{{ p.sourceCard.name }}</strong>
+        <span>{{ p.isTapped ? 'Tapped' : 'Untapped' }}</span>
+        <span *ngIf="p.effectivePower !== null"
+          >{{ p.effectivePower }}/{{ p.effectiveToughness }}</span
+        >
+        <span>{{ p.sourceCard.oracleText }}</span>
+      </button>
+    </div>
+  </dialog>
+  <app-card-options-menu
+    *ngIf="contextCard"
+    [x]="contextX"
+    [y]="contextY"
+    (inspect)="inspectContext()"
+    (dismiss)="dismissOptions()"
+  ></app-card-options-menu>
 </div>

@@ -54,6 +54,9 @@ export const UIActions = createActionGroup({
 
     // Attacker declaration mode
     'Enter Attack Mode': emptyProps(),
+    'Set Attack Defender': props<{ playerId: string }>(),
+    'Select Blocker': props<{ permanentId: string | null }>(),
+    'Remove Blocker': props<{ permanentId: string }>(),
     'Toggle Attacker': props<{ permanentId: string }>(),
     'Confirm Attackers': emptyProps(),
     'Cancel Attack Mode': emptyProps(),
@@ -68,7 +71,10 @@ export const UIActions = createActionGroup({
     'Hover Card': props<{ card: CardDto | null }>(),
 
     // Graveyard / exile viewer
-    'Open Zone Viewer': props<{ playerId: string; zone: 'graveyard' | 'exile' }>(),
+    'Open Zone Viewer': props<{
+      playerId: string;
+      zone: 'graveyard' | 'exile' | 'command' | 'library' | 'hand';
+    }>(),
     'Close Zone Viewer': emptyProps(),
   },
 });

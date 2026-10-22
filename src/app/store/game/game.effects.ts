@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
-import { tap, switchMap, map, catchError, of, withLatestFrom, filter } from 'rxjs';
+import { tap, exhaustMap, switchMap, map, catchError, of, withLatestFrom, filter } from 'rxjs';
 import { GameActions } from './game.actions';
 import { UIActions } from '../ui/ui.actions';
 import { AppState } from '..';
@@ -11,6 +11,7 @@ import { SignalRService } from '../../services/signalr.service';
 import { GameApiService } from '../../services/game-api.service';
 import {
   selectPendingAttackers,
+  selectPendingAttackTargets,
   selectPendingBlockers,
   selectPendingTargets,
   selectTargetCount,
@@ -110,7 +111,11 @@ export class GameEffects {
       this.actions$.pipe(
         ofType(GameActions.declareAttackers),
         withLatestFrom(this.store.select(selectPendingAttackers)),
-        tap(([{ attackerIds }]) => this.signalr.declareAttackers(attackerIds)),
+        tap(([{ attackerIds, defenders }]) =>
+          defenders
+            ? this.signalr.declareAttackers(attackerIds, defenders)
+            : this.signalr.declareAttackers(attackerIds),
+        ),
       ),
     { dispatch: false },
   );
@@ -129,8 +134,15 @@ export class GameEffects {
   confirmAttackers$ = createEffect(() =>
     this.actions$.pipe(
       ofType(UIActions.confirmAttackers),
-      withLatestFrom(this.store.select(selectPendingAttackers)),
-      map(([, attackerIds]) => GameActions.declareAttackers({ attackerIds })),
+      withLatestFrom(
+        this.store.select(selectPendingAttackers),
+        this.store.select(selectPendingAttackTargets),
+      ),
+      map(([, attackerIds, defenders]) =>
+        GameActions.declareAttackers(
+          Object.keys(defenders).length ? { attackerIds, defenders } : { attackerIds },
+        ),
+      ),
     ),
   );
 
@@ -148,7 +160,17 @@ export class GameEffects {
     () =>
       this.actions$.pipe(
         ofType(GameActions.concede),
-        tap(() => this.signalr.concede()),
+        exhaustMap(async () => {
+          try {
+            await this.signalr.concede();
+            await this.signalr.disconnect();
+            localStorage.removeItem('mtg_session');
+            await this.router.navigate(['/lobby']);
+          } catch {
+            // The transport reports the error. Preserve the table so the player can retry.
+            return;
+          }
+        }),
       ),
     { dispatch: false },
   );

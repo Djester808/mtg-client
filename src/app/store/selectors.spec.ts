@@ -1,5 +1,11 @@
-import { selectPreviewCard } from './selectors';
-import { PlayerStateDto, PermanentDto, CardDto } from '../models/game.models';
+import { selectPreviewCard, selectAnnouncement } from './selectors';
+import {
+  PlayerStateDto,
+  PermanentDto,
+  CardDto,
+  StackObjectDto,
+  StackObjectType,
+} from '../models/game.models';
 import {
   makeCard,
   makePlayer,
@@ -19,12 +25,14 @@ function makePermanent(permanentId: string, sourceCard: CardDto): PermanentDto {
 }
 
 describe('selectPreviewCard', () => {
-  const projector = (selectPreviewCard as any).projector as (
+  const projector = (
     player: PlayerStateDto | null,
     cardId: string | null,
     battlefield: PermanentDto[],
     permId: string | null,
-  ) => CardDto | null;
+    players: PlayerStateDto[] = [],
+    stack: StackObjectDto[] = [],
+  ) => selectPreviewCard.projector(player, cardId, battlefield, permId, players, stack);
 
   it('returns null when nothing is selected', () => {
     expect(projector(null, null, [], null)).toBeNull();
@@ -89,5 +97,51 @@ describe('selectPreviewCard', () => {
 
     expect(projector(player, 'c2', [], null)).toBe(card2);
     expect(projector(player, 'c3', [], null)).toBe(card3);
+  });
+
+  it('finds authorized public-zone cards across all seats', () => {
+    const card = makeCard({ cardId: 'public-card' });
+    for (const zone of ['graveyard', 'exile', 'command'] as const) {
+      const owner = makePlayer([], { playerId: 'p3', [zone]: [card] });
+      expect(projector(null, card.cardId, [], null, [owner])).toBe(card);
+    }
+  });
+  it('does not inspect an opponent private hand through the public-zone lookup', () => {
+    const secret = makeCard({ cardId: 'secret-card' }),
+      opponent = makePlayer([secret], { playerId: 'p3' });
+    expect(projector(null, secret.cardId, [], null, [opponent])).toBeNull();
+  });
+
+  it('inspects the visible spell on the stack', () => {
+    const card = makeCard({ cardId: 'stack-card' }),
+      spell: StackObjectDto = {
+        stackObjectId: 'stack-card',
+        type: StackObjectType.Spell,
+        controllerId: 'p0',
+        sourceCardName: card.name,
+        description: '',
+        targets: [],
+        sourceCard: card,
+      };
+    expect(projector(null, 'stack-card', [], null, [], [spell])).toBe(card);
+  });
+});
+
+describe('command spell announcement', () => {
+  it('names a command-zone source and preserves its rules and target count', () => {
+    const card = makeCard({
+      cardId: 'leader',
+      name: 'Variable Commander',
+      oracleText: 'Choose X.',
+    });
+    const ui = {
+      announceSourceId: 'leader',
+      announceAbilityId: null,
+      announceTargetCount: 2,
+    } as any;
+    const result = selectAnnouncement.projector(ui, [], makePlayer([], { command: [card] }));
+    expect(result?.sourceName).toBe('Variable Commander');
+    expect(result?.abilityText).toBe('Choose X.');
+    expect(result?.targetCount).toBe(2);
   });
 });

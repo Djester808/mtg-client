@@ -20,6 +20,10 @@ export interface AttackTarget {
 }
 
 export interface GameView {
+  castableCards?: string[];
+  outcome?: { winners: string[]; draw: boolean; reason: string } | null;
+  defendingPlayerIds?: string[];
+  blockersDeclaredBy?: string[];
   gameId: string;
   /** The player this view was built for. */
   viewer: string;
@@ -210,12 +214,20 @@ export interface CostChoiceView {
 }
 
 export interface ObjectView {
+  announcedObjectTargets?: string[];
+  announcedPlayerTargets?: string[];
+  targetCount?: number;
+  effectivePower?: number | null;
+  effectiveToughness?: number | null;
+  keywords?: string[];
+  isToken?: boolean;
   id: string;
   /** What it can be asked to do. Absent on anything with nothing to activate. */
   abilities?: AbilityView[];
   name: string;
   oracleId: string;
   controllerId: string;
+  ownerId?: string;
   manaCost: string | null;
   typeLine: string | null;
   /** What the card does, so a player can read it instead of knowing it. */

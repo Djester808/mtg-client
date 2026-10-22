@@ -1,278 +1,48 @@
 @use '../../styles/detail-page' as *;
 @use '../../styles/add-controls' as *;
 @use '../../styles/breakpoints' as *;
-
 :host {
   display: block;
   height: 100%;
-  // 100% rather than 100vw: vw includes the scrollbar gutter, which is the commonest way a
-  // layout ends up a few pixels wider than the document it sits in.
   width: 100%;
   overflow: hidden;
-
-  // The sizes this board was drawn against. They were on :root until the commit that removed
-  // the engine UI replaced them with clamp()-based ones for the collection and deck grids that
-  // came after. Scoped here so the board gets its own geometry back and those grids keep
-  // theirs.
   --card-w: 100px;
   --card-h: 140px;
-  --card-w-hand: 88px;
-  --card-h-hand: 123px;
   --card-radius: 20px;
-
-  // A phone gets smaller cards rather than fewer of them. The battlefield is a layout the app
-  // computed, not one the player arranged, so it reflows to fit (mtg-client/CLAUDE.md) — and it
-  // can only reflow into something usable if a row holds more than two cards.
-  @include upto($bp-phone) {
-    --card-w: 62px;
-    --card-h: 87px;
-    --card-w-hand: 58px;
-    --card-h-hand: 81px;
-    --card-radius: 10px;
-  }
 }
-
 .board {
   display: grid;
-  grid-template-columns: 180px 1fr 220px;
-  // Only the hand's height is a runtime value — the player drags it — so it arrives as a custom
-  // property and the rest of the track list lives here, where a media query can reach it.
-  grid-template-rows: 64px 1fr 1fr 44px var(--hand-h, 160px);
   height: 100%;
   width: 100%;
   position: relative;
-
-  // ---- Phone: one column, in reading order --------------------------------------------
-  //
-  // The three-column desktop grid asks for 400px of fixed side columns, which is more than a
-  // 375px screen has in total; the middle column collapsed and `overflow: hidden` swallowed the
-  // evidence. Stacked, the halves of the table sit in the order they are read across one — the
-  // opponent above, you below — with each player's numbers next to their own half.
-  @include upto($bp-phone) {
-    // `minmax(0, 1fr)`, not `1fr`: a grid item's automatic minimum is its min-content, so one
-    // row of un-wrapped cards was widening the single column to 810px on a 375px screen. The
-    // children below are told the same thing, because the floor has to be lifted on both.
-    grid-template-columns: minmax(0, 1fr);
-
-    // The hand is draggable and remembers 400px from the desktop it was dragged on, which on a
-    // phone leaves nothing for the table — both battlefields measured 0px tall. It keeps the
-    // drag and gains a ceiling.
-    // A battlefield half must be at least a card tall, or the row it draws is clipped and the
-    // measurements still pass. Everything else is sized to leave that room.
-    grid-template-rows:
-      auto auto minmax(96px, 1fr) minmax(96px, 1fr)
-      auto auto min(var(--hand-h, 132px), 22vh);
-
-    > * {
-      min-width: 0;
-    }
-  }
 }
-
-// ---- Top bar ----------------------------------------------
-
 .top-bar {
-  grid-column: 1 / -1;
-  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-
-  @include upto($bp-phone) {
-    // The wordmark is the first thing to go: the turn and the phase are what the row is for.
-    // It needs a real height as well — `auto` plus `overflow: hidden` collapsed it to 9px and
-    // took whose turn it is off the screen entirely, which every measurement happily passed.
-    // Tall enough for both lines it wraps to: whose turn it is, and the step track under it.
-    min-height: 64px;
-    padding: 3px 8px;
-    gap: 6px;
-    // `nowrap` children in a flex row will happily paint past the edge unless the row is
-    // allowed to give, which is how the priority pill ended up off-screen.
-    flex-wrap: wrap;
-    justify-content: center;
-    overflow: hidden;
-
-    .logo {
-      display: none;
-    }
-  }
-  background: var(--bg-deep);
-  border-bottom: 1px solid var(--border-dim);
   z-index: 10;
 }
-
-.logo {
-  font-family: var(--font-display);
-  font-size: calc(13px * var(--text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  color: var(--accent-text);
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
 .center-controls {
   display: flex;
   align-items: center;
   gap: 20px;
-
-  @include upto($bp-phone) {
-    gap: 8px;
-    min-width: 0;
-    flex-wrap: wrap;
-    justify-content: center;
-    // The phase labels hang below their pips, so the row keeps the space they need. Removing
-    // this let the priority pill wrap up into them and sit on top of "CMB".
-    padding-bottom: 12px;
-  }
-  // Extra bottom padding so phase pip labels don't clip
   padding-bottom: 10px;
 }
-
 .right-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   flex-shrink: 0;
-
-  @include upto($bp-phone) {
-    gap: 6px;
-    // It may shrink here; keeping it rigid is what pushed it past the right edge.
-    flex-shrink: 1;
-    min-width: 0;
-  }
 }
-
-// ---- Sidebars ---------------------------------------------
-
-.sidebar-col {
-  background: var(--bg-deep);
-  border-right: 1px solid var(--border-dim);
-
-  @include upto($bp-phone) {
-    border-right: none;
-  }
-
-  &.self-sidebar {
-    grid-column: 1;
-    grid-row: 3;
-    border-top: 1px solid var(--border-dim);
-
-    // Inside the compound selector, not beside it: a media query adds no specificity, so a
-    // phone rule written on `.sidebar-col` alone loses to `.sidebar-col.self-sidebar` and the
-    // desktop column placement survives — which is what put this grid back to three columns.
-    @include upto($bp-phone) {
-      grid-column: 1;
-      grid-row: 5;
-    }
-  }
-
-  &.opponent-sidebar {
-    grid-column: 1;
-    grid-row: 2;
-
-    @include upto($bp-phone) {
-      grid-column: 1;
-      grid-row: 2;
-      border-bottom: 1px solid var(--border-dim);
-    }
-  }
-}
-
-// ---- Battlefields -----------------------------------------
-
-.battlefield-col {
-  @include upto($bp-phone) {
-    // A board can hold more permanents than a phone has height for. The rows reflow across and
-    // then this half scrolls, rather than the page growing and pushing the hand off-screen.
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-width: 0;
-  }
-
-  &.opponent-field {
-    grid-column: 2;
-    grid-row: 2;
-    border-bottom: 1px solid var(--border-dim);
-
-    @include upto($bp-phone) {
-      grid-column: 1;
-      grid-row: 3;
-    }
-  }
-
-  &.self-field {
-    grid-column: 2;
-    grid-row: 3;
-    border-top: 1px solid var(--border-dim);
-
-    @include upto($bp-phone) {
-      grid-column: 1;
-      grid-row: 4;
-    }
-  }
-}
-
-// ---- Stack ------------------------------------------------
-
 .stack-col {
-  grid-column: 3;
-  grid-row: 2 / 4;
-  background: var(--bg-deep);
-  border-left: 1px solid var(--border-dim);
   position: relative;
-  overflow: visible;
-
-  // There is no room for a third column on a phone, and the stack is the one thing you must be
-  // able to read before deciding whether to respond. It becomes a sheet over the table, sitting
-  // above the status bar so the buttons that answer it stay reachable.
-  @include upto($bp-phone) {
-    grid-column: 1;
-    grid-row: 3 / 5;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 30;
-    max-height: 46%;
-    overflow-y: auto;
-    border-left: none;
-    border-top: 1px solid var(--border-dim);
-    box-shadow: 0 -8px 24px rgb(0 0 0 / 45%);
-    // The panel inside draws nothing when the stack is empty, and an empty sheet must not sit
-    // over the table catching taps.
-    pointer-events: none;
-
-    app-stack {
-      pointer-events: auto;
-    }
-  }
 }
-
-// ---- Status bar -------------------------------------------
-
 .status-bar {
-  grid-column: 1 / -1;
-  grid-row: 4;
-
-  @include upto($bp-phone) {
-    grid-row: 6;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 6px;
-    padding: 6px 10px;
-  }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  background: var(--bg-deep);
-  border-top: 1px solid var(--border-dim);
-  border-bottom: 1px solid var(--border-dim);
-  gap: 16px;
 }
-
+.hand-row {
+  display: flex;
+  flex-direction: column;
+}
 .status-message {
   font-size: calc(11px * var(--text-scale, 1));
   color: var(--text-secondary);
@@ -474,58 +244,6 @@
     outline: none;
     border-color: var(--gold);
   }
-}
-
-// ---- Hand row ---------------------------------------------
-
-.hand-row {
-  grid-column: 1 / -1;
-  grid-row: 5;
-
-  @include upto($bp-phone) {
-    grid-row: 7;
-    // Wide content scrolls inside its own container; it never widens the page.
-    overflow: hidden;
-
-    .hand-resize-handle {
-      // Dragging the hand taller is a mouse gesture, and there is no room to spend on it here.
-      display: none;
-    }
-  }
-  display: flex;
-  flex-direction: column;
-  overflow: visible;
-  position: relative;
-}
-
-.hand-resize-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 10px;
-  cursor: ns-resize;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover .hand-resize-grip,
-  &:active .hand-resize-grip {
-    opacity: 0.8;
-    width: 48px;
-  }
-}
-
-.hand-resize-grip {
-  width: 32px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--border-lit);
-  opacity: 0.3;
-  transition:
-    opacity 0.2s,
-    width 0.2s;
 }
 
 // ---- Card preview panel (sticky, in stack column) ---------
@@ -840,5 +558,539 @@ $rc: 18px;
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+.board {
+  grid-template-columns: minmax(0, 1fr) var(--stack-width, 216px);
+  grid-template-rows: 44px minmax(0, 1fr) 320px var(--hand-h, 64px);
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+.top-bar {
+  grid-column: 1/-1;
+  grid-row: 1;
+  min-width: 0;
+  padding: 0 10px;
+  gap: 10px;
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
+.top-bar .center-controls {
+  min-width: 0;
+}
+.top-bar .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.view-switch {
+  display: flex;
+}
+.view-switch button,
+.board-settings-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.view-switch button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.view-switch button:first-child {
+  border-radius: 7px 0 0 7px;
+}
+.view-switch button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+.opponents-row {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+.opponent-rail {
+  display: flex;
+  gap: 8px;
+  flex: none;
+  min-width: 0;
+}
+.opponent-plate {
+  flex: 1;
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.opponent-plate.selected {
+  border-color: var(--accent-text);
+  background: var(--bg-raised);
+}
+.plate-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.plate-main strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.plate-main b {
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.plate-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.plate-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 10px;
+}
+.plate-pills span {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0 5px;
+}
+.plate-pills .attack-pill {
+  border-color: var(--mana-R);
+  color: var(--text-primary);
+}
+.rail-step {
+  width: 44px;
+  flex: none;
+  min-height: 44px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 24px;
+  cursor: pointer;
+}
+.opponent-boards {
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+}
+.opponent-boards app-table-seat {
+  flex: 1;
+  min-width: 0;
+}
+.self-table {
+  grid-column: 1;
+  grid-row: 3;
+  min-width: 0;
+  min-height: 0;
+}
+.self-table app-table-seat {
+  height: 100%;
+}
+.stack-col {
+  grid-column: 2;
+  grid-row: 2/5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+}
+.stack-toggle {
+  min-height: 44px;
+  flex: none;
+  width: 100%;
+  padding: 4px;
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.stack-collapsed .stack-toggle {
+  flex: 1;
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stack-priority {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 12px;
+}
+.stack-priority .action-btn {
+  min-height: 44px;
+  padding: 6px 2px;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.stack-priority .action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.status-bar {
+  grid-column: 1;
+  grid-row: 4;
+  min-height: 0;
+  max-height: 110px;
+  overflow: auto;
+  padding: 0 6px;
+  border: 0;
+  gap: 6px;
+}
+.status-actions .action-btn {
+  min-height: 44px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.status-message {
+  font-size: 12px;
+}
+.hand-row {
+  grid-column: 1;
+  grid-row: 4;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.hand-collapse {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 5;
+  min-height: 44px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.card-preview-panel {
+  z-index: 100;
+}
+.card-preview-panel:has(.preview-card-fallback) .preview-stats {
+  opacity: 1;
+}
+.card-preview-panel .ps-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.2;
+}
+.board-settings-panel {
+  width: min(360px, 94vw);
+  padding: 20px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+.board-settings-panel::backdrop {
+  background: color-mix(in srgb, var(--bg-void) 80%, transparent);
+}
+.board-settings-panel h2 {
+  font-size: 18px;
+}
+.board-settings-panel p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.board-settings-panel button {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+}
+.close-settings {
+  float: right;
+}
+.manual-dock {
+  position: absolute;
+  right: calc(var(--stack-width, 216px) + 24px);
+  bottom: calc(var(--hand-h, 100px) + 56px);
+  z-index: 90;
+}
+.manual-dock summary {
+  min-height: 44px;
+  padding: 8px 10px;
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  font-size: 11px;
+}
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@include touch {
+  .card-preview-panel .preview-stats {
+    opacity: 1;
+  }
+}
+
+.status-bar {
+  position: absolute;
+  left: 12px;
+  right: calc(var(--stack-width, 216px) + 24px);
+  bottom: calc(var(--hand-h, 64px) + 24px);
+  z-index: 95;
+  background: var(--bg-raised);
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+@include short-viewport {
+  .board-settings-panel {
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+  }
+}
+
+.hand-row {
+  overflow: visible;
+  z-index: 96;
+}
+.board {
+  --hand-h: 64px;
+}
+.hand-raised .hand-row {
+  z-index: 110;
+}
+.portrait-notice {
+  display: none;
+}
+.card-preview-panel {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+}
+.card-preview-panel::backdrop {
+  background: color-mix(in srgb, var(--bg-void) 55%, transparent);
+}
+.card-preview-panel .preview-stats {
+  opacity: 1;
+}
+@include short-viewport {
+  .board {
+    --stack-width: 96px !important;
+    --hand-h: 34px;
+    grid-template-rows: 26px minmax(0, 1fr) 160px 34px;
+    gap: 6px;
+    padding: 6px;
+    height: 100dvh;
+  }
+  .board.stack-collapsed {
+    --stack-width: 64px !important;
+  }
+  .top-bar {
+    padding: 0 4px;
+    gap: 4px;
+    border-radius: 5px;
+  }
+  .board-settings-button {
+    min-height: 26px;
+    height: 26px;
+    min-width: 32px;
+    padding: 0 6px;
+  }
+  .opponents-row {
+    gap: 4px;
+  }
+  .opponent-rail {
+    gap: 4px;
+  }
+  .opponent-plate {
+    min-height: 44px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font: inherit;
+  }
+  .plate-main strong {
+    font-size: 10px;
+  }
+  .plate-main b {
+    font-size: 16px;
+  }
+  .plate-main {
+    gap: 3px;
+  }
+  .plate-meta {
+    display: none;
+  }
+  .plate-pills {
+    font-size: 9px;
+  }
+  .rail-step {
+    width: 28px;
+    min-height: 44px;
+    font-size: 20px;
+  }
+  .opponent-boards {
+    gap: 6px;
+  }
+  .stack-col {
+    padding: 5px;
+    gap: 5px;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .stack-col app-stack {
+    overflow: auto;
+    min-height: 0;
+  }
+  .stack-toggle {
+    min-height: 30px;
+    font-size: 10px;
+    border-radius: 4px;
+  }
+  .stack-priority {
+    gap: 3px;
+    padding-top: 4px;
+    flex: none;
+  }
+  .stack-priority .action-btn {
+    min-height: 34px;
+    font-size: 10px;
+  }
+  .hand-collapse {
+    top: 0;
+    min-height: 34px;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  .manual-dock {
+    right: 110px;
+    bottom: 42px;
+  }
+  .manual-dock summary {
+    min-height: 24px;
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+  .status-bar {
+    left: 6px;
+    right: 108px;
+    bottom: 44px;
+    max-height: 160px;
+  }
+  .card-preview-panel {
+    inset: 6px 6px 6px auto !important;
+    width: 280px !important;
+    height: auto !important;
+    border-radius: 8px;
+    overflow: auto;
+  }
+  .card-preview-panel .preview-img,
+  .card-preview-panel .preview-card-fallback,
+  .card-preview-panel .rh {
+    display: none;
+  }
+  .card-preview-panel .preview-stats {
+    position: static;
+    max-height: none;
+    height: auto;
+    background: var(--bg-raised);
+    padding: 48px 16px 16px;
+    transform: none;
+  }
+  .card-preview-panel .preview-close-btn {
+    width: 44px;
+    height: 44px;
+    z-index: 2;
+  }
+}
+@include upto($bp-phone) {
+  .portrait-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    background: var(--bg-void);
+    color: var(--text-primary);
+  }
+  .portrait-notice strong {
+    font-size: 24px;
+  }
+  .portrait-notice p {
+    color: var(--text-secondary);
+    margin-top: 12px;
+  }
+  .board {
+    visibility: hidden;
+  }
+  @include short-viewport {
+    .portrait-notice {
+      display: none;
+    }
+    .board {
+      visibility: visible;
+    }
+  }
+}
+
+.card-preview-panel .preview-close-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.card-preview-panel .preview-stats {
+  padding-top: 52px;
+  justify-content: flex-start;
+}
+@include short-viewport {
+  .stack-priority .action-btn {
+    min-height: 44px;
+  }
+  .rail-step {
+    width: 44px;
   }
 }

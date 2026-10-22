@@ -1,0 +1,397 @@
+@use '../../styles/breakpoints' as *;
+:host {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+.table-seat {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  gap: 12px;
+  color: var(--text-primary);
+}
+.seat-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  gap: 6px;
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
+.local .seat-field {
+  padding: 12px;
+}
+.seat-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  min-width: 0;
+}
+app-zones {
+  flex: 1;
+  min-width: 0;
+}
+.player-panel {
+  width: 160px;
+  flex: none;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  font-size: 12px;
+  overflow: auto;
+}
+button {
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.player-name {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  min-height: 44px;
+}
+.life-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+.life-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  border-radius: 7px;
+  font-size: 20px;
+}
+.life {
+  font-size: 36px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.player-panel p {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.priority-tag {
+  color: var(--accent-text);
+  font-size: 11px;
+}
+.seat-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  text-align: left;
+  min-height: 44px;
+  flex: none;
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+}
+.seat-heading .life {
+  font-size: 22px;
+}
+.seat-heading .player-name {
+  min-height: 0;
+}
+.table-mode .seat-heading {
+  background: var(--bg-raised);
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+.table-mode .seat-heading .player-name {
+  flex: 1 1 60%;
+}
+.zone-rail {
+  width: 136px;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-content: center;
+}
+.zone-rail button {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  padding: 3px 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--bg-raised);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.zone-rail b {
+  font-size: 18px;
+  line-height: 1.2;
+}
+.player-panel .zone-rail {
+  width: 100%;
+}
+.table-mode .seat-body {
+  flex-direction: column;
+  gap: 6px;
+}
+.table-mode .zone-rail {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+.commander-damage {
+  border-top: 1px solid var(--border-dim);
+  padding-top: 5px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.commander-damage p {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.floating-mana {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+}
+.player-details {
+  width: min(360px, 94vw);
+  padding: 20px;
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.player-details::backdrop {
+  background: color-mix(in srgb, var(--bg-void) 80%, transparent);
+}
+.player-details button {
+  float: right;
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+}
+
+dialog {
+  margin: auto;
+}
+
+.zone-pile {
+  border-top: 3px solid var(--zone-color) !important;
+  min-height: 60px !important;
+}
+.zone-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 3px;
+}
+.zone-label b {
+  font-size: 14px;
+}
+.zone-top,
+.zone-empty {
+  font-size: 10px;
+  line-height: 1.15;
+}
+.zone-empty {
+  color: var(--text-secondary);
+}
+.zone-pile.library {
+  background: var(--bg-void);
+  border: 1px solid var(--accent-text) !important;
+  box-shadow: inset 0 0 0 3px var(--bg-raised);
+}
+.zone-pile.exile {
+  border-style: dashed !important;
+}
+@include short-viewport {
+  .table-seat {
+    gap: 6px;
+  }
+  .player-panel {
+    width: 84px;
+    padding: 4px;
+    gap: 2px;
+  }
+  .player-panel > .player-name {
+    min-height: 22px;
+    font-size: 11px;
+  }
+  .player-panel .priority-tag,
+  .player-panel > p,
+  .commander-damage {
+    display: none;
+  }
+  .life-controls {
+    gap: 0;
+  }
+  .life-controls button {
+    min-width: 22px;
+    min-height: 26px;
+    font-size: 16px;
+  }
+  .life-controls .life {
+    font-size: 22px;
+  }
+  .seat-field,
+  .local .seat-field {
+    padding: 6px;
+    gap: 4px;
+    border-radius: 7px;
+  }
+  .seat-body {
+    gap: 6px;
+  }
+  .seat-heading {
+    min-height: 22px;
+    font-size: 10px;
+    gap: 4px;
+    padding: 0;
+  }
+  .seat-heading .life {
+    font-size: 16px;
+  }
+  .seat-heading .player-name {
+    font-size: 11px;
+  }
+  .zone-rail {
+    width: 140px;
+    gap: 3px;
+  }
+  .zone-rail .zone-pile {
+    min-height: 32px !important;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .zone-label {
+    font-size: 9px;
+  }
+  .zone-label b {
+    font-size: 12px;
+  }
+  .zone-top,
+  .zone-empty {
+    font-size: 9px;
+  }
+  .player-panel .zone-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .player-panel .zone-label {
+    flex-direction: column;
+    gap: 0;
+    font-size: 8px;
+  }
+  .player-panel .zone-top,
+  .player-panel .zone-empty {
+    display: none;
+  }
+  .floating-mana {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 9px;
+  }
+  .player-details {
+    max-height: calc(100dvh - 16px);
+    overflow: auto;
+  }
+}
+
+/* Preserve the prototype's fixed player panel without losing the fourth pile or damage. */
+.seat-field {
+  position: relative;
+}
+.player-panel {
+  padding: 8px;
+  gap: 2px;
+}
+.player-panel > .player-name {
+  min-height: 22px;
+}
+.player-panel > p {
+  font-size: 10px;
+  margin: 0;
+}
+.zone-label {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.zone-label b {
+  display: block;
+  font-size: 14px;
+  line-height: 1.1;
+}
+.zone-top,
+.zone-empty {
+  font-size: 9px;
+  line-height: 1.1;
+}
+.zone-rail .zone-pile {
+  padding: 3px 4px;
+  min-height: 56px !important;
+}
+.commander-damage {
+  padding-top: 3px;
+}
+.commander-damage p {
+  margin: 0;
+  font-size: 10px;
+}
+@include short-viewport {
+  .player-panel {
+    padding: 4px;
+    overflow: visible;
+  }
+  .player-panel .zone-pile {
+    min-height: 34px !important;
+    padding: 2px;
+  }
+  .player-panel .zone-label {
+    font-size: 8px;
+    white-space: nowrap;
+  }
+  .zone-rail .zone-pile {
+    min-height: 32px !important;
+  }
+  .seat-body > .zone-rail .zone-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+  }
+  .floating-mana {
+    bottom: 4px;
+    right: 4px;
+  }
+}

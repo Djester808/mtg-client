@@ -53,3 +53,10 @@ $tap-min: 44px;
     @content;
   }
 }
+
+/// Compact game surfaces on short landscape viewports.
+@mixin short-viewport {
+  @media (max-height: 480px) {
+    @content;
+  }
+}

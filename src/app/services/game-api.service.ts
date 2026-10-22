@@ -1,3 +1,4 @@
+import { EngineSnapshot, snapshotView } from '../game/engine-transport';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
@@ -75,7 +76,8 @@ export class GameApiService {
    * viewer is, which the old response carried as `playerId` and the new view names itself.
    */
   joinGame(gameId: string, _playerToken: string): Observable<JoinGameResponse> {
-    return this.http.get<GameView>(`${this.base}/games/${gameId}`).pipe(
+    return this.http.get<GameView | EngineSnapshot>(`${this.base}/games/${gameId}`).pipe(
+      map(snapshotView),
       map((view) => ({
         gameId: view.gameId,
         playerToken: _playerToken,
@@ -86,9 +88,10 @@ export class GameApiService {
   }
 
   getGameState(gameId: string): Observable<GameStateDto> {
-    return this.http
-      .get<GameView>(`${this.base}/games/${gameId}`)
-      .pipe(map((view) => this.adapter.toGameState(view)));
+    return this.http.get<GameView | EngineSnapshot>(`${this.base}/games/${gameId}`).pipe(
+      map(snapshotView),
+      map((view) => this.adapter.toGameState(view)),
+    );
   }
   private readonly base = '/api';
 

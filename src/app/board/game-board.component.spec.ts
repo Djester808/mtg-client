@@ -183,24 +183,13 @@ describe('GameBoardComponent', () => {
       expect(store.dispatch).toHaveBeenCalledWith(GameActions.concede());
     });
 
-    it('confirmConcede() disconnects SignalR', () => {
-      component.confirmConcede();
-
-      expect(signalr.disconnect).toHaveBeenCalled();
-    });
-
-    it('confirmConcede() removes session from localStorage', () => {
-      component.confirmConcede();
-
-      expect(localStorage.getItem('mtg_session')).toBeNull();
-    });
-
-    it('confirmConcede() navigates to lobby', () => {
+    it('confirmConcede() keeps the connection and session until the command finishes', () => {
+      localStorage.setItem('mtg_session', 'game-session');
       spyOn(router, 'navigate');
-
       component.confirmConcede();
-
-      expect(router.navigate).toHaveBeenCalledWith(['/']);
+      expect(signalr.disconnect).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(localStorage.getItem('mtg_session')).toBe('game-session');
     });
 
     it('onEscapeKey() closes the modal when it is open', () => {
@@ -211,18 +200,25 @@ describe('GameBoardComponent', () => {
       expect(component.showConcedeModal).toBeFalse();
     });
 
-    it('onEscapeKey() does nothing when modal is closed', () => {
+    it('onEscapeKey() closes the card inspector when the concede modal is closed', () => {
       component.showConcedeModal = false;
       spyOn(store, 'dispatch');
 
       component.onEscapeKey();
 
-      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(store.dispatch).toHaveBeenCalledOnceWith(UIActions.deselectCard());
     });
   });
 
   // ---- closePreview / passPriority / combat ---------------
 
+  it('allows declining an optional choice and refuses skipping a required one', () => {
+    const dispatch = spyOn(store, 'dispatch');
+    component.skipChoice({ minPicks: 1 } as ChoiceDto);
+    expect(dispatch).not.toHaveBeenCalled();
+    component.skipChoice({ minPicks: 0 } as ChoiceDto);
+    expect(dispatch).toHaveBeenCalledOnceWith(GameActions.choose({ picks: [] }));
+  });
   describe('answering the game (CR 103.4, 510.1c, 603.3b)', () => {
     // The engine this board now talks to stops and asks things the old one never did. A board
     // that cannot answer sits on "Waiting for the other player" forever — which is exactly what
@@ -500,5 +496,19 @@ describe('GameBoardComponent', () => {
     component.confirmAnnounce();
 
     expect(spy).toHaveBeenCalledWith(UIActions.confirmAnnounce({ value: 0 }));
+  });
+
+  it('switches Focus/Table, steps in circular turn order and keeps Pass available when collapsed', async () => {
+    await setup();
+    component.setOpponentView('table');
+    expect(component.opponentView).toBe('table');
+    component.stepOpponent([{ player: { playerId: 'a' } }, { player: { playerId: 'b' } }], 'a', -1);
+    expect(component.opponentView).toBe('focus');
+    component.toggleStack();
+    expect(component.stackCollapsed).toBeTrue();
+    const dispatch = spyOn(store, 'dispatch');
+    component.passPriority();
+    expect(dispatch).toHaveBeenCalledWith(GameActions.passPriority());
+    component.followTurn();
   });
 });

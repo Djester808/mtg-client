@@ -11,6 +11,7 @@ import {
   selectUIMode,
   selectSelectedCardId,
   selectStackIsEmpty,
+  selectChoice,
 } from '../../store/selectors';
 import { GameActions, UIActions } from '../../store';
 import { CardType, ManaColor, Phase, Step } from '../../models/game.models';
@@ -29,6 +30,22 @@ function makeCard(id: string, types: CardType[] = [CardType.Creature], cost = '1
 }
 
 describe('HandComponent', () => {
+  it('withholds land play while a server choice is pending', async () => {
+    store.overrideSelector(selectLocalPlayer, makePlayer([makeCard('land', [CardType.Land], '')]));
+    store.overrideSelector(selectChoice, {
+      id: 'c1',
+      playerId: 'p0',
+      kind: 'commander-return',
+      prompt: 'Return?',
+      minPicks: 0,
+      maxPicks: 1,
+      options: [],
+    } as any);
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(component.orderedCards[0].isCastable).toBeFalse();
+  });
   let component: HandComponent;
   let fixture: ComponentFixture<HandComponent>;
   let store: MockStore;
@@ -49,6 +66,7 @@ describe('HandComponent', () => {
     store.overrideSelector(selectUIMode, 'idle');
     store.overrideSelector(selectSelectedCardId, null);
     store.overrideSelector(selectStackIsEmpty, true);
+    store.overrideSelector(selectChoice, null);
     store.refreshState();
 
     fixture = TestBed.createComponent(HandComponent);
@@ -385,8 +403,10 @@ describe('HandComponent', () => {
   });
 
   it('allows card click after suppression token is consumed', () => {
-    spyOn(store, 'dispatch');
+    const play = spyOn(component, 'onCardDblClick');
     const card = makeCard('c1');
+    const hc = { card, isCastable: true, isSelected: false };
+    component.orderedCards = [hc];
 
     component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
     component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 110 }));
@@ -394,19 +414,21 @@ describe('HandComponent', () => {
     component.onCardClick(card); // consumes suppression
     component.onCardClick(card); // should dispatch
 
-    expect(store.dispatch).toHaveBeenCalledOnceWith(UIActions.selectCard({ cardId: 'c1' }));
+    expect(play).toHaveBeenCalledOnceWith(hc);
   });
 
   it('does not suppress click when mousedown was released without dragging', () => {
-    spyOn(store, 'dispatch');
+    const play = spyOn(component, 'onCardDblClick');
     const card = makeCard('c1');
+    const hc = { card, isCastable: true, isSelected: false };
+    component.orderedCards = [hc];
 
     component.onWrapperMouseDown(new MouseEvent('mousedown', { clientX: 100 }), 'c1');
     component.onDocumentMouseMove(new MouseEvent('mousemove', { clientX: 102 })); // below threshold
     component.onDocumentMouseUp();
     component.onCardClick(card);
 
-    expect(store.dispatch).toHaveBeenCalledWith(UIActions.selectCard({ cardId: 'c1' }));
+    expect(play).toHaveBeenCalledWith(hc);
   });
 
   // ---- Hover suppression during drag ----------------------------------------
@@ -429,12 +451,14 @@ describe('HandComponent', () => {
 
   // ---- Click/double-click dispatches ----------------------------------------
 
-  it('dispatches selectCard on card click', () => {
-    spyOn(store, 'dispatch');
+  it('plays a castable card on primary click', () => {
+    const play = spyOn(component, 'onCardDblClick');
     const card = makeCard('c1');
+    const hc = { card, isCastable: true, isSelected: false };
+    component.orderedCards = [hc];
     component.onCardClick(card);
 
-    expect(store.dispatch).toHaveBeenCalledWith(UIActions.selectCard({ cardId: 'c1' }));
+    expect(play).toHaveBeenCalledWith(hc);
   });
 
   it('dispatches playLand on double-click of castable land', () => {
@@ -493,22 +517,32 @@ describe('HandComponent', () => {
     expect(component.isLand({ card: creature, isCastable: false, isSelected: false })).toBeFalse();
   });
 
-  // ---- cardDims ----------------------------------------
-
-  it('cardDims scales proportionally with handHeight', () => {
-    component.handHeight = 200;
-    const { w, h } = component.cardDims;
-    expect(h).toBe(Math.round(200 * 0.72));
-    expect(w).toBe(Math.round(h * (88 / 123)));
+  it('requests every target announced by the engine rather than forcing one', () => {
+    const card = makeCardBase({
+      cardId: 'two-targets',
+      cardTypes: [CardType.Instant],
+      targetCount: 2,
+    });
+    const dispatch = spyOn(store, 'dispatch');
+    component.onCardDblClick({ card, isCastable: true, isSelected: false });
+    expect(dispatch).toHaveBeenCalledWith(
+      UIActions.enterTargetMode({ sourceCardId: 'two-targets', targetCount: 2 }),
+    );
   });
 
-  it('cardDims clamps minimum card height to 80', () => {
-    component.handHeight = 50;
-    expect(component.cardDims.h).toBe(80);
-  });
-
-  it('cardDims clamps maximum card height to 380', () => {
-    component.handHeight = 700;
-    expect(component.cardDims.h).toBe(380);
+  it('keeps drag ownership with the initiating pointer and clears canceled touch drags', () => {
+    component.onWrapperMouseDown(
+      new PointerEvent('pointerdown', { pointerId: 7, button: 0, clientX: 10 }),
+      'card-1',
+    );
+    component.onDocumentMouseMove(new PointerEvent('pointermove', { pointerId: 8, clientX: 50 }));
+    expect(component.draggingId).toBeNull();
+    component.onDocumentMouseMove(new PointerEvent('pointermove', { pointerId: 7, clientX: 50 }));
+    expect(component.draggingId).toBe('card-1');
+    component.cancelHandDrag(new PointerEvent('pointercancel', { pointerId: 8 }));
+    expect(component.draggingId).toBe('card-1');
+    component.cancelHandDrag(new PointerEvent('pointercancel', { pointerId: 7 }));
+    expect(component.draggingId).toBeNull();
+    expect(document.body.classList.contains('is-dragging-card')).toBeFalse();
   });
 });

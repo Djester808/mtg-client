@@ -43,6 +43,5 @@
   "src/app/forum/forum-list/forum-list.component.scss::.posts-empty::empty-state",
   "src/app/home/home.component.scss::.search-input::filter-field",
   "src/app/home/home.component.scss::.search-shell::detail-shell",
-  "src/app/home/home.component.scss::.set-clear-btn::drawer-close",
-  "src/app/lobby/lobby.component.scss::.lobby-field::filter-field"
+  "src/app/home/home.component.scss::.set-clear-btn::drawer-close"
 ]

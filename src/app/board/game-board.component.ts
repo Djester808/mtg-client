@@ -1,3 +1,4 @@
+import { BreakpointsService } from '../shared/breakpoints.service';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -5,14 +6,21 @@ import {
   HostListener,
   OnInit,
   inject,
+  ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../store';
 import {
   selectLocalPlayer,
+  selectOutcomeSummary,
+  selectTableSeats,
+  selectAttackDefender,
+  selectActivePlayerId,
+  selectPriorityPlayerId,
   selectOpponent,
   selectLocalPermanents,
   selectOpponentPermanents,
@@ -41,12 +49,10 @@ import { CardComponent } from '../components/card/card.component';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { HandComponent } from '../components/hand/hand.component';
 import { StackComponent } from '../components/stack/stack.component';
-import { ZonesComponent } from '../components/zones/zones.component';
-import { PlayerSidebarComponent } from '../components/player-sidebar/player-sidebar.component';
+import { TableSeatComponent } from './table-seat.component';
 import { PhaseTrackComponent } from '../components/phase-track/phase-track.component';
 import { PriorityIndicatorComponent } from '../components/priority-indicator/priority-indicator.component';
 import { ZoneViewerComponent } from '../components/zone-viewer/zone-viewer.component';
-import { ToastContainerComponent } from '../components/toast/toast-container.component';
 import { AttackArrowsComponent } from '../components/attack-arrows/attack-arrows.component';
 import { OracleSymbolsPipe } from '../pipes/oracle-symbols.pipe';
 import { ManualControlsComponent } from './manual-controls.component';
@@ -57,16 +63,15 @@ import { ManualControlsService } from './manual-controls.service';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     CardComponent,
     ManaCostComponent,
     HandComponent,
     StackComponent,
-    ZonesComponent,
-    PlayerSidebarComponent,
+    TableSeatComponent,
     PhaseTrackComponent,
     PriorityIndicatorComponent,
     ZoneViewerComponent,
-    ToastContainerComponent,
     AttackArrowsComponent,
     OracleSymbolsPipe,
     ManualControlsComponent,
@@ -76,6 +81,18 @@ import { ManualControlsService } from './manual-controls.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameBoardComponent implements OnInit {
+  readonly breakpoints = inject(BreakpointsService);
+  get shownOpponentView(): 'focus' | 'table' {
+    return this.breakpoints.isShortViewport() ? 'focus' : this.opponentView;
+  }
+  @ViewChild('cardDetails') set cardDetails(ref: ElementRef<HTMLDialogElement> | undefined) {
+    const dialog = ref?.nativeElement;
+    if (dialog)
+      queueMicrotask(() => {
+        if (dialog.isConnected && !dialog.open) dialog.showModal();
+      });
+  }
+  readonly outcome$ = this.store.select(selectOutcomeSummary);
   /**
    * The picks made so far, in order. An option repeats when the answer is an amount.
    *
@@ -95,6 +112,42 @@ export class GameBoardComponent implements OnInit {
 
   private setPicks(picks: string[]): void {
     this.picks$.next(picks);
+  }
+
+  opponentView: 'focus' | 'table' = 'focus';
+  private readonly focus$ = new BehaviorSubject<string | null>(null);
+  setOpponentView(view: 'focus' | 'table'): void {
+    this.opponentView = view;
+    this.cdr.markForCheck();
+  }
+  focusOpponent(id: string): void {
+    this.opponentView = 'focus';
+    this.focus$.next(id);
+    this.cdr.markForCheck();
+  }
+  followTurn(): void {
+    this.focus$.next(null);
+    this.cdr.markForCheck();
+  }
+  stepOpponent(
+    seats: { player: { playerId: string } }[],
+    current: string | undefined,
+    delta: number,
+  ): void {
+    if (!seats.length) return;
+    const index = seats.findIndex((s) => s.player.playerId === current);
+    this.focusOpponent(seats[(index + delta + seats.length) % seats.length].player.playerId);
+  }
+  toggleStack(): void {
+    this.stackCollapsed = !this.stackCollapsed;
+    this.cdr.markForCheck();
+  }
+  toggleHand(): void {
+    this.handCollapsed = !this.handCollapsed;
+    this.cdr.markForCheck();
+  }
+  trackId(_: number, item: { id: string }): string {
+    return item.id;
   }
 
   vm$ = combineLatest([
@@ -118,6 +171,11 @@ export class GameBoardComponent implements OnInit {
     this.store.select(selectAbilityMenu),
     this.store.select(selectAnnouncement),
     this.picks$,
+    this.store.select(selectTableSeats),
+    this.store.select(selectActivePlayerId),
+    this.store.select(selectPriorityPlayerId),
+    this.store.select(selectAttackDefender),
+    this.focus$,
   ]).pipe(
     map(
       ([
@@ -141,7 +199,39 @@ export class GameBoardComponent implements OnInit {
         abilityMenu,
         announcement,
         picks,
+        tableSeats,
+        activePlayerId,
+        priorityPlayerId,
+        attackDefenderId,
+        focusId,
       ]) => ({
+        focusedId:
+          tableSeats.find((s) => !s.isLocal && s.player.playerId === focusId)?.player.playerId ??
+          tableSeats.find((s) => !s.isLocal && s.player.playerId === activePlayerId)?.player
+            .playerId ??
+          tableSeats.find((s) => !s.isLocal)?.player.playerId,
+        opponents: tableSeats
+          .filter((s) => !s.isLocal)
+          .map((s) => ({
+            ...s,
+            damageToYou: s.player.commanderName
+              ? (localPlayer?.commanderDamage?.[s.player.commanderName] ?? 0)
+              : 0,
+            attackingYou: s.permanents.some(
+              (p) => combat?.attackersToDefenders?.[p.permanentId] === localPlayer?.playerId,
+            ),
+          })),
+        firstOpponentId: tableSeats.find((seat) => !seat.isLocal && !seat.player.hasLost)?.player
+          .playerId,
+        attackDefenderId,
+        waitingDefenderName: tableSeats.find(
+          (s) =>
+            s.player.playerId ===
+            combat?.defendingPlayerIds?.find((id) => !combat.blockersDeclaredBy?.includes(id)),
+        )?.player.name,
+        tableSeats,
+        activePlayerId,
+        priorityPlayerId,
         localPlayer,
         opponent,
         localPerms,
@@ -159,11 +249,9 @@ export class GameBoardComponent implements OnInit {
         isMyChoice,
         abilityMenu,
         announcement,
-        // Both battlefields, for the honour-system panel: a card the engine cannot play is as
-        // often the opponent's as yours, and the players moving it by hand are the same players
-        // either way. The panel keeps only the objects admitted that way.
-        manualObjects: this.manual.bothBattlefields(localPerms, opponentPerms),
-        seats: this.manual.seatsAtTable(localPlayer, opponent),
+        // Manual controls include every visible seat, filtered to objects needing adjustment.
+        manualObjects: this.manual.honourSystem(tableSeats.flatMap((seat) => seat.permanents)),
+        seats: tableSeats.map((seat) => seat.player),
         // Nothing else may happen while the game is waiting to be told something, so the rest
         // of the status bar stands down.
         stopped: !!choice,
@@ -210,22 +298,28 @@ export class GameBoardComponent implements OnInit {
           phase === Phase.Combat &&
           step === Step.DeclareBlockers &&
           uiMode === 'idle' &&
-          !combat?.blockersDeclared,
+          !combat?.blockersDeclared &&
+          (!combat?.defendingPlayerIds ||
+            combat.defendingPlayerIds.find((id) => !combat.blockersDeclaredBy?.includes(id)) ===
+              localPlayer?.playerId),
         showConfirmBlockersBtn:
           uiMode === 'declaring-blockers' &&
           !isActive &&
           phase === Phase.Combat &&
           step === Step.DeclareBlockers &&
-          !combat?.blockersDeclared,
+          !combat?.blockersDeclared &&
+          (!combat?.defendingPlayerIds ||
+            combat.defendingPlayerIds.find((id) => !combat.blockersDeclaredBy?.includes(id)) ===
+              localPlayer?.playerId),
       }),
     ),
   );
 
-  handHeight = 400;
-  private handResizing = false;
-  private handResizeStartY = 0;
-  private handResizeStartH = 0;
-
+  handCollapsed = true;
+  stackCollapsed = false;
+  trackSeat(_: number, seat: { player: { playerId: string } }): string {
+    return seat.player.playerId;
+  }
   // Default dimensions match the MTG card aspect ratio (63 × 88 mm)
   previewWidth = 220;
   previewHeight = 308;
@@ -245,13 +339,6 @@ export class GameBoardComponent implements OnInit {
   private previewDragStartY = 0;
   private previewDragOriginLeft = 0;
   private previewDragOriginTop = 0;
-
-  startHandResize(e: MouseEvent): void {
-    this.handResizing = true;
-    this.handResizeStartY = e.clientY;
-    this.handResizeStartH = this.handHeight;
-    e.preventDefault();
-  }
 
   startPreviewDrag(e: MouseEvent): void {
     // Let clicks on keyword links through — preventDefault() on the preceding
@@ -279,13 +366,8 @@ export class GameBoardComponent implements OnInit {
     e.stopPropagation();
   }
 
-  @HostListener('document:mousemove', ['$event'])
+  @HostListener('document:pointermove', ['$event'])
   onMouseMove(e: MouseEvent): void {
-    if (this.handResizing) {
-      const delta = this.handResizeStartY - e.clientY;
-      this.handHeight = Math.max(100, Math.min(500, this.handResizeStartH + delta));
-      this.cdr.markForCheck();
-    }
     if (this.resizeDir) {
       const dx = e.clientX - this.resizeStartX;
       const dy = e.clientY - this.resizeStartY;
@@ -325,10 +407,9 @@ export class GameBoardComponent implements OnInit {
 
   private suppressNextClick = false;
 
-  @HostListener('document:mouseup')
+  @HostListener('document:pointerup')
   onMouseUp(): void {
     const wasInteracting = this.isInteracting;
-    this.handResizing = false;
     this.resizeDir = null;
     this.previewDragging = false;
     if (wasInteracting) this.suppressNextClick = true;
@@ -440,7 +521,11 @@ export class GameBoardComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  enterAttackMode(): void {
+  setAttackDefender(playerId: string): void {
+    this.store.dispatch(UIActions.setAttackDefender({ playerId }));
+  }
+  enterAttackMode(defender?: string): void {
+    if (defender) this.setAttackDefender(defender);
     this.store.dispatch(UIActions.enterAttackMode());
   }
 
@@ -488,14 +573,12 @@ export class GameBoardComponent implements OnInit {
 
   confirmConcede(): void {
     this.store.dispatch(GameActions.concede());
-    this.signalr.disconnect();
-    localStorage.removeItem('mtg_session');
-    this.router.navigate(['/']);
   }
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
     if (this.showConcedeModal) this.cancelConcede();
+    else this.closePreview();
   }
 
   // ---- Preview helpers ------------------------------------
@@ -538,6 +621,12 @@ export class GameBoardComponent implements OnInit {
 
   submitChoice(): void {
     this.store.dispatch(GameActions.choose({ picks: this.picks }));
+    this.setPicks([]);
+  }
+
+  skipChoice(choice: ChoiceDto): void {
+    if (choice.minPicks !== 0) return;
+    this.store.dispatch(GameActions.choose({ picks: [] }));
     this.setPicks([]);
   }
 

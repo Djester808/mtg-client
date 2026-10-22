@@ -2,6 +2,7 @@ import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { provideMockStore } from '@ngrx/store/testing';
+import { Router } from '@angular/router';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
@@ -43,5 +44,14 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.querySelector('app-navbar')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-toast-container')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('router-outlet')).not.toBeNull();
+  });
+
+  it('gives the real game route the full screen without navigation overlapping the table', () => {
+    spyOnProperty(TestBed.inject(Router), 'url', 'get').and.returnValue('/game/game-1');
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.fullScreen()).toBeTrue();
+    expect(fixture.nativeElement.querySelector('app-navbar')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.app-content.is-full-screen')).not.toBeNull();
   });
 });

@@ -1,0 +1,127 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Desktop-2.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Desktop · 2 players",
+      "w": 1280,
+      "x": 0,
+      "y": 920
+    },
+    "Desktop-3.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Desktop · 3 players · Focus",
+      "w": 1280,
+      "x": 1360,
+      "y": 920
+    },
+    "Desktop-4-Table.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Desktop · 4 players · Table overview",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Desktop · 4 players · Focus (interactive: Players / Opponents switches)",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Phone-2.dc.html": {
+      "h": 375,
+      "is_interactive": true,
+      "title": "Phone landscape · 2 players",
+      "w": 667,
+      "x": 0,
+      "y": 1840
+    },
+    "Phone-3.dc.html": {
+      "h": 375,
+      "is_interactive": true,
+      "title": "Phone landscape · 3 players",
+      "w": 667,
+      "x": 747,
+      "y": 1840
+    },
+    "Phone-4.dc.html": {
+      "h": 375,
+      "is_interactive": true,
+      "title": "Phone landscape · 4 players",
+      "w": 667,
+      "x": 1494,
+      "y": 1840
+    },
+    "Roomy-Desktop-2.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "ROOMY · Desktop · 2 players",
+      "w": 1280,
+      "x": 1360,
+      "y": -1240
+    },
+    "Roomy-Desktop.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "ROOMY · Desktop · 4 players · Focus (Players / Opponents switches work)",
+      "w": 1280,
+      "x": 0,
+      "y": -1240
+    },
+    "Roomy-Phone-4.dc.html": {
+      "h": 375,
+      "is_interactive": true,
+      "title": "ROOMY · Phone landscape · 4 players",
+      "w": 667,
+      "x": 2720,
+      "y": -1240
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-22T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "file": "Roomy-Desktop.dc.html",
+    "view": "focused"
+  },
+  "notes": {
+    "roomy": {
+      "kind": "title1",
+      "maxW": 3387,
+      "text": "Roomy version — compare with the first version below",
+      "w": 240,
+      "x": 0,
+      "y": -1540
+    },
+    "title": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "Compleat table — 2 to 4 players",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Desktop-4-Table.dc.html",
+    "Desktop-2.dc.html",
+    "Desktop-3.dc.html",
+    "Phone-2.dc.html",
+    "Phone-3.dc.html",
+    "Phone-4.dc.html",
+    "Roomy-Desktop.dc.html",
+    "Roomy-Desktop-2.dc.html",
+    "Roomy-Phone-4.dc.html"
+  ],
+  "pages": [],
+  "title": "Compleat Table Prototype"
+}

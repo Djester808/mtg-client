@@ -155,7 +155,9 @@ export const selectAnnouncement = createSelector(
     if (!ui.announceSourceId) return null;
 
     const permanent = battlefield.find((p) => p.permanentId === ui.announceSourceId);
-    const card = player?.hand.find((c) => c.cardId === ui.announceSourceId);
+    const card = [...(player?.hand ?? []), ...(player?.command ?? [])].find(
+      (c) => c.cardId === ui.announceSourceId,
+    );
     const ability = permanent?.abilities.find((a) => a.id === ui.announceAbilityId);
 
     return {
@@ -186,9 +188,18 @@ export const selectPreviewCard = createSelector(
   selectSelectedCardId,
   selectBattlefield,
   selectSelectedPermId,
-  (player, cardId, battlefield, permId) => {
+  selectPlayers,
+  selectStack,
+  (player, cardId, battlefield, permId, players, stack) => {
     if (cardId) {
-      return player?.hand.find((c) => c.cardId === cardId) ?? null;
+      return (
+        player?.hand.find((c) => c.cardId === cardId) ??
+        players
+          .flatMap((p) => [...p.graveyard, ...p.exile, ...(p.command ?? [])])
+          .find((c) => c.cardId === cardId) ??
+        stack.find((o) => o.stackObjectId === cardId)?.sourceCard ??
+        null
+      );
     }
     if (permId) {
       return battlefield.find((p) => p.permanentId === permId)?.sourceCard ?? null;
@@ -196,3 +207,48 @@ export const selectPreviewCard = createSelector(
     return null;
   },
 );
+
+/** Stable circular seats, rotated for presentation only. No hidden state is introduced. */
+export const selectTableSeats = createSelector(
+  selectPlayers,
+  selectBattlefield,
+  selectLocalPlayerId,
+  (players, battlefield, localId) => {
+    const start = players.findIndex((p) => p.playerId === localId);
+    if (start < 0) return [];
+    return players.map((_, offset) => {
+      const seat = (start + offset) % players.length,
+        player = players[seat];
+      return {
+        player,
+        seat,
+        isLocal: offset === 0,
+        permanents: battlefield.filter((p) => p.controllerId === player.playerId),
+      };
+    });
+  },
+);
+
+export const selectPendingAttackTargets = createSelector(
+  selectUIFeature,
+  (s) => s.pendingAttackerTargets ?? {},
+);
+export const selectAttackDefender = createSelector(
+  selectUIFeature,
+  (s) => s.attackDefenderId ?? null,
+);
+export const selectSelectedBlocker = createSelector(
+  selectUIFeature,
+  (s) => s.selectedBlockerId ?? null,
+);
+
+/** Terminal outcome comes from the server; losing one seat does not finish a multiplayer game. */
+export const selectOutcomeSummary = createSelector(selectGameState, (state) => {
+  const outcome = state?.outcome;
+  if (!outcome) return null;
+  return outcome.draw
+    ? 'Game drawn'
+    : outcome.winners
+        .map((id) => state.players.find((p) => p.playerId === id)?.name ?? id)
+        .join(', ') + ' won';
+});

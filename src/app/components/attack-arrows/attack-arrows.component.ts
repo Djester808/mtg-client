@@ -3,6 +3,8 @@ import {
   ElementRef,
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  HostListener,
   OnDestroy,
   NgZone,
 } from '@angular/core';
@@ -85,11 +87,28 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
   height = 0;
 
   private destroy$ = new Subject<void>();
+  private frame: number | null = null;
+  private combat: CombatStateDto | null = null;
+  @HostListener('window:resize')
+  @HostListener('document:pointerup')
+  @HostListener('document:pointermove')
+  geometryChanged(): void {
+    if (this.frame !== null) return;
+    this.frame = requestAnimationFrame(() => {
+      this.frame = null;
+      this.zone.run(() => {
+        this.updateDimensions();
+        this.arrows = this.combat ? this.buildArrows(this.combat) : [];
+        this.cdr.markForCheck();
+      });
+    });
+  }
 
   constructor(
     private store: Store<AppState>,
     private el: ElementRef<HTMLElement>,
     private zone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngAfterViewInit(): void {
@@ -98,9 +117,8 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
     combineLatest([this.store.select(selectCombatState), this.store.select(selectBattlefield)])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([combat]) => {
-        this.zone.run(() => {
-          this.arrows = combat ? this.buildArrows(combat) : [];
-        });
+        this.combat = combat;
+        this.geometryChanged();
       });
   }
 
@@ -131,7 +149,18 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
 
       if ((blockerIds as string[]).length === 0) {
         // Arrow to the top center of the board (opponent player area)
-        arrows.push({ x1, y1, x2: x1, y2: 50, blocked: false });
+        const defender = combat.attackersToDefenders?.[attackerId];
+        const player = defender
+          ? document.querySelector('[data-player-id="' + defender + '"] .player-name')
+          : null;
+        const targetRect = player?.getBoundingClientRect();
+        arrows.push({
+          x1,
+          y1,
+          x2: targetRect ? targetRect.left + targetRect.width / 2 - boardRect.left : x1,
+          y2: targetRect ? targetRect.top + targetRect.height / 2 - boardRect.top : 50,
+          blocked: false,
+        });
       } else {
         for (const blockerId of blockerIds as string[]) {
           const blockerEl = document.querySelector(`[data-permanent-id="${blockerId}"]`);
@@ -153,6 +182,7 @@ export class AttackArrowsComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.frame !== null) cancelAnimationFrame(this.frame);
     this.destroy$.next();
     this.destroy$.complete();
   }

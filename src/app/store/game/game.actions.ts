@@ -33,7 +33,7 @@ export const GameActions = createActionGroup({
     }>(),
     'Untap Land': props<{ permanentId: string }>(),
     'Pass Priority': emptyProps(),
-    'Declare Attackers': props<{ attackerIds: string[] }>(),
+    'Declare Attackers': props<{ attackerIds: string[]; defenders?: Record<string, string> }>(),
     'Declare Blockers': props<{ blockerToAttacker: Record<string, string> }>(),
     'Set Blocker Order': props<{ attackerId: string; orderedBlockerIds: string[] }>(),
     Concede: emptyProps(),

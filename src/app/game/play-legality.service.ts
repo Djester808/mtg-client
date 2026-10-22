@@ -97,6 +97,7 @@ export class PlayLegalityService {
    * implemented yet, so the guess stays until then.
    */
   targetsOnCast(card: CardDto): boolean {
+    if (card.targetCount !== undefined) return card.targetCount > 0;
     const isSpellThatTargets =
       card.cardTypes.includes(CardType.Instant) || card.cardTypes.includes(CardType.Sorcery);
 
@@ -110,22 +111,28 @@ export class PlayLegalityService {
    * stack, once a turn (CR 305.1, 505.6b) — which is why it is its own arm.
    */
   isCastable(card: CardDto, timing: CastingWindow, pool: ManaPoolDto | undefined): boolean {
-    const atSorcerySpeed =
-      timing.isActivePlayer && timing.hasPriority && timing.inMainPhase && timing.stackIsEmpty;
+    return this.castingProblem(card, timing, pool) === null;
+  }
 
-    if (card.cardTypes.includes(CardType.Land)) {
-      return atSorcerySpeed && !timing.hasPlayedLandThisTurn;
+  /** Explain the same predicate used to offer a play; the server remains authoritative. */
+  castingProblem(
+    card: CardDto,
+    timing: CastingWindow,
+    pool: ManaPoolDto | undefined,
+  ): string | null {
+    if (!timing.uiIsIdle) return 'Finish or cancel the current decision first.';
+    if (!timing.hasPriority) return 'Wait until you have priority.';
+    const land = card.cardTypes.includes(CardType.Land);
+    const instant = card.cardTypes.includes(CardType.Instant) || card.keywords.includes('Flash');
+    if (land || !instant) {
+      if (!timing.isActivePlayer || !timing.inMainPhase) return 'Play this during your main phase.';
+      if (!timing.stackIsEmpty) return 'Wait until the stack is empty.';
     }
-
-    // CR 304.1: an instant may be cast whenever its controller has priority. That is true of the
-    // card type itself — only flash grants it to anything else (CR 702.8a). Keying on flash
-    // alone made every instant sorcery-speed, so a Counterspell could not answer anything on the
-    // opponent's turn and combat tricks were unplayable.
-    const atInstantSpeed =
-      card.cardTypes.includes(CardType.Instant) || card.keywords.includes('Flash');
-    const speedOk = atInstantSpeed ? timing.hasPriority && timing.uiIsIdle : atSorcerySpeed;
-
-    return speedOk && this.canAfford(card.manaCost, pool);
+    if (land)
+      return timing.hasPlayedLandThisTurn ? 'You have already played a land this turn.' : null;
+    return this.canAfford(card.manaCost, pool)
+      ? null
+      : 'Add enough mana of the required colors before casting this spell.';
   }
 
   /**
@@ -142,8 +149,8 @@ export class PlayLegalityService {
    * cost as unpayable.
    */
   canAfford(manaCost: string, pool: ManaPoolDto | undefined): boolean {
-    if (!pool) return false;
     if (!manaCost || manaCost === '0' || manaCost === '{0}') return true;
+    if (!pool) return false;
 
     const remaining: Record<string, number> = { ...(pool.amounts as Record<string, number>) };
     let generic = 0;

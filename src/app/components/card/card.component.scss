@@ -1,5 +1,6 @@
 @use '../../../styles/breakpoints' as *;
 :host {
+  --card-radius: clamp(2px, calc(var(--card-w) * 0.05), 6px);
   display: block;
   width: var(--card-w);
   height: var(--card-h);
@@ -27,7 +28,7 @@
   &.tapped {
     transform: rotate(90deg);
     transform-origin: center center;
-    margin: 0 18px;
+    margin: 0;
 
     &:hover {
       transform: rotate(90deg) translateY(-6px) scale(1.04);
@@ -668,4 +669,11 @@
   text-align: right;
   border-top: 1px solid var(--border-dim);
   padding-top: 4px;
+}
+
+.card.tapped.attacking {
+  transform: rotate(90deg);
+}
+.card.tapped.attacking:hover {
+  transform: rotate(90deg) translateY(-4px);
 }

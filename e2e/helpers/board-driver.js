@@ -95,7 +95,7 @@ const logLines = async (token, gameId) =>
 /**
  * Everything the board is currently saying, read from the rendered page.
  *
- * The selectors here were re-found from a running board (`_diag-board-dom.js`). The set this
+ * The selectors here were re-found from a running board (`table-seat.component.html`). The set this
  * replaced spoke a `gb-*` vocabulary that no element on the page has carried for a long time,
  * so every read came back empty and every script that used it timed out on `.gb-root` before
  * reaching a single assertion. Nothing said so: an empty read and a board with nothing on it
@@ -122,24 +122,24 @@ function board(d) {
       whose: whoseMatch ? whoseMatch[1].trim() : '',
       step: text('.phase-pip.active .pip-label'),
       status: text('.status-message'),
-      myLife: Number(text('.self-sidebar .life-number') || '0'),
-      theirLife: Number(text('.opponent-sidebar .life-number') || '0'),
-      myLibrary: Number(text('.self-sidebar .library .zone-num') || '0'),
+      myLife: Number(text('.self-table .life') || '0'),
+      theirLife: Number(text('.opponent-boards .life') || '0'),
+      myLibrary: Number(text('.self-table [data-zone="library"] b') || '0'),
       buttons,
-      hand: names('app-hand .card .card-name'),
-      mine: names('.self-field .card .card-name'),
-      theirs: names('.opponent-field .card .card-name'),
-      myLands: names('.self-field .lands-row .card .card-name'),
-      untappedLands: [...document.querySelectorAll('.self-field .lands-row .card')]
+      hand: names('app-hand .hand-card-title'),
+      mine: names('.self-table .card .card-name'),
+      theirs: names('.opponent-boards .card .card-name'),
+      myLands: names('.self-table [data-area="lands"] .card .card-name'),
+      untappedLands: [...document.querySelectorAll('.self-table [data-area="lands"] .card')]
         .filter((c) => !c.classList.contains('tapped')).length,
       // Creatures, separately from everything on the field: a land is a permanent and cannot
       // attack, and combat mode entered with nothing able to attack is a loop that cancels
       // itself forever without ever passing priority.
-      myCreatures: document.querySelectorAll('.self-field .permanents-row .card').length,
-      myReadyCreatures: [...document.querySelectorAll('.self-field .permanents-row .card')]
+      myCreatures: document.querySelectorAll('.self-table [data-area="creatures"] .card').length,
+      myReadyCreatures: [...document.querySelectorAll('.self-table [data-area="creatures"] .card')]
         .filter((c) => !c.classList.contains('tapped')).length,
-      attacking: document.querySelectorAll('.self-field .card.attacking').length,
-      incoming: document.querySelectorAll('.opponent-field .card.attacking').length,
+      attacking: document.querySelectorAll('.self-table .card.attacking').length,
+      incoming: document.querySelectorAll('.opponent-boards .card.attacking').length,
     };
   `);
 }
@@ -184,7 +184,7 @@ function clickInExcept(d, selector, pattern) {
 function clickPermanent(d, side, name) {
   return d.executeScript(
     `
-    const field = arguments[0] === 'mine' ? '.self-field' : '.opponent-field';
+    const field = arguments[0] === 'mine' ? '.self-table' : '.opponent-boards';
     const els = [...document.querySelectorAll(field + ' .card')];
     const el = els.find((e) => {
       const n = e.querySelector('.card-name');
@@ -200,45 +200,11 @@ function clickPermanent(d, side, name) {
   );
 }
 
-/**
- * Plays a card from hand by name.
- *
- * A double-click is the affordance: single-click selects a card and double-click plays or casts
- * it (`onCardDblClick`). The helper this replaced looked for a `.gb-card-play` button, which the
- * board has not had in a long time - so every attempt to play anything selected the card and
- * then pressed nothing.
- */
+/** Plays a card through the current hand strip's single-click action. */
 async function playFromHand(d, name, mark) {
-  const selected = await d.executeScript(
-    `
-    const cards = [...document.querySelectorAll('app-hand .card')];
-    const el = cards.find((c) => {
-      const n = c.querySelector('.card-name');
-      return n && n.textContent.trim() === arguments[0];
-    });
-    if (!el) return false;
-    el.scrollIntoView({ block: 'center' });
-    el.click();
-    return true;
-  `,
-    name,
-  );
-  if (!selected) return false;
-
-  await sleep(450);
   if (mark) await mark();
-
   return d.executeScript(
-    `
-    const cards = [...document.querySelectorAll('app-hand .card')];
-    const el = cards.find((c) => {
-      const n = c.querySelector('.card-name');
-      return n && n.textContent.trim() === arguments[0];
-    });
-    if (!el) return false;
-    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    return true;
-  `,
+    "const el = [...document.querySelectorAll('app-hand .hand-card-wrapper')].find(c => c.querySelector('.hand-card-title')?.textContent.trim() === arguments[0]); if (!el) return false; el.scrollIntoView({block:'center'}); el.click(); return true;",
     name,
   );
 }
@@ -255,7 +221,7 @@ async function tapLands(d, names = 'Mountain|Forest') {
   for (let i = 0; i < 8; i++) {
     const tapped = await d.executeScript(
       `
-      const els = [...document.querySelectorAll('.self-field .card')];
+      const els = [...document.querySelectorAll('.self-table .card')];
       const re = new RegExp(arguments[0]);
       const el = els.find((e) => {
         const n = e.querySelector('.card-name');

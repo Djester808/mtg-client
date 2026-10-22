@@ -54,6 +54,7 @@ export interface SynergyScore {
 }
 
 export interface CardDto {
+  targetCount?: number;
   collectorNumber?: string | null;
   producedMana?: string[] | null;
   colors?: ManaColor[] | null;
@@ -110,6 +111,7 @@ export interface PermanentAbilityDto {
 }
 
 export interface PermanentDto {
+  isToken?: boolean;
   permanentId: string;
   /**
    * What this permanent can be asked to do.
@@ -147,6 +149,7 @@ export interface PermanentDto {
 // ---- Stack DTOs -------------------------------------------
 
 export interface StackObjectDto {
+  sourceCard?: CardDto;
   stackObjectId: string;
   type: StackObjectType;
   controllerId: string;
@@ -157,6 +160,7 @@ export interface StackObjectDto {
 
 export interface TargetDto {
   type: 'Permanent' | 'Player' | 'Card' | 'StackObject';
+  label?: string;
   id: string;
 }
 
@@ -180,6 +184,7 @@ export interface PlayerStateDto {
   hand: CardDto[]; // only populated for the local player
   graveyard: CardDto[]; // public
   exile: CardDto[]; // public
+  command?: CardDto[]; // public command-zone objects
   hasLandPlayedThisTurn: boolean;
   /**
    * Combat damage this player has taken from each commander, by the commander's name
@@ -194,6 +199,9 @@ export interface PlayerStateDto {
 }
 
 export interface CombatStateDto {
+  defendingPlayerIds?: string[];
+  blockersDeclaredBy?: string[];
+  attackersToDefenders?: Record<string, string>;
   attackers: string[]; // permanentIds
   attackersToBlockers: Record<string, string[]>; // attackerId -> blockerIds
   attackersDeclared: boolean;
@@ -230,6 +238,8 @@ export interface ChoiceDto {
 }
 
 export interface GameStateDto {
+  castableCards?: string[];
+  outcome?: { winners: string[]; draw: boolean; reason: string } | null;
   gameId: string;
   players: PlayerStateDto[];
   battlefield: PermanentDto[];

@@ -1,28 +1,50 @@
-<div class="hand-zone">
+<div class="hand-zone" [class.raised]="raised">
   <div class="hand-label">Hand — {{ count }} cards</div>
   <!-- appScrollEdges supplies can-scroll-left / can-scroll-right; the stylesheet fades
        the edge so a hand wider than the screen reads as more hand, not a clipped one. -->
   <div class="hand-cards" #handCards appScrollEdges (click)="$event.stopPropagation()">
     <div
-      *ngFor="let hc of orderedCards; trackBy: trackByCard; let i = index"
+      *ngFor="let hc of orderedCards; trackBy: trackByCard"
       class="hand-card-wrapper"
-      [ngClass]="'rot-' + i"
+      tabindex="0"
+      role="button"
+      [attr.aria-label]="'Play ' + hc.card.name"
+      [attr.aria-disabled]="!hc.isCastable"
+      [title]="hc.unavailableReason ?? 'Play ' + hc.card.name"
+      (keydown)="reorderKey($event, hc.card.cardId)"
+      (keydown.enter)="onCardClick(hc.card)"
+      (keydown.space)="$event.preventDefault(); onCardClick(hc.card)"
+      (contextmenu)="cardOptions($event, hc.card)"
+      [class.castable]="hc.isCastable"
+      [class.selected]="hc.isSelected"
+      [style.--frame-color]="
+        'var(--mana-' +
+        ((hc.card.colors ?? hc.card.colorIdentity).length === 1
+          ? (hc.card.colors ?? hc.card.colorIdentity)[0]
+          : 'C') +
+        ')'
+      "
+      (click)="onCardClick(hc.card)"
+      (mouseenter)="onCardHover(hc.card)"
+      (mouseleave)="onCardHoverLeave()"
       [class.is-dragging]="hc.card.cardId === draggingId"
-      (mousedown)="onWrapperMouseDown($event, hc.card.cardId)"
+      (pointerdown)="onWrapperMouseDown($event, hc.card.cardId)"
     >
-      <app-card
-        [card]="hc.card"
-        [isSelected]="hc.isSelected"
-        [isCastable]="hc.isCastable"
-        [showInfo]="true"
-        [style.width.px]="cardDims.w"
-        [style.height.px]="cardDims.h"
-        (clicked)="onCardClick(hc.card)"
-        (dblClicked)="onCardDblClick(hc)"
-        (hoverEnter)="onCardHover($event)"
-        (hoverLeave)="onCardHoverLeave()"
-      >
-      </app-card>
+      <strong class="hand-card-title">{{ hc.card.name }}</strong>
+      <app-mana-cost [cost]="hc.card.manaCost"></app-mana-cost>
+      <div class="hand-card-body" *ngIf="raised">
+        <span>{{ hc.card.cardTypes.join(' ') }}</span>
+        <p [innerHTML]="hc.card.oracleText | oracleSymbols"></p>
+        <b *ngIf="hc.card.power !== null">{{ hc.card.power }}/{{ hc.card.toughness }}</b>
+      </div>
     </div>
   </div>
 </div>
+
+<app-card-options-menu
+  *ngIf="contextCard"
+  [x]="contextX"
+  [y]="contextY"
+  (inspect)="inspectCard()"
+  (dismiss)="contextCard = null"
+></app-card-options-menu>

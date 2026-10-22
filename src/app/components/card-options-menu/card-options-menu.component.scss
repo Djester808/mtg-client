@@ -1,0 +1,25 @@
+@use '../../../styles/breakpoints' as *;
+.card-options {
+  position: fixed;
+  z-index: 1100;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--bg-elevated, #1b1b1f);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+}
+button {
+  min-height: $tap-min;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}

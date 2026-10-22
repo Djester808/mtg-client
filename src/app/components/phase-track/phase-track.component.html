@@ -5,6 +5,7 @@
     <span class="gold">{{ vm.activePlayerName }}</span
     >'s Turn
   </div>
+  <strong class="current-step">{{ vm.stepLabel }}</strong>
   <div class="phase-track">
     <div
       *ngFor="let pip of vm.pips; trackBy: trackByPip"

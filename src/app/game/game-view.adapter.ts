@@ -41,6 +41,8 @@ export class GameViewAdapter {
   toGameState(view: GameView): GameStateDto {
     return {
       gameId: view.gameId,
+      castableCards: view.castableCards ?? [],
+      outcome: view.outcome ?? null,
       turn: view.turnNumber,
       activePlayerId: view.activePlayerId,
       // Nobody holds priority during untap, cleanup, or while something resolves (CR 502.4,
@@ -59,7 +61,7 @@ export class GameViewAdapter {
       // entry as the top and lays them out column-reverse. Passed through as they came, the
       // panel labelled the wrong spell "(top)", numbered them backwards, and showed them in the
       // opposite order to the one they resolve in (CR 405.1).
-      stack: [...view.stack].reverse().map((o) => this.stackObject(o)),
+      stack: [...view.stack].reverse().map((o) => this.stackObject(o, view)),
       combat: this.combat(view),
       choice: this.choice(view),
     };
@@ -78,15 +80,18 @@ export class GameViewAdapter {
       libraryCount: p.libraryCount,
       graveyardCount: p.graveyard.length,
       // One shared exile zone in the new view, split back out by who controls each card.
-      exileCount: view.exile.filter((o) => o.controllerId === p.playerId).length,
+      exileCount: view.exile.filter((o) => (o.ownerId ?? o.controllerId) === p.playerId).length,
       hand: (p.hand ?? []).map((o) => this.card(o)),
       graveyard: p.graveyard.map((o) => this.card(o)),
-      exile: view.exile.filter((o) => o.controllerId === p.playerId).map((o) => this.card(o)),
+      exile: view.exile
+        .filter((o) => (o.ownerId ?? o.controllerId) === p.playerId)
+        .map((o) => this.card(o)),
+      command: (view.command ?? [])
+        .filter((o) => (o.ownerId ?? o.controllerId) === p.playerId)
+        .map((o) => this.card(o)),
       hasLandPlayedThisTurn: p.landsPlayedThisTurn > 0,
       // CR 903.10a: public, because every block at the table changes how close a commander is
-      // to twenty-one. Dropped here until now — the wire model carried it, `BoardLayoutService`
-      // (which nothing consumes) carried it, and it stopped one file short of the store this
-      // board actually reads, so no amount of commander damage was ever shown.
+      // to twenty-one. Preserve the public damage counters in the store snapshot.
       commanderDamage: p.commanderDamage ?? {},
       commanderName: p.commanderName ?? null,
       hasLost: p.hasLost,
@@ -114,6 +119,7 @@ export class GameViewAdapter {
   private permanent(o: ObjectView, attachments: string[]): PermanentDto {
     return {
       permanentId: o.id,
+      isToken: o.isToken ?? false,
       sourceCard: this.card(o),
       controllerId: o.controllerId,
       // What the engine says this permanent can be asked to do (CR 602.1). The board used to
@@ -141,8 +147,14 @@ export class GameViewAdapter {
       // Printed, plus counters — the same arithmetic the board's own sidebar does. What a
       // continuous effect did to this permanent is not in the view (CR 613), so this is the
       // most the client can honestly say.
-      effectivePower: this.withCounters(o.printedPower, o.counters),
-      effectiveToughness: this.withCounters(o.printedToughness, o.counters),
+      effectivePower:
+        o.effectivePower !== undefined
+          ? o.effectivePower
+          : this.withCounters(o.printedPower, o.counters),
+      effectiveToughness:
+        o.effectiveToughness !== undefined
+          ? o.effectiveToughness
+          : this.withCounters(o.printedToughness, o.counters),
       // `ObjectView.Enforced`: whether the engine plays this card's rules. A view that does not
       // carry the flag is read as the honour system, not as enforcement — the deck gate admits
       // three kinds of card and the board has to be able to say which one this is, and claiming
@@ -202,14 +214,15 @@ export class GameViewAdapter {
       power: o.printedPower,
       toughness: o.printedToughness,
       startingLoyalty: o.counters?.['loyalty'] ?? null,
-      keywords: [],
+      keywords: o.keywords ?? [],
+      targetCount: o.targetCount,
       imageUriNormal: o.imageUri,
       imageUriLarge: o.imageUri,
       imageUriNormalBack: null,
       imageUriSmall: o.imageUri,
       imageUriArtCrop: o.artUri,
       colorIdentity: this.colorsOf(o.colors),
-      ownerId: o.controllerId,
+      ownerId: o.ownerId ?? o.controllerId,
       // The engine's answer, not a reading of `manaCost`: the X can be in an additional cost the
       // printed mana never mentions (Harvest Pyre is {1}{R} and exiles X cards).
       announcesVariable: o.announcesVariable ?? false,
@@ -311,9 +324,10 @@ export class GameViewAdapter {
 
   // ---- The stack -------------------------------------------------------------------------
 
-  private stackObject(o: ObjectView): StackObjectDto {
+  private stackObject(o: ObjectView, view: GameView): StackObjectDto {
     return {
       stackObjectId: o.id,
+      sourceCard: this.card(o),
       // A card on the stack is a spell (CR 111.1); an object with no card behind it is an
       // ability. The view does not distinguish activated from triggered, so this does not
       // guess between them.
@@ -322,7 +336,24 @@ export class GameViewAdapter {
       controllerId: o.controllerId,
       sourceCardName: o.name,
       description: o.oracleText ?? '',
-      targets: [],
+      targets: [
+        ...(o.announcedPlayerTargets ?? []).map((id) => ({
+          type: 'Player' as const,
+          id,
+          label: view.players.find((p) => p.playerId === id)?.name ?? 'Player',
+        })),
+        ...(o.announcedObjectTargets ?? []).map((id) => ({
+          type: 'Permanent' as const,
+          id,
+          label:
+            [
+              ...view.battlefield,
+              ...view.stack,
+              ...view.exile,
+              ...view.players.flatMap((p) => p.graveyard),
+            ].find((card) => card.id === id)?.name ?? 'Target left its zone',
+        })),
+      ],
     };
   }
 
@@ -342,6 +373,11 @@ export class GameViewAdapter {
     return {
       attackers,
       attackersToBlockers,
+      attackersToDefenders: Object.fromEntries(
+        Object.entries(view.attackers ?? {}).map(([id, target]) => [id, target.defendingPlayer]),
+      ),
+      defendingPlayerIds: view.defendingPlayerIds,
+      blockersDeclaredBy: view.blockersDeclaredBy,
       attackersDeclared: view.attackersDeclared,
       blockersDeclared: view.blockersDeclared,
     };
@@ -443,8 +479,14 @@ export class GameViewAdapter {
    * end with everybody losing (CR 104.4b) — a draw, which the old shape has a name for.
    */
   private resultOf(view: GameView): GameResult {
+    if (view.outcome) {
+      if (view.outcome.draw) return GameResult.Draw;
+      return view.outcome.winners.includes(view.players[0]?.playerId)
+        ? GameResult.Player1Wins
+        : GameResult.Player2Wins;
+    }
     const standing = view.players.filter((p) => !p.hasLost);
-    if (standing.length === view.players.length) {
+    if (standing.length > 1 || standing.length === view.players.length) {
       return GameResult.InProgress;
     }
     if (standing.length === 0) {

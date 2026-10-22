@@ -14,6 +14,8 @@
 // flag can override it down to 1 to keep contact sheets small.
 
 module.exports = [
+  {id:'board-desktop',label:'Board desktop',os:'desktop',width:1280,height:800,dpr:1,ua:null},
+  {id:'board-landscape',label:'Board phone landscape',os:'android',width:667,height:375,dpr:1,ua:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'},
   {
     id: 'iphone-se',
     label: 'iPhone SE',

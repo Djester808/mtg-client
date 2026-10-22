@@ -44,6 +44,9 @@ export interface UIState {
 
   // Attack declaration
   pendingAttackerIds: string[];
+  pendingAttackerTargets?: Record<string, string>;
+  attackDefenderId?: string | null;
+  selectedBlockerId?: string | null;
 
   // Block declaration: blockerId -> attackerId
   pendingBlockerAssignments: Record<string, string>;
@@ -54,7 +57,7 @@ export interface UIState {
   // Zone viewer
   zoneViewerOpen: boolean;
   zoneViewerPlayerId: string | null;
-  zoneViewerZone: 'graveyard' | 'exile' | null;
+  zoneViewerZone: 'graveyard' | 'exile' | 'command' | 'library' | 'hand' | null;
 }
 
 const initialState: UIState = {
@@ -71,6 +74,9 @@ const initialState: UIState = {
   announceTargetCount: 0,
   variableValue: 0,
   pendingAttackerIds: [],
+  pendingAttackerTargets: {},
+  attackDefenderId: null,
+  selectedBlockerId: null,
   pendingBlockerAssignments: {},
   hoveredCard: null,
   zoneViewerOpen: false,
@@ -196,17 +202,38 @@ export const uiReducer = createReducer(
     abilityMenuPermanentId: null,
   })),
 
+  on(UIActions.setAttackDefender, (state, { playerId }) => ({
+    ...state,
+    attackDefenderId: playerId,
+  })),
+  on(UIActions.selectBlocker, (state, { permanentId }) => ({
+    ...state,
+    selectedBlockerId: permanentId,
+  })),
+  on(UIActions.removeBlocker, (state, { permanentId }) => ({
+    ...state,
+    pendingBlockerAssignments: Object.fromEntries(
+      Object.entries(state.pendingBlockerAssignments).filter(([id]) => id !== permanentId),
+    ),
+    selectedBlockerId: null,
+  })),
   // ---- Attackers ------------------------------------------
   on(UIActions.enterAttackMode, (state) => ({
     ...state,
     mode: 'declaring-attackers' as UIMode,
     pendingAttackerIds: [],
+    pendingAttackerTargets: {},
   })),
 
   on(UIActions.toggleAttacker, (state, { permanentId }) => {
     const already = state.pendingAttackerIds.includes(permanentId);
     return {
       ...state,
+      pendingAttackerTargets: already
+        ? Object.fromEntries(
+            Object.entries(state.pendingAttackerTargets ?? {}).filter(([id]) => id !== permanentId),
+          )
+        : { ...state.pendingAttackerTargets, [permanentId]: state.attackDefenderId ?? '' },
       pendingAttackerIds: already
         ? state.pendingAttackerIds.filter((id) => id !== permanentId)
         : [...state.pendingAttackerIds, permanentId],
@@ -227,11 +254,13 @@ export const uiReducer = createReducer(
 
   on(GameActions.declareAttackers, (state) => ({
     ...state,
+    pendingAttackerTargets: {},
     pendingAttackerIds: [],
   })),
 
   on(UIActions.cancelAttackMode, (state) => ({
     ...state,
+    pendingAttackerTargets: {},
     mode: 'idle' as UIMode,
     pendingAttackerIds: [],
   })),
@@ -240,11 +269,13 @@ export const uiReducer = createReducer(
   on(UIActions.enterBlockMode, (state) => ({
     ...state,
     mode: 'declaring-blockers' as UIMode,
+    selectedBlockerId: null,
     pendingBlockerAssignments: {},
   })),
 
   on(UIActions.assignBlocker, (state, { blockerId, attackerId }) => ({
     ...state,
+    selectedBlockerId: null,
     pendingBlockerAssignments: {
       ...state.pendingBlockerAssignments,
       [blockerId]: attackerId,

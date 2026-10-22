@@ -5,6 +5,7 @@ import { ZonesComponent } from './zones.component';
 import { GameActions, UIActions } from '../../store';
 import { makePermanent, makeCard } from '../../testing/test-factories';
 import { CardType } from '../../models/game.models';
+import { of } from 'rxjs';
 
 describe('ZonesComponent', () => {
   let component: ZonesComponent;
@@ -357,5 +358,62 @@ describe('ZonesComponent', () => {
     component.onBattlefieldClick();
 
     expect(store.dispatch).toHaveBeenCalledWith(UIActions.deselectCard());
+  });
+
+  it('keeps idle creature clicks reserved for game actions rather than opening the inspector', () => {
+    const spy = spyOn(store, 'dispatch');
+    component.onCardClick(creature(), 'idle', true, []);
+    expect(spy).not.toHaveBeenCalled();
+  });
+  it('keeps opponent idle clicks reserved for game actions', () => {
+    const spy = spyOn(store, 'dispatch');
+    component.isOpponent = true;
+    component.onCardClick(creature(), 'idle', false, []);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('routes a flat battlefield card click to exactly one primary action', () => {
+    component.ui$ = of({
+      mode: 'idle',
+      canAct: true,
+      pendingAttackers: [],
+      selectedPermId: null,
+      combat: null,
+      isActive: true,
+      blocker: null,
+      blocks: {},
+      attackerTargets: {},
+      players: [],
+    });
+    spyOn(fixture.nativeElement, 'getBoundingClientRect').and.returnValue(
+      new DOMRect(0, 0, 800, 320),
+    );
+    fixture.componentRef.setInput('permanents', [makePermanent({ abilities: [ability()] })]);
+    fixture.detectChanges();
+    const spy = spyOn(store, 'dispatch');
+    const wrapper: HTMLElement = fixture.nativeElement.querySelector('.flat-card');
+    expect(wrapper).withContext(fixture.nativeElement.innerHTML).not.toBeNull();
+    wrapper.click();
+    expect(spy).toHaveBeenCalledOnceWith(
+      UIActions.chooseAbility({ permanentId: 'perm-1', abilityId: 'mana' }),
+    );
+    wrapper.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    const outside = jasmine.createSpy('outside click');
+    document.addEventListener('click', outside);
+    try {
+      const inspect: HTMLButtonElement = fixture.nativeElement.querySelector('[role="menuitem"]');
+      inspect.click();
+      expect(spy).toHaveBeenCalledWith(UIActions.selectCard({ permanentId: 'perm-1' }));
+      expect(outside).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener('click', outside);
+    }
+  });
+
+  it('does not activate an ability while a decision or another players priority blocks actions', () => {
+    const dispatch = spyOn(store, 'dispatch');
+    component.onCardClick(makePermanent({ abilities: [ability()] }), 'idle', true, [], null, false);
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

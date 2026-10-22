@@ -1,152 +1,82 @@
+@use '../../../styles/breakpoints' as *;
 :host {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  display: block;
+  min-height: 0;
 }
-
-.stack-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 12px;
-  gap: 10px;
-  overflow-y: auto;
-}
-
-.stack-panel-title {
-  font-family: var(--font-display);
-  font-size: calc(10px * var(--text-scale, 1));
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-dim);
-  flex-shrink: 0;
-}
-
+.stack-panel,
 .stack-items {
   display: flex;
-  flex-direction: column-reverse;
-  gap: 6px;
-  flex: 1;
-  overflow-y: auto;
+  flex-direction: column;
+  gap: 8px;
 }
-
 .stack-item {
-  // A button now, not a div: a spell on the stack is the only place a Counterspell's target
-  // exists, so it has to be pressable.
-  display: block;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-
-  &.is-targetable {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 1px var(--gold-dim);
-  }
-
-  background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 8px 10px;
-  position: relative;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  animation: slide-up 0.15s ease;
-
-  &:hover {
-    border-color: var(--border-lit);
-  }
-
-  &.stack-item-top {
-    border-color: var(--gold-dim);
-    box-shadow: 0 0 10px rgba(184, 0, 224, 0.1);
-
-    .stack-item-type {
-      color: var(--accent-text);
-    }
-  }
-}
-
-.stack-item-index {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font-family: var(--font-display);
-  font-size: calc(9px * var(--text-scale, 1));
-  color: var(--text-dim);
-}
-
-.stack-item-type {
-  font-size: calc(8px * var(--text-scale, 1));
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  font-family: var(--font-display);
-  margin-bottom: 3px;
-}
-
-.stack-item-name {
-  font-family: var(--font-display);
-  font-size: calc(11px * var(--text-scale, 1));
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.stack-item-controller {
-  font-size: calc(9px * var(--text-scale, 1));
-  color: var(--text-secondary);
-  margin-top: 2px;
-  font-style: italic;
-}
-
-.stack-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-dim);
-  flex-shrink: 0;
+  gap: 3px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.stack-item-top,
+.is-targetable {
+  border-color: var(--accent-text);
+}
+.stack-item-index {
+  color: var(--accent-text);
+  font-size: 11px;
+}
+.stack-item-type {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.stack-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.stack-item-controller,
+.stack-targets {
+  font-size: 12px;
+  line-height: 1.3;
+}
+.stack-item-controller {
+  color: var(--text-secondary);
+}
+.stack-item:hover {
+  border-color: var(--border-lit);
+}
+.stack-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-.action-btn {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-family: var(--font-display);
-  font-size: calc(10px * var(--text-scale, 1));
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: 1px solid;
-  text-align: center;
-  background: none;
-
-  &.primary {
-    background: var(--gold);
-    border-color: var(--gold);
-    color: #ffffff;
-    &:hover {
-      background: #ca33e9;
-      box-shadow: 0 0 16px rgba(184, 0, 224, 0.3);
-    }
+@include short-viewport {
+  .stack-panel,
+  .stack-items {
+    gap: 5px;
   }
-
-  &.secondary {
-    background: transparent;
-    border-color: var(--border-subtle);
-    color: var(--text-secondary);
-    &:hover {
-      border-color: var(--border-lit);
-      color: var(--text-primary);
-      background: var(--bg-hover);
-    }
+  .stack-item {
+    padding: 5px;
+    gap: 2px;
+    border-radius: 5px;
   }
-
-  &:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+  .stack-item-name {
+    font-size: 11px;
+  }
+  .stack-item-controller,
+  .stack-targets,
+  .stack-item-index {
+    font-size: 9px;
+  }
+  .stack-item-type {
+    display: none;
   }
 }

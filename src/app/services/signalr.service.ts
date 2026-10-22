@@ -1,3 +1,10 @@
+import {
+  EngineView,
+  EngineLegal,
+  EngineArtwork,
+  engineView,
+  engineCommand,
+} from '../game/engine-transport';
 import { storedAuth } from './auth-storage';
 import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
@@ -77,6 +84,18 @@ export class SignalRService implements OnDestroy {
   private registerHandlers(): void {
     if (!this.hub) return;
 
+    this.hub.on(
+      'ViewUpdated',
+      (raw: EngineView, legal: EngineLegal, artwork?: EngineArtwork | null) => {
+        const view = engineView(raw, this.gameId ?? '', legal, artwork ?? undefined);
+        this.latest = view;
+        this.zone.run(() =>
+          this.store.dispatch(
+            GameActions.stateSynced({ gameState: this.adapter.toGameState(view) }),
+          ),
+        );
+      },
+    );
     // The engine pushes a whole view rather than a diff. That is a simplification for this
     // side: the old GameStateDiff path is never exercised, and the board folds a full state.
     this.hub.on('State', (view: GameView) => {
@@ -179,11 +198,11 @@ export class SignalRService implements OnDestroy {
    * creature may attack a planeswalker instead (CR 508.1b). The board has no way to say that,
    * so every attacker is aimed at the opponent — which is what the old engine assumed too.
    */
-  declareAttackers(attackerIds: string[]): Promise<void> {
+  declareAttackers(attackerIds: string[], defenders: Record<string, string> = {}): Promise<void> {
     const defender = this.opponentOfViewer();
     const attackers: Record<string, AttackTarget> = {};
     for (const id of attackerIds) {
-      attackers[id] = { defendingPlayer: defender, planeswalker: null };
+      attackers[id] = { defendingPlayer: defenders[id] || defender, planeswalker: null };
     }
     return this.invoke('DeclareAttackers', attackers);
   }
@@ -302,20 +321,34 @@ export class SignalRService implements OnDestroy {
 
   private opponentOfViewer(): string {
     const view = this.latest;
-    const them = view?.players.find((p) => p.playerId !== view.viewer);
+    const them = view?.players.find((p) => p.playerId !== view.viewer && !p.hasLost);
     return them?.playerId ?? '';
   }
 
   private async invoke(method: string, ...args: unknown[]): Promise<void> {
     if (!this.hub || this.hub.state !== signalR.HubConnectionState.Connected || !this.gameId) {
+      if (method === 'Concede') {
+        this.toasts.show('Reconnect before conceding.', 'warn', 3000);
+        throw Error('Not connected.');
+      }
       console.warn(`SignalR: cannot invoke ${method} — not connected`);
       return;
     }
     try {
       // Every command on this hub takes the game id first.
-      await this.hub.invoke(method, this.gameId, ...args);
+      if (!this.latest) {
+        this.toasts.show('Waiting for the game state.', 'warn', 3000);
+        return;
+      }
+      await this.hub.invoke('Command', this.gameId, engineCommand(method, args, this.latest));
     } catch (err) {
       console.error(`SignalR invoke ${method} failed:`, err);
+      this.toasts.show(
+        'The action could not be sent. Check the connection and try again.',
+        'warn',
+        5000,
+      );
+      if (method === 'Concede') throw err;
     }
   }
 

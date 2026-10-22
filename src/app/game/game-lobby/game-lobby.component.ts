@@ -3,25 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { PlayApiService } from '../play-api.service';
-import { GameInvite, PlayableDeck } from '../../models/play.models';
+import { Observable, forkJoin } from 'rxjs';
+import { GameTableApiService } from '../game-table-api.service';
+import { GameTable, TableDeck } from '../../models/game-table.models';
 
-/**
- * Starting a game.
- *
- * This is the piece that was missing: the engine could play a game and the board could show one,
- * with no way to get from a deck list to a table. A feature nobody can reach is not a feature,
- * however much of it works.
- *
- * Each player brings their own deck — the inviter when they invite, the opponent when they
- * accept. That is not a courtesy: a deck list is not public, and a lobby that let you choose
- * somebody else's deck would need an endpoint handing out everyone's, which is a privacy hole
- * opened to save a click.
- *
- * The refusal matters as much as the success. The engine only plays cards it implements, so most
- * real decks cannot be played yet, and the server answers with the names of the ones it does not
- * know. Showing that list is the difference between "the engine is small" and "this is broken".
- */
 @Component({
   selector: 'app-game-lobby',
   standalone: true,
@@ -31,123 +16,142 @@ import { GameInvite, PlayableDeck } from '../../models/play.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameLobbyComponent implements OnInit {
-  private readonly api = inject(PlayApiService);
+  private readonly api = inject(GameTableApiService);
   private readonly router = inject(Router);
-
-  readonly decks = signal<PlayableDeck[]>([]);
+  readonly decks = signal<TableDeck[]>([]);
+  readonly tables = signal<GameTable[]>([]);
   readonly players = signal<{ userId: string; username: string }[]>([]);
-  readonly invites = signal<GameInvite[]>([]);
-  readonly sent = signal<GameInvite[]>([]);
+  readonly invited = signal<{ userId: string; username: string }[]>([]);
   readonly loading = signal(true);
   readonly busy = signal(false);
-
-  /** Why the last attempt was refused — usually the cards the engine cannot play. */
   readonly refusal = signal<string | null>(null);
-
   myDeckId = '';
-  opponentId = '';
-  startingLife = 20;
-
-  /** The deck being brought to whichever invitation is accepted. */
-  acceptWithDeckId = '';
+  search = '';
+  startingLife = 40;
+  allowHonourSystem = false;
+  readonly selections: Record<string, string> = {};
 
   ngOnInit(): void {
     this.refresh();
   }
 
   refresh(): void {
-    this.api.decks().subscribe({
-      next: (decks) => {
-        this.decks.set(decks);
+    if (this.busy()) return;
+    this.loading.set(true);
+    forkJoin({ decks: this.api.decks(), tables: this.api.list() }).subscribe({
+      next: (result) => {
+        this.decks.set(result.decks);
+        this.tables.set(result.tables);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (error: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.fail(error);
+      },
     });
-
-    this.api.opponents().subscribe({
-      next: (players) => this.players.set(players),
-      error: () => this.players.set([]),
-    });
-
-    this.api.invites().subscribe({ next: (i) => this.invites.set(i), error: () => undefined });
-    this.api.sentInvites().subscribe({ next: (i) => this.sent.set(i), error: () => undefined });
   }
 
-  get canInvite(): boolean {
-    return !!this.myDeckId && !!this.opponentId && !this.busy();
-  }
-
-  invite(): void {
-    if (!this.canInvite) {
+  searchPlayers(): void {
+    if (this.search.trim().length < 2) {
+      this.players.set([]);
       return;
     }
+    const query = this.search;
+    this.api.players(query).subscribe({
+      next: (players) => {
+        if (query === this.search) this.players.set(players);
+      },
+      error: (error: HttpErrorResponse) => this.fail(error),
+    });
+  }
 
-    this.busy.set(true);
-    this.refusal.set(null);
+  invite(player: { userId: string; username: string }): void {
+    if (this.invited().length < 3 && !this.invited().some((item) => item.userId === player.userId))
+      this.invited.update((current) => [...current, player]);
+  }
 
-    this.api
-      .invite({
-        deckId: this.myDeckId,
-        opponentUserId: this.opponentId,
+  remove(userId: string): void {
+    this.invited.update((current) => current.filter((item) => item.userId !== userId));
+  }
+
+  create(): void {
+    const deck = this.decks().find((item) => item.id === this.myDeckId);
+    if (!deck?.format || !this.invited().length || this.busy()) return;
+    this.mutate(
+      this.api.create({
+        deckId: deck.id,
+        capacity: this.invited().length + 1,
+        format: deck.format,
         startingLife: this.startingLife,
-      })
-      .subscribe({
-        next: () => {
-          this.busy.set(false);
-          this.refresh();
-        },
-        error: (err: HttpErrorResponse) => {
-          this.busy.set(false);
-          this.refusal.set(this.explain(err));
-        },
-      });
+        allowHonourSystem: this.allowHonourSystem,
+        invitees: this.invited().map((player) => player.userId),
+      }),
+    );
   }
 
-  accept(invite: GameInvite): void {
-    if (!this.acceptWithDeckId || this.busy()) {
-      return;
-    }
+  bringDeck(table: GameTable): void {
+    const deck = this.selections[table.id];
+    if (deck) this.mutate(this.api.bringDeck(table, deck));
+  }
 
+  leave(table: GameTable): void {
+    this.mutate(this.api.leave(table));
+  }
+
+  start(table: GameTable): void {
+    if (this.busy()) return;
     this.busy.set(true);
     this.refusal.set(null);
-
-    this.api.accept(invite.id, this.acceptWithDeckId).subscribe({
+    this.api.start(table).subscribe({
       next: (result) => {
         this.busy.set(false);
-        // The board is at /game/:gameId. '/play' is this lobby and has no :gameId child,
-        // so accepting an invitation used to navigate to a route that matches nothing - the
-        // board was unreachable from the only flow that starts a game between two people.
-        void this.router.navigate(['/game', result.gameId]);
+        this.open(result.gameId);
       },
-      error: (err: HttpErrorResponse) => {
+      error: (error: HttpErrorResponse) => {
         this.busy.set(false);
-        this.refusal.set(this.explain(err));
-        // The invitation is consumed by an accept whether or not the decks turned out to be
-        // playable, so the list is refreshed rather than left showing one that is gone.
+        this.fail(error);
         this.refresh();
       },
     });
   }
 
-  withdraw(invite: GameInvite): void {
-    this.api.withdraw(invite.id).subscribe({
-      next: () => this.refresh(),
-      error: () => this.refresh(),
-    });
+  open(gameId: string): void {
+    void this.router.navigate(['/game', gameId]);
+  }
+
+  ready(table: GameTable): boolean {
+    return table.seats.length === table.capacity && table.seats.every((seat) => seat.ready);
   }
 
   trackById(_index: number, item: { id: string }): string {
     return item.id;
   }
+  trackPlayer(_index: number, item: { userId: string }): string {
+    return item.userId;
+  }
 
-  /**
-   * The server's own words where it has any.
-   *
-   * "The engine does not implement Sol Ring, Swords to Plowshares, …" is the whole answer to
-   * why a game would not start; replacing it with "could not start a game" throws away the
-   * only part the player can act on.
-   */
-  private explain(err: HttpErrorResponse): string {
-    return err.error?.detail ?? err.error?.title ?? 'The game could not be started.';
+  private mutate(request: Observable<GameTable>): void {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.refusal.set(null);
+    request.subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.refresh();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.fail(error);
+        this.refresh();
+      },
+    });
+  }
+
+  private fail(error: HttpErrorResponse): void {
+    this.refusal.set(
+      error.error?.detail ??
+        error.error?.title ??
+        'The table could not be updated. Try refreshing.',
+    );
   }
 }

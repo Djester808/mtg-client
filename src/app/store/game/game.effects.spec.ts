@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, of, firstValueFrom } from 'rxjs';
 import { Action } from '@ngrx/store';
 
 import { GameEffects } from './game.effects';
@@ -33,6 +33,7 @@ describe('GameEffects', () => {
     signalr = jasmine.createSpyObj<SignalRService>('SignalRService', [
       'connect',
       'concede',
+      'disconnect',
       'passpriority',
       'castSpell',
       'playLand',
@@ -392,5 +393,30 @@ describe('GameEffects', () => {
         done();
       }, 20);
     });
+  });
+
+  it('waits for concession acknowledgement before disconnecting and leaving', async () => {
+    let finish!: () => void;
+    signalr.concede.and.returnValue(new Promise<void>((resolve) => (finish = resolve)));
+    signalr.disconnect.and.returnValue(Promise.resolve());
+    spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    actions$ = of(GameActions.concede());
+    const completed = firstValueFrom(effects.concede$);
+    expect(signalr.disconnect).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    finish();
+    await completed;
+    expect(signalr.disconnect).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/lobby']);
+  });
+  it('preserves the table when concession cannot be sent', async () => {
+    localStorage.setItem('mtg_session', 'retry-session');
+    signalr.concede.and.returnValue(Promise.reject(Error('offline')));
+    spyOn(router, 'navigate');
+    actions$ = of(GameActions.concede());
+    await firstValueFrom(effects.concede$);
+    expect(signalr.disconnect).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(localStorage.getItem('mtg_session')).toBe('retry-session');
   });
 });

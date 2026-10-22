@@ -70,7 +70,17 @@ export class PhaseTrackComponent {
         return { ...pip, state };
       });
 
-      return { pips, turn, activePlayerName: activePlayer?.name ?? '' };
+      return {
+        pips,
+        turn,
+        stepLabel:
+          _step === Step.Main
+            ? phase === Phase.PreCombatMain
+              ? 'Precombat main'
+              : 'Postcombat main'
+            : _step.replace(/([a-z])([A-Z])/g, '$1 $2'),
+        activePlayerName: activePlayer?.name ?? '',
+      };
     }),
   );
 

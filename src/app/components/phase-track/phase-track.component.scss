@@ -78,3 +78,21 @@
       0 0 28px rgba(184, 0, 224, 0.5);
   }
 }
+
+:host {
+  flex-direction: row;
+  gap: 12px;
+  min-width: 0;
+}
+.turn-badge {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+.current-step {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--accent-text);
+}
+.phase-track {
+  display: none;
+}

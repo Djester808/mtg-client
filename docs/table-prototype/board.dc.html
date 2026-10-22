@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Compleat table</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0b}
+a{color:#df80f5}a:hover{color:#f2bfff}
+.tb{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#f0e8d8;background:#0a0a0b;position:relative;overflow:hidden;box-sizing:border-box}
+.tb *{box-sizing:border-box}
+.tb button{font:inherit;color:inherit;cursor:pointer}
+.tb button:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
+.panel{background:#111113;border:1px solid #232328;border-radius:10px}
+.seg{display:flex;border:1px solid #6a6a76;border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;min-width:40px;min-height:32px;padding:0 12px;font-size:13px;color:#c4b8a8}
+.seg button[aria-pressed="true"]{background:#b800e0;color:#ffffff}
+.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9a8f7c}
+.row{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.slot{display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.card{position:relative;flex:none;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:4px 5px 4px;border:1px solid #32323a;border-radius:7px;overflow:hidden;transition:transform 160ms cubic-bezier(.2,.8,.2,1)}
+.card:hover{border-color:#c4b8a8}
+.cn{font-weight:600;line-height:1.15;overflow-wrap:anywhere}
+.ct{font-size:10px;line-height:1.2;color:#c4b8a8;margin-top:2px}
+.foot{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:2px}
+.pt{font-size:12px;font-weight:700;background:#0a0a0b;border:1px solid #6a6a76;border-radius:5px;padding:0 4px;line-height:16px;margin-left:auto}
+.badge{font-size:9.5px;line-height:13px;padding:0 4px;border-radius:4px;background:#32323a;color:#f0e8d8;white-space:nowrap}
+.badge.atk{background:#e74c3c;color:#0a0a0b;font-weight:700}
+.cnt{position:absolute;top:3px;right:3px;font-size:11px;font-weight:700;background:#f0e8d8;color:#0a0a0b;border-radius:5px;padding:0 4px;line-height:15px}
+.chip{flex:none;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;border:1px solid #6a6a76;border-radius:8px;background:#1b1b1f;padding:4px 8px;text-align:left}
+.chip b{font-size:13px}
+.chip span{font-size:11px;color:#c4b8a8}
+.more{flex:none;border:1px dashed #6a6a76;border-radius:7px;background:transparent;color:#c4b8a8;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.plate{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid #232328;border-radius:10px;background:#111113;min-width:0}
+.plate.sel{border-color:#df80f5;background:#1b1b1f;box-shadow:inset 0 -3px 0 #b800e0}
+.pname{font-weight:600;overflow-wrap:anywhere;line-height:1.2}
+.life{font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.pill{display:inline-block;font-size:10.5px;line-height:15px;padding:0 6px;border-radius:999px;border:1px solid #6a6a76;color:#f0e8d8;white-space:nowrap}
+.pill.atk{border-color:#e74c3c;color:#ff9a8f}
+.pill.pri{border-color:#df80f5;color:#df80f5}
+.zbtn{display:flex;justify-content:space-between;align-items:center;width:100%;border:1px solid #232328;background:#1b1b1f;border-radius:7px;padding:0 10px;min-height:30px;font-size:13px;color:#c4b8a8}
+.zbtn b{color:#f0e8d8}
+.phase{display:flex;gap:4px;align-items:center}
+.phase span{font-size:12px;padding:3px 9px;border-radius:999px;color:#9a8f7c;border:1px solid transparent}
+.phase span.on{color:#ffffff;background:#b800e0}
+.stk{border:1px solid #32323a;border-radius:9px;background:#1b1b1f;padding:8px 10px;text-align:left;width:100%}
+.stk.top{border-color:#df80f5}
+.primary{border:0;border-radius:9px;background:#b800e0;color:#ffffff;font-weight:700;min-height:44px;width:100%;font-size:14px}
+.secondary{border:1px solid #6a6a76;border-radius:9px;background:transparent;color:#f0e8d8;min-height:40px;width:100%;font-size:13px}
+.icon{width:44px;height:44px;border:1px solid #6a6a76;border-radius:9px;background:#111113;display:flex;align-items:center;justify-content:center;flex:none}
+.sheet{position:absolute;top:0;right:0;bottom:0;background:#1b1b1f;border-left:1px solid #6a6a76;box-shadow:-12px 0 32px rgba(0,0,0,.5);display:flex;flex-direction:column;z-index:8}
+.pile{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:1px;min-width:0;border:1px solid #32323a;border-radius:8px;background:#1b1b1f;padding:5px 7px;text-align:left;overflow:hidden}
+.pile:hover{border-color:#c4b8a8}
+.pl{font-size:11px;color:#c4b8a8;line-height:1.2;white-space:nowrap}
+.pn{font-size:18px;line-height:1.1;font-variant-numeric:tabular-nums;color:#f0e8d8}
+.ptop{font-size:10.5px;line-height:1.2;color:#c4b8a8;overflow-wrap:anywhere;margin-top:auto}
+.tab{border:1px solid #6a6a76;background:transparent;border-radius:999px;min-height:36px;padding:0 14px;font-size:13px;color:#c4b8a8}
+.tab.on{background:#b800e0;border-color:#b800e0;color:#ffffff}
+.pip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:800;color:#0a0a0b;margin-right:2px}
+@media (prefers-reduced-motion: reduce){.card{transition:none}}
+</style>
+</helmet>
+<div class="tb" style="{{rootStyle}}">
+
+  <!-- Top bar: whose turn, where in the turn, prototype switches -->
+  <header class="panel" style="{{topStyle}}">
+    <div style="display:flex;flex-direction:column;min-width:0;flex:1 1 auto">
+      <strong style="{{turnStyle}}">{{turnText}}</strong>
+      <sc-if value="{{ph}}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;color:#c4b8a8">{{stepText}}</span></sc-if>
+    </div>
+    <sc-if value="{{desk}}" hint-placeholder-val="{{ true }}">
+      <div class="phase" aria-label="Turn structure">
+        <sc-for list="{{phases}}" as="f" hint-placeholder-count="5"><span class="{{f.cls}}">{{f.label}}</span></sc-for>
+        <span style="font-size:12px;color:#df80f5;padding-left:6px">{{stepText}}</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex:1 1 auto;justify-content:flex-end">
+        <span class="lbl">Players</span>
+        <div class="seg" role="group" aria-label="Players at the table">
+          <sc-for list="{{seatOpts}}" as="o" hint-placeholder-count="3"><button aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+        </div>
+        <sc-if value="{{multi}}" hint-placeholder-val="{{ true }}">
+          <span class="lbl">Opponents</span>
+          <div class="seg" role="group" aria-label="How opponents are shown">
+            <sc-for list="{{viewOpts}}" as="o" hint-placeholder-count="2"><button aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </header>
+
+  <!-- Opponents -->
+  <section aria-label="Opponents" style="{{oppAreaStyle}}">
+    <sc-if value="{{showRail}}" hint-placeholder-val="{{ true }}">
+      <div style="{{railStyle}}">
+        <sc-if value="{{desk}}" hint-placeholder-val="{{ true }}">
+          <button class="icon" aria-label="Previous opponent in turn order" onClick="{{prevOpp}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+        </sc-if>
+        <sc-for list="{{rail}}" as="r" hint-placeholder-count="3">
+          <button class="{{r.cls}}" style="{{r.style}}" aria-pressed="{{r.selected}}" aria-label="{{r.label}}" onClick="{{r.pick}}">
+            <div style="display:flex;align-items:flex-start;gap:8px;width:100%">
+              <span class="pname" style="{{r.nameStyle}}">{{r.name}}</span>
+              <span class="life" style="{{r.lifeStyle}}">{{r.life}}</span>
+            </div>
+            <sc-if value="{{r.showSub}}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                <span style="font-size:11px;color:#c4b8a8">{{r.sub}}</span>
+                <sc-for list="{{r.pills}}" as="pl" hint-placeholder-count="1"><span class="{{pl.cls}}">{{pl.text}}</span></sc-for>
+              </div>
+            </sc-if>
+          </button>
+        </sc-for>
+        <sc-if value="{{desk}}" hint-placeholder-val="{{ true }}">
+          <button class="icon" aria-label="Next opponent in turn order" onClick="{{nextOpp}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <div style="{{boardsStyle}}">
+      <sc-for list="{{oppBoards}}" as="b" hint-placeholder-count="1">
+        <div class="panel" style="{{b.style}}" aria-label="{{b.label}}">
+          <sc-if value="{{b.header}}" hint-placeholder-val="{{ true }}">
+            <button class="{{b.hcls}}" style="{{b.hstyle}}" aria-label="{{b.hlabel}}" onClick="{{b.hpick}}">
+              <span class="pname" style="{{b.hnameStyle}}">{{b.name}}</span>
+              <span class="life" style="{{b.hlifeStyle}}">{{b.life}}</span>
+              <span style="font-size:11px;color:#c4b8a8;flex:1 1 auto">{{b.sub}}</span>
+              <sc-for list="{{b.pills}}" as="pl" hint-placeholder-count="1"><span class="{{pl.cls}}">{{pl.text}}</span></sc-for>
+            </button>
+          </sc-if>
+          <div style="{{b.bodyStyle}}">
+          <div style="{{b.rowsStyle}}">
+          <sc-for list="{{b.rows}}" as="row" hint-placeholder-count="2">
+            <div class="row" style="{{row.style}}">
+              <sc-for list="{{row.items}}" as="c" hint-placeholder-count="4">
+                <sc-if value="{{c.isCard}}" hint-placeholder-val="{{ true }}">
+                  <span class="slot" style="{{c.slotStyle}}">
+                    <button class="card" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}">
+                      <span class="cn" style="{{c.nameStyle}}">{{c.name}}</span>
+                      <sc-if value="{{c.hasType}}" hint-placeholder-val="{{ false }}"><span class="ct">{{c.type}}</span></sc-if>
+                      <span class="foot">
+                        <sc-if value="{{c.hasBadge}}" hint-placeholder-val="{{ false }}"><span class="{{c.badgeCls}}">{{c.badge}}</span></sc-if>
+                        <sc-if value="{{c.hasPt}}" hint-placeholder-val="{{ false }}"><span class="pt">{{c.pt}}</span></sc-if>
+                      </span>
+                      <sc-if value="{{c.hasCount}}" hint-placeholder-val="{{ false }}"><span class="cnt">×{{c.count}}</span></sc-if>
+                    </button>
+                  </span>
+                </sc-if>
+                <sc-if value="{{c.isChip}}" hint-placeholder-val="{{ false }}">
+                  <button class="chip" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}"><b>{{c.text}}</b><span>{{c.sub}}</span></button>
+                </sc-if>
+                <sc-if value="{{c.isMore}}" hint-placeholder-val="{{ false }}">
+                  <button class="more" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}"><b>{{c.text}}</b><span>more</span></button>
+                </sc-if>
+              </sc-for>
+            </div>
+          </sc-for>
+          </div>
+          <nav style="{{b.zoneNavStyle}}" aria-label="{{b.zonesLabel}}">
+            <sc-for list="{{b.zones}}" as="z" hint-placeholder-count="4">
+              <button class="pile" style="{{z.style}}" onClick="{{z.open}}" aria-label="{{z.label}}">
+                <span class="pl">{{z.name}}</span><b class="pn">{{z.n}}</b>
+                <sc-if value="{{z.hasTop}}" hint-placeholder-val="{{ false }}"><span class="ptop">{{z.top}}</span></sc-if>
+              </button>
+            </sc-for>
+          </nav>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- Stack and priority -->
+  <aside class="panel" style="{{stackStyle}}" aria-label="Stack and priority">
+    <sc-if value="{{stackClosed}}" hint-placeholder-val="{{ false }}">
+      <button class="stk top" style="flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 4px" onClick="{{toggleStack}}" aria-expanded="false" aria-label="{{stackOpenLabel}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        <span class="lbl" style="writing-mode:vertical-rl;font-size:12px;color:#f0e8d8">Stack</span>
+        <b style="font-size:18px;color:#df80f5">{{stackCount}}</b>
+      </button>
+      <button class="primary" style="font-size:13px;padding:0 4px" onClick="{{pass}}">{{passShort}}</button>
+    </sc-if>
+    <sc-if value="{{deskStackOpen}}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span class="lbl">Stack</span><span style="font-size:12px;color:#c4b8a8;flex:1 1 auto">{{stackCount}} on the stack</span>
+        <button class="icon" style="width:36px;height:36px" onClick="{{toggleStack}}" aria-expanded="true" aria-label="Hide the stack"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{stack}}" as="st" hint-placeholder-count="2">
+          <button class="{{st.cls}}" onClick="{{st.open}}" aria-label="{{st.label}}">
+            <div style="display:flex;justify-content:space-between;gap:6px"><strong style="font-size:14px;overflow-wrap:anywhere">{{st.name}}</strong><span style="font-size:11px;color:#df80f5;white-space:nowrap">{{st.pos}}</span></div>
+            <div style="font-size:12px;color:#c4b8a8;margin-top:2px">{{st.by}}</div>
+            <div style="font-size:12px;color:#f0e8d8;margin-top:4px">{{st.target}}</div>
+          </button>
+        </sc-for>
+      </div>
+      <div style="flex:1 1 auto"></div>
+      <sc-if value="{{showCombat}}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="lbl">Combat</span>
+          <div style="font-size:12.5px;color:#c4b8a8;line-height:1.45">{{combatText}}</div>
+        </div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #232328;padding-top:12px">
+        <strong style="font-size:14px;color:#df80f5">{{priorityText}}</strong>
+        <button class="primary" onClick="{{pass}}">{{passLabel}}</button>
+        <button class="secondary" onClick="{{passTurn}}">Pass until my turn</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{phStackOpen}}" hint-placeholder-val="{{ false }}">
+      <button class="secondary" style="min-height:32px;font-size:11.5px" onClick="{{toggleStack}}" aria-expanded="true">Hide stack</button>
+      <button class="stk top" style="flex:1 1 auto;display:flex;flex-direction:column;gap:2px;padding:6px 8px" onClick="{{openStack}}" aria-label="{{stackPhoneLabel}}">
+        <span class="lbl" style="font-size:10px">Stack · {{stackCount}}</span>
+        <strong style="font-size:12px;line-height:1.2;overflow-wrap:anywhere">{{stackTopName}}</strong>
+        <span style="font-size:10.5px;color:#c4b8a8;line-height:1.2">{{stackTopBy}}</span>
+      </button>
+      <button class="primary" style="font-size:13px" onClick="{{pass}}">{{passLabel}}</button>
+    </sc-if>
+  </aside>
+
+  <!-- Me -->
+  <section aria-label="Your side of the table" style="{{meAreaStyle}}">
+    <sc-if value="{{desk}}" hint-placeholder-val="{{ true }}">
+      <div class="panel" style="{{plateStyle}}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><strong style="font-size:15px">You</strong><span class="pill pri">Priority</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <button class="icon" style="width:36px;height:36px" aria-label="Lose 1 life" onClick="{{lifeDown}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+          <span class="life" style="font-size:40px" aria-label="{{meLifeLabel}}">{{meLife}}</span>
+          <button class="icon" style="width:36px;height:36px" aria-label="Gain 1 life" onClick="{{lifeUp}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        </div>
+        <div style="font-size:12px;color:#c4b8a8;text-align:center">Poison 0 · Commander tax +2</div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
+          <sc-for list="{{zones}}" as="z" hint-placeholder-count="4">
+            <button class="pile" style="{{z.style}}" onClick="{{z.open}}" aria-label="{{z.label}}">
+              <span class="pl">{{z.name}}</span><b class="pn">{{z.n}}</b>
+            </button>
+          </sc-for>
+        </div>
+        <div style="border-top:1px solid #232328;padding-top:6px">
+          <span class="lbl">Commander damage taken</span>
+          <sc-for list="{{cmdDmg}}" as="cd" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;font-size:12px;color:#c4b8a8"><span>{{cd.name}}</span><b style="color:#f0e8d8">{{cd.n}} / 21</b></div></sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ph}}" hint-placeholder-val="{{ false }}">
+      <button class="panel" style="width:84px;flex:none;padding:6px;display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left" onClick="{{openMe}}" aria-label="{{meLifeLabel}}, open your zones">
+        <strong style="font-size:12px">You</strong>
+        <span class="life" style="font-size:28px">{{meLife}}</span>
+        <span style="font-size:10.5px;color:#c4b8a8;line-height:1.35">Library 61<br>Graveyard 7<br>Exile 2<br>Hand 6</span>
+      </button>
+    </sc-if>
+    <div class="panel" style="{{meBoardStyle}}">
+      <sc-for list="{{meRows}}" as="row" hint-placeholder-count="3">
+        <div class="row" style="{{row.style}}">
+          <sc-for list="{{row.items}}" as="c" hint-placeholder-count="5">
+            <sc-if value="{{c.isCard}}" hint-placeholder-val="{{ true }}">
+              <span class="slot" style="{{c.slotStyle}}">
+                <button class="card" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}">
+                  <span class="cn" style="{{c.nameStyle}}">{{c.name}}</span>
+                  <sc-if value="{{c.hasType}}" hint-placeholder-val="{{ false }}"><span class="ct">{{c.type}}</span></sc-if>
+                  <span class="foot">
+                    <sc-if value="{{c.hasBadge}}" hint-placeholder-val="{{ false }}"><span class="{{c.badgeCls}}">{{c.badge}}</span></sc-if>
+                    <sc-if value="{{c.hasPt}}" hint-placeholder-val="{{ false }}"><span class="pt">{{c.pt}}</span></sc-if>
+                  </span>
+                  <sc-if value="{{c.hasCount}}" hint-placeholder-val="{{ false }}"><span class="cnt">×{{c.count}}</span></sc-if>
+                </button>
+              </span>
+            </sc-if>
+            <sc-if value="{{c.isChip}}" hint-placeholder-val="{{ false }}">
+              <button class="chip" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}"><b>{{c.text}}</b><span>{{c.sub}}</span></button>
+            </sc-if>
+            <sc-if value="{{c.isMore}}" hint-placeholder-val="{{ false }}">
+              <button class="more" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}"><b>{{c.text}}</b><span>more</span></button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- Hand -->
+  <section aria-label="Your hand" style="{{handStyle}}">
+    <sc-if value="{{deskStrip}}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{hand}}" as="h" hint-placeholder-count="6">
+        <button class="card" style="{{h.stripStyle}}" aria-label="{{h.label}}" onClick="{{h.open}}">
+          <span style="display:flex;gap:6px;align-items:flex-start;justify-content:space-between">
+            <span class="cn" style="font-size:12px">{{h.name}}</span>
+            <span style="white-space:nowrap;flex:none"><sc-for list="{{h.pips}}" as="pp" hint-placeholder-count="2"><span class="pip" style="{{pp.style}}">{{pp.l}}</span></sc-for></span>
+          </span>
+        </button>
+      </sc-for>
+      <button class="secondary" style="width:auto;padding:0 16px;flex:none;align-self:stretch" onClick="{{toggleHand}}" aria-expanded="{{handOpen}}">{{handToggleLabel}}</button>
+    </sc-if>
+    <sc-if value="{{deskFull}}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{hand}}" as="h" hint-placeholder-count="6">
+        <button class="card" style="{{h.style}}" aria-label="{{h.label}}" onClick="{{h.open}}">
+          <span style="display:flex;justify-content:flex-end">
+            <sc-for list="{{h.pips}}" as="pp" hint-placeholder-count="2"><span class="pip" style="{{pp.style}}">{{pp.l}}</span></sc-for>
+          </span>
+          <span class="cn" style="font-size:12.5px;margin-top:4px">{{h.name}}</span>
+          <span class="ct">{{h.type}}</span>
+          <span class="foot"><sc-if value="{{h.castable}}" hint-placeholder-val="{{ false }}"><span class="badge" style="background:#27ae60;color:#0a0a0b;font-weight:700">Can cast now</span></sc-if></span>
+        </button>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ph}}" hint-placeholder-val="{{ false }}">
+      <button class="panel" style="width:100%;height:100%;display:flex;align-items:center;gap:10px;padding:0 12px;font-size:13px" onClick="{{toggleHand}}" aria-expanded="{{handOpen}}">
+        <strong>Hand · 6 cards</strong><span style="color:#27ae60">2 can be cast now</span>
+        <span style="flex:1 1 auto"></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{chevStyle}}"><path d="M6 15l6-6 6 6"></path></svg>
+      </button>
+    </sc-if>
+  </section>
+
+  <sc-if value="{{phHandOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="panel" style="position:absolute;left:6px;right:120px;bottom:52px;padding:8px;display:flex;gap:6px;overflow-x:auto;z-index:4;background:#1b1b1f;border-color:#6a6a76">
+      <sc-for list="{{hand}}" as="h" hint-placeholder-count="6">
+        <button class="card" style="{{h.phStyle}}" aria-label="{{h.label}}" onClick="{{h.open}}">
+          <span class="cn" style="font-size:11px">{{h.name}}</span>
+          <span class="foot"><sc-if value="{{h.castable}}" hint-placeholder-val="{{ false }}"><span class="badge" style="background:#27ae60;color:#0a0a0b;font-weight:700">Cast</span></sc-if></span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{deskHandOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="panel" style="{{deskHandPanelStyle}}">
+      <sc-for list="{{hand}}" as="h" hint-placeholder-count="6">
+        <button class="card" style="{{h.raisedStyle}}" aria-label="{{h.label}}" onClick="{{h.open}}">
+          <span style="display:flex;justify-content:flex-end">
+            <sc-for list="{{h.pips}}" as="pp" hint-placeholder-count="2"><span class="pip" style="{{pp.style}}">{{pp.l}}</span></sc-for>
+          </span>
+          <span class="cn" style="font-size:13px;margin-top:4px">{{h.name}}</span>
+          <span class="ct">{{h.type}}</span>
+          <span class="foot"><sc-if value="{{h.castable}}" hint-placeholder-val="{{ false }}"><span class="badge" style="background:#27ae60;color:#0a0a0b;font-weight:700">Can cast now</span></sc-if></span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- A zone, opened: its cards face up (the library only as a count), with tabs to the owner's other zones -->
+  <sc-if value="{{hasZone}}" hint-placeholder-val="{{ false }}">
+    <button style="position:absolute;inset:0;background:rgba(0,0,0,.62);border:0;z-index:6;cursor:default" tabindex="-1" aria-label="Close the zone" onClick="{{closeZone}}"></button>
+    <div class="panel" role="dialog" aria-modal="true" aria-label="{{zm.title}}" style="{{zm.style}}">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 10px 18px;border-bottom:1px solid #32323a">
+        <div style="flex:1 1 auto;min-width:0">
+          <strong style="font-size:17px;line-height:1.25;overflow-wrap:anywhere;display:block">{{zm.title}}</strong>
+          <span style="font-size:12.5px;color:#c4b8a8">{{zm.sub}}</span>
+        </div>
+        <button class="icon" aria-label="Close the zone" onClick="{{closeZone}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div role="tablist" aria-label="Zones" style="display:flex;gap:6px;padding:10px 18px 0;flex-wrap:wrap">
+        <sc-for list="{{zm.tabs}}" as="t" hint-placeholder-count="4"><button role="tab" aria-selected="{{t.on}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.name}} <b>{{t.n}}</b></button></sc-for>
+      </div>
+      <sc-if value="{{zm.hasCards}}" hint-placeholder-val="{{ true }}">
+        <div style="{{zm.gridStyle}}">
+          <sc-for list="{{zm.cards}}" as="c" hint-placeholder-count="6">
+            <button class="card" style="{{c.style}}" aria-label="{{c.label}}" onClick="{{c.open}}">
+              <span style="display:flex;justify-content:flex-end;min-height:18px"><sc-for list="{{c.pips}}" as="pp" hint-placeholder-count="1"><span class="pip" style="{{pp.style}}">{{pp.l}}</span></sc-for></span>
+              <span class="cn" style="font-size:12.5px;margin-top:4px">{{c.name}}</span>
+              <span class="ct">{{c.type}}</span>
+              <span class="foot"><sc-if value="{{c.newest}}" hint-placeholder-val="{{ false }}"><span class="badge">Newest</span></sc-if></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{zm.isEmpty}}" hint-placeholder-val="{{ false }}">
+        <p style="margin:0;padding:28px 18px 32px;font-size:14px;color:#c4b8a8;line-height:1.5">{{zm.empty}}</p>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- Card / player / zone detail -->
+  <sc-if value="{{hasPreview}}" hint-placeholder-val="{{ false }}">
+    <div class="sheet" style="{{sheetStyle}}" role="dialog" aria-label="{{pv.title}}">
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:12px 12px 8px 16px;border-bottom:1px solid #32323a">
+        <div style="flex:1 1 auto;min-width:0">
+          <strong style="font-size:17px;line-height:1.25;overflow-wrap:anywhere;display:block">{{pv.title}}</strong>
+          <span style="display:block;margin-top:4px"><sc-for list="{{pv.pips}}" as="pp" hint-placeholder-count="0"><span class="pip" style="{{pp.style}}">{{pp.l}}</span></sc-for></span>
+        </div>
+        <button class="icon" aria-label="Close details" onClick="{{closePreview}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0e8d8" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div style="padding:12px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+        <sc-if value="{{pv.hasType}}" hint-placeholder-val="{{ true }}"><div style="font-size:13px;color:#c4b8a8">{{pv.type}}</div></sc-if>
+        <sc-if value="{{pv.hasText}}" hint-placeholder-val="{{ true }}"><div style="font-size:14px;line-height:1.5">{{pv.text}}</div></sc-if>
+        <sc-if value="{{pv.hasPt}}" hint-placeholder-val="{{ false }}"><div style="font-size:15px;font-weight:700">{{pv.pt}}</div></sc-if>
+        <sc-if value="{{pv.hasActions}}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <sc-for list="{{pv.actions}}" as="a" hint-placeholder-count="4"><button class="zbtn" style="min-height:44px" onClick="{{a.open}}" aria-label="{{a.label}}">{{a.name}} <b>{{a.n}}</b></button></sc-for>
+          </div>
+        </sc-if>
+        <sc-for list="{{pv.lines}}" as="ln" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;border-top:1px solid #232328;padding-top:6px"><span style="color:#c4b8a8">{{ln.k}}</span><b style="text-align:right;overflow-wrap:anywhere">{{ln.v}}</b></div></sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"seats":{"editor":"enum","options":["2","3","4"],"default":"4"},"view":{"editor":"enum","options":["focus","table"],"default":"focus"},"device":{"editor":"enum","options":["desktop","phone"],"default":"desktop"},"layout":{"editor":"enum","options":["compact","roomy"],"default":"compact"},"$preview":{"width":1280,"height":800}}'>
+var MANA = { W: '#f0e6c8', U: '#4a90d9', B: '#9b59b6', R: '#e74c3c', G: '#27ae60', C: '#95a5a6' };
+var FRAME = { W: '#25231d', U: '#16202b', B: '#201a25', R: '#2a1917', G: '#152119', M: '#272215', C: '#1d1e21', L: '#1a1a17' };
+
+// Card facts. Rules text is a short paraphrase, not the printed text.
+var DB = {
+  "Atraxa, Praetors' Voice": { cost: '1GWUB', type: 'Legendary Creature — Phyrexian Angel Horror', id: 'WUBG', k: 'creature', pt: '4/4', text: 'Flying, vigilance, deathtouch, lifelink. Proliferates at the start of your end step.' },
+  'Tireless Tracker': { cost: '2G', type: 'Creature — Human Scout', id: 'G', k: 'creature', pt: '3/2', text: 'Investigates whenever a land enters under your control; grows when you sacrifice a Clue.' },
+  'Llanowar Elves': { cost: 'G', type: 'Creature — Elf Druid', id: 'G', k: 'creature', pt: '1/1', text: 'Taps for one green mana.' },
+  'Grim Flayer': { cost: 'BG', type: 'Creature — Human Warrior', id: 'BG', k: 'creature', pt: '2/2', text: 'Trample. Bigger with delirium; filters your library on combat damage.' },
+  'Spirit': { cost: '', type: 'Token Creature — Spirit', id: 'W', k: 'creature', pt: '1/1', text: 'Flying.' },
+  'Sol Ring': { cost: '1', type: 'Artifact', id: 'C', k: 'other', text: 'Taps for two colourless mana.' },
+  'Arcane Signet': { cost: '2', type: 'Artifact', id: 'C', k: 'other', text: "Taps for one mana of a colour in your commander's identity." },
+  'Smothering Tithe': { cost: '3W', type: 'Enchantment', id: 'W', k: 'other', text: 'When an opponent draws, they pay 2 or you make a Treasure.' },
+  'Teferi, Master of Time': { cost: '2UU', type: 'Legendary Planeswalker — Teferi', id: 'U', k: 'other', text: 'Can use loyalty abilities on any turn, at instant speed.' },
+  "Yuriko, the Tiger's Shadow": { cost: '1UB', type: 'Legendary Creature — Human Ninja', id: 'UB', k: 'creature', pt: '1/3', text: 'Commander ninjutsu. On combat damage, reveal your top card; each opponent loses life equal to its mana value.' },
+  'Ninja of the Deep Hours': { cost: '3U', type: 'Creature — Human Ninja', id: 'U', k: 'creature', pt: '2/2', text: 'Ninjutsu. Draw a card when it deals combat damage to a player.' },
+  'Changeling Outcast': { cost: 'B', type: 'Creature — Shapeshifter', id: 'B', k: 'creature', pt: '1/1', text: "Every creature type. Can't block and can't be blocked." },
+  'Rhystic Study': { cost: '2U', type: 'Enchantment', id: 'U', k: 'other', text: 'When an opponent casts a spell, they pay 1 or you may draw.' },
+  'Fellwar Stone': { cost: '2', type: 'Artifact', id: 'C', k: 'other', text: 'Taps for a colour an opponent\'s land could make.' },
+  'Kenrith, the Returned King': { cost: '4R', type: 'Legendary Creature — Human Noble', id: 'WUBRG', k: 'creature', pt: '5/5', text: 'Five activated abilities, one for each colour.' },
+  'Avenger of Zendikar': { cost: '5GG', type: 'Creature — Elemental', id: 'G', k: 'creature', pt: '5/5', text: 'Makes a Plant per land on arrival; landfall grows the Plants.' },
+  'Plant': { cost: '', type: 'Token Creature — Plant', id: 'G', k: 'creature', pt: '0/1', text: '' },
+  'Birds of Paradise': { cost: 'G', type: 'Creature — Bird', id: 'G', k: 'creature', pt: '0/1', text: 'Flying. Taps for one mana of any colour.' },
+  'Doubling Season': { cost: '4G', type: 'Enchantment', id: 'G', k: 'other', text: 'Doubles tokens and counters you would get.' },
+  'Chromatic Lantern': { cost: '3', type: 'Artifact', id: 'C', k: 'other', text: 'Your lands tap for any colour.' },
+  'Osgir, the Reconstructor': { cost: '2RW', type: 'Legendary Creature — Giant Artificer', id: 'RW', k: 'creature', pt: '4/3', text: 'Sacrifice an artifact to give a creature +1/+0; copies artifacts from your graveyard.' },
+  'Thopter': { cost: '', type: 'Token Artifact Creature — Thopter', id: 'C', k: 'creature', pt: '1/1', text: 'Flying.' },
+  'Mind Stone': { cost: '2', type: 'Artifact', id: 'C', k: 'other', text: 'Taps for one colourless mana.' },
+  'Sword of Fire and Ice': { cost: '3', type: 'Artifact — Equipment', id: 'C', k: 'other', text: 'Equipped creature gets +2/+2 and protection from red and blue.' },
+  'Forest': { type: 'Basic Land — Forest', id: 'G', k: 'land' }, 'Island': { type: 'Basic Land — Island', id: 'U', k: 'land' },
+  'Plains': { type: 'Basic Land — Plains', id: 'W', k: 'land' }, 'Swamp': { type: 'Basic Land — Swamp', id: 'B', k: 'land' },
+  'Mountain': { type: 'Basic Land — Mountain', id: 'R', k: 'land' }, 'Command Tower': { type: 'Land', id: 'C', k: 'land' },
+  'Breeding Pool': { type: 'Land — Forest Island', id: 'UG', k: 'land' }, 'Overgrown Tomb': { type: 'Land — Swamp Forest', id: 'BG', k: 'land' },
+  'Watery Grave': { type: 'Land — Island Swamp', id: 'UB', k: 'land' }, 'Exotic Orchard': { type: 'Land', id: 'C', k: 'land' },
+  'Sacred Foundry': { type: 'Land — Mountain Plains', id: 'RW', k: 'land' },
+  'Cyclonic Rift': { cost: '1U', type: 'Instant', id: 'U', text: 'Return a nonland permanent; overloaded, every one opponents control.' },
+  'Cultivate': { cost: '2G', type: 'Sorcery', id: 'G', text: 'Fetch two basic lands: one to play, one to hand.' },
+  'Beast Within': { cost: '2G', type: 'Instant', id: 'G', text: 'Destroy a permanent; its controller gets a 3/3 Beast.' },
+  'Hallowed Fountain': { cost: '', type: 'Land — Plains Island', id: 'WU', text: 'Shock land.' },
+  'Swords to Plowshares': { cost: 'W', type: 'Instant', id: 'W', text: 'Exile a creature; its controller gains life equal to its power.' },
+  'Counterspell': { cost: 'UU', type: 'Instant', id: 'U', text: 'Counter a spell.' },
+  'Infernal Grasp': { cost: '1B', type: 'Instant', id: 'B', text: 'Destroy a creature. You lose 2 life.' }
+};
+
+var ME = { name: 'You', perms: [
+  { n: "Atraxa, Praetors' Voice", commander: true },
+  { n: 'Tireless Tracker', pt: '5/4', badge: '+1/+1 ×2' },
+  { n: 'Grim Flayer', pt: '4/4' },
+  { n: 'Llanowar Elves', count: 2, tapped: true },
+  { n: 'Spirit', count: 3, token: true },
+  { n: 'Sol Ring', tapped: true }, { n: 'Arcane Signet' }, { n: 'Smothering Tithe' },
+  { n: 'Teferi, Master of Time', badge: 'Loyalty 5' },
+  { n: 'Forest', count: 4, tappedN: 2 }, { n: 'Island', count: 2 }, { n: 'Plains', count: 2, tappedN: 1 },
+  { n: 'Swamp', count: 1 }, { n: 'Command Tower', count: 1, tappedN: 1 }, { n: 'Breeding Pool', count: 1 }, { n: 'Overgrown Tomb', count: 1, tappedN: 1 }
+] };
+
+var OPPS = [
+  { name: 'Mira_Lindqvist', life: 27, hand: 3, library: 71, graveyard: 9, exile: 0, poison: 0, cmdr: "Yuriko, the Tiger's Shadow", dmg: 6, active: true, perms: [
+    { n: "Yuriko, the Tiger's Shadow", commander: true, attacking: true, tapped: true },
+    { n: 'Ninja of the Deep Hours', attacking: true, tapped: true },
+    { n: 'Changeling Outcast' }, { n: 'Rhystic Study' }, { n: 'Arcane Signet', tapped: true }, { n: 'Fellwar Stone' },
+    { n: 'Island', count: 5, tappedN: 3 }, { n: 'Swamp', count: 4, tappedN: 1 }, { n: 'Watery Grave', count: 1 }, { n: 'Command Tower', count: 1, tappedN: 1 }
+  ] },
+  { name: 'tobias', life: 40, hand: 5, library: 64, graveyard: 4, exile: 1, poison: 0, cmdr: 'Kenrith, the Returned King', dmg: 0, perms: [
+    { n: 'Kenrith, the Returned King', commander: true }, { n: 'Avenger of Zendikar' }, { n: 'Plant', count: 7, token: true, pt: '1/2', badge: '+1/+1' },
+    { n: 'Birds of Paradise', tapped: true }, { n: 'Doubling Season' }, { n: 'Chromatic Lantern' },
+    { n: 'Forest', count: 4, tappedN: 2 }, { n: 'Mountain', count: 3, tappedN: 2 }, { n: 'Plains', count: 1 }, { n: 'Island', count: 1, tappedN: 1 },
+    { n: 'Swamp', count: 1 }, { n: 'Command Tower', count: 1 }, { n: 'Exotic Orchard', count: 1 }
+  ] },
+  { name: 'Sefa_the_Archivist_of_Lorehold', life: 12, hand: 1, library: 58, graveyard: 17, exile: 3, poison: 3, cmdr: 'Osgir, the Reconstructor', dmg: 4, perms: [
+    { n: 'Osgir, the Reconstructor', commander: true, pt: '6/5', badge: 'Equipped' }, { n: 'Thopter', count: 2, token: true, tapped: true },
+    { n: 'Mind Stone', tapped: true }, { n: 'Sword of Fire and Ice' },
+    { n: 'Mountain', count: 3, tappedN: 3 }, { n: 'Plains', count: 3, tappedN: 1 }, { n: 'Sacred Foundry', count: 1 }
+  ] }
+];
+
+var HAND = [
+  { n: 'Cyclonic Rift', castable: true }, { n: 'Beast Within', castable: true }, { n: 'Cultivate' },
+  { n: 'Doubling Season' }, { n: 'Rhystic Study' }, { n: 'Hallowed Fountain' }
+];
+
+// What each player's graveyard and exile hold, newest first. Libraries stay hidden.
+var ZONE_CARDS = {
+  'You': { gy: ['Farseek', 'Path to Exile', 'Counterspell', 'Evolving Wilds', 'Rampant Growth', "Nature's Lore", 'Arcane Denial'], ex: ['Brainstorm', 'Ponder'] },
+  'Mira_Lindqvist': { gy: ['Snuff Out', 'Brainstorm', 'Ponder', 'Fatal Push', 'Thoughtseize', 'Preordain', 'Gitaxian Probe', 'Mental Note', 'Toxic Deluge'], ex: [] },
+  'tobias': { gy: ['Lightning Bolt', "Kodama's Reach", 'Cultivate', 'Swords to Plowshares'], ex: ['Dockside Extortionist'] },
+  'Sefa_the_Archivist_of_Lorehold': { gy: ['Chaos Warp', 'Boros Charm', 'Wear // Tear', 'Thopter Foundry', 'Ichor Wellspring', 'Chromatic Star', 'Faithless Looting', 'Lightning Helix', 'Ornithopter', 'Retrofitter Foundry', 'Unearth', "Smuggler's Copter", 'Skullclamp', 'Experimental Frenzy', 'Bone Saw', 'Sungrass Prairie', 'Mountain'], ex: ['Treasure Map', 'Wayfarer\'s Bauble', 'Jhoira\'s Familiar'] }
+};
+var MEP = { name: 'You', library: 61, graveyard: 7, exile: 2, cmdr: "Atraxa, Praetors' Voice" };
+
+// Cost, type and colour for the cards that only appear in graveyards and exile.
+[
+  ['Farseek', '1G', 'Sorcery', 'G'], ['Path to Exile', 'W', 'Instant', 'W'], ['Evolving Wilds', '', 'Land', 'C'],
+  ['Rampant Growth', '1G', 'Sorcery', 'G'], ["Nature's Lore", '1G', 'Sorcery', 'G'], ['Arcane Denial', '1U', 'Instant', 'U'],
+  ['Brainstorm', 'U', 'Instant', 'U'], ['Ponder', 'U', 'Sorcery', 'U'], ['Snuff Out', '3B', 'Instant', 'B'],
+  ['Fatal Push', 'B', 'Instant', 'B'], ['Thoughtseize', 'B', 'Sorcery', 'B'], ['Preordain', 'U', 'Sorcery', 'U'],
+  ['Gitaxian Probe', 'U', 'Sorcery', 'U'], ['Mental Note', 'U', 'Instant', 'U'], ['Toxic Deluge', '2B', 'Sorcery', 'B'],
+  ['Lightning Bolt', 'R', 'Instant', 'R'], ["Kodama's Reach", '2G', 'Sorcery — Arcane', 'G'],
+  ['Dockside Extortionist', '1R', 'Creature — Goblin Pirate', 'R'], ['Chaos Warp', '2R', 'Instant', 'R'],
+  ['Boros Charm', 'RW', 'Instant', 'RW'], ['Wear // Tear', '1R', 'Instant', 'RW'], ['Thopter Foundry', 'U', 'Artifact', 'WUB'],
+  ['Ichor Wellspring', '2', 'Artifact', 'C'], ['Chromatic Star', '1', 'Artifact', 'C'], ['Faithless Looting', 'R', 'Sorcery', 'R'],
+  ['Lightning Helix', 'RW', 'Instant', 'RW'], ['Ornithopter', '', 'Artifact Creature — Thopter', 'C'],
+  ['Retrofitter Foundry', '1', 'Artifact', 'C'], ['Unearth', 'B', 'Sorcery', 'B'], ["Smuggler's Copter", '2', 'Artifact — Vehicle', 'C'],
+  ['Skullclamp', '1', 'Artifact — Equipment', 'C'], ['Experimental Frenzy', '3R', 'Enchantment', 'R'],
+  ['Bone Saw', '', 'Artifact — Equipment', 'C'], ['Sungrass Prairie', '', 'Land', 'C'], ['Treasure Map', '2', 'Artifact', 'C'],
+  ["Wayfarer's Bauble", '1', 'Artifact', 'C'], ["Jhoira's Familiar", '4', 'Artifact Creature — Bird', 'C']
+].forEach(function (r) { if (!DB[r[0]]) DB[r[0]] = { cost: r[1], type: r[2], id: r[3] }; });
+
+function idKey(id) { if (!id || id === 'C') return 'C'; return id.length > 1 ? 'M' : id; }
+function band(id) { if (!id || id === 'C') return MANA.C; return id.length > 1 ? '#c9a54a' : MANA[id]; }
+function pips(cost) {
+  var out = [];
+  for (var i = 0; i < (cost || '').length; i++) {
+    var ch = cost[i];
+    out.push({ l: ch, style: 'background:' + (MANA[ch] || '#c4b8a8') });
+  }
+  return out;
+}
+function shortName(n) { return n.split(',')[0]; }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { seats: null, view: null, focus: 0, preview: null, handOpen: false, passed: false, life: 34, stackOpen: true, zone: null };
+  }
+
+  open(pv) { this.setState({ preview: pv, handOpen: false }); }
+
+  cardPreview(perm, owner) {
+    var d = DB[perm.n] || {};
+    var lines = [{ k: 'Controller', v: owner }];
+    if (perm.count > 1) lines.push({ k: 'Copies', v: String(perm.count) });
+    if (perm.tappedN) lines.push({ k: 'Tapped', v: perm.tappedN + ' of ' + perm.count });
+    else if (perm.tapped) lines.push({ k: 'State', v: 'Tapped' });
+    if (perm.attacking) lines.push({ k: 'Combat', v: 'Attacking you' });
+    if (perm.badge) lines.push({ k: 'On it', v: perm.badge });
+    if (perm.commander) lines.push({ k: 'Role', v: 'Commander' });
+    return { title: perm.n, pips: pips(d.cost), type: d.type || '', hasType: !!d.type, text: d.text || '', hasText: !!d.text,
+      pt: perm.pt || d.pt || '', hasPt: !!(perm.pt || d.pt), lines: lines };
+  }
+
+  playerPreview(p) {
+    return { title: p.name, pips: [], type: 'Commander: ' + p.cmdr, hasType: true, text: '', hasText: false, pt: '', hasPt: false,
+      hasActions: true, actions: this.zoneButtons(p), lines: [
+      { k: 'Life', v: String(p.life) }, { k: 'Poison', v: String(p.poison) }, { k: 'Hand', v: p.hand + ' cards' },
+      { k: 'Commander damage dealt to you', v: p.dmg + ' / 21' }
+    ] };
+  }
+
+  // The four zones every player has, as separate piles. Each opens its zone in a modal.
+  zoneButtons(p, tileStyle) {
+    var self = this, z = ZONE_CARDS[p.name] || { gy: [], ex: [] };
+    var whose = p.name === 'You' ? 'Your' : p.name + '’s';
+    var looks = {
+      library: 'background:#16121c;border-color:#5a2a6e;',
+      graveyard: z.gy.length ? 'background:' + FRAME[idKey((DB[z.gy[0]] || {}).id)] + ';border-top:3px solid ' + band((DB[z.gy[0]] || {}).id) + ';' : '',
+      exile: 'border-style:dashed;border-color:#6a6a76;',
+      command: ''
+    };
+    return [
+      { key: 'library', name: 'Library', n: p.library, top: '' },
+      { key: 'graveyard', name: 'Graveyard', n: z.gy.length, top: z.gy.length ? shortName(z.gy[0]) : '' },
+      { key: 'exile', name: 'Exile', n: z.ex.length, top: z.ex.length ? shortName(z.ex[0]) : '' },
+      { key: 'command', name: 'Command', n: 0, top: '' }
+    ].map(function (b) {
+      return { name: b.name, n: b.n, top: b.top, hasTop: !!b.top, style: (tileStyle || '') + looks[b.key],
+        label: whose + ' ' + (b.key === 'command' ? 'command zone' : b.key) + ', ' + b.n + (b.n === 1 ? ' card' : ' cards') + (b.top ? ', top card ' + b.top : '') + '. Open.',
+        open: function () { self.setState({ zone: { p: p.name, which: b.key }, preview: null, handOpen: false }); } };
+    });
+  }
+
+  // The open zone: header, a tab per zone of the same player, and the cards face up.
+  zoneModal(zs, ph) {
+    var self = this;
+    var p = zs.p === 'You' ? MEP : OPPS.filter(function (o) { return o.name === zs.p; })[0];
+    var z = ZONE_CARDS[zs.p] || { gy: [], ex: [] };
+    var whose = zs.p === 'You' ? 'Your' : zs.p + '’s';
+    var names = { library: 'Library', graveyard: 'Graveyard', exile: 'Exile', command: 'Command zone' };
+    var counts = { library: p.library, graveyard: z.gy.length, exile: z.ex.length, command: 0 };
+    var cards = zs.which === 'graveyard' ? z.gy : zs.which === 'exile' ? z.ex : [];
+    var empty = zs.which === 'library' ? p.library + ' cards, face down. Nobody may look at a library unless a card lets them.'
+      : zs.which === 'command' ? 'Empty. ' + shortName(p.cmdr) + ' is on the battlefield.'
+      : 'Nothing here yet.';
+    var n = counts[zs.which];
+    return {
+      title: whose + ' ' + names[zs.which].toLowerCase(),
+      sub: n + (n === 1 ? ' card' : ' cards') + (cards.length ? ' · newest first' : ''),
+      tabs: ['library', 'graveyard', 'exile', 'command'].map(function (k) {
+        return { name: names[k], n: counts[k], on: k === zs.which ? 'true' : 'false', cls: k === zs.which ? 'tab on' : 'tab',
+          pick: function () { self.setState({ zone: { p: zs.p, which: k } }); } };
+      }),
+      hasCards: cards.length > 0, isEmpty: cards.length === 0, empty: empty,
+      cards: cards.map(function (name, i) {
+        var d = DB[name] || {};
+        return { name: name, type: d.type || '', pips: pips(d.cost), newest: i === 0,
+          style: 'width:100%;height:' + (ph ? 116 : 150) + 'px;background:' + FRAME[idKey(d.id)] + ';border-top:3px solid ' + band(d.id) + ';',
+          label: name + (d.type ? ', ' + d.type : '') + (i === 0 ? ', newest' : '') + '. Open details.',
+          open: function () { self.open(self.cardPreview({ n: name }, p.name + ' · ' + names[zs.which].toLowerCase())); } };
+      }),
+      gridStyle: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(' + (ph ? 96 : 118) + 'px,1fr));gap:10px;padding:14px 18px 18px;overflow-y:auto;min-height:0;align-content:start',
+      style: ph
+        ? 'position:absolute;inset:8px;display:flex;flex-direction:column;z-index:7;background:#1b1b1f;border-color:#6a6a76'
+        : 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;max-width:calc(100% - 48px);max-height:84%;display:flex;flex-direction:column;z-index:7;background:#1b1b1f;border-color:#6a6a76;box-shadow:0 24px 64px rgba(0,0,0,.6)'
+    };
+  }
+
+  listPreview(title, perms, owner) {
+    return { title: title, pips: [], type: owner, hasType: true, text: '', hasText: false, pt: '', hasPt: false,
+      lines: perms.map(function (p) {
+        var v = p.count > 1 ? '×' + p.count : '';
+        if (p.tappedN) v += (v ? ' · ' : '') + p.tappedN + ' tapped';
+        else if (p.tapped) v += (v ? ' · ' : '') + 'tapped';
+        return { k: p.n, v: v || '—' };
+      }) };
+  }
+
+  // One permanent as a card. Tapped cards turn sideways inside a square slot.
+  cardView(perm, sz, owner, side) {
+    var self = this, d = DB[perm.n] || {}, w = sz[0], h = sz[1];
+    var tapped = !!perm.tapped, count = perm.count || 1;
+    var small = w < 60;
+    var fs = w >= 78 ? 12 : (w >= 56 ? 11 : 10);
+    var tf = [];
+    if (tapped) tf.push('rotate(90deg)');
+    if (perm.attacking) tf.push(side === 'opp' ? 'translateX(10px)' : 'translateX(-10px)');
+    var shadow = [];
+    if (count > 1) shadow.push('3px -3px 0 -1px #111113', '3px -3px 0 0 #6a6a76');
+    if (perm.attacking) shadow.push('0 0 0 2px #e74c3c');
+    var style = 'width:' + w + 'px;height:' + h + 'px;background:' + FRAME[idKey(d.id)] + ';border-top:3px solid ' + band(d.id) + ';' +
+      (tf.length ? 'transform:' + tf.join(' ') + ';' : '') + (shadow.length ? 'box-shadow:' + shadow.join(',') + ';' : '') +
+      (perm.commander ? 'border-color:#df80f5;border-top-color:' + band(d.id) + ';' : '') + (tapped ? 'opacity:.92;' : '');
+    var badge = perm.attacking ? 'Attacking' : (perm.badge || (perm.commander && w >= 72 ? 'Commander' : ''));
+    var pt = perm.pt || d.pt || '';
+    var label = perm.n + (count > 1 ? ', ' + count + ' copies' : '') + (tapped ? ', tapped' : '') + (perm.attacking ? ', attacking you' : '') + (pt ? ', ' + pt : '');
+    var subtype = (d.type || '').split('—')[1];
+    return { isCard: true, isChip: false, isMore: false,
+      name: small ? shortName(perm.n) : perm.n, nameStyle: 'font-size:' + fs + 'px',
+      hasType: w >= 72 && !!subtype, type: subtype ? subtype.trim() : '',
+      slotStyle: 'width:' + (tapped ? h : w) + 'px;height:' + h + 'px', style: style,
+      hasBadge: !!badge && w >= 52, badge: badge, badgeCls: perm.attacking ? 'badge atk' : 'badge',
+      hasPt: !!pt, pt: pt, hasCount: count > 1, count: count, label: label,
+      w: tapped ? h : w,
+      open: function () { self.open(self.cardPreview(perm, owner)); } };
+  }
+
+  landTile(perm, sz, owner) {
+    var self = this, d = DB[perm.n] || {}, w = sz[0], h = sz[1], count = perm.count || 1, t = perm.tappedN || 0;
+    var sub = t === 0 ? 'all untapped' : (t === count ? 'all tapped' : t + ' tapped');
+    return { isCard: true, isChip: false, isMore: false, name: perm.n, nameStyle: 'font-size:11.5px',
+      hasType: false, type: '', slotStyle: 'width:' + w + 'px;height:' + h + 'px',
+      style: 'width:' + w + 'px;height:' + h + 'px;padding:3px 6px;background:' + FRAME.L + ';border-top:3px solid ' + band(d.id) + ';' + (t === count ? 'opacity:.6;' : ''),
+      hasBadge: true, badge: sub, badgeCls: 'badge', hasPt: false, pt: '', hasCount: count > 1, count: count,
+      label: perm.n + ', ' + count + (count > 1 ? ' copies, ' : ', ') + sub, w: w,
+      open: function () { self.open(self.cardPreview(perm, owner)); } };
+  }
+
+  landChip(perms, owner, h) {
+    var self = this, total = 0, tapped = 0;
+    perms.forEach(function (p) { total += p.count || 1; tapped += p.tappedN || 0; });
+    var w = h < 50 ? 84 : 112;
+    return { isCard: false, isChip: true, isMore: false, text: 'Lands ' + total, sub: (total - tapped) + ' untapped',
+      label: owner + ' lands: ' + total + ', ' + (total - tapped) + ' untapped. Open the list.',
+      style: 'width:' + w + 'px;height:' + Math.min(h, 52) + 'px', w: w,
+      open: function () { self.open(self.listPreview('Lands', perms, owner)); } };
+  }
+
+  // Fill one row left to right; whatever does not fit pages behind a "+N more" button.
+  fillRow(items, rest, rowW, gap, h, owner) {
+    var self = this, used = 0, out = [], moreW = 52;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i], need = it.w + (out.length ? gap : 0);
+      var left = items.length - i - 1;
+      if (used + need + (left ? moreW + gap : 0) > rowW) {
+        var hidden = rest.slice(i);
+        var n = hidden.reduce(function (a, p) { return a + (p.count || 1); }, 0);
+        out.push({ isCard: false, isChip: false, isMore: true, text: '+' + n, label: n + ' more permanents. Open the list.',
+          style: 'width:' + moreW + 'px;height:' + Math.min(h, 64) + 'px',
+          open: function () { self.open(self.listPreview('More permanents', hidden, owner)); } });
+        break;
+      }
+      out.push(it); used += need;
+    }
+    return out;
+  }
+
+  rowsFor(player, role, sz, rowW, gap) {
+    var self = this, owner = player.name, side = role.indexOf('me') === 0 ? 'me' : 'opp';
+    var cre = [], oth = [], lands = [];
+    player.perms.forEach(function (p) { var k = (DB[p.n] || {}).k; (k === 'creature' ? cre : k === 'land' ? lands : oth).push(p); });
+    function row(perms, cardSz, landMode, h, align) {
+      var items = [], rest = [];
+      if (landMode === 'chip' && lands.length) items.push(self.landChip(lands, owner, h));
+      if (landMode === 'tiles') lands.forEach(function (p) { items.push(self.landTile(p, sz.land, owner)); rest.push(p); });
+      perms.forEach(function (p) { items.push(self.cardView(p, p.k === 'other' || (DB[p.n] || {}).k === 'other' ? sz.other : cardSz, owner, side)); rest.push(p); });
+      var lead = items.length - rest.length;
+      var fitted = self.fillRow(items.slice(lead), rest, rowW - (lead ? items[0].w + gap : 0), gap, h, owner);
+      return { style: 'height:' + h + 'px;gap:' + gap + 'px;align-items:' + (align || 'flex-end') + (side === 'opp' ? ';justify-content:center;width:100%' : ''), items: items.slice(0, lead).concat(fitted) };
+    }
+    if (role === 'me-d') return [row(cre, sz.crea, null, sz.crea[1], 'flex-start'), row(oth, sz.other, null, sz.other[1]), row([], null, 'tiles', sz.land[1])];
+    if (role === 'me-p') return [row(cre, sz.crea, null, sz.crea[1], 'flex-start'), row(oth, sz.other, 'chip', sz.other[1])];
+    if (role === 'opp-d') return [row(oth, sz.other, 'tiles', sz.other[1]), row(cre, sz.crea, null, sz.crea[1])];
+    if (role === 'opp-o') return [row(oth, sz.other, 'chip', sz.other[1]), row(cre, sz.crea, null, sz.crea[1])];
+    return [row(cre.concat(oth), sz.crea, 'chip', sz.crea[1], 'center')];
+  }
+
+  renderVals() {
+    var self = this, p = this.props || {}, s = this.state || {};
+    var ph = p.device === 'phone', desk = !ph;
+    var seats = Number(s.seats || p.seats || 4);
+    var view = seats === 2 ? 'single' : (ph ? 'focus' : (s.view || p.view || 'focus'));
+    var opps = OPPS.slice(0, seats - 1);
+    var focus = Math.min(s.focus || 0, opps.length - 1);
+    // "roomy": your board gets the space (two card rows plus a thin land strip), the hand is a
+    // strip of card tops that rises on request, and the stack column narrows to what it holds.
+    var roomy = p.layout === 'roomy';
+    var stackItems = seats === 2 ? 1 : 2;
+    var W = ph ? 667 : 1280, H = ph ? 375 : 800, pad = ph ? 6 : 12, gap = ph ? (roomy ? 6 : 4) : (roomy ? 12 : 6);
+    var stackW = ph ? (roomy ? 96 : 108) : (roomy ? (stackItems > 1 ? 216 : 184) : 248);
+    var stackOpen = s.stackOpen !== false;
+    if (!stackOpen) stackW = ph ? 64 : 84;
+    var topH = ph ? 26 : 44, meH = ph ? (roomy ? 160 : 146) : (roomy ? 320 : 300), handH = ph ? (roomy ? 34 : 40) : (roomy ? 64 : 140);
+    var mainW = W - stackW - pad * 3, plateW = ph ? 84 : (roomy ? 160 : 176), meW = mainW - plateW - pad - (roomy && desk ? 24 : 16);
+
+    var rootStyle = 'width:' + W + 'px;height:' + H + 'px;padding:' + pad + 'px;display:grid;gap:' + pad + 'px;' +
+      'grid-template-columns:minmax(0,1fr) ' + stackW + 'px;grid-template-rows:' + topH + 'px minmax(0,1fr) ' + meH + 'px ' + handH + 'px';
+
+    // Opponents
+    var showRail = view === 'focus';
+    var oppBoards = [];
+    var pillsFor = function (o) {
+      var out = [];
+      if (o.active) out.push({ cls: 'pill atk', text: 'Attacking you' });
+      if (o.poison) out.push({ cls: 'pill', text: 'Poison ' + o.poison });
+      return out;
+    };
+    if (view === 'single' || view === 'focus') {
+      var o = opps[focus];
+      // One opponent on show: their board fills the space above yours, so card size follows
+      // the height that is left after the rail or the name strip.
+      var oppH = H - pad * 5 - topH - meH - handH;
+      var railH = showRail ? (ph ? 48 : 66) : 0;
+      var headH = view === 'single' ? (ph ? 26 : 36) : 0;
+      var bpad = ph ? 4 : 8;
+      var avail = oppH - railH - headH - bpad * 2;
+      var sz;
+      if (ph) {
+        var ch = Math.min(avail, 96);
+        sz = { crea: [Math.round(ch * 0.72), ch], other: [Math.round(ch * 0.6), Math.round(ch * 0.82)] };
+      } else {
+        var a = avail - 8, ch2 = Math.min(Math.round(a * 0.58), 170), oh = Math.min(a - ch2, 120);
+        sz = { crea: [Math.round(ch2 * 0.72), ch2], other: [Math.round(oh * 0.72), oh], land: [88, Math.min(40, oh)] };
+      }
+      var zcolW = ph ? 140 : 136;
+      var bw = mainW - bpad * 2 - 2 - zcolW - gap;
+      oppBoards.push({ label: o.name + ' battlefield', header: view === 'single',
+        style: 'height:100%;flex:1 1 auto;min-width:0;padding:' + bpad + 'px;display:flex;flex-direction:column;gap:' + (ph ? 4 : 6) + 'px',
+        bodyStyle: 'flex:1 1 auto;min-height:0;display:flex;gap:' + gap + 'px;align-items:stretch',
+        rowsStyle: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px',
+        zoneNavStyle: 'flex:none;width:' + zcolW + 'px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:' + (ph ? 3 : 6) + 'px;align-content:center',
+        zones: this.zoneButtons(o, ph ? 'height:' + Math.max(32, Math.floor((avail - 3) / 2)) + 'px;padding:2px 4px;' : 'height:' + Math.min(96, Math.floor((avail - 14) / 2)) + 'px;'),
+        zonesLabel: o.name + ' zones',
+        hcls: 'plate', hstyle: 'flex-direction:row;align-items:center;gap:10px;padding:2px 8px;min-height:' + (ph ? 22 : 30) + 'px;border:0;background:transparent',
+        hnameStyle: 'font-size:' + (ph ? 12 : 14) + 'px', hlifeStyle: 'font-size:' + (ph ? 15 : 20) + 'px',
+        name: o.name, life: o.life, sub: 'Hand ' + o.hand + (ph ? '' : ' · Commander damage to you ' + o.dmg),
+        pills: pillsFor(o), hlabel: o.name + ', ' + o.life + ' life. Open player details.',
+        hpick: function () { self.open(self.playerPreview(o)); },
+        rows: this.rowsFor(o, ph ? 'opp-p' : 'opp-d', sz, bw, gap) });
+    } else {
+      var n = opps.length, colW = Math.floor((mainW - pad * (n - 1)) / n);
+      opps.forEach(function (o, i) {
+        var sz2 = roomy ? { crea: [72, 100], other: [52, 72] } : { crea: [58, 80], other: [46, 62] };
+        oppBoards.push({ label: o.name + ' battlefield', header: true,
+          style: 'width:' + colW + 'px;height:100%;padding:8px;display:flex;flex-direction:column;gap:6px;' + (o.active ? 'border-color:#e74c3c;' : ''),
+          bodyStyle: 'flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:6px',
+          rowsStyle: 'flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:6px',
+          zoneNavStyle: 'flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px',
+          zones: self.zoneButtons(o, 'height:' + (roomy ? 48 : 40) + 'px;padding:3px 6px;'), zonesLabel: o.name + ' zones',
+          hcls: 'plate', hstyle: 'flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:4px 8px;border:0;background:#1b1b1f;min-height:40px',
+          hnameStyle: 'font-size:13px;flex:1 1 60%', hlifeStyle: 'font-size:20px',
+          name: o.name, life: o.life, sub: 'Hand ' + o.hand + ' · Cmdr dmg ' + o.dmg, pills: pillsFor(o),
+          hlabel: o.name + ', ' + o.life + ' life. Focus this opponent.',
+          hpick: function () { self.setState({ view: 'focus', focus: i }); },
+          rows: self.rowsFor(o, 'opp-o', sz2, colW - 16, roomy ? 8 : 5) });
+      });
+    }
+    var rail = showRail ? opps.map(function (o, i) {
+      var sel = i === focus;
+      return { cls: sel ? 'plate sel' : 'plate', selected: sel ? 'true' : 'false', name: o.name, life: o.life,
+        style: 'flex:1 1 0;padding:' + (ph ? '4px 8px' : '6px 10px') + ';min-height:' + (ph ? 44 : 58) + 'px;justify-content:center',
+        nameStyle: 'flex:1 1 auto;font-size:' + (ph ? 11 : 13.5) + 'px', lifeStyle: 'font-size:' + (ph ? 16 : 22) + 'px' + (o.life <= 15 ? ';color:#ff9a8f' : ''),
+        showSub: desk, sub: 'Hand ' + o.hand + ' · Cmdr dmg ' + o.dmg, pills: pillsFor(o),
+        label: o.name + ', ' + o.life + ' life' + (o.active ? ', attacking you' : '') + (o.poison ? ', ' + o.poison + ' poison' : '') + (sel ? ', shown' : '. Show their battlefield.'),
+        pick: function () { self.setState({ focus: i }); } };
+    }) : [];
+    var oppAreaStyle = 'grid-column:1;grid-row:2;min-height:0;display:flex;flex-direction:column;gap:' + (ph ? 4 : 8) + 'px';
+    var railStyle = 'display:flex;gap:' + (ph ? 4 : 8) + 'px;align-items:stretch;flex:none';
+    var boardsStyle = 'flex:1 1 auto;min-height:0;display:flex;gap:' + pad + 'px';
+
+    // Me
+    var meSz = ph ? (roomy ? { crea: [62, 84], other: [44, 58] } : { crea: [58, 80], other: [44, 58] })
+      : roomy ? { crea: [104, 144], other: [68, 94], land: [86, 38] } : { crea: [86, 118], other: [62, 84], land: [96, 44] };
+    var meRows = this.rowsFor(ME, ph ? 'me-p' : 'me-d', meSz, meW, gap);
+    var meAreaStyle = 'grid-column:1;grid-row:3;display:flex;gap:' + pad + 'px;min-height:0';
+    var meBoardStyle = 'flex:1 1 auto;min-width:0;padding:' + (ph ? (roomy ? 6 : 4) : (roomy ? 12 : 8)) + 'px;display:flex;flex-direction:column;gap:' + (ph ? (roomy ? 6 : 4) : (roomy ? 10 : 8)) + 'px';
+    var plateStyle = 'width:' + plateW + 'px;flex:none;padding:12px;display:flex;flex-direction:column;gap:' + (roomy ? 6 : 8) + 'px';
+
+    // Stack
+    var stackList = seats === 2
+      ? [{ n: 'Infernal Grasp', by: 'Mira_Lindqvist', target: 'Targets your Grim Flayer' }]
+      : [{ n: 'Counterspell', by: 'tobias', target: 'Targets Swords to Plowshares' }, { n: 'Swords to Plowshares', by: 'You', target: "Targets Yuriko, the Tiger's Shadow" }];
+    var stack = stackList.map(function (st, i) {
+      return { cls: i === 0 ? 'stk top' : 'stk', name: st.n, pos: i === 0 ? 'Resolves next' : '#' + (stackList.length - i), by: 'Cast by ' + st.by, target: st.target,
+        label: st.n + ', cast by ' + st.by + ', ' + st.target + (i === 0 ? ', resolves next' : ''),
+        open: function () { self.open(self.cardPreview({ n: st.n }, st.by)); } };
+    });
+    var stackStyle = 'grid-column:2;grid-row:2 / 5;padding:' + (ph ? 6 : 14) + 'px;display:flex;flex-direction:column;gap:' + (ph ? 6 : 12) + 'px;min-height:0';
+
+    // Hand
+    var hand = HAND.map(function (c) {
+      var d = DB[c.n] || {};
+      var base = 'background:' + FRAME[idKey(d.id)] + ';border-top:3px solid ' + band(d.id) + ';' + (c.castable ? 'box-shadow:0 0 0 2px #27ae60;' : '');
+      return { name: c.n, type: d.type, pips: pips(d.cost), castable: !!c.castable,
+        style: 'width:104px;height:128px;' + base, phStyle: 'width:72px;height:100px;' + base,
+        stripStyle: 'width:132px;height:100%;' + base, raisedStyle: 'width:120px;height:168px;' + base,
+        label: c.n + ', ' + d.type + (c.castable ? ', can be cast now' : ''),
+        open: function () { self.open(self.cardPreview({ n: c.n }, 'You (hand)')); } };
+    });
+    var handStyle = 'grid-column:1;grid-row:4;display:flex;gap:10px;align-items:' + (roomy && desk ? 'stretch' : 'flex-end') + ';justify-content:center;min-height:0';
+
+    var zones = this.zoneButtons(MEP, 'height:' + (roomy ? 52 : 56) + 'px;padding:4px 6px;');
+    var zm = s.zone ? this.zoneModal(s.zone, ph) : null;
+    var cmdDmg = opps.filter(function (o) { return o.dmg > 0; }).map(function (o) { return { name: shortName(o.cmdr), n: o.dmg }; });
+    if (!cmdDmg.length) cmdDmg = [{ name: 'None yet', n: 0 }];
+
+    var pv = s.preview ? Object.assign({ hasActions: false, actions: [] }, s.preview) : null;
+    var passed = !!s.passed;
+    var next = seats === 2 ? 'Mira_Lindqvist' : 'Sefa_the_Archivist_of_Lorehold';
+    return {
+      ph: ph, desk: desk, multi: seats > 2, rootStyle: rootStyle,
+      topStyle: 'grid-column:1 / 3;grid-row:1;display:flex;align-items:center;gap:' + (ph ? 8 : 16) + 'px;padding:0 ' + (ph ? 8 : 14) + 'px',
+      turnStyle: 'font-size:' + (ph ? 12 : 14) + 'px;line-height:1.2;overflow-wrap:anywhere',
+      turnText: 'Turn 9 · Mira_Lindqvist’s turn', stepText: ph ? 'Combat · declare blockers' : 'Declare blockers',
+      phases: ['Beginning', 'Main 1', 'Combat', 'Main 2', 'End'].map(function (f) { return { label: f, cls: f === 'Combat' ? 'on' : '' }; }),
+      seatOpts: [2, 3, 4].map(function (n) { return { label: String(n), on: n === seats ? 'true' : 'false', pick: function () { self.setState({ seats: n, focus: 0, preview: null }); } }; }),
+      viewOpts: [['focus', 'Focus'], ['table', 'Table']].map(function (v) { return { label: v[1], on: v[0] === view ? 'true' : 'false', pick: function () { self.setState({ view: v[0], preview: null }); } }; }),
+      showRail: showRail, rail: rail, railStyle: railStyle, oppAreaStyle: oppAreaStyle, boardsStyle: boardsStyle, oppBoards: oppBoards,
+      prevOpp: function () { self.setState({ focus: (focus + opps.length - 1) % opps.length }); },
+      nextOpp: function () { self.setState({ focus: (focus + 1) % opps.length }); },
+      meRows: meRows, meAreaStyle: meAreaStyle, meBoardStyle: meBoardStyle, zones: zones, cmdDmg: cmdDmg,
+      meLife: s.life, meLifeLabel: 'Your life: ' + s.life,
+      lifeDown: function () { self.setState({ life: s.life - 1 }); }, lifeUp: function () { self.setState({ life: s.life + 1 }); },
+      openMe: function () { self.open({ title: 'You', pips: [], type: "Commander: Atraxa, Praetors' Voice", hasType: true, text: '', hasText: false, pt: '', hasPt: false, hasActions: true, actions: zones, lines: [
+        { k: 'Life', v: String(s.life) }, { k: 'Poison', v: '0' }, { k: 'Hand', v: '6 cards' }, { k: 'Library', v: '61' }, { k: 'Graveyard', v: '7' }, { k: 'Exile', v: '2' }, { k: 'Commander tax', v: '+2' }
+      ].concat(cmdDmg.map(function (c) { return { k: 'Damage from ' + c.name, v: c.n + ' / 21' }; })) }); },
+      stack: stack, stackStyle: stackStyle, stackCount: stackList.length,
+      stackTopName: stackList[0].n, stackTopBy: 'by ' + stackList[0].by,
+      stackPhoneLabel: 'Stack, ' + stackList.length + ' items. Next to resolve: ' + stackList[0].n + '. Open the stack.',
+      openStack: function () { self.open({ title: 'Stack', pips: [], type: 'Top resolves first', hasType: true, text: '', hasText: false, pt: '', hasPt: false,
+        lines: stackList.map(function (st, i) { return { k: (i === 0 ? 'Next: ' : '') + st.n, v: st.by + ' · ' + st.target.replace('Targets ', '→ ') }; }) }); },
+      combatText: seats === 2 ? "Mira_Lindqvist attacks you with Yuriko and Ninja of the Deep Hours. Tap one of your untapped creatures to block."
+        : "Mira_Lindqvist attacks you with Yuriko and Ninja of the Deep Hours. Tap one of your untapped creatures to block.",
+      priorityText: passed ? 'Passed · waiting for ' + next : 'You have priority',
+      passLabel: passed ? 'Take it back' : (ph ? 'Pass' : 'Pass priority'),
+      pass: function () { self.setState({ passed: !passed }); },
+      passTurn: function () { self.setState({ passed: true }); },
+      hand: hand, handStyle: handStyle, handOpen: s.handOpen ? 'true' : 'false', phHandOpen: ph && !!s.handOpen,
+      plateStyle: plateStyle, showCombat: !roomy,
+      deskStrip: desk && roomy, deskFull: desk && !roomy, deskHandOpen: desk && roomy && !!s.handOpen,
+      deskHandPanelStyle: 'position:absolute;left:' + pad + 'px;right:' + (stackW + pad * 2) + 'px;bottom:' + (handH + pad * 2) + 'px;padding:12px;display:flex;gap:12px;justify-content:center;z-index:4;background:#1b1b1f;border-color:#6a6a76',
+      handToggleLabel: s.handOpen ? 'Lower hand' : 'Raise hand',
+      toggleHand: function () { self.setState({ handOpen: !s.handOpen, preview: null }); },
+      chevStyle: s.handOpen ? 'transform:rotate(180deg)' : '',
+      hasPreview: !!pv, pv: pv || { title: '', pips: [], type: '', hasType: false, text: '', hasText: false, pt: '', hasPt: false, lines: [] },
+      sheetStyle: 'width:' + (ph ? 280 : 340) + 'px',
+      closePreview: function () { self.setState({ preview: null }); },
+      hasZone: !!zm, zm: zm || { title: '', sub: '', tabs: [], hasCards: false, isEmpty: false, empty: '', cards: [], gridStyle: '', style: '' },
+      closeZone: function () { self.setState({ zone: null, preview: null }); },
+      stackClosed: !stackOpen, deskStackOpen: desk && stackOpen, phStackOpen: ph && stackOpen,
+      toggleStack: function () { self.setState({ stackOpen: !stackOpen }); },
+      stackOpenLabel: 'Show the stack, ' + stackItems + (stackItems === 1 ? ' item' : ' items'),
+      passShort: passed ? 'Undo' : 'Pass'
+    };
+  }
+}
+</script>
+</body>
+</html>
