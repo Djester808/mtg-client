@@ -59,6 +59,14 @@ describe('CardModalComponent', () => {
   it('embeds the community information with the card details', () => {
     expect(fixture.nativeElement.querySelector('app-card-community')).not.toBeNull();
   });
+  it('keeps gameplay details free of collection and printing panels', () => {
+    fixture.componentRef.setInput('gameplay', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-card-community')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-owned-card-badge')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.modal-printings-section')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.modal-card-name')).not.toBeNull();
+  });
   it('creates the component', () => {
     expect(component).toBeTruthy();
   });

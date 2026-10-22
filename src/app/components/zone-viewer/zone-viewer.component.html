@@ -45,6 +45,15 @@
           (contextmenu)="options($event, card)"
           (keydown)="optionsKey($event, card)"
         >
+          <img
+            *ngIf="card.imageUriNormal"
+            class="zone-art"
+            [src]="card.imageUriNormal"
+            [alt]="card.name"
+            draggable="false"
+            #zoneArt
+            (error)="zoneArt.hidden = true"
+          />
           <strong class="viewer-card-name">{{ card.name }}</strong>
           <app-mana-cost [cost]="card.manaCost"></app-mana-cost>
           <span

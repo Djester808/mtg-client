@@ -21,7 +21,8 @@ export class ToBodyDirective implements OnInit, OnDestroy {
   constructor(private readonly el: ElementRef<HTMLElement>) {}
 
   ngOnInit(): void {
-    document.body.appendChild(this.el.nativeElement);
+    // A native dialog already occupies the top layer; its contents must stay inside it.
+    if (!this.el.nativeElement.closest('dialog')) document.body.appendChild(this.el.nativeElement);
   }
 
   ngOnDestroy(): void {

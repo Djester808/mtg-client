@@ -32,6 +32,7 @@ import {
   selectUIMode,
   selectPendingAttackers,
   selectPreviewCard,
+  selectUIFeature,
   selectStack,
   selectZoneViewerOpen,
   selectChoice,
@@ -44,8 +45,7 @@ import { ChoiceDto, PermanentAbilityDto, Phase, Step } from '../models/game.mode
 import { readSessionToken } from '../utils/session.utils';
 
 import { SignalRService } from '../services/signalr.service';
-import { buildTypeLine } from '../utils/card.utils';
-import { CardComponent } from '../components/card/card.component';
+import { CardModalComponent } from '../components/card-modal/card-modal.component';
 import { ManaCostComponent } from '../components/mana-cost/mana-cost.component';
 import { HandComponent } from '../components/hand/hand.component';
 import { StackComponent } from '../components/stack/stack.component';
@@ -64,7 +64,7 @@ import { ManualControlsService } from './manual-controls.service';
   imports: [
     CommonModule,
     RouterLink,
-    CardComponent,
+    CardModalComponent,
     ManaCostComponent,
     HandComponent,
     StackComponent,
@@ -149,6 +149,8 @@ export class GameBoardComponent implements OnInit {
   trackId(_: number, item: { id: string }): string {
     return item.id;
   }
+
+  quickCard$ = this.store.select(selectUIFeature).pipe(map((ui) => ui.hoveredCard));
 
   vm$ = combineLatest([
     this.store.select(selectLocalPlayer),
@@ -320,110 +322,6 @@ export class GameBoardComponent implements OnInit {
   trackSeat(_: number, seat: { player: { playerId: string } }): string {
     return seat.player.playerId;
   }
-  // Default dimensions match the MTG card aspect ratio (63 × 88 mm)
-  previewWidth = 220;
-  previewHeight = 308;
-  previewLeft = window.innerWidth - 460;
-  previewTop = Math.floor(window.innerHeight / 2) - 154;
-
-  private resizeDir: string | null = null;
-  private resizeStartX = 0;
-  private resizeStartY = 0;
-  private resizeOriginLeft = 0;
-  private resizeOriginTop = 0;
-  private resizeOriginW = 0;
-  private resizeOriginH = 0;
-
-  private previewDragging = false;
-  private previewDragStartX = 0;
-  private previewDragStartY = 0;
-  private previewDragOriginLeft = 0;
-  private previewDragOriginTop = 0;
-
-  startPreviewDrag(e: MouseEvent): void {
-    // Let clicks on keyword links through — preventDefault() on the preceding
-    // mousedown causes browsers to treat the subsequent target="_blank" click
-    // as an untrusted gesture and block the navigation.
-    if ((e.target as Element).closest('a')) return;
-    this.previewDragging = true;
-    this.previewDragStartX = e.clientX;
-    this.previewDragStartY = e.clientY;
-    this.previewDragOriginLeft = this.previewLeft;
-    this.previewDragOriginTop = this.previewTop;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  startPreviewResize(e: MouseEvent, dir: string): void {
-    this.resizeDir = dir;
-    this.resizeStartX = e.clientX;
-    this.resizeStartY = e.clientY;
-    this.resizeOriginLeft = this.previewLeft;
-    this.resizeOriginTop = this.previewTop;
-    this.resizeOriginW = this.previewWidth;
-    this.resizeOriginH = this.previewHeight;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  @HostListener('document:pointermove', ['$event'])
-  onMouseMove(e: MouseEvent): void {
-    if (this.resizeDir) {
-      const dx = e.clientX - this.resizeStartX;
-      const dy = e.clientY - this.resizeStartY;
-      const aspectRatio = this.resizeOriginW / this.resizeOriginH;
-      const minW = 120,
-        maxW = 600;
-      const d = this.resizeDir;
-
-      // Diagonal delta: each corner uses the axis that grows when dragged outward
-      let delta = 0;
-      if (d === 'se') delta = (dx + dy) / 2;
-      if (d === 'nw') delta = (-dx - dy) / 2;
-      if (d === 'ne') delta = (dx - dy) / 2;
-      if (d === 'sw') delta = (-dx + dy) / 2;
-
-      const newW = Math.max(minW, Math.min(maxW, this.resizeOriginW + delta));
-      const newH = Math.round(newW / aspectRatio);
-
-      this.previewWidth = newW;
-      this.previewHeight = newH;
-
-      if (d.includes('w')) this.previewLeft = this.resizeOriginLeft + (this.resizeOriginW - newW);
-      if (d.includes('n')) this.previewTop = this.resizeOriginTop + (this.resizeOriginH - newH);
-
-      this.cdr.markForCheck();
-    }
-    if (this.previewDragging) {
-      this.previewLeft = this.previewDragOriginLeft + (e.clientX - this.previewDragStartX);
-      this.previewTop = this.previewDragOriginTop + (e.clientY - this.previewDragStartY);
-      this.cdr.markForCheck();
-    }
-  }
-
-  get isInteracting(): boolean {
-    return !!this.resizeDir || this.previewDragging;
-  }
-
-  private suppressNextClick = false;
-
-  @HostListener('document:pointerup')
-  onMouseUp(): void {
-    const wasInteracting = this.isInteracting;
-    this.resizeDir = null;
-    this.previewDragging = false;
-    if (wasInteracting) this.suppressNextClick = true;
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    if (this.suppressNextClick) {
-      this.suppressNextClick = false;
-      return;
-    }
-    this.closePreview();
-  }
-
   constructor(
     private store: Store<AppState>,
     private cdr: ChangeDetectorRef,
@@ -582,10 +480,6 @@ export class GameBoardComponent implements OnInit {
   }
 
   // ---- Preview helpers ------------------------------------
-
-  previewTypeLine(card: import('../models/game.models').CardDto): string {
-    return buildTypeLine(card);
-  }
 
   // ---- Status bar message ---------------------------------
 

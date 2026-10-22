@@ -1,6 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { CardOptionsMenuComponent } from './card-options-menu.component';
 describe('CardOptionsMenuComponent', () => {
+  it('offers the contextual action and respects its disabled state', () => {
+    const fixture = TestBed.createComponent(CardOptionsMenuComponent);
+    fixture.componentRef.setInput('actionLabel', 'Cast spell');
+    fixture.componentRef.setInput('actionDisabled', true);
+    fixture.detectChanges();
+    const action = spyOn(fixture.componentInstance.action, 'emit');
+    const button: HTMLButtonElement = fixture.nativeElement.querySelectorAll('button')[1];
+    button.click();
+    expect(action).not.toHaveBeenCalled();
+    fixture.componentRef.setInput('actionDisabled', false);
+    fixture.detectChanges();
+    button.click();
+    expect(action).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+  });
   it('emits inspection once without bubbling the click to outside dismiss handlers', () => {
     const fixture = TestBed.createComponent(CardOptionsMenuComponent);
     fixture.detectChanges();

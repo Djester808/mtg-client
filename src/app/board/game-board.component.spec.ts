@@ -347,12 +347,6 @@ describe('GameBoardComponent', () => {
       expect(store.dispatch).toHaveBeenCalledWith(UIActions.deselectCard());
     });
 
-    it('dispatches deselectCard on document click', () => {
-      spyOn(store, 'dispatch');
-      component.onDocumentClick();
-      expect(store.dispatch).toHaveBeenCalledWith(UIActions.deselectCard());
-    });
-
     it('dispatches passPriority', () => {
       spyOn(store, 'dispatch');
       component.passPriority();

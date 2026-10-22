@@ -184,6 +184,14 @@ function roomyFixture(seats = 4, crowded = false) {
   me.graveyardCount = me.graveyard.length;
   view.exile = [{...sample,id:'roomy-exile',name:'Atraxa, Praetors’ Voice',colors:['White','Blue','Black','Green'],typeLine:'Legendary Creature — Phyrexian Angel Horror',printedPower:4,printedToughness:4}];
   view.command = [{...sample,id:'roomy-command',name:'The Ur-Dragon',colors:['White','Blue','Black','Red','Green'],typeLine:'Legendary Creature — Dragon Avatar',printedPower:10,printedToughness:10}];
+  // Real card artwork for visual layout review; gameplay state remains deterministic.
+  const artwork = require('./board-artwork.json');
+  function addArt(value) {
+    if (!value || typeof value !== 'object') return;
+    if (value.name && value.oracleId) Object.assign(value, artwork[value.name.replace(/’/g, "'")] || {});
+    Object.values(value).forEach(child => { if (typeof child === 'object') addArt(child); });
+  }
+  addArt(view);
   return view;
 }
 module.exports.roomyFixture = roomyFixture;

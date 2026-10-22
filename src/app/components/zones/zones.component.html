@@ -57,6 +57,15 @@
         (mouseenter)="onCardHover(tile.cards[0].sourceCard)"
         (mouseleave)="onCardHoverLeave()"
       >
+        <img
+          *ngIf="tile.cards[0].sourceCard.imageUriNormal"
+          class="permanent-art"
+          [src]="tile.cards[0].sourceCard.imageUriNormal"
+          alt=""
+          draggable="false"
+          #permanentArt
+          (error)="permanentArt.hidden = true"
+        />
         <span class="card-name" [style.font-size.px]="tile.nameFontSize">{{ tile.name }}</span>
         <span class="card-subtype" *ngIf="tile.subtype">{{ tile.subtype }}</span>
         <span class="card-foot">

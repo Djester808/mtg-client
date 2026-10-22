@@ -20,13 +20,13 @@ interface PhasePip {
 }
 
 const PHASE_PIPS: { label: string; phase: Phase; step: Step }[] = [
-  { label: 'UNT', phase: Phase.Beginning, step: Step.Untap },
-  { label: 'UPK', phase: Phase.Beginning, step: Step.Upkeep },
-  { label: 'DRW', phase: Phase.Beginning, step: Step.Draw },
-  { label: 'M1', phase: Phase.PreCombatMain, step: Step.Main },
-  { label: 'CMB', phase: Phase.Combat, step: Step.DeclareAttackers },
-  { label: 'M2', phase: Phase.PostCombatMain, step: Step.Main },
-  { label: 'END', phase: Phase.Ending, step: Step.End },
+  { label: 'Untap', phase: Phase.Beginning, step: Step.Untap },
+  { label: 'Upkeep', phase: Phase.Beginning, step: Step.Upkeep },
+  { label: 'Draw', phase: Phase.Beginning, step: Step.Draw },
+  { label: 'Main 1', phase: Phase.PreCombatMain, step: Step.Main },
+  { label: 'Combat', phase: Phase.Combat, step: Step.DeclareAttackers },
+  { label: 'Main 2', phase: Phase.PostCombatMain, step: Step.Main },
+  { label: 'End', phase: Phase.Ending, step: Step.End },
 ];
 
 const PHASE_ORDER = [

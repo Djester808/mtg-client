@@ -8,6 +8,11 @@ const card = (id: string, type = CardType.Creature, name = 'Saproling', tapped =
     isTapped: tapped,
   });
 describe('Roomy battlefield layout', () => {
+  it('does not reserve space for an empty support row between creatures and lands', () => {
+    const layout = new BattlefieldArrangement();
+    layout.update([card('creature'), card('land', CardType.Land, 'Forest')]);
+    expect(layout.rows('local', 800, 250).map((row) => row.id)).toEqual(['creatures', 'lands']);
+  });
   it('matches the approved renderVals dimensions at desktop Focus and two seats', () => {
     const layout = new BattlefieldArrangement();
     expect(layout.sizes('opponent', 230)).toEqual({
@@ -46,7 +51,7 @@ describe('Roomy battlefield layout', () => {
   it('summarizes land names and their tapped count', () => {
     const layout = new BattlefieldArrangement();
     layout.update([card('a', CardType.Land, 'Forest'), card('b', CardType.Land, 'Forest', true)]);
-    const tile = layout.rows('local', 800, 300)[2].tiles[0];
+    const tile = layout.rows('local', 800, 300).find((row) => row.id === 'lands')!.tiles[0];
     expect(tile.count).toBe(2);
     expect(tile.badge).toBe('1 tapped');
     expect(tile.tapped).toBeFalse();
@@ -89,7 +94,9 @@ describe('Roomy battlefield layout', () => {
     p.sourceCard.cardTypes.push(CardType.Land);
     layout.update([p]);
     expect(battlefieldArea(p)).toBe('creatures');
-    expect(layout.rows('table', 300, 230)[1].tiles[0].name).toBe('Atraxa, Praetors’ Voice');
+    expect(
+      layout.rows('table', 300, 230).find((row) => row.id === 'creatures')!.tiles[0].name,
+    ).toBe('Atraxa, Praetors’ Voice');
   });
   it('keeps keyboard separation and rejects cross-area moves', () => {
     const layout = new BattlefieldArrangement(),

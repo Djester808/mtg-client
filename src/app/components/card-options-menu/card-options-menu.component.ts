@@ -1,3 +1,4 @@
+import { NgIf } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -12,6 +13,7 @@ import {
 @Component({
   selector: 'app-card-options-menu',
   standalone: true,
+  imports: [NgIf],
   template: `<div
     class="card-options"
     role="menu"
@@ -21,8 +23,14 @@ import {
     (click)="$event.stopPropagation()"
     (keydown)="key($event)"
   >
-    <button role="menuitem" (click)="$event.stopPropagation(); inspect.emit()">
-      Card inspector
+    <button role="menuitem" (click)="$event.stopPropagation(); inspect.emit()">Card details</button>
+    <button
+      *ngIf="actionLabel"
+      role="menuitem"
+      [disabled]="actionDisabled"
+      (click)="$event.stopPropagation(); action.emit()"
+    >
+      {{ actionLabel }}
     </button>
     <button role="menuitem" (click)="$event.stopPropagation(); dismiss.emit()">Close</button>
   </div>`,
@@ -30,6 +38,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardOptionsMenuComponent implements AfterViewInit, OnDestroy {
+  @Input() actionLabel = '';
+  @Input() actionDisabled = false;
+  @Output() action = new EventEmitter<void>();
   @Input() x = 0;
   @Input() y = 0;
   @Output() inspect = new EventEmitter<void>();
@@ -41,7 +52,7 @@ export class CardOptionsMenuComponent implements AfterViewInit, OnDestroy {
     return Math.max(4, Math.min(this.x, innerWidth - 190));
   }
   get top(): number {
-    return Math.max(4, Math.min(this.y, innerHeight - 104));
+    return Math.max(4, Math.min(this.y, innerHeight - (this.actionLabel ? 148 : 104)));
   }
   ngAfterViewInit(): void {
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;

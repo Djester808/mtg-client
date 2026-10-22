@@ -164,3 +164,16 @@ button:focus-visible {
     min-height: 116px;
   }
 }
+
+.zone-art {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: contain;
+  border-radius: 3px;
+}
+.zone-card:has(.zone-art:not([hidden])) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: 3px;
+}

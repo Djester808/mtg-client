@@ -97,7 +97,7 @@
         </div>
       </div>
 
-      <app-owned-card-badge *ngIf="card" [oracleId]="card.oracleId" />
+      <app-owned-card-badge *ngIf="card && !gameplay" [oracleId]="card.oracleId" />
       <!-- Info tabs: Details and Rulings always; hosts may add one more (e.g. Notes) -->
       <div class="modal-info-tabs">
         <button
@@ -116,6 +116,7 @@
         </button>
         <button
           class="modal-info-tab"
+          *ngIf="!gameplay"
           [class.is-active]="infoTab === 'prices'"
           (click)="infoTab = 'prices'"
         >
@@ -123,6 +124,7 @@
         </button>
         <button
           class="modal-info-tab"
+          *ngIf="!gameplay"
           [class.is-active]="infoTab === 'history'"
           (click)="infoTab = 'history'"
         >
@@ -288,7 +290,7 @@
           </div>
         </div>
         <app-card-community
-          *ngIf="card"
+          *ngIf="card && !gameplay"
           [oracleId]="card.oracleId"
           [commanderOracleId]="commanderOracleId"
         /> </ng-container
@@ -297,7 +299,7 @@
   </div>
 
   <!-- Printings carousel -->
-  <div class="modal-printings-section">
+  <div class="modal-printings-section" *ngIf="!gameplay">
     <div class="modal-printings-header">
       Printings
       <span class="modal-printings-count" *ngIf="printings.length">({{ printings.length }})</span>

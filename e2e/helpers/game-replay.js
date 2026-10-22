@@ -129,6 +129,11 @@ const STUB = `
       return real(input, init);
     }
 
+    // Card details fetch rulings while the capture uses a synthetic session.
+    if (url.indexOf('/api/cards/') !== -1 && url.indexOf('/rulings') !== -1) {
+      return Promise.resolve(json('[]'));
+    }
+
     if (url.indexOf('/api/profile/me') !== -1) {
       return Promise.resolve(json(JSON.stringify({
         profile: { username: 'Alice', displayName: 'Alice', avatarUrl: null },

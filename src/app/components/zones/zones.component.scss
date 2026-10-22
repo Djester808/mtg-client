@@ -229,3 +229,41 @@ dialog {
     max-height: calc(100dvh - 16px);
   }
 }
+
+.permanent-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.flat-card:has(.permanent-art:not([hidden])) {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.flat-card:has(.permanent-art:not([hidden])) > .card-name,
+.flat-card:has(.permanent-art:not([hidden])) > .card-subtype {
+  visibility: hidden;
+}
+.flat-card:has(.permanent-art:not([hidden])) .card-foot {
+  z-index: 1;
+  padding: 2px;
+}
+.flat-card:has(.permanent-art:not([hidden])) .card-badge {
+  background: var(--bg-void);
+}
+.flat-card.land .permanent-art,
+.flat-card.land-chip .permanent-art {
+  object-fit: cover;
+  object-position: 50% 20%;
+  opacity: 0.6;
+}
+.flat-card.land:has(.permanent-art:not([hidden])) > .card-name,
+.flat-card.land-chip:has(.permanent-art:not([hidden])) > .card-name {
+  visibility: visible;
+  z-index: 1;
+  background: var(--bg-void);
+}

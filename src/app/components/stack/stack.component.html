@@ -12,6 +12,15 @@
           (contextmenu)="options($event, obj)"
           (keydown)="optionsKey($event, obj)"
         >
+          <img
+            *ngIf="obj.sourceCard?.imageUriArtCrop"
+            class="stack-art"
+            [src]="obj.sourceCard?.imageUriArtCrop"
+            alt=""
+            draggable="false"
+            #stackArt
+            (error)="stackArt.hidden = true"
+          />
           <div class="stack-item-index">
             {{ isTopOfStack(i, stack) ? 'Resolves next' : '#' + (stack.length - i) }}
           </div>

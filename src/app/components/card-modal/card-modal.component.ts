@@ -115,6 +115,8 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   /** Set to false to suppress the full-screen backdrop overlay (e.g. when the modal is embedded
    *  in a panel and click-outside is handled by the parent). */
   @Input() showOverlay = true;
+  /** Show rules and artwork without collection/market panels during a game. */
+  @Input() gameplay = false;
   @Input() isBanned = false;
 
   // Position / size — managed internally, centred on first render

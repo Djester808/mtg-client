@@ -271,6 +271,8 @@ async function toRoomyBoard(d,seats,crowded=false) {
  await armGameReplay(d,roomyFixture(seats,crowded));
  await d.get(baseUrl+'/game/'+ABILITY_GAME_ID);
  await d.wait(until.elementLocated(By.css('.self-table .flat-card')),20000);
+ await d.actions().move({origin:await d.findElement(By.css('.top-bar'))}).perform();
+ await d.wait(() => d.executeScript("return [...document.querySelectorAll('.hand-art,.permanent-art')].every(i=>i.complete && i.naturalWidth>0)"),15000);
  await sleep(500);
 }
 
@@ -281,6 +283,8 @@ async function openRoomyZone(d, zone='graveyard') {
   await d.wait(until.elementLocated(By.css('.viewer-backdrop[open]')),5000);
 }
 const STATES = [
+  {id:'board-roomy-hover',label:'Quick card inspection during play',root:'.board',extra:ROOMY_AUDIT,
+    async drive(d){await toRoomyBoard(d,2); if(await d.executeScript('return innerHeight <= 480')) return; const card=await d.findElement(By.css('.self-table .flat-card')); await d.actions().move({origin:card}).perform(); await d.wait(until.elementLocated(By.css('.quick-card img')),5000); await sleep(600);}},
   {id:'board-roomy-text',label:'Board with enlarged text',root:'.board',extra:ROOMY_AUDIT,
     async drive(d){await toRoomyBoard(d,4);await d.executeScript('document.documentElement.style.setProperty("--text-scale","1.6")');}},
   {id:'board-roomy-hand-options',label:'Hand card options',root:'.board',

@@ -153,7 +153,7 @@ export class BattlefieldArrangement {
       height: size[1],
       slotWidth: tapped ? size[1] : size[0],
       name: p.sourceCard.name,
-      nameFontSize: land ? 11 : size[0] >= 78 ? 12 : size[0] >= 56 ? 11 : 10,
+      nameFontSize: land ? 10 : size[0] >= 78 ? 11 : size[0] >= 56 ? 10 : 9,
       subtype: !land && size[0] >= 72 ? (p.sourceCard.subtypes ?? []).join(' ') : '',
       color,
       tapped,
@@ -267,6 +267,7 @@ export class BattlefieldArrangement {
           this.fillRow('creatures', creatures, width, gap, sz.creature[1]),
         ];
     }
+    result = result.filter((row) => row.tiles.length || row.hiddenCount);
     // Keep resize caching bounded during continuous resizes.
     if (this.cache.size > 24) this.cache.clear();
     this.cache.set(key, result);

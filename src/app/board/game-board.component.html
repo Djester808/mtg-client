@@ -5,6 +5,7 @@
 <div
   class="board"
   [class.hand-raised]="!handCollapsed"
+  [class.stack-empty]="vm.stackCount === 0"
   [class.stack-collapsed]="stackCollapsed"
   [style.--stack-width.px]="stackCollapsed ? 84 : vm.stackCount > 1 ? 216 : 184"
   *ngIf="vm$ | async as vm"
@@ -128,7 +129,29 @@
       {{ stackCollapsed ? '‹' : '›' }} Stack · {{ vm.stackCount }}
     </button>
     <app-stack *ngIf="!stackCollapsed"></app-stack>
+    <div class="quick-card" *ngIf="quickCard$ | async as card">
+      <img *ngIf="card.imageUriNormal" [src]="card.imageUriNormal" [alt]="card.name" />
+      <strong>{{ card.name }}</strong>
+      <p>{{ card.oracleText }}</p>
+    </div>
     <div class="stack-priority">
+      <strong class="prompt-title">{{
+        vm.hasPriority ? 'Your action' : 'Waiting for opponent'
+      }}</strong>
+      <p
+        class="prompt-help"
+        *ngIf="vm.choice || vm.uiMode !== 'idle'; else idlePrompt"
+        [innerHTML]="vm.statusMessage"
+      ></p>
+      <ng-template #idlePrompt
+        ><p class="prompt-help">
+          {{
+            vm.hasPriority
+              ? 'Play a card, activate an ability, or pass priority.'
+              : 'You can inspect cards while the opponent acts.'
+          }}
+        </p></ng-template
+      >
       <app-priority-indicator
         *ngIf="!stackCollapsed && (outcome$ | async) === null"
       ></app-priority-indicator>
@@ -143,74 +166,16 @@
 
     <dialog
       #cardDetails
-      (cancel)="closePreview()"
       class="card-preview-panel"
-      role="region"
-      aria-label="Card inspector"
+      aria-label="Card details"
       *ngIf="vm.previewCard"
-      [style.width.px]="previewWidth"
-      [style.height.px]="previewHeight"
-      [style.left.px]="previewLeft"
-      [style.top.px]="previewTop"
-      [class.is-interacting]="isInteracting"
-      (mousedown)="startPreviewDrag($event)"
-      (click)="$event.stopPropagation()"
+      (cancel)="closePreview()"
     >
-      <!-- Corner resize handles -->
-      <div class="rh ne" (mousedown)="startPreviewResize($event, 'ne')"></div>
-      <div class="rh nw" (mousedown)="startPreviewResize($event, 'nw')"></div>
-      <div class="rh se" (mousedown)="startPreviewResize($event, 'se')"></div>
-      <div class="rh sw" (mousedown)="startPreviewResize($event, 'sw')"></div>
-      <!-- Close button floats over the image -->
-      <button
-        class="preview-close-btn"
-        aria-label="Close card inspector"
-        (mousedown)="$event.stopPropagation()"
-        (click)="closePreview()"
-      >
-        <i class="bi bi-x-lg"></i>
-      </button>
-      <img
-        *ngIf="vm.previewCard.imageUriNormal"
-        [src]="vm.previewCard.imageUriNormal"
-        [alt]="vm.previewCard.name"
-        class="preview-img"
-        draggable="false"
-      />
-      <div class="preview-card-fallback" *ngIf="!vm.previewCard.imageUriNormal">
-        <app-card [card]="vm.previewCard"></app-card>
-      </div>
-      <!-- Stats overlay — fades in on hover -->
-      <div class="preview-stats">
-        <div class="ps-header">
-          <span class="ps-name">{{ vm.previewCard.name }}</span>
-          <app-mana-cost
-            *ngIf="vm.previewCard.manaCost"
-            [cost]="vm.previewCard.manaCost"
-            class="ps-cost"
-          ></app-mana-cost>
-        </div>
-        <div class="ps-type">{{ previewTypeLine(vm.previewCard) }}</div>
-        <div
-          class="ps-text"
-          *ngIf="vm.previewCard.oracleText"
-          [innerHTML]="vm.previewCard.oracleText | oracleSymbols"
-        ></div>
-        <div class="ps-flavor" *ngIf="vm.previewCard.flavorText">
-          {{ vm.previewCard.flavorText }}
-        </div>
-        <div class="ps-pt" *ngIf="vm.previewCard.power !== null">
-          {{ vm.previewCard.power }}/{{ vm.previewCard.toughness }}
-        </div>
-        <div class="ps-footer">
-          <span *ngIf="vm.previewCard.setCode" class="ps-set">{{
-            vm.previewCard.setCode | uppercase
-          }}</span>
-          <span *ngIf="vm.previewCard.artist" class="ps-artist"
-            >Illus. {{ vm.previewCard.artist }}</span
-          >
-        </div>
-      </div>
+      <app-card-modal
+        [gameplay]="true"
+        [card]="vm.previewCard"
+        (closed)="closePreview()"
+      ></app-card-modal>
     </dialog>
   </aside>
 

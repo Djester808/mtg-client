@@ -3,30 +3,30 @@
   [class.local]="isLocal"
   [class.table-mode]="tableMode"
   [class.is-active]="isActive"
+  [class.has-priority]="hasPriority"
   [attr.data-player-id]="player.playerId"
   [attr.aria-label]="player.name + ' player area'"
 >
-  <div class="player-panel" *ngIf="isLocal">
-    <button class="player-name" (click)="nameClick()">{{ player.name }} · You</button>
+  <div class="player-panel" *ngIf="isLocal || (!tableMode && showHeader)">
+    <span class="seat-identity">{{ isLocal ? 'Your battlefield' : 'Opponent' }}</span>
+    <button class="player-name" (click)="nameClick()">{{ player.name }}</button>
     <span class="priority-tag" *ngIf="hasPriority">Priority</span>
     <div class="life-controls">
-      <button aria-label="Lose 1 life" [disabled]="lifePending" (click)="life(-1)">−</button>
+      <button *ngIf="isLocal" aria-label="Lose 1 life" [disabled]="lifePending" (click)="life(-1)">
+        −
+      </button>
       <strong class="life" [attr.aria-label]="player.life + ' life'">{{ player.life }}</strong>
-      <button aria-label="Gain 1 life" [disabled]="lifePending" (click)="life(1)">+</button>
+      <button *ngIf="isLocal" aria-label="Gain 1 life" [disabled]="lifePending" (click)="life(1)">
+        +
+      </button>
     </div>
-    <p>Poison {{ player.poisonCounters }}</p>
-    <p title="Commander cast history is not supplied by the game view">Tax unavailable</p>
+    <p>Hand {{ player.handCount }} · Library {{ player.libraryCount }}</p>
+    <p *ngIf="player.poisonCounters">Poison {{ player.poisonCounters }}</p>
+
     <ng-container *ngTemplateOutlet="zones"></ng-container>
-    <div class="commander-damage">
-      <span>Commander damage taken</span>
-      <p *ngFor="let d of damage; trackBy: trackName">
-        {{ d.name }} <b>{{ d.count }} / 21</b>
-      </p>
-      <p *ngIf="!damage.length">None yet</p>
-    </div>
   </div>
   <div class="seat-field">
-    <button *ngIf="!isLocal && showHeader" class="seat-heading" (click)="nameClick()">
+    <button *ngIf="!isLocal && showHeader && tableMode" class="seat-heading" (click)="nameClick()">
       <strong class="player-name">{{ player.name }}</strong>
       <strong class="life">{{ player.life }}</strong>
       <span>Hand {{ player.handCount }}</span>
@@ -42,7 +42,7 @@
         [role]="isLocal ? 'local' : tableMode ? 'table' : 'opponent'"
         [label]="player.name + ' battlefield'"
       ></app-zones>
-      <ng-container *ngIf="!isLocal"
+      <ng-container *ngIf="!isLocal && (tableMode || !showHeader)"
         ><ng-container *ngTemplateOutlet="zones"></ng-container
       ></ng-container>
     </div>
@@ -74,6 +74,12 @@
         "
         (click)="zone(pile.key)"
       >
+        <img
+          *ngIf="pile.top?.imageUriNormal"
+          class="zone-pile-art"
+          [src]="pile.top?.imageUriNormal"
+          alt=""
+        />
         <span class="zone-label"
           >{{ pile.name }} <b>{{ pile.count }}</b></span
         >

@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  padding-bottom: 10px;
+  padding-bottom: 0;
 }
 .right-controls {
   flex-shrink: 0;
@@ -246,226 +246,6 @@
   }
 }
 
-// ---- Card preview panel (sticky, in stack column) ---------
-
-.card-preview-panel {
-  position: fixed;
-  /* left/top/width/height set dynamically via style bindings */
-  container-type: inline-size;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
-  animation: scale-in 0.15s ease;
-  overflow: hidden;
-  z-index: 200;
-  cursor: grab;
-  user-select: none;
-
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-// ---- Corner resize handles --------------------------------
-
-$rc: 18px;
-
-.rh {
-  position: absolute;
-  z-index: 10;
-  width: $rc;
-  height: $rc;
-
-  &.ne {
-    top: 0;
-    right: 0;
-    cursor: nesw-resize;
-  }
-  &.nw {
-    top: 0;
-    left: 0;
-    cursor: nwse-resize;
-  }
-  &.se {
-    bottom: 0;
-    right: 0;
-    cursor: nwse-resize;
-  }
-  &.sw {
-    bottom: 0;
-    left: 0;
-    cursor: nesw-resize;
-  }
-}
-
-.preview-close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 20;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.55);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: calc(10px * var(--text-scale, 1));
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  transition: all 0.15s;
-  backdrop-filter: blur(4px);
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-}
-
-.preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.preview-card-fallback {
-  width: 160px;
-  height: 224px;
-  flex-shrink: 0;
-}
-
-// ---- Hover stats overlay ----------------------------------
-
-.preview-stats {
-  position: absolute;
-  inset: 0;
-  padding: 16px 16px 14px;
-  background: rgba(0, 0, 0, 0.92);
-  backdrop-filter: blur(3px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 9px;
-  opacity: 0;
-  transition: opacity 0.18s ease;
-  overflow-y: auto;
-}
-
-.card-preview-panel:hover .preview-stats,
-.card-preview-panel.is-interacting .preview-stats {
-  opacity: 1;
-}
-
-.ps-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.ps-name {
-  font-family: var(--font-display);
-  font-size: 6.2cqw;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ps-cost {
-  flex-shrink: 0;
-  .ms {
-    font-size: 6.2cqw;
-  }
-}
-
-.ps-type {
-  font-family: var(--font-display);
-  font-size: 4.8cqw;
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 0.04em;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 7px;
-}
-
-.ps-text {
-  font-size: 5.2cqw;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.55;
-  white-space: pre-line;
-
-  .kw-link {
-    color: var(--accent-text);
-    text-decoration: underline;
-    text-decoration-color: rgba(184, 0, 224, 0.45);
-    text-underline-offset: 2px;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      text-decoration-color 0.15s;
-
-    &:hover {
-      color: #ca33e9;
-      text-decoration-color: rgba(219, 185, 84, 0.85);
-    }
-  }
-}
-
-.ps-flavor {
-  font-size: 4.8cqw;
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.45;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
-}
-
-.ps-pt {
-  font-family: var(--font-display);
-  font-size: 6.8cqw;
-  font-weight: 700;
-  color: #fff;
-  text-align: right;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 7px;
-}
-
-.ps-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
-  gap: 6px;
-}
-
-.ps-set {
-  font-family: var(--font-display);
-  font-size: 3.8cqw;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.ps-artist {
-  font-size: 3.8cqw;
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.4);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 // ---- Concede modal ----------------------------------------
 
 .concede-overlay {
@@ -563,9 +343,10 @@ $rc: 18px;
 
 .board {
   grid-template-columns: minmax(0, 1fr) var(--stack-width, 216px);
-  grid-template-rows: 44px minmax(0, 1fr) 320px var(--hand-h, 64px);
-  gap: 12px;
-  padding: 12px;
+  grid-template-rows: 66px minmax(0, 1fr) minmax(0, 1fr) var(--hand-h, 170px);
+  gap: 6px;
+  padding: 8px;
+  background: #202629;
   overflow: hidden;
 }
 .top-bar {
@@ -802,18 +583,6 @@ $rc: 18px;
   padding: 4px 8px;
   font-size: 12px;
 }
-.card-preview-panel {
-  z-index: 100;
-}
-.card-preview-panel:has(.preview-card-fallback) .preview-stats {
-  opacity: 1;
-}
-.card-preview-panel .ps-name {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  line-height: 1.2;
-}
 .board-settings-panel {
   width: min(360px, 94vw);
   padding: 20px;
@@ -863,9 +632,6 @@ button:focus-visible {
   outline-offset: 2px;
 }
 @include touch {
-  .card-preview-panel .preview-stats {
-    opacity: 1;
-  }
 }
 
 .status-bar {
@@ -892,28 +658,13 @@ button:focus-visible {
   z-index: 96;
 }
 .board {
-  --hand-h: 64px;
+  --hand-h: 170px;
 }
 .hand-raised .hand-row {
   z-index: 110;
 }
 .portrait-notice {
   display: none;
-}
-.card-preview-panel {
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  background: var(--bg-raised);
-  max-width: calc(100vw - 16px);
-  max-height: calc(100dvh - 16px);
-}
-.card-preview-panel::backdrop {
-  background: color-mix(in srgb, var(--bg-void) 55%, transparent);
-}
-.card-preview-panel .preview-stats {
-  opacity: 1;
 }
 @include short-viewport {
   .board {
@@ -1018,31 +769,6 @@ button:focus-visible {
     bottom: 44px;
     max-height: 160px;
   }
-  .card-preview-panel {
-    inset: 6px 6px 6px auto !important;
-    width: 280px !important;
-    height: auto !important;
-    border-radius: 8px;
-    overflow: auto;
-  }
-  .card-preview-panel .preview-img,
-  .card-preview-panel .preview-card-fallback,
-  .card-preview-panel .rh {
-    display: none;
-  }
-  .card-preview-panel .preview-stats {
-    position: static;
-    max-height: none;
-    height: auto;
-    background: var(--bg-raised);
-    padding: 48px 16px 16px;
-    transform: none;
-  }
-  .card-preview-panel .preview-close-btn {
-    width: 44px;
-    height: 44px;
-    z-index: 2;
-  }
 }
 @include upto($bp-phone) {
   .portrait-notice {
@@ -1078,14 +804,6 @@ button:focus-visible {
   }
 }
 
-.card-preview-panel .preview-close-btn {
-  min-width: 44px;
-  min-height: 44px;
-}
-.card-preview-panel .preview-stats {
-  padding-top: 52px;
-  justify-content: flex-start;
-}
 @include short-viewport {
   .stack-priority .action-btn {
     min-height: 44px;
@@ -1093,4 +811,66 @@ button:focus-visible {
   .rail-step {
     width: 44px;
   }
+}
+
+.card-preview-panel {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+}
+.card-preview-panel::backdrop {
+  background: transparent;
+}
+
+.prompt-title {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.prompt-help {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+@include short-viewport {
+  .prompt-title,
+  .prompt-help {
+    display: none;
+  }
+}
+
+.quick-card {
+  min-height: 0;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.quick-card img {
+  display: block;
+  width: 100%;
+  max-height: 230px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+.quick-card p {
+  white-space: pre-line;
+  color: var(--text-secondary);
+}
+@include short-viewport {
+  .quick-card {
+    display: none;
+  }
+}
+
+.stack-empty .stack-col {
+  background: transparent;
+  border-color: transparent;
 }

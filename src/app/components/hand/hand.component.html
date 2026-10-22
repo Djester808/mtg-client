@@ -30,6 +30,15 @@
       [class.is-dragging]="hc.card.cardId === draggingId"
       (pointerdown)="onWrapperMouseDown($event, hc.card.cardId)"
     >
+      <img
+        *ngIf="hc.card.imageUriNormal"
+        class="hand-art"
+        [src]="hc.card.imageUriNormal"
+        [alt]="hc.card.name"
+        draggable="false"
+        #handArt
+        (error)="handArt.hidden = true"
+      />
       <strong class="hand-card-title">{{ hc.card.name }}</strong>
       <app-mana-cost [cost]="hc.card.manaCost"></app-mana-cost>
       <div class="hand-card-body" *ngIf="raised">
@@ -45,6 +54,8 @@
   *ngIf="contextCard"
   [x]="contextX"
   [y]="contextY"
+  actionLabel="Play card"
+  (action)="onCardClick(contextCard); closeOptions()"
   (inspect)="inspectCard()"
   (dismiss)="contextCard = null"
 ></app-card-options-menu>
