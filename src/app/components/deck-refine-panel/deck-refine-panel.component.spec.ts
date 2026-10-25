@@ -82,13 +82,16 @@ describe('DeckRefinePanelComponent', () => {
   it('applies only the swaps that were kept', () => {
     const fixture = create();
     const page = fixture.componentInstance;
+    page.priceRange = 'budget';
     page.ask();
+    page.priceRange = 'any';
     http.expectOne('/api/decks/deck-1/ai-refine').flush(result());
 
     page.toggle(page.proposals[0]);
     page.apply();
 
     const req = http.expectOne('/api/decks/deck-1/ai-refine/apply');
+    expect(req.request.body.priceRange).toBe('budget');
     expect(req.request.body.swaps.length).toBe(1);
     expect(req.request.body.swaps[0].in).toBe('Payoff');
     req.flush(result({ swaps: [{ out: 'Filler', in: 'Payoff', why: '' }] }));

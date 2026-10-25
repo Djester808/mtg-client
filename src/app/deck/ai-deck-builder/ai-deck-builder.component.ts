@@ -597,6 +597,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
     this.api
       .applyPlan(deckId, {
         commanderOracleId: this.plan.commanderOracleId,
+        priceRange: this.plan.priceRange ?? 'any',
         bracket: this.bracket,
         cards: this.plan.cards,
       })

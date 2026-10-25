@@ -47,6 +47,7 @@ export class DeckRefinePanelComponent {
    */
   @Input() mainCount = 0;
   @Input() priceRange = 'any';
+  private previewPriceRange = 'any';
 
   @Output() panelClose = new EventEmitter<void>();
   /** Fires once swaps have been written, so the deck can reload. */
@@ -93,6 +94,7 @@ export class DeckRefinePanelComponent {
   ask(): void {
     if (this.state === 'loading' || this.state === 'applying') return;
 
+    this.previewPriceRange = this.priceRange;
     this.state = 'loading';
     this.error = null;
     this.cdr.markForCheck();
@@ -100,7 +102,7 @@ export class DeckRefinePanelComponent {
     this.api
       .previewRefine(this.deckId, {
         bracket: this.bracket,
-        priceRange: this.priceRange,
+        priceRange: this.previewPriceRange,
         maxSwaps: 10,
       })
       .subscribe({
@@ -132,24 +134,30 @@ export class DeckRefinePanelComponent {
     this.state = 'applying';
     this.cdr.markForCheck();
 
-    this.api.applyRefineSwaps(this.deckId, { swaps, bracket: this.bracket }).subscribe({
-      next: (result) => {
-        this.state = 'idle';
-        this.proposals = [];
-        this.rejected = result.rejectedByReason ?? {};
-        this.toast.show(
-          `Swapped ${result.swaps.length} card${result.swaps.length === 1 ? '' : 's'}`,
-          'success',
-        );
-        this.deckChanged.emit();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.state = 'review';
-        this.toast.error(describeHttpError(err, 'Could not apply the swaps.'));
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .applyRefineSwaps(this.deckId, {
+        swaps,
+        bracket: this.bracket,
+        priceRange: this.previewPriceRange,
+      })
+      .subscribe({
+        next: (result) => {
+          this.state = 'idle';
+          this.proposals = [];
+          this.rejected = result.rejectedByReason ?? {};
+          this.toast.show(
+            `Swapped ${result.swaps.length} card${result.swaps.length === 1 ? '' : 's'}`,
+            'success',
+          );
+          this.deckChanged.emit();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.state = 'review';
+          this.toast.error(describeHttpError(err, 'Could not apply the swaps.'));
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   discard(): void {

@@ -106,6 +106,8 @@ export interface DeckAssessment {
 }
 
 export interface AiBuildPlan {
+  /** Absent only in older saved drafts. */
+  priceRange?: string;
   commanderOracleId: string;
   commanderName: string;
   cards: PlannedCard[];
@@ -118,6 +120,7 @@ export interface AiBuildPlan {
 }
 
 export interface AiApplyPlanRequest {
+  priceRange?: string;
   commanderOracleId: string;
   bracket: number;
   cards: PlannedCard[];
@@ -155,6 +158,7 @@ export interface AiRefineRequest {
 }
 
 export interface AiApplySwapsRequest {
+  priceRange?: string;
   swaps: CardSwap[];
   bracket: number;
 }

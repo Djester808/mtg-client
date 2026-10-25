@@ -281,6 +281,7 @@ describe('AiDeckBuilderComponent', () => {
     const page = fixture.componentInstance;
     page.deckId = 'deck-9';
     page.plan = {
+      priceRange: 'budget',
       commanderOracleId: 'oracle-1',
       commanderName: 'Test Commander',
       cards: [card('Forest', 'Basic Land — Forest')],
@@ -295,6 +296,7 @@ describe('AiDeckBuilderComponent', () => {
     page.acceptPlan();
 
     const applied = http.expectOne('/api/decks/deck-9/ai-build/apply');
+    expect(applied.request.body.priceRange).toBe('budget');
     expect(applied.request.body.cards.length).toBe(1);
     applied.flush({
       cardsAdded: 1,

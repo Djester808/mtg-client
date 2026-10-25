@@ -8,6 +8,13 @@ class BasePage {
 
   async navigate(path) {
     await this.driver.get(baseUrl + path);
+    // Every full navigation mounts the intro asynchronously. Wait for Angular's
+    // shell before checking it, otherwise an absent intro is a false ready state.
+    await this.driver.wait(() => this.driver.executeScript(`
+      document.querySelector('.brand-intro:not(.is-exiting) .intro-skip')?.click();
+      const shell = document.querySelector('.app-shell');
+      return !!shell && !shell.hasAttribute('inert');
+    `), 12000, 'Application remained blocked by the intro');
   }
 
   async waitForElement(locator, timeout = 5000) {

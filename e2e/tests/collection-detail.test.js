@@ -1,4 +1,6 @@
 const { By } = require('selenium-webdriver');
+const fs = require('node:fs');
+const path = require('node:path');
 const { buildDriver } = require('../helpers/driver');
 const { loginAs } = require('../helpers/auth');
 const CollectionListPage = require('../pages/CollectionListPage');
@@ -6,7 +8,7 @@ const CollectionDetailPage = require('../pages/CollectionDetailPage');
 
 jest.setTimeout(120000);
 
-const TEST_COLLECTION = 'Selenium E2E Coll Detail';
+const TEST_COLLECTION = `Selenium E2E Coll Detail ${Date.now()}`;
 
 describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
   let driver;
@@ -106,11 +108,15 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
     expect(badges.length).toBeGreaterThan(0);
   });
 
-  test('legend is visible when cards exist', async () => {
-    const visible = await page.isPresent(page.legend, 2000);
-    expect(visible).toBe(true);
+  test('every tile exposes labelled regular and foil quantity controls', async () => {
+    const tiles = await driver.findElements(page.cardTiles);
+    expect(tiles.length).toBe(2);
+    for (const tile of tiles) {
+      expect((await tile.findElements(By.css('[title="Add regular"]'))).length).toBe(1);
+      expect((await tile.findElements(By.css('[title="Remove regular"]'))).length).toBe(1);
+      expect((await tile.findElements(By.css('[title="Add foil"]'))).length).toBe(1);
+    }
   });
-
   // ── Filter bar ──────────────────────────────────────────────────────────────────
 
   test('filter input is visible', async () => {
@@ -118,66 +124,46 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
     expect(present).toBe(true);
   });
 
-  test('typing in filter input reduces visible cards', async () => {
-    const before = (await driver.findElements(page.cardTiles)).length;
-    // Set filterQuery via Angular debug API (ngModel's input event doesn't reliably trigger OnPush CD)
-    await driver.executeScript(`
-      const el = document.querySelector('app-collection-detail');
-      const comp = ng.getComponent(el);
-      comp.filterQuery = 'Sol Ring';
-      ng.applyChanges(el);
-    `);
-    await driver.sleep(300);
-    const after = (await driver.findElements(page.cardTiles)).length;
-    expect(after).toBeLessThanOrEqual(before);
+  test('typing in filter input reduces visible cards to the matching card', async () => {
+    expect(await page.getCardCount()).toBe(2);
+    await page.type(page.filterInput, 'Sol Ring');
+    await driver.wait(async () => await page.getCardCount() === 1, 10000);
+    expect(await page.getCardCount()).toBe(1);
+    await driver.findElement(By.css('.grid-area .ct-art')).click();
+    expect(await driver.findElement(By.css('.grid-area .info-name')).getText()).toBe('Sol Ring');
   });
 
   test('clearing filter restores all cards', async () => {
-    await driver.executeScript(`
-      const el = document.querySelector('app-collection-detail');
-      const comp = ng.getComponent(el);
-      comp.filterQuery = '';
-      ng.applyChanges(el);
-    `);
-    await driver.sleep(300);
-    const restored = await driver.findElements(page.cardTiles);
-    expect(restored.length).toBeGreaterThanOrEqual(2);
+    await page.type(page.filterInput, '');
+    await driver.wait(async () => await page.getCardCount() === 2, 10000);
+    expect(await page.getCardCount()).toBe(2);
   });
-
   // ── Zoom controls ────────────────────────────────────────────────────────────────
 
-  test('zoom label is visible', async () => {
-    const present = await page.isPresent(page.zoomLabel, 2000);
-    expect(present).toBe(true);
+  test('zoom label is visible when grid controls are open', async () => {
+    await page.showGridControls();
+    expect(await driver.findElement(page.zoomLabel).isDisplayed()).toBe(true);
+    expect(await driver.findElement(page.zoomLabel).getText()).toMatch(/\d+%/);
   });
 
   test('clicking zoom-in increases zoom label', async () => {
-    const before = await driver.findElement(page.zoomLabel).then(e => e.getText());
-    await driver.executeScript(
-      'arguments[0].click()',
-      await driver.findElement(page.zoomIn)
-    );
-    await driver.sleep(300);
-    const after = await driver.findElement(page.zoomLabel).then(e => e.getText());
-    // Label may be a percentage or descriptor — just confirm it changed or stayed max
-    const inBtn = await driver.findElement(page.zoomIn);
-    const disabled = await inBtn.getAttribute('disabled');
-    if (!disabled) expect(after).not.toBe(before);
+    await page.showGridControls();
+    const before = parseInt(await driver.findElement(page.zoomLabel).getText(), 10);
+    const button = await driver.findElement(page.zoomIn);
+    expect(await button.isEnabled()).toBe(true);
+    await button.click();
+    await driver.wait(async () => parseInt(await driver.findElement(page.zoomLabel).getText(), 10) > before, 3000);
+    expect(parseInt(await driver.findElement(page.zoomLabel).getText(), 10)).toBeGreaterThan(before);
   });
 
   test('clicking zoom-out decreases zoom label', async () => {
-    const before = await driver.findElement(page.zoomLabel).then(e => e.getText());
-    await driver.executeScript(
-      'arguments[0].click()',
-      await driver.findElement(page.zoomOut)
-    );
-    await driver.sleep(300);
-    const after = await driver.findElement(page.zoomLabel).then(e => e.getText());
-    const outBtn = await driver.findElement(page.zoomOut);
-    const disabled = await outBtn.getAttribute('disabled');
-    if (!disabled) expect(after).not.toBe(before);
+    await page.showGridControls();
+    const before = parseInt(await driver.findElement(page.zoomLabel).getText(), 10);
+    await driver.findElement(page.zoomOut).click();
+    await driver.wait(async () => parseInt(await driver.findElement(page.zoomLabel).getText(), 10) < before, 3000);
+    expect(parseInt(await driver.findElement(page.zoomLabel).getText(), 10)).toBeLessThan(before);
+    await page.hideGridControls();
   });
-
   // ── Qty controls ────────────────────────────────────────────────────────────────
 
   test('ctrl-inc increments normal qty', async () => {
@@ -214,14 +200,14 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
 
   // ── Set select ────────────────────────────────────────────────────────────────────
 
-  test('each card bottom row has a set select dropdown', async () => {
+  test('each card bottom row has a printing control', async () => {
     const selects = await driver.findElements(page.setSelect);
-    expect(selects.length).toBeGreaterThan(0);
+    expect(selects.length).toBe(await page.getCardCount());
   });
 
   // ── Card modal ────────────────────────────────────────────────────────────────────
 
-  test('clicking a card art opens the card modal', async () => {
+  test('double-clicking card art opens the card modal', async () => {
     await page.openCardModal(0);
     const visible = await page.isPresent(page.cardModal, 5000);
     expect(visible).toBe(true);
@@ -249,22 +235,24 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
   });
 
   test('modal shows notes textarea for owned card', async () => {
-    const hasNotes = await page.isPresent(By.css('.modal-notes-input'), 3000);
-    expect(hasNotes).toBe(true);
+    const textarea = await page.ownedDetails();
+    expect(await textarea.isDisplayed()).toBe(true);
   });
 
-  test('notes textarea accepts input and persists after blur', async () => {
-    const textarea = await driver.findElement(By.css('.modal-notes-input'));
+  test('notes persist after blur and reopening the card', async () => {
+    const textarea = await page.ownedDetails();
     await textarea.clear();
     await textarea.sendKeys('e2e test note');
-    // Blur to trigger save
-    await driver.executeScript('arguments[0].blur()', textarea);
-    await driver.sleep(400);
-    // Re-read value — it should still be our text
-    const val = await textarea.getAttribute('value');
-    expect(val).toContain('e2e test note');
+    await driver.findElement(By.css('.modal-drag-name')).click();
+    await driver.sleep(700);
+    await page.closeModal();
+    await page.openCardModal(0);
+    const restored = await page.ownedDetails();
+    expect(await restored.getAttribute('value')).toContain('e2e test note');
+    const captures = path.join(__dirname, '../screenshots/audit-collection');
+    fs.mkdirSync(captures, { recursive: true });
+    fs.writeFileSync(path.join(captures, 'owned-details-desktop.png'), await driver.takeScreenshot(), 'base64');
   });
-
   test('closing modal returns to collection grid', async () => {
     await page.closeModal();
     const gone = !(await page.isPresent(page.cardModal, 2000));
@@ -295,31 +283,35 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
   // collection: picking one colour must leave only cards that are *that colour and
   // nothing else*. It used to leave every card that merely contained the colour.
 
-  test('a single colour pip shows only mono-coloured cards of that colour', async () => {
-    const identities = async () =>
-      driver.executeScript(
-        `return Array.from(document.querySelectorAll('app-card-tile')).map(el => {
-           try { return (ng.getComponent(el).card.cardDetails.colorIdentity || []).slice().sort(); }
-           catch (e) { return null; }
-         }).filter(Boolean);`,
-      );
-
-    const before = await identities();
-    // Only meaningful if the collection actually holds a red card and something else.
-    if (!before.some((ci) => ci.includes('R')) || before.length < 2) return;
-
-    const redPip = await driver.findElement(By.css('[title="Red"]'));
-    await driver.executeScript('arguments[0].click()', redPip);
-    await driver.sleep(400);
-
-    const after = await identities();
-    expect(after.length).toBeGreaterThan(0);
-    for (const ci of after) expect(ci).toEqual(['R']);
-
-    await driver.executeScript('arguments[0].click()', redPip);
-    await driver.sleep(300);
+  test('red filter keeps Lightning Bolt and excludes colorless Sol Ring', async () => {
+    await page.showGridControls();
+    const redPip = await driver.findElement(By.css('.grid-filters [title="Red"]'));
+    await redPip.click();
+    await page.hideGridControls();
+    await driver.wait(async () => await page.getCardCount() === 1, 10000);
+    await driver.findElement(By.css('.grid-area .ct-art')).click();
+    expect(await driver.findElement(By.css('.grid-area .info-name')).getText()).toBe('Lightning Bolt');
+    await page.showGridControls();
+    await driver.findElement(By.css('.grid-filters [title="Red"]')).click();
+    await page.hideGridControls();
+    await driver.wait(async () => await page.getCardCount() === 2, 10000);
   });
 
+  test('collection after add, quantity, filter and note edits fits desktop and mobile', async () => {
+    const captures = path.join(__dirname, '../screenshots/audit-collection');
+    fs.mkdirSync(captures, { recursive: true });
+    for (const [width, height, label] of [[1440, 900, 'desktop'], [375, 667, 'mobile']]) {
+      await driver.sendDevToolsCommand('Emulation.setDeviceMetricsOverride', {
+        width, height, deviceScaleFactor: 1, mobile: width < 900,
+      });
+      await driver.sleep(300);
+      expect(await driver.findElement(page.headerName).getText()).toBe(TEST_COLLECTION);
+      expect(await page.getCardCount()).toBe(2);
+      expect(await driver.executeScript('return document.documentElement.scrollWidth <= innerWidth')).toBe(true);
+      fs.writeFileSync(path.join(captures, `collection-${label}.png`), await driver.takeScreenshot(), 'base64');
+    }
+    await driver.sendDevToolsCommand('Emulation.clearDeviceMetricsOverride', {});
+  });
   // ── Back navigation ────────────────────────────────────────────────────────────────
 
   test('back button returns to collection list', async () => {
