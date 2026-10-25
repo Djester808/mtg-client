@@ -29,6 +29,20 @@ function makeKeyword(name = 'Cascade'): KeywordDetail {
 }
 
 describe('KeywordSheetComponent', () => {
+  it('recovers after a failed request and cancels a closed sheet', () => {
+    component.show('Flying');
+    http
+      .expectOne('/api/rules/keywords/Flying')
+      .flush('', { status: 503, statusText: 'Unavailable' });
+    component.show('Cascade');
+    const pending = http.expectOne('/api/rules/keywords/Cascade');
+    component.close();
+    expect(pending.cancelled).toBeTrue();
+    expect(component.open).toBeFalse();
+    component.show('Flying');
+    http.expectOne('/api/rules/keywords/Flying').flush(makeKeyword('Flying'));
+    expect(component.keyword?.name).toBe('Flying');
+  });
   let fixture: ComponentFixture<KeywordSheetComponent>;
   let component: KeywordSheetComponent;
   let http: HttpTestingController;

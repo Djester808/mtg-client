@@ -1,5 +1,6 @@
 import { CardCommunityComponent } from '../card-community/card-community.component';
 import { inject } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CollectionOwnershipService } from '../../services/collection-ownership.service';
 import { OwnedCardBadgeComponent } from '../owned-card-badge/owned-card-badge.component';
 import {
@@ -69,7 +70,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   readonly ownership = inject(CollectionOwnershipService);
   ownsPrinting(id: string): boolean {
     const count = this.ownership.count(this.card?.oracleId ?? '', id);
-    return !!count && count.normal + count.foil > 0;
+    return !!count && count.normal + count.foil + count.etched > 0;
   }
   @Input() commanderOracleId: string | null = null;
   @Input() card: CardDto | null = null;
@@ -136,6 +137,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   rulings: RulingDto[] = [];
   rulingsLoading = false;
   private rulingsCache = new Map<string, RulingDto[]>();
+  private rulingsRequest?: Subscription;
 
   // Magnifier lens
   lensVisible = false;
@@ -183,6 +185,9 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['card']) {
+      this.rulingsRequest?.unsubscribe();
+      this.rulingsLoading = false;
+      this.carouselStart = 0;
       this.infoTab = 'details';
       const oracleId = this.card?.oracleId;
       if (!oracleId) {
@@ -195,7 +200,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
       }
       this.rulingsLoading = true;
       this.rulings = [];
-      this.gameApi.getCardRulings(oracleId).subscribe({
+      this.rulingsRequest = this.gameApi.getCardRulings(oracleId).subscribe({
         next: (r) => {
           this.rulingsCache.set(oracleId, r);
           this.rulings = r;
@@ -582,6 +587,7 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.rulingsRequest?.unsubscribe();
     this.detachMoveListener();
   }
 

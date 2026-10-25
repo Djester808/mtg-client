@@ -210,7 +210,7 @@ export class ProfileEditComponent implements OnInit {
       const prepared = await prepareImage(file, limits.maxDimension, limits.maxBytes);
       this.api.uploadAvatar(prepared.blob).subscribe({
         next: (me) => {
-          this.apply(me);
+          this.me = me;
           this.uploading = false;
           this.toast.show('Avatar updated', 'success');
           this.cdr.markForCheck();
@@ -237,7 +237,7 @@ export class ProfileEditComponent implements OnInit {
 
     this.api.deleteAvatar().subscribe({
       next: (me) => {
-        this.apply(me);
+        this.me = me;
         this.uploading = false;
         this.toast.show('Avatar removed', 'success');
         this.cdr.markForCheck();

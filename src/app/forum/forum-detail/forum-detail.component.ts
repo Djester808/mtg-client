@@ -9,13 +9,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, forkJoin, of, switchMap, takeUntil } from 'rxjs';
+import { Observable, Subject, from, of, switchMap, concatMap, toArray, takeUntil } from 'rxjs';
 import { AppState } from '../../store';
 import { ForumActions } from '../../store/forum/forum.actions';
 import {
   selectActiveForumPost,
   selectForumPostLoading,
   selectForumError,
+  selectForumCommentPagination,
 } from '../../store/forum/forum.selectors';
 import { selectIsLoggedIn, selectUsername } from '../../store/auth/auth.selectors';
 import { ForumPostDetail, ForumComment } from '../../models/forum.models';
@@ -70,6 +71,11 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
   error$: Observable<string | null>;
   isLoggedIn$: Observable<boolean>;
   username$: Observable<string | null>;
+
+  readonly pagination$ = this.store.select(selectForumCommentPagination);
+  loadMoreComments(id: string, offset: number): void {
+    this.store.dispatch(ForumActions.loadMoreComments({ id, offset }));
+  }
 
   currentUsername: string | null = null;
   commentDraft = '';
@@ -143,8 +149,14 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
 
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.store.dispatch(ForumActions.loadPost({ id }));
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const id = params.get('id');
+      this.commentDraft = '';
+      this.cancelEdit();
+      this.closeCard();
+      this.copyState = 'idle';
+      if (id) this.store.dispatch(ForumActions.loadPost({ id }));
+    });
     this.username$.pipe(takeUntil(this.destroy$)).subscribe((u) => {
       this.currentUsername = u;
       this.cdr.markForCheck();
@@ -302,29 +314,34 @@ export class ForumDetailComponent implements OnInit, OnDestroy {
         name: `${post.deckName} (Copy)`,
         format: post.deckFormat,
         commanderOracleId: post.commanderOracleId,
+        secondaryCommanderOracleId: post.secondaryCommanderOracleId ?? null,
         coverUri: post.deckCoverUri,
       })
       .pipe(
         switchMap((deck) => {
           if (!post.cards.length) return of(deck.id);
-          const adds = post.cards.map((c) =>
-            this.deckApi.addCard(deck.id, {
-              oracleId: c.oracleId,
-              scryfallId: c.scryfallId,
-              quantity: c.quantity,
-              quantityFoil: c.quantityFoil,
-              board: c.board ?? 'main',
-              notes: c.notes,
-            }),
+          return from(post.cards).pipe(
+            concatMap((c) =>
+              this.deckApi.addCard(deck.id, {
+                oracleId: c.oracleId,
+                scryfallId: c.scryfallId,
+                quantity: c.quantity,
+                quantityFoil: c.quantityFoil,
+                quantityEtched: c.quantityEtched ?? 0,
+                board: c.board ?? 'main',
+                notes: c.notes,
+              }),
+            ),
+            toArray(),
+            switchMap(() => of(deck.id)),
           );
-          return forkJoin(adds).pipe(switchMap(() => of(deck.id)));
         }),
       )
       .subscribe({
         next: (deckId) => {
           this.copyState = 'done';
           this.cdr.markForCheck();
-          setTimeout(() => this.router.navigate(['/deck', deckId]), 800);
+          void this.router.navigate(['/deck', deckId]);
         },
         error: (err) => {
           this.copyState = 'error';

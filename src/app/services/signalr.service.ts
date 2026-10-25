@@ -38,9 +38,6 @@ import { AttackTarget, GameView, TargetDto } from '../models/play.models';
  * rewriting the board against the new shape, which is what turned it into a different board the
  * last three times. `GameViewAdapter` does the state half; the methods here do the commands.
  *
- * One old command has no counterpart and says so rather than failing quietly: `untapLand`.
- * Untapping at will was the old engine's convenience, not a rule, and the control is still on
- * the board — so it explains itself instead of sending something that would be rejected.
  */
 @Injectable({ providedIn: 'root' })
 export class SignalRService implements OnDestroy {
@@ -64,70 +61,79 @@ export class SignalRService implements OnDestroy {
 
   // ---- Connect to game hub --------------------------------
   async connect(gameId: string, _playerToken: string): Promise<void> {
+    const previous = this.hub;
+    // Detach first: stop/start callbacks from the previous table must never touch this one.
+    const hub = this.createHub();
+    this.hub = hub;
     this.gameId = gameId;
     this.latest = null;
+    this.clearChoiceState();
+    const active = () => this.hub === hub;
+    this.registerHandlers(hub, gameId);
 
-    this.hub = new signalR.HubConnectionBuilder()
-      // The account's own JWT, not a per-game token: the rebuilt engine authenticates the hub
-      // the same way it authenticates the API, and works out which seat you are from it.
-      .withUrl('/hubs/game', {
-        accessTokenFactory: () => storedAuth('auth_token') ?? '',
-      })
-      .withAutomaticReconnect([0, 2000, 5000, 10000])
-      .configureLogging(signalR.LogLevel.Warning)
-      .build();
-
-    this.registerHandlers();
-
-    this.hub.onclose(() => {
+    const lost = () => {
+      if (!active()) return;
       this.latest = null;
       this.zone.run(() => this.store.dispatch(GameActions.connectionLost()));
-    });
-    this.hub.onreconnecting(() => {
-      this.latest = null;
-      this.zone.run(() => this.store.dispatch(GameActions.connectionLost()));
-    });
-    this.hub.onreconnected(() => {
-      // Joining again is how the engine is asked for the current view; there is no separate
-      // sync call, and the board may have missed pushes while the socket was down.
-      void this.hub?.invoke('Join', gameId);
+    };
+    const failed = (err: unknown) => {
+      if (!active()) return;
+      const error = err instanceof Error ? err.message : String(err);
+      this.zone.run(() => this.store.dispatch(GameActions.connectionError({ error })));
+    };
+    hub.onclose(lost);
+    hub.onreconnecting(lost);
+    hub.onreconnected(() => {
+      if (active()) void hub.invoke('Join', gameId).catch(failed);
     });
 
     try {
-      await this.hub.start();
-      await this.hub.invoke('Join', gameId);
+      await previous?.stop();
+      if (!active()) return;
+      await hub.start();
+      if (!active()) return;
+      await hub.invoke('Join', gameId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.zone.run(() => this.store.dispatch(GameActions.connectionError({ error: msg })));
+      failed(err);
     }
   }
 
-  // ---- Server -> Client messages --------------------------
-  private registerHandlers(): void {
-    if (!this.hub) return;
+  private createHub(): signalR.HubConnection {
+    return new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/game', { accessTokenFactory: () => storedAuth('auth_token') ?? '' })
+      .withAutomaticReconnect([0, 2000, 5000, 10000])
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+  }
 
-    this.hub.on(
-      'ViewUpdated',
-      (raw: EngineView, legal: EngineLegal, artwork?: EngineArtwork | null) => {
-        const view = engineView(raw, this.gameId ?? '', legal, artwork ?? undefined);
-        this.updateLatest(view);
-        this.zone.run(() =>
-          this.store.dispatch(
-            GameActions.stateSynced({ gameState: this.adapter.toGameState(view) }),
-          ),
-        );
-      },
-    );
+  private clearChoiceState(): void {
+    if (this.choiceWarning) this.toasts.dismiss(this.choiceWarning.toastId);
+    this.choiceWarning = null;
+    this.pendingChoice.set(null);
+    this.choiceRequests.clear();
+  }
+
+  // ---- Server -> Client messages --------------------------
+  private registerHandlers(hub: signalR.HubConnection, gameId: string): void {
+    hub.on('ViewUpdated', (raw: EngineView, legal: EngineLegal, artwork?: EngineArtwork | null) => {
+      if (this.hub !== hub) return;
+      const view = engineView(raw, gameId, legal, artwork ?? undefined);
+      this.updateLatest(view);
+      this.zone.run(() =>
+        this.store.dispatch(GameActions.stateSynced({ gameState: this.adapter.toGameState(view) })),
+      );
+    });
     // The engine pushes a whole view rather than a diff. That is a simplification for this
     // side: the old GameStateDiff path is never exercised, and the board folds a full state.
-    this.hub.on('State', (view: GameView) => {
+    hub.on('State', (view: GameView) => {
+      if (this.hub !== hub || view.gameId !== gameId) return;
       this.updateLatest(view);
       this.zone.run(() =>
         this.store.dispatch(GameActions.stateSynced({ gameState: this.adapter.toGameState(view) })),
       );
     });
 
-    this.hub.on('Log', () => {
+    hub.on('Log', () => {
       /* The engine's narration. The original board has nowhere to put it. */
     });
 
@@ -138,7 +144,8 @@ export class SignalRService implements OnDestroy {
     // grid — so the engine's own sentence goes there. It is a better message than anything this
     // side could compose, because it names the rule: "A land is played during your main phase
     // with an empty stack (CR 505.6b)."
-    this.hub.on('Refused', (message: string) => {
+    hub.on('Refused', (message: string) => {
+      if (this.hub !== hub) return;
       this.zone.run(() => {
         this.toasts.show(message, 'warn', 5000);
         this.store.dispatch(UIActions.castFailed({ error: message }));
@@ -178,11 +185,6 @@ export class SignalRService implements OnDestroy {
     return this.invoke('PlayLand', cardId);
   }
 
-  /** Tapping a land for mana is an activated ability on the permanent (CR 605.1a). */
-  activateMana(permanentId: string): Promise<void> {
-    return this.activateAbility(permanentId, 'mana');
-  }
-
   /**
    * Any activated ability, by the id the engine gave it (CR 602.1).
    *
@@ -202,18 +204,6 @@ export class SignalRService implements OnDestroy {
       this.targetsFor(targetIds),
       variableValue,
     );
-  }
-
-  /**
-   * Untapping a land at will is not a thing a player may do.
-   *
-   * The old engine offered it and the board still has the control. The rules have no such
-   * action, so this refuses in the same voice the engine would rather than sending something
-   * that would be rejected.
-   */
-  untapLand(_permanentId: string): Promise<void> {
-    this.toasts.show('A permanent cannot be untapped at will (CR 701.21).', 'warn', 4000);
-    return Promise.resolve();
   }
 
   /**
@@ -241,16 +231,6 @@ export class SignalRService implements OnDestroy {
     return this.invoke('DeclareBlockers', blocks);
   }
 
-  /**
-   * Damage assignment order is a decision the engine asks for, not one it is told.
-   *
-   * When a creature is blocked by several, the engine puts the question on the wire as a choice
-   * and waits for the answer (CR 510.1c), so there is nothing to send here.
-   */
-  setBlockerOrder(_attackerId: string, _orderedBlockerIds: string[]): Promise<void> {
-    return Promise.resolve();
-  }
-
   /** A player may concede at any time and leaves immediately (CR 104.3a). */
   concede(): Promise<void> {
     return this.invoke('Concede');
@@ -274,6 +254,7 @@ export class SignalRService implements OnDestroy {
     if (pending) return pending;
     this.pendingChoice.set({ key, control, picks: Object.freeze([...picks]) });
     const request = this.invoke('Choose', picks).finally(() => {
+      if (this.choiceRequests.get(key) !== request) return;
       this.choiceRequests.delete(key);
       this.zone.run(() => {
         if (this.pendingChoice()?.key === key) this.pendingChoice.set(null);
@@ -410,19 +391,25 @@ export class SignalRService implements OnDestroy {
       if (libraryAction) throw Error('Not connected.');
       return;
     }
+    const sentHub = this.hub;
     const sentGameId = this.gameId;
     const sentChoiceId = this.latest?.choice?.id;
     try {
       // Every command on this hub takes the game id first.
       if (!this.latest) {
-        if (libraryAction) throw Error('Waiting for the game state.');
+        if (libraryAction || method === 'Concede') throw Error('Waiting for the game state.');
         this.toasts.show('Waiting for the game state.', 'warn', 3000);
         return;
       }
       const snapshot = this.latest;
       const command = engineCommand(method, args, snapshot);
-      await this.hub.invoke('Command', this.gameId, command);
+      await sentHub.invoke('Command', sentGameId, command);
+      if (this.hub !== sentHub && method === 'Concede') throw Error('The table changed.');
     } catch (err) {
+      if (this.hub !== sentHub) {
+        if (method === 'Concede' || libraryAction) throw err;
+        return;
+      }
       if (method === 'CastSpell')
         this.store.dispatch(
           UIActions.castFailed({
@@ -459,13 +446,15 @@ export class SignalRService implements OnDestroy {
   }
 
   async disconnect(): Promise<void> {
-    await this.hub?.stop();
+    const hub = this.hub;
     this.hub = null;
     this.gameId = null;
     this.latest = null;
+    this.clearChoiceState();
+    await hub?.stop();
   }
 
   ngOnDestroy(): void {
-    void this.hub?.stop();
+    void this.disconnect();
   }
 }

@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -7,6 +13,8 @@ import { ProfileApiService } from '../../services/profile-api.service';
 import { UserComment, UserProfile } from '../../models/profile.models';
 import { timeAgo as relativeTime } from '../../utils/time';
 import { describeHttpError } from '../../utils/http-error.utils';
+
+import { Subject, Subscription, catchError, of, switchMap, takeUntil } from 'rxjs';
 
 type Tab = 'decks' | 'comments';
 
@@ -29,7 +37,9 @@ const COMMENT_PAGE_SIZE = 10;
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss'],
 })
-export class UserProfileComponent implements OnInit {
+export class UserProfileComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+  private commentsRequest?: Subscription;
   profile: UserProfile | null = null;
   loading = true;
   error: string | null = null;
@@ -48,22 +58,41 @@ export class UserProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const username = this.route.snapshot.paramMap.get('username') ?? '';
-
-    this.api.getProfile(username).subscribe({
-      next: (profile) => {
+    this.route.paramMap
+      .pipe(
+        switchMap((params) => {
+          this.commentsRequest?.unsubscribe();
+          this.profile = null;
+          this.comments = [];
+          this.commentsTotal = 0;
+          this.commentsLoading = false;
+          this.commentPage = 1;
+          this.activeTab = 'decks';
+          this.loading = true;
+          this.error = null;
+          this.cdr.markForCheck();
+          return this.api.getProfile(params.get('username') ?? '').pipe(
+            catchError((err) => {
+              this.error = describeHttpError(err, 'That profile could not be loaded.');
+              return of(null);
+            }),
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((profile) => {
         this.profile = profile;
-        this.comments = profile.recentComments;
-        this.commentsTotal = profile.commentCount;
+        this.comments = profile?.recentComments ?? [];
+        this.commentsTotal = profile?.commentCount ?? 0;
         this.loading = false;
         this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.error = describeHttpError(err, 'That profile could not be loaded.');
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-    });
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.commentsRequest?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get name(): string {
@@ -86,23 +115,25 @@ export class UserProfileComponent implements OnInit {
     this.commentsLoading = true;
     this.cdr.markForCheck();
 
-    this.api.getComments(this.profile.username, this.commentPage + 1, COMMENT_PAGE_SIZE).subscribe({
-      next: (page) => {
-        // Deduped by id rather than trusting the page boundary: the embedded first page
-        // is the server's choice of size, and if it ever stops matching COMMENT_PAGE_SIZE
-        // the overlap would otherwise render the same comment twice.
-        const seen = new Set(this.comments.map((c) => c.commentId));
-        this.comments = [...this.comments, ...page.items.filter((c) => !seen.has(c.commentId))];
-        this.commentsTotal = page.total;
-        this.commentPage = page.page;
-        this.commentsLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.commentsLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.commentsRequest = this.api
+      .getComments(this.profile.username, this.commentPage + 1, COMMENT_PAGE_SIZE)
+      .subscribe({
+        next: (page) => {
+          // Deduped by id rather than trusting the page boundary: the embedded first page
+          // is the server's choice of size, and if it ever stops matching COMMENT_PAGE_SIZE
+          // the overlap would otherwise render the same comment twice.
+          const seen = new Set(this.comments.map((c) => c.commentId));
+          this.comments = [...this.comments, ...page.items.filter((c) => !seen.has(c.commentId))];
+          this.commentsTotal = page.total;
+          this.commentPage = page.page;
+          this.commentsLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.commentsLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   /** Delegates to the shared helper; see `utils/time.ts`. */

@@ -53,6 +53,14 @@ describe('DeckRefinePanelComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('cancels a pending paid preview when the panel closes', () => {
+    const fixture = create();
+    fixture.componentInstance.ask();
+    const request = http.expectOne('/api/decks/deck-1/ai-refine');
+    fixture.destroy();
+    expect(request.cancelled).toBeTrue();
+  });
+
   it('asks for a preview, never a write', () => {
     const fixture = create();
     fixture.componentInstance.ask();

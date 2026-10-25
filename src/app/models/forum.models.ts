@@ -23,6 +23,7 @@ export interface ForumPostDetail {
   deckCoverUri: string | null;
   deckFormat: string | null;
   commanderOracleId: string | null;
+  secondaryCommanderOracleId?: string | null;
   commanderImageUri: string | null;
   commanderName: string | null;
   description: string | null;

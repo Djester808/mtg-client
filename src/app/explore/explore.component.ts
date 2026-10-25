@@ -18,7 +18,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { combineLatest, of, Subject, debounceTime } from 'rxjs';
+import { combineLatest, of, Subject, debounceTime, Subscription } from 'rxjs';
 import { catchError, switchMap, tap, startWith, distinctUntilChanged } from 'rxjs/operators';
 import { ExploreApiService, ExploreEntry, ExplorePage } from '../services/explore-api.service';
 import { DeckApiService, DeckDto } from '../services/deck-api.service';
@@ -26,19 +26,6 @@ import { CardDto } from '../models/game.models';
 import { selectIsLoggedIn } from '../store/auth/auth.selectors';
 import { CardModalComponent } from '../components/card-modal/card-modal.component';
 import { DialogFocusDirective } from '../shared/dialog-focus.directive';
-
-export function sortExplore(entries: ExploreEntry[], sort: string): ExploreEntry[] {
-  return [...entries].sort((a, b) =>
-    sort === 'name'
-      ? a.name.localeCompare(b.name)
-      : ((sort === 'price' ? b.card?.prices?.usd : b[sort as 'decks' | 'synergy' | 'inclusion']) ??
-          -Infinity) -
-          ((sort === 'price'
-            ? a.card?.prices?.usd
-            : a[sort as 'decks' | 'synergy' | 'inclusion']) ?? -Infinity) ||
-        a.name.localeCompare(b.name),
-  );
-}
 
 @Component({
   selector: 'app-explore',
@@ -94,6 +81,7 @@ export class ExploreComponent {
   readonly home = inject(ExploreHomeService);
   readonly daily = computed(() => this.home.pick(this.directory()));
   readonly suggestions = signal<ExploreEntry[]>([]);
+  private searchRequest?: Subscription;
   private readonly typedSearch = new Subject<string>();
   directoryOpen = false;
   searchText = '';
@@ -209,14 +197,17 @@ export class ExploreComponent {
   }
   search(): void {
     if (!this.searchText.trim()) return;
+    const query = this.searchText.trim(),
+      kind = this.searchKind;
+    this.searchRequest?.unsubscribe();
     this.loading.set(true);
     this.error.set('');
-    this.api
-      .search(this.searchText.trim(), this.searchKind)
+    this.searchRequest = this.api
+      .search(query, kind)
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: (cards) => {
-          this.home.remember(this.searchText, this.searchKind);
+          this.home.remember(query, kind);
           this.suggestions.set([]);
           this.directoryTitle.set('Search results');
           this.directory.set(cards);
@@ -288,17 +279,19 @@ export class ExploreComponent {
     )
       return;
     this.saving.set(true);
+    const destination = this.destination,
+      quantity = this.quantity;
     this.deckApi
-      .addCard(this.destination, {
+      .addCard(destination, {
         oracleId: entry.card.oracleId,
-        quantity: this.quantity,
+        quantity,
         quantityFoil: 0,
       })
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: () => {
-          this.visit.added(this.destination, entry.name, this.quantity);
-          this.notice.set(`Added ${this.quantity} × ${entry.name}.`);
+          this.visit.added(destination, entry.name, quantity);
+          this.notice.set(`Added ${quantity} × ${entry.name}.`);
           this.pending.set(null);
           this.saving.set(false);
         },

@@ -121,6 +121,13 @@ export abstract class CardSearchBase {
   // the pipeline fires an initial load on subscribe.
   protected filterChange$ = new BehaviorSubject<void>(undefined);
   protected loadMore$ = new Subject<void>();
+  protected readonly pageReset$ = new Subject<void>();
+
+  /** A new query owns all following pages; cancel work from the previous query. */
+  protected resetPageRequests(): void {
+    this.pageReset$.next();
+    this.loadingMore = false;
+  }
 
   // Memoized: read on every change-detection pass while the dropdown is open, but the
   // filtered list only changes with the sets or the query.

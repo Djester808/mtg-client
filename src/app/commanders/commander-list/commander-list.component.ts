@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +23,11 @@ import { matchesColorSelection } from '../../utils/color-filter';
   templateUrl: './commander-list.component.html',
   styleUrls: ['./commander-list.component.scss'],
 })
-export class CommanderListComponent implements OnInit {
+export class CommanderListComponent implements OnInit, OnDestroy {
+  private request?: Subscription;
+  ngOnDestroy(): void {
+    this.request?.unsubscribe();
+  }
   commanders: CommanderSummary[] = [];
   loading = true;
   error: string | null = null;
@@ -44,6 +55,7 @@ export class CommanderListComponent implements OnInit {
   }
 
   loadCommanders(): void {
+    this.request?.unsubscribe();
     this.loading = true;
     this.error = null;
     this.cdr.markForCheck();
@@ -57,7 +69,7 @@ export class CommanderListComponent implements OnInit {
       ? this.api.searchCommanders(q, 200)
       : this.api.getTopCommanders(200, this.dateMonths);
 
-    source$.subscribe({
+    this.request = source$.subscribe({
       next: (data) => {
         this.commanders = data;
         this.loading = false;

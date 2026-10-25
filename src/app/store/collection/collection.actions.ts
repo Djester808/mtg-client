@@ -51,7 +51,7 @@ export const CollectionActions = createActionGroup({
 
     // Add card
     'Add Card': props<{ collectionId: string; request: AddCardToCollectionRequest }>(),
-    'Add Card Success': props<{ card: CollectionCardDto }>(),
+    'Add Card Success': props<{ collectionId: string; card: CollectionCardDto }>(),
     'Add Card Failure': props<{ collectionId: string; error: string }>(),
 
     // Update card
@@ -60,12 +60,12 @@ export const CollectionActions = createActionGroup({
       cardId: string;
       request: UpdateCollectionCardRequest;
     }>(),
-    'Update Card Success': props<{ card: CollectionCardDto }>(),
+    'Update Card Success': props<{ collectionId: string; card: CollectionCardDto }>(),
     'Update Card Failure': props<{ collectionId: string; error: string }>(),
 
     // Remove card
     'Remove Card': props<{ collectionId: string; cardId: string }>(),
-    'Remove Card Success': props<{ cardId: string }>(),
+    'Remove Card Success': props<{ collectionId: string; cardId: string }>(),
     'Remove Card Failure': props<{ collectionId: string; error: string }>(),
 
     // Move a card to another collection. `targetName` rides along only so the success

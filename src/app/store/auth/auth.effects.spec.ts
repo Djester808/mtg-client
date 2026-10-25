@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthEffects } from './auth.effects';
 import { AuthActions } from './auth.actions';
@@ -27,6 +27,19 @@ describe('AuthEffects', () => {
     spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
   });
 
+  it('ignores a pending login after logout', () => {
+    const input = new Subject<any>(),
+      response = new Subject<any>();
+    actions$ = input;
+    auth.login.and.returnValue(response);
+    const received: unknown[] = [];
+    const sub = TestBed.inject(AuthEffects).login$.subscribe((action) => received.push(action));
+    input.next(AuthActions.login({ username: 'old', password: 'password' }));
+    input.next(AuthActions.logout());
+    response.next({ token: 'stale', username: 'old' });
+    expect(received).toEqual([]);
+    sub.unsubscribe();
+  });
   it('stores the username the server returned, not the one that was typed', (done) => {
     // Login accepts a username OR an email address. Echoing the request put people's email
     // addresses in the navbar, into the avatar's colour hash, and into every /u/:username

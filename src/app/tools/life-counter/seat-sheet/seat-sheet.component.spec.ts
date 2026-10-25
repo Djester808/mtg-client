@@ -238,4 +238,23 @@ describe('SeatSheetComponent', () => {
     expect(component.record).toBeNull();
     expect(component.signInError).toBeNull();
   });
+  it('drops an earlier account record request when that seat signs out', () => {
+    counter.signIn(seats()[0].id, { username: 'Nissa', token: 'jwt' });
+    render();
+    const pending = http.expectOne((r) => r.url.includes('/matches'));
+    component.loadRecord(null);
+    expect(pending.cancelled).toBeTrue();
+    expect(component.record).toBeNull();
+    expect(component.recordFor).toBeNull();
+  });
+
+  it('cancels seat sign-in when the sheet closes', () => {
+    component.username = 'Nissa';
+    component.password = 'secret';
+    component.submitSignIn();
+    const pending = http.expectOne((r) => r.url.endsWith('/login'));
+    fixture.destroy();
+    expect(pending.cancelled).toBeTrue();
+    expect(seats()[0].account).toBeNull();
+  });
 });

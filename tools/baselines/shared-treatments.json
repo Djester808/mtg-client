@@ -15,8 +15,6 @@
   "src/app/collection/collection-list/collection-list.component.scss::.modal-close::drawer-close",
   "src/app/collection/collection-list/collection-list.component.scss::.submit-btn::page-add-btn",
   "src/app/components/card-modal/card-modal.component.scss::.modal-close-btn::drawer-close",
-  "src/app/components/card/card.component.scss::.card-frame::detail-shell",
-  "src/app/components/card/card.component.scss::.tooltip-name::header-name",
   "src/app/components/deck-suggestions-panel/deck-suggestions-panel.component.scss::.sugg-empty::empty-state",
   "src/app/deck/deck-list/deck-list.component.scss::.back-btn::back-btn",
   "src/app/deck/deck-list/deck-list.component.scss::.back-btn::header-count",

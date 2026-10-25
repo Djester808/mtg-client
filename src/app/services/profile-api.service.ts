@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { storedAuth } from './auth-storage';
 import { Observable, tap } from 'rxjs';
 import {
   AvatarLimits,
@@ -21,6 +22,7 @@ export class ProfileApiService {
   private readonly users = '/api/users';
   private readonly me = '/api/profile/me';
 
+  private profileGeneration = 0;
   private readonly _myProfile = signal<MyProfile | null>(null);
 
   /**
@@ -37,7 +39,19 @@ export class ProfileApiService {
 
   /** Drops the cached profile. Call on sign-out so the next user does not inherit a face. */
   clearMyProfile(): void {
+    this.profileGeneration++;
     this._myProfile.set(null);
+  }
+
+  private remember(request: Observable<MyProfile>): Observable<MyProfile> {
+    const owner = storedAuth('auth_username'),
+      generation = this.profileGeneration;
+    return request.pipe(
+      tap((me) => {
+        if (owner === storedAuth('auth_username') && generation === this.profileGeneration)
+          this._myProfile.set(me);
+      }),
+    );
   }
 
   // ---- Public -----------------------------------------------------------
@@ -61,11 +75,11 @@ export class ProfileApiService {
   // ---- Owner ------------------------------------------------------------
 
   getMyProfile(): Observable<MyProfile> {
-    return this.http.get<MyProfile>(this.me).pipe(tap((me) => this._myProfile.set(me)));
+    return this.remember(this.http.get<MyProfile>(this.me));
   }
 
   updateMyProfile(request: UpdateProfileRequest): Observable<MyProfile> {
-    return this.http.put<MyProfile>(this.me, request).pipe(tap((me) => this._myProfile.set(me)));
+    return this.remember(this.http.put<MyProfile>(this.me, request));
   }
 
   getAvatarLimits(): Observable<AvatarLimits> {
@@ -82,14 +96,10 @@ export class ProfileApiService {
   uploadAvatar(image: Blob, filename = 'avatar.jpg'): Observable<MyProfile> {
     const body = new FormData();
     body.append('file', image, filename);
-    return this.http
-      .put<MyProfile>(`${this.me}/avatar`, body)
-      .pipe(tap((me) => this._myProfile.set(me)));
+    return this.remember(this.http.put<MyProfile>(`${this.me}/avatar`, body));
   }
 
   deleteAvatar(): Observable<MyProfile> {
-    return this.http
-      .delete<MyProfile>(`${this.me}/avatar`)
-      .pipe(tap((me) => this._myProfile.set(me)));
+    return this.remember(this.http.delete<MyProfile>(`${this.me}/avatar`));
   }
 }

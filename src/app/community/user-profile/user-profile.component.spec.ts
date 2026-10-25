@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -53,15 +54,17 @@ function comment(id: string): UserComment {
 
 describe('UserProfileComponent', () => {
   let http: HttpTestingController;
+  let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(() => {
+    params = new BehaviorSubject(convertToParamMap({ username: 'Nissa' }));
     TestBed.configureTestingModule({
       imports: [UserProfileComponent, HttpClientTestingModule],
       providers: [
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ username: 'Nissa' }) } },
+          useValue: { paramMap: params },
         },
       ],
     });
@@ -69,6 +72,16 @@ describe('UserProfileComponent', () => {
   });
 
   afterEach(() => http.verify());
+  it('cancels old profiles and resets pagination when the route changes', () => {
+    const fixture = TestBed.createComponent(UserProfileComponent);
+    fixture.detectChanges();
+    const old = http.expectOne('/api/users/Nissa');
+    params.next(convertToParamMap({ username: 'Chandra' }));
+    expect(old.cancelled).toBeTrue();
+    http.expectOne('/api/users/Chandra').flush(makeProfile({ username: 'Chandra' }));
+    expect(fixture.componentInstance.profile?.username).toBe('Chandra');
+    expect(fixture.componentInstance.comments).toEqual([]);
+  });
 
   function load(profile: UserProfile) {
     const fixture = TestBed.createComponent(UserProfileComponent);

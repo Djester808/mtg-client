@@ -275,3 +275,20 @@ describe('gameReducer', () => {
     expect(state.gameState!.priorityPlayerId).toBe('p2');
   });
 });
+
+describe('game table isolation', () => {
+  it('clears the old private snapshot and viewer while another table joins', () => {
+    const next = gameReducer(
+      stateWithGame(),
+      GameActions.joinGame({ gameId: 'other', playerToken: '' }),
+    );
+    expect(next.gameState).toBeNull();
+    expect(next.localPlayerId).toBeNull();
+  });
+  it('clears the table when leaving the board', () => {
+    const next = gameReducer(stateWithGame(), GameActions.leaveGame());
+    expect(next.gameState).toBeNull();
+    expect(next.gameId).toBeNull();
+    expect(next.connected).toBeFalse();
+  });
+});

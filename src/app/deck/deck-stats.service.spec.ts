@@ -22,6 +22,14 @@ function row(id: string, board = 'main', text = '', land = false): CollectionCar
   };
 }
 describe('Audited deck regressions', () => {
+  it('counts unclassified cards independently of cards with multiple types', () => {
+    const hybrid = row('hybrid');
+    hybrid.cardDetails!.cardTypes = [CardType.Artifact, CardType.Creature];
+    const other = row('other');
+    other.cardDetails!.cardTypes = [];
+    const stats = new DeckStatsService().getDeckStats({ cards: [hybrid, other] } as DeckDetailDto);
+    expect(stats.other).toBe(2);
+  });
   it('uses catalog production choices instead of inferring them from text when available', () => {
     const source = row('catalog', 'main', '{T}: Add {R}.', true);
     source.cardDetails!.producedMana = ['G', 'G'];

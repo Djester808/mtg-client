@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject, takeUntil } from 'rxjs';
 import { CommandersApiService } from '../../services/commanders-api.service';
 import { CommanderProfile, CommanderCardEntry, CommanderDeck } from '../../models/commander.models';
 import { DeckSuggestionsDto, SuggestedCardDto } from '../../services/deck-api.service';
@@ -105,6 +105,7 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
   modalFlipped = false;
 
   private routeSub?: Subscription;
+  private readonly cancelRequests$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -126,9 +127,14 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.cancelRequests$.next();
+    this.cancelRequests$.complete();
   }
 
   private reset(): void {
+    this.cancelRequests$.next();
+    this.deckTag = '';
+    this.closeCardModal();
     this.profile = null;
     this.cards = [];
     this.decks = [];
@@ -148,43 +154,52 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
   }
 
   private load(): void {
-    this.api.getCommanderProfile(this.oracleId).subscribe({
-      next: (p) => {
-        this.profile = p;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'Commander not found.';
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .getCommanderProfile(this.oracleId)
+      .pipe(takeUntil(this.cancelRequests$))
+      .subscribe({
+        next: (p) => {
+          this.profile = p;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Commander not found.';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.api.getCommanderCards(this.oracleId).subscribe({
-      next: (c) => {
-        this.cards = c.cards;
-        this.totalDecks = c.totalDecks;
-        this.cardsLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.cardsLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .getCommanderCards(this.oracleId)
+      .pipe(takeUntil(this.cancelRequests$))
+      .subscribe({
+        next: (c) => {
+          this.cards = c.cards;
+          this.totalDecks = c.totalDecks;
+          this.cardsLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cardsLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
 
-    this.api.getCommanderDecks(this.oracleId).subscribe({
-      next: (d) => {
-        this.decks = d;
-        this.decksLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.decksLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .getCommanderDecks(this.oracleId)
+      .pipe(takeUntil(this.cancelRequests$))
+      .subscribe({
+        next: (d) => {
+          this.decks = d;
+          this.decksLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.decksLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   loadSuggestions(): void {
@@ -193,17 +208,20 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
     this.suggestionsLoading = true;
     this.cdr.markForCheck();
 
-    this.api.getCommanderSuggestions(this.oracleId).subscribe({
-      next: (s) => {
-        this.suggestions = s;
-        this.suggestionsLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.suggestionsLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .getCommanderSuggestions(this.oracleId)
+      .pipe(takeUntil(this.cancelRequests$))
+      .subscribe({
+        next: (s) => {
+          this.suggestions = s;
+          this.suggestionsLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.suggestionsLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   setTab(tab: TypeTab): void {
@@ -374,12 +392,15 @@ export class CommanderDetailComponent implements OnInit, OnDestroy {
     this.modalPrintings = [];
     this.modalFlipped = false;
     this.cdr.markForCheck();
-    this.printings.get(card.oracleId).subscribe((p) => {
-      if (this.modalCard?.oracleId !== card.oracleId) return;
-      this.modalPrintings = p;
-      this.modalScryfallId = p[0]?.scryfallId ?? null;
-      this.cdr.markForCheck();
-    });
+    this.printings
+      .get(card.oracleId)
+      .pipe(takeUntil(this.cancelRequests$))
+      .subscribe((p) => {
+        if (this.modalCard?.oracleId !== card.oracleId) return;
+        this.modalPrintings = p;
+        this.modalScryfallId = p[0]?.scryfallId ?? null;
+        this.cdr.markForCheck();
+      });
   }
 
   closeCardModal(): void {

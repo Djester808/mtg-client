@@ -124,6 +124,7 @@ export class HomeComponent extends CardSearchBase implements OnInit, OnDestroy {
             a.useRegex === b.useRegex,
         ),
         switchMap(({ query }) => {
+          this.resetPageRequests();
           if (!query.trim()) {
             this.loading = false;
             this.searched = false;
@@ -167,7 +168,7 @@ export class HomeComponent extends CardSearchBase implements OnInit, OnDestroy {
     this.loadMore$
       .pipe(
         concatMap(() => {
-          if (!this.lastQuery || this.loadingMore) return of<CardDto[]>([]);
+          if (!this.lastQuery || this.loading || this.loadingMore) return of<CardDto[]>([]);
           this.loadingMore = true;
           this.currentOffset += this.PAGE_SIZE;
           this.cdr.markForCheck();
@@ -182,7 +183,10 @@ export class HomeComponent extends CardSearchBase implements OnInit, OnDestroy {
               this.matchWord,
               this.useRegex,
             )
-            .pipe(catchError(() => of<CardDto[]>([])));
+            .pipe(
+              takeUntil(this.pageReset$),
+              catchError(() => of<CardDto[]>([])),
+            );
         }),
         takeUntil(this.destroy$),
       )

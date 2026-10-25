@@ -522,6 +522,42 @@ describe('DeckDetailComponent — quantity controls', () => {
     );
   });
 
+  it('decrements etched-only rows without sending a negative foil count', async () => {
+    const { component, store } = await setup();
+    component.decrement(
+      makeDeckCard({ id: 'etched', quantity: 0, quantityFoil: 0, quantityEtched: 3 }),
+    );
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'etched',
+        request: { quantity: 0, quantityFoil: 0, quantityEtched: 2 },
+      }),
+    );
+  });
+
+  it('deletes selected etched copies in the free layout', async () => {
+    const { component, store } = await setup();
+    const card = makeDeckCard({ id: 'etched', quantity: 0, quantityFoil: 0, quantityEtched: 3 });
+    store.setState({
+      ...INITIAL_STATE,
+      deck: { ...INITIAL_STATE.deck, activeDeck: makeDeck([card]) },
+    });
+    component.viewMode = 'free';
+    component.freeColumns = [
+      { id: 'col', label: 'Etched', cardIds: ['etched', 'etched', 'etched'] },
+    ];
+    component.selectedCardSlots = new Map([['col/0', 'etched']]);
+    component.onDocumentKeyDown(new KeyboardEvent('keydown', { key: 'Delete' }));
+    expect(store.dispatch).toHaveBeenCalledWith(
+      DeckActions.updateCard({
+        deckId: 'deck-1',
+        cardId: 'etched',
+        request: { quantity: 0, quantityFoil: 0, quantityEtched: 2 },
+      }),
+    );
+  });
+
   it('decrement dispatches removeCard when total count is 1', async () => {
     const { component, store } = await setup();
     const card = makeDeckCard({ id: 'c1', quantity: 1, quantityFoil: 0 });

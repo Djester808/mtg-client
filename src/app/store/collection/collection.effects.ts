@@ -1,3 +1,4 @@
+import { restartOnSessionChange } from '../session-boundary';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
@@ -32,6 +33,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -46,6 +48,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -65,13 +68,14 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
   createCollection$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.createCollection),
-      switchMap(({ request }) =>
+      concatMap(({ request }) =>
         this.api.createCollection(request).pipe(
           map((collection) => CollectionActions.createCollectionSuccess({ collection })),
           catchError((err) =>
@@ -79,13 +83,14 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
   updateCollectionMeta$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CollectionActions.updateCollectionMeta),
-      mergeMap(({ id, name, description, coverUri }) =>
+      concatMap(({ id, name, description, coverUri }) =>
         this.api.updateCollection(id, { name, description, coverUri }).pipe(
           map((collection) => CollectionActions.updateCollectionMetaSuccess({ collection })),
           catchError((err) =>
@@ -93,6 +98,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -107,6 +113,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -115,12 +122,13 @@ export class CollectionEffects {
       ofType(CollectionActions.addCard),
       mergeMap(({ collectionId, request }) =>
         this.api.addCard(collectionId, request).pipe(
-          map((card) => CollectionActions.addCardSuccess({ card })),
+          map((card) => CollectionActions.addCardSuccess({ collectionId, card })),
           catchError((err) =>
             of(CollectionActions.addCardFailure({ collectionId, error: describeHttpError(err) })),
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -131,7 +139,7 @@ export class CollectionEffects {
       ofType(CollectionActions.updateCard),
       concatMap(({ collectionId, cardId, request }) =>
         this.api.updateCard(collectionId, cardId, request).pipe(
-          map((card) => CollectionActions.updateCardSuccess({ card })),
+          map((card) => CollectionActions.updateCardSuccess({ collectionId, card })),
           catchError((err) =>
             of(
               CollectionActions.updateCardFailure({ collectionId, error: describeHttpError(err) }),
@@ -139,6 +147,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -147,7 +156,7 @@ export class CollectionEffects {
       ofType(CollectionActions.removeCard),
       concatMap(({ collectionId, cardId }) =>
         this.api.removeCard(collectionId, cardId).pipe(
-          map(() => CollectionActions.removeCardSuccess({ cardId })),
+          map(() => CollectionActions.removeCardSuccess({ collectionId, cardId })),
           catchError((err) =>
             of(
               CollectionActions.removeCardFailure({ collectionId, error: describeHttpError(err) }),
@@ -155,6 +164,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -173,6 +183,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -187,6 +198,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -212,6 +224,7 @@ export class CollectionEffects {
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 

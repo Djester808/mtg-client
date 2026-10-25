@@ -1,0 +1,104 @@
+Client code audit and fixes — 2026-10-25
+
+Scope
+Three parallel reviewers covered auth/community/forum/explore/commanders;
+deck/collection/search/modal/AI; and game/SignalR/lobby/life-counter. The primary
+reviewer checked store effects/reducers, session boundaries, knowledge lookup,
+entry-point reachability, integration contracts and verification. This is a
+repository-wide audit of those surfaces, not a claim that every possible defect
+or architectural tradeoff has been eliminated.
+
+Confirmed issues fixed
+- Async state could cross entity, route or account boundaries. Mutation success
+  actions now carry destination IDs; reducers reject stale destinations. Effects
+  cancel active and queued work on session changes. Auth/profile callbacks and
+  caches cannot restore the previous account. Root state resets at boundaries.
+- Create/metadata writes were canceled or reordered by switchMap/mergeMap. They
+  now serialize. Deck notes and secondary commanders survive optimistic updates.
+- Detail route reuse retained editors, searches and AI state from another deck or
+  collection. Those ID changes recreate the detail component. Public profile,
+  forum, commanders and knowledge routes cancel/reset their own stale requests.
+- Forum's bounded API exposed only the first page. Posts/comments now load more
+  with offsets and deduplication. Copying preserves partner commanders and etched
+  quantities/printings. The sibling API now includes the partner ID in its DTO.
+- Search load-more, modal rulings, ownership, suggestions and AI streams could
+  outlive their query, owner or component. Cancellation/reset guards now cover
+  replacement and destruction, including cleanup of a late-created AI draft.
+- Etched ownership, quantity reductions and price calculations were incomplete.
+  Deck Other statistics double-subtracted cards with multiple types. Fixed both.
+- Mana advice counted sideboards and repeated derived work; main-board analysis
+  is memoized and its error/empty states recover. Forum filtering is memoized.
+- SignalR reconnects and old callbacks could affect a newer table. Connections,
+  callbacks and pending choices are scoped to their owning hub/game. Leaving the
+  board disconnects, resets game/UI/selection state and cancels pending REST work.
+- Lobby reads and life-counter dialogs could publish stale results. They cancel
+  on replacement/close; recording an old game cannot mark a rematch recorded.
+- Attachment lookup now builds one map instead of scanning the battlefield for
+  each attachment. Startup keyword lookup has a bounded timeout; keyword sheets
+  and knowledge searches survive failed requests without poisoning later queries.
+
+Dead code / duplication
+Removed the unreachable legacy CardComponent and its own tests/styles after
+checking production imports and selector usage. Removed unused activateMana,
+untapLand and setBlockerOrder client chains and the unused exported sortExplore.
+Updated only the removed component's coverage/shared-treatment registrations.
+Kept stateDiff and separate deck/collection domain reducers where callers or
+semantics remain. Shared session cancellation and existing navigation helpers
+replace repeated lifecycle/navigation logic. No cosmetic rewrite of large drag
+or layout components and no claim of blanket SOLID compliance.
+
+Verification
+- npm run verify: 1,921 tests passed; format/lint/style/shared-treatment/state
+  checks, changed-file coverage (53 files >=60%), production build passed.
+- Mutation check on temporary copies: restoring switchMap for create writes
+  caused four of eight regressions to fail; final source passed all eight.
+- Real browser collection-list/detail + knowledge suites: 49 tests passed.
+- Real API forum browser: 52 posts, 51 comments, desktop and375px paging, reused
+  routes, partner+etched copy passed; disposable account cleanup returned204.
+- Real AI components with deterministic API fixtures: desktop/mobile build and
+  refine budget serialization plus detail route reset passed. No paid AI call.
+- Isolated four-seat game: private hands, choices, broadcasts and reload passed.
+  Lifecycle browser: old socket closed on departure, one new active socket on
+  return; life gain/undo/loss and reload persistence passed at desktop/mobile.
+- Sibling API: all883 tests passed after the additive partner DTO change.
+- Broader UI capture/gate results are recorded below after completion.
+
+Harness corrections
+Use the existing disposable visual-fixture runner for populated deck/collection
+states. Interactive board captures belong on landscape/desktop; portrait captures
+verify the rotation notice. Capture roots must be visible; failed/missing captures
+now fail the runner and audit instead of becoming zero-valued metrics. Updated
+stale lobby/knowledge/manual-dock/battlefield-overflow interactions and routed
+port verifiers through BasePage/config.baseUrl. Baselines are not blindly reset.
+
+Limits
+Browser mobile emulation is not a physical iOS test. Existing card-modal SCSS
+bundle warning remains. No synthetic performance timing is presented as a
+production benchmark. This client change needs no database migration.
+
+Additional live checks
+Branding desktop/mobile passed. Account/collection parity, 201-row collection
+pagination/filtering/virtualization, Explore navigation/destination/undo, and
+publication/AI draft persistence passed on phone, tablet and desktop. Draft
+verification now waits for visible loaded stats before reading its text.
+For the complete seeded visual run, use node e2e/verify-ui-fixture.js with API
+and client servers running; it creates and deletes its own account and fixtures.
+
+Final visual verification
+Shared-filter captures match pixel-for-pixel in all six comparisons across list,
+visual, free and search-panel contexts. All 181 interaction captures passed after
+rerunning two AI login/replay timeouts and repairing the compact land-chip helper.
+The lobby manual-play label was only24px high; it now meets the shared44px tap
+minimum on phones. Both phone audit profiles report zero small targets. A1280px
+before/after screenshot comparison has zero differing pixels, with desktop label
+height unchanged24px. The compact manual-menu capture now scrolls its actual
+panel to show destinations. Application databases needed no new migration.
+
+Final gates passed
+Visual audit:281 surfaces (100 routes plus181 interaction states), no regression.
+Ten invalid portrait interactive-board baseline entries were removed;84 reviewed
+active board/portrait-notice entries were added. The other197 baseline entries
+and their thresholds were preserved. Dedicated board device profiles are used
+by state captures rather than duplicated across the ordinary route matrix.
+A negative probe confirms the audit rejects failed/missing captures and accepts
+valid geometry. Final npm run verify passed again:1,921 tests, coverage and build.

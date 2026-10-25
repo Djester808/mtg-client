@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Subject, switchMap } from 'rxjs';
+import { Subject, switchMap, EMPTY, catchError, takeUntil } from 'rxjs';
 import { KeywordDetail, RulesApiService } from '../../services/rules-api.service';
 import { RuleBlockComponent } from '../rule-block/rule-block.component';
 
@@ -45,7 +45,8 @@ export class KeywordSheetComponent implements OnDestroy {
   failed = false;
 
   /** Latest-wins by operator, not by a hand-written check on the pending name. */
-  private readonly requests = new Subject<string>();
+  private readonly requests = new Subject<string | null>();
+  private readonly destroyed = new Subject<void>();
   private readonly clickHandler = (event: Event) => this.onDocumentClick(event as MouseEvent);
   private readonly keyHandler = (event: Event) => this.onDocumentKeydown(event as KeyboardEvent);
 
@@ -61,21 +62,39 @@ export class KeywordSheetComponent implements OnDestroy {
     this.document.addEventListener('click', this.clickHandler, true);
     this.document.addEventListener('keydown', this.keyHandler, true);
 
-    this.requests.pipe(switchMap((name) => this.api.keyword(name))).subscribe({
-      next: (keyword) => {
-        this.keyword = keyword;
-        this.loadingName = null;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.loadingName = null;
-        this.failed = true;
-        this.cdr.markForCheck();
-      },
-    });
+    this.requests
+      .pipe(
+        switchMap((name) =>
+          name === null
+            ? EMPTY
+            : this.api.keyword(name).pipe(
+                catchError(() => {
+                  this.loadingName = null;
+                  this.failed = true;
+                  this.cdr.markForCheck();
+                  return EMPTY;
+                }),
+              ),
+        ),
+        takeUntil(this.destroyed),
+      )
+      .subscribe({
+        next: (keyword) => {
+          this.keyword = keyword;
+          this.loadingName = null;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loadingName = null;
+          this.failed = true;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   ngOnDestroy(): void {
+    this.destroyed.next();
+    this.destroyed.complete();
     this.document.removeEventListener('click', this.clickHandler, true);
     this.document.removeEventListener('keydown', this.keyHandler, true);
   }
@@ -121,6 +140,7 @@ export class KeywordSheetComponent implements OnDestroy {
   }
 
   close(): void {
+    this.requests.next(null);
     this.keyword = null;
     this.loadingName = null;
     this.failed = false;

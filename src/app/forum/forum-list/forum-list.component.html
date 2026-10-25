@@ -288,5 +288,15 @@
         </a>
       </div>
     </ng-container>
+    <ng-container *ngIf="pagination$ | async as paging">
+      <button
+        class="publish-btn"
+        *ngIf="paging.more"
+        [disabled]="loading$ | async"
+        (click)="loadMore(paging.offset)"
+      >
+        Load more decks
+      </button>
+    </ng-container>
   </div>
 </div>

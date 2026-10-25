@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { catchError, map, of, tap } from 'rxjs';
+import { catchError, map, of, tap, timeout } from 'rxjs';
 import { KeywordLink, RulesApiService } from './rules-api.service';
 import { escapeRegExp } from '../utils/regex.utils';
 
@@ -35,6 +35,7 @@ export class KeywordLinkService {
 
   load() {
     return this.api.keywordLinks().pipe(
+      timeout(5000),
       tap((links) => this.compile(links)),
       map(() => true),
       catchError(() => of(false)),

@@ -129,4 +129,28 @@ describe('BackgroundPickerComponent', () => {
     // Cleared so choosing the same file again still fires a change event.
     expect(input.value).toBe('');
   });
+  it('can search again after a failed request, including the same query', fakeAsync(() => {
+    component.onQuery('sol');
+    tick(300);
+    http
+      .expectOne((r) => r.url === '/api/cards/search')
+      .flush(null, { status: 500, statusText: 'Error' });
+    component.onQuery('sol');
+    tick(300);
+    http.expectOne((r) => r.url === '/api/cards/search').flush([card('Sol Ring')]);
+    expect(component.error).toBeNull();
+    expect(component.results[0].name).toBe('Sol Ring');
+  }));
+
+  it('clearing the query immediately cancels the pending search', fakeAsync(() => {
+    component.onQuery('sol');
+    tick(300);
+    const request = http.expectOne((r) => r.url === '/api/cards/search');
+    component.onQuery('');
+    expect(request.cancelled).toBeTrue();
+    expect(component.results).toEqual([]);
+    expect(component.searched).toBeFalse();
+    tick(300);
+    http.expectNone((r) => r.url === '/api/cards/search');
+  }));
 });

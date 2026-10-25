@@ -49,15 +49,14 @@ const ROUTES = [
   },
   { id: 'collection', path: '/collection', auth: true, label: 'Collection list' },
   { id: 'deck', path: '/deck', auth: true, label: 'Deck list' },
-  // The lobby, restored with the board. It is a real screen with a layout of its own — two
-  // name fields, a grid of deck presets and a primary action — and it renders without a game
-  // behind it, so the audit can measure it on every run.
+  // The account-bound lobby renders existing tables and the create-table form. Wait
+  // for its Refresh control to enable after the initial decks/tables load completes.
   {
     id: 'lobby',
     path: '/lobby',
     auth: true,
     label: 'Play — start a game',
-    ready: '.lobby-card',
+    ready: '.gl-page > .gl-btn:not([disabled])',
   },
   // A public profile needs a real user to point at, so it rides on the same credentials
   // the auth routes use — not because the page needs a login (it does not), but because
@@ -306,7 +305,8 @@ async function settle(driver) {
 
 (async () => {
   const args = parseArgs(process.argv);
-  const devices = DEVICES.filter((d) => !args.devices || args.devices.includes(d.id));
+  // Dedicated board profiles are exercised by shoot-states; ordinary routes use the five general devices.
+  const devices = DEVICES.filter((d) => args.devices ? args.devices.includes(d.id) : !d.id.startsWith('board-'));
   const haveCreds = Boolean(username && password);
   const routes = ROUTES.filter((r) => !args.routes || args.routes.includes(r.id)).filter(
     (r) => !r.auth || haveCreds,

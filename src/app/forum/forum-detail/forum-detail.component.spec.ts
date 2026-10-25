@@ -1,3 +1,6 @@
+import { DeckApiService } from '../../services/deck-api.service';
+import { Router } from '@angular/router';
+import { Subject, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -68,7 +71,7 @@ async function setup() {
       provideHttpClient(),
       {
         provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: { get: () => 'post-1' } } },
+        useValue: { paramMap: of({ get: () => 'post-1' }) },
       },
     ],
   }).compileComponents();
@@ -295,5 +298,30 @@ describe('ForumDetailComponent — formatLabel', () => {
     const { component } = await setup();
     expect(component.formatLabel(null)).toBe('');
     expect(component.formatLabel(undefined)).toBe('');
+  });
+});
+
+describe('Forum copy finish preservation', () => {
+  it('copies etched counts and starts each add only after the previous one completes', async () => {
+    const { component } = await setup();
+    const api = TestBed.inject(DeckApiService),
+      router = TestBed.inject(Router);
+    const create = spyOn(api, 'createDeck').and.returnValue(of({ id: 'copy' } as any));
+    const first = new Subject<CollectionCardDto>();
+    const add = spyOn(api, 'addCard').and.returnValues(first, of(makeCollectionCard()));
+    spyOn(router, 'navigate').and.resolveTo(true);
+    component.copyDeck(
+      makePost({
+        secondaryCommanderOracleId: 'partner',
+        cards: [makeCollectionCard({ quantityEtched: 2 }), makeCollectionCard({ id: 'second' })],
+      }),
+    );
+    expect(create.calls.first().args[0].secondaryCommanderOracleId).toBe('partner');
+    expect(add.calls.count()).toBe(1);
+    expect(add.calls.first().args[1].quantityEtched).toBe(2);
+    first.next(makeCollectionCard());
+    first.complete();
+    expect(add.calls.count()).toBe(2);
+    expect(router.navigate).toHaveBeenCalledWith(['/deck', 'copy']);
   });
 });

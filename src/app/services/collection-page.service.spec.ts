@@ -11,6 +11,24 @@ describe('Server collection paging', () => {
       pageData: { page, pageSize: 100, total, totalRows: 205 },
     } as CollectionDetailDto;
   }
+  it('resets paging and pending refresh when rebound to a different collection', fakeAsync(() => {
+    const queries = new CollectionQueryState();
+    const service = new CollectionPageService(queries);
+    const first = jasmine.createSpy();
+    const second = jasmine.createSpy();
+    service.bind('first', first);
+    service.rows(fixture(3), queries.from(EMPTY_FILTER, false));
+    service.go(1);
+    service.bind('second', second);
+    tick(180);
+    expect(first).not.toHaveBeenCalled();
+    expect(second).not.toHaveBeenCalled();
+    expect(service.index).toBe(0);
+    expect(service.total).toBe(0);
+    service.rows(fixture(), queries.from(EMPTY_FILTER, false));
+    expect(queries.get('second').page).toBe(1);
+    service.destroy();
+  }));
   it('keeps only the returned page, requests the next page and retains query on refresh', fakeAsync(() => {
     const queries = new CollectionQueryState(),
       service = new CollectionPageService(queries),

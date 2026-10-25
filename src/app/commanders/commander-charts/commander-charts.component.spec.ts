@@ -11,6 +11,16 @@ describe('Commander charts — Compleat branding', () => {
     });
   });
 
+  it('renders finite coordinates for one history point and a zero-weight average', () => {
+    const c = TestBed.createComponent(CommanderChartsComponent).componentInstance;
+    c.history = [{ month: '2026-10', deckCount: 2 }];
+    expect(c.historyAreaPath).not.toContain('NaN');
+    expect(c.historyLinePath).not.toContain('NaN');
+    c.cards = [
+      { card: makeCard(), deckCount: 0, totalDecks: 0, inclusionPercent: 0, isGameChanger: false },
+    ];
+    expect(c.avgManaValue()).toBe(0);
+  });
   it('uses the same purple in the distribution chart and its legend', () => {
     const fixture = TestBed.createComponent(CommanderChartsComponent);
     fixture.componentRef.setInput('cards', [

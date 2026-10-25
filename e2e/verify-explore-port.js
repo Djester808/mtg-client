@@ -1,7 +1,12 @@
+const BasePage = require('./pages/BasePage');
 // Real account and collection parity checks. Uses only disposable accounts.
 const fs=require('fs'),path=require('path'),https=require('https'),assert=require('assert/strict');const root=__dirname+'/';const {By,until}=require(root+'node_modules/selenium-webdriver'),{buildDriver}=require(root+'helpers/driver'),devices=require(root+'devices');let token;fs.mkdirSync(path.join(__dirname,'screenshots','parity-port'),{recursive:true});
 const {api,ok}=require(root+'helpers/parity-api').createParityApi(()=>token);
-async function open(d,route,ready){await d.get('http://127.0.0.1:4200'+route);await d.wait(until.elementLocated(By.css('.intro-skip')),15000);await d.findElement(By.css('.intro-skip')).click();await d.wait(async()=>!(await d.findElements(By.css('.brand-intro'))).length,15000);if(ready)await d.wait(until.elementLocated(By.css(ready)),20000);}
+async function open(d, route, ready) {
+  // Shared navigation honors config.baseUrl / BASE_URL and safely dismisses the intro.
+  await new BasePage(d).navigate(route);
+  if (ready) await d.wait(until.elementLocated(By.css(ready)), 20000);
+}
 async function save(d,device,state){await d.executeAsyncScript('document.fonts.ready.then(arguments[0]);');fs.writeFileSync(path.join(__dirname,'screenshots','parity-port',device+'-'+state+'.png'),await d.takeScreenshot(),'base64')}
 
 

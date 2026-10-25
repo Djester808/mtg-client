@@ -1,3 +1,4 @@
+import { Subject, Subscription, takeUntil } from 'rxjs';
 import { BuilderDraftService } from '../../services/builder-draft.service';
 import { storedAuth } from '../../services/auth-storage';
 import {
@@ -180,6 +181,9 @@ export class AiDeckBuilderComponent implements OnDestroy {
   modalViewScryfallId: string | null = null;
   modalFlipped = false;
   modalLoading = false;
+  private modalRequest = new Subscription();
+  private readonly destroyed$ = new Subject<void>();
+  private destroyed = false;
 
   /** Cards the model has named so far, reported live from the streamed answer. */
   namedSoFar = 0;
@@ -298,6 +302,10 @@ export class AiDeckBuilderComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.destroyed$.next();
+    this.destroyed$.complete();
+    this.modalRequest.unsubscribe();
     // Leaving the page mid-build must not leave a timer running against a dead view.
     this.stopTimer();
     this.persistDraft();
@@ -345,39 +353,49 @@ export class AiDeckBuilderComponent implements OnDestroy {
     event?.preventDefault();
     if (!oracleId) return;
 
+    this.modalRequest.unsubscribe();
+    this.modalRequest = new Subscription();
+    this.modalCard = null;
+    this.modalPrintings = [];
     this.modalLoading = true;
     this.modalFlipped = false;
     this.modalViewScryfallId = null;
     this.cdr.markForCheck();
 
-    this.http.get<CardDto>(`/api/cards/${encodeURIComponent(oracleId)}`).subscribe({
-      next: (card) => {
-        this.modalCard = card;
-        this.modalLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.modalLoading = false;
-        this.toast.error('Could not load that card.');
-        this.cdr.markForCheck();
-      },
-    });
+    this.modalRequest.add(
+      this.http.get<CardDto>(`/api/cards/${encodeURIComponent(oracleId)}`).subscribe({
+        next: (card) => {
+          this.modalCard = card;
+          this.modalLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.modalLoading = false;
+          this.toast.error('Could not load that card.');
+          this.cdr.markForCheck();
+        },
+      }),
+    );
 
     // Printings arrive separately and are cached by the shared service, so reopening the
     // same card costs nothing.
-    this.printings.get(oracleId).subscribe({
-      next: (p) => {
-        this.modalPrintings = p;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.modalPrintings = [];
-        this.cdr.markForCheck();
-      },
-    });
+    this.modalRequest.add(
+      this.printings.get(oracleId).subscribe({
+        next: (p) => {
+          this.modalPrintings = p;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.modalPrintings = [];
+          this.cdr.markForCheck();
+        },
+      }),
+    );
   }
 
   closeCard(): void {
+    this.modalRequest.unsubscribe();
+    this.modalLoading = false;
     this.modalCard = null;
     this.modalPrintings = [];
     this.cdr.markForCheck();
@@ -407,6 +425,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
         ownedOnly: this.ownedOnly,
         count: 10,
       })
+      .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: (result) => {
           this.suggestions = result.commanders;
@@ -461,6 +480,10 @@ export class AiDeckBuilderComponent implements OnDestroy {
       })
       .subscribe({
         next: (deck) => {
+          if (this.destroyed) {
+            this.decks.deleteDeck(deck.id).subscribe({ error: () => undefined });
+            return;
+          }
           this.deckId = deck.id;
           this.createdDeckId = deck.id;
           this.planInto(deck.id, commander);
@@ -514,6 +537,7 @@ export class AiDeckBuilderComponent implements OnDestroy {
         token,
         this.brief.trim() || null,
       )
+      .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: (event) => {
           if (event.type === 'stage') {
@@ -568,6 +592,10 @@ export class AiDeckBuilderComponent implements OnDestroy {
         })
         .subscribe({
           next: (deck) => {
+            if (this.destroyed) {
+              this.decks.deleteDeck(deck.id).subscribe({ error: () => undefined });
+              return;
+            }
             this.deckId = deck.id;
             this.createdDeckId = deck.id;
             this.applying = false;

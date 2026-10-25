@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { CardModalComponent } from './card-modal.component';
-import { CardType, CollectionCardDto, PrintingDto } from '../../models/game.models';
+import { CardType, CollectionCardDto, PrintingDto, RulingDto } from '../../models/game.models';
 import { GameApiService } from '../../services/game-api.service';
 import { makeCard } from '../../testing/test-factories';
 
@@ -66,6 +66,42 @@ describe('CardModalComponent', () => {
     component = fixture.componentInstance;
     component.card = makeCard();
     fixture.detectChanges();
+  });
+
+  it('recognizes etched-only ownership of a printing', () => {
+    spyOn(component.ownership, 'count').and.returnValue({ normal: 0, foil: 0, etched: 1 });
+    expect(component.ownsPrinting('etched-printing')).toBeTrue();
+  });
+
+  it('cancels stale rulings when switching cards and resets loading for a cleared card', () => {
+    const first = new Subject<RulingDto[]>();
+    const second = new Subject<RulingDto[]>();
+    const api = TestBed.inject(GameApiService) as jasmine.SpyObj<GameApiService>;
+    api.getCardRulings.and.returnValues(first, second);
+    fixture.componentRef.setInput('card', makeCard({ oracleId: 'first' }));
+    fixture.detectChanges();
+    expect(first.observed).toBeTrue();
+    component.carouselStart = 5;
+    fixture.componentRef.setInput('card', makeCard({ oracleId: 'second' }));
+    fixture.detectChanges();
+    expect(first.observed).toBeFalse();
+    expect(component.carouselStart).toBe(0);
+    expect(component.rulingsLoading).toBeTrue();
+    fixture.componentRef.setInput('card', null);
+    fixture.detectChanges();
+    expect(second.observed).toBeFalse();
+    expect(component.rulingsLoading).toBeFalse();
+    expect(component.rulings).toEqual([]);
+  });
+
+  it('cancels rulings when the modal is destroyed', () => {
+    const response = new Subject<RulingDto[]>();
+    const api = TestBed.inject(GameApiService) as jasmine.SpyObj<GameApiService>;
+    api.getCardRulings.and.returnValue(response);
+    fixture.componentRef.setInput('card', makeCard({ oracleId: 'pending' }));
+    fixture.detectChanges();
+    fixture.destroy();
+    expect(response.observed).toBeFalse();
   });
 
   it('embeds the community information with the card details', () => {

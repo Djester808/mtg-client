@@ -26,11 +26,14 @@ const initialState: GameState = {
 
 export const gameReducer = createReducer(
   initialState,
+  on(GameActions.leaveGame, (state) => ({ ...initialState, cardCache: state.cardCache })),
 
   on(GameActions.joinGame, (state, { gameId, playerToken }) => ({
     ...state,
     gameId,
     playerToken,
+    gameState: null,
+    localPlayerId: null,
     connected: false,
     loading: true,
     connectionError: null,

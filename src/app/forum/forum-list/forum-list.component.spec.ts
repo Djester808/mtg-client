@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RouterModule } from '@angular/router';
@@ -300,5 +301,19 @@ describe('ForumListComponent — clearFilters', () => {
     const { component } = await setup();
     component.searchQuery = 'something';
     expect(component.hasActiveFilters).toBeTrue();
+  });
+});
+
+describe('Forum filter identity', () => {
+  it('reuses the sorted result until filter input changes', () => {
+    const c = new ForumListComponent(
+      { select: () => of([]) } as any,
+      { markForCheck: () => undefined } as any,
+    );
+    const posts: ForumPostSummary[] = [];
+    const first = c.filteredPosts(posts);
+    expect(c.filteredPosts(posts)).toBe(first);
+    c.searchQuery = 'new';
+    expect(c.filteredPosts(posts)).not.toBe(first);
   });
 });

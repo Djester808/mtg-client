@@ -102,4 +102,23 @@ describe('GameLobbyComponent', () => {
       (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')?.textContent,
     ).toContain('The table changed.');
   });
+  it('cancels old player searches when the query is cleared', () => {
+    const fixture = setup();
+    fixture.componentInstance.search = 'alice';
+    fixture.componentInstance.searchPlayers();
+    const pending = http.expectOne((r) => r.url.endsWith('/players'));
+    fixture.componentInstance.search = '';
+    fixture.componentInstance.searchPlayers();
+    expect(pending.cancelled).toBeTrue();
+    expect(fixture.componentInstance.players()).toEqual([]);
+  });
+
+  it('cancels pending startup navigation when the lobby is destroyed', () => {
+    const fixture = setup();
+    fixture.componentInstance.start({ id: 'table', revision: 1 } as GameTable);
+    const pending = http.expectOne('/api/games/lobbies/table/start');
+    fixture.destroy();
+    expect(pending.cancelled).toBeTrue();
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });

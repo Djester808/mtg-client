@@ -1,3 +1,4 @@
+const BasePage = require('./pages/BasePage');
 // Live collection paging and complete regex checks, using a disposable account only.
 const fs = require('fs'), path = require('path'), assert = require('assert/strict');
 const { By, until, Key } = require('./node_modules/selenium-webdriver');
@@ -7,11 +8,9 @@ const { ok } = require('./helpers/parity-api').createParityApi(() => token);
 const out = path.join(__dirname, 'screenshots', 'parity-port');
 fs.mkdirSync(out, { recursive: true });
 async function open(d, route, ready) {
-  await d.get('http://127.0.0.1:4200' + route);
-  await d.wait(until.elementLocated(By.css('.intro-skip')), 15000);
-  await d.findElement(By.css('.intro-skip')).click();
-  await d.wait(async () => !(await d.findElements(By.css('.brand-intro'))).length, 15000);
-  await d.wait(until.elementLocated(By.css(ready)), 20000);
+  // Shared navigation honors config.baseUrl / BASE_URL and safely dismisses the intro.
+  await new BasePage(d).navigate(route);
+  if (ready) await d.wait(until.elementLocated(By.css(ready)), 20000);
 }
 async function save(d, device, state) {
   await d.executeAsyncScript('document.fonts.ready.then(arguments[0]);');

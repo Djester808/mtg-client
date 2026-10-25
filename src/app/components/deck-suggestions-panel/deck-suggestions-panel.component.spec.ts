@@ -1,3 +1,4 @@
+import { Subject, of } from 'rxjs';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { DeckSuggestionsPanelComponent } from './deck-suggestions-panel.component';
 import { DeckApiService, DeckDetailDto } from '../../services/deck-api.service';
@@ -55,7 +56,10 @@ describe('DeckSuggestionsPanelComponent — empty state', () => {
         },
         {
           provide: GameApiService,
-          useValue: jasmine.createSpyObj<GameApiService>('GameApiService', ['searchCards']),
+          useValue: jasmine.createSpyObj<GameApiService>('GameApiService', [
+            'searchCards',
+            'getCandidates',
+          ]),
         },
         {
           provide: PrintingsService,
@@ -69,6 +73,22 @@ describe('DeckSuggestionsPanelComponent — empty state', () => {
   });
 
   afterEach(() => TestBed.resetTestingModule());
+
+  it('replaces an in-flight pool request when its filter changes', () => {
+    const api = TestBed.inject(GameApiService) as jasmine.SpyObj<GameApiService>;
+    const oldPage = new Subject<any>();
+    api.getCandidates.and.returnValues(oldPage, of({ cards: [], total: 0 }));
+    component.commanderCard = makeCard();
+    component.openMore(component.categories[0]);
+    expect(oldPage.observed).toBeTrue();
+    component.onMoreQuerySearch('new query');
+    expect(oldPage.observed).toBeFalse();
+    expect(api.getCandidates).toHaveBeenCalledTimes(2);
+    expect(api.getCandidates.calls.mostRecent().args[1]).toBe('new query');
+    expect(component.moreCards).toEqual([]);
+    component.closeMore();
+    fixture.destroy();
+  });
 
   it('points at Generate only when the commander bar that carries it is on screen', () => {
     component.deck = makeDeck();

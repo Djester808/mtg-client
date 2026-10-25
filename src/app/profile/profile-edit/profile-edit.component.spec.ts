@@ -78,6 +78,15 @@ describe('ProfileEditComponent', () => {
     return fixture;
   }
 
+  it('keeps unsaved text when an avatar removal completes', () => {
+    const page = load(makeMe({ avatarUrl: '/avatar' })).componentInstance;
+    page.bio = 'Unsaved writing';
+    page.removeAvatar();
+    http.expectOne('/api/profile/me/avatar').flush(makeMe());
+    expect(page.bio).toBe('Unsaved writing');
+    expect(page.dirty).toBeTrue();
+    expect(page.me?.profile.avatarUrl).toBeNull();
+  });
   it('fills the edit buffer from the loaded profile', () => {
     const fixture = load(makeMe({ displayName: 'Nissa Revane', bio: 'I play green.' }));
 

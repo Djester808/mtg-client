@@ -15,6 +15,12 @@ describe('ProfileApiService', () => {
 
   afterEach(() => http.verify());
 
+  it('does not repopulate a cleared owner cache from an old response', () => {
+    service.getMyProfile().subscribe();
+    service.clearMyProfile();
+    http.expectOne('/api/profile/me').flush({ profile: { username: 'Previous' } });
+    expect(service.myProfile()).toBeNull();
+  });
   it('fetches a public profile by username', () => {
     let received: UserProfile | undefined;
     service.getProfile('Nissa').subscribe((p) => (received = p));

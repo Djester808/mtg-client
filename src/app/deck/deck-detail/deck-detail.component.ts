@@ -789,11 +789,19 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
         } else {
           const newQty = Math.max(0, card.quantity - count);
           const newFoil = Math.max(0, card.quantityFoil - Math.max(0, count - card.quantity));
+          const newEtched = Math.max(
+            0,
+            (card.quantityEtched ?? 0) - Math.max(0, count - card.quantity - card.quantityFoil),
+          );
           this.store.dispatch(
             DeckActions.updateCard({
               deckId: this.deckId,
               cardId,
-              request: { quantity: newQty, quantityFoil: newFoil },
+              request: {
+                quantity: newQty,
+                quantityFoil: newFoil,
+                ...(card.quantityEtched ? { quantityEtched: newEtched } : {}),
+              },
             }),
           );
         }
@@ -2687,12 +2695,24 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
             request: { quantity: cur.quantity - 1, quantityFoil: cur.quantityFoil },
           }),
         );
-      } else {
+      } else if (cur.quantityFoil > 0) {
         this.store.dispatch(
           DeckActions.updateCard({
             deckId: this.deckId,
             cardId: cur.id,
             request: { quantity: cur.quantity, quantityFoil: cur.quantityFoil - 1 },
+          }),
+        );
+      } else {
+        this.store.dispatch(
+          DeckActions.updateCard({
+            deckId: this.deckId,
+            cardId: cur.id,
+            request: {
+              quantity: 0,
+              quantityFoil: 0,
+              quantityEtched: (cur.quantityEtched ?? 0) - 1,
+            },
           }),
         );
       }

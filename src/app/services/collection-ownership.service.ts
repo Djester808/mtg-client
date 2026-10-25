@@ -64,6 +64,7 @@ export class CollectionOwnershipService {
     oracle: string,
     printing?: string | null,
   ): { normal: number; foil: number; etched: number } | null {
+    if (storedAuth('auth_username') !== this.owner || !storedAuth('auth_token')) return null;
     const index = this.index();
     return index
       ? (index[oracle + '|' + (printing === undefined ? '@all' : (printing ?? '@unpinned'))] ?? {

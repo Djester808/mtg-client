@@ -1,13 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 import { provideMockStore } from '@ngrx/store/testing';
-import { ExploreComponent, sortExplore } from './explore.component';
+import { ExploreComponent } from './explore.component';
 import { ExploreApiService, ExploreEntry, ExplorePage } from '../services/explore-api.service';
 import { DeckApiService, DeckDetailDto } from '../services/deck-api.service';
 import { CardDto, CollectionCardDto } from '../models/game.models';
 
 describe('Explore', () => {
+  it('keeps the latest submitted search when responses arrive out of order', () => {
+    const c = TestBed.createComponent(ExploreComponent).componentInstance;
+    const first = new Subject<ExploreEntry[]>(),
+      second = new Subject<ExploreEntry[]>();
+    api.search.and.returnValues(first, second);
+    c.searchText = 'old';
+    c.search();
+    c.searchText = 'new';
+    c.search();
+    second.next([{ ...entry, name: 'new' }]);
+    first.next([{ ...entry, name: 'old' }]);
+    expect(c.directory()[0].name).toBe('new');
+  });
   const card = { oracleId: 'sol', name: 'Sol Ring', prices: { usd: 2 } } as CardDto;
   const entry: ExploreEntry = {
     name: 'Sol Ring',
@@ -167,20 +180,5 @@ describe('Explore', () => {
     c.copyAverage();
     expect(c.notice()).toContain('No partial deck');
     expect(c.saving()).toBeFalse();
-  });
-  it('sorts unknown values last without changing upstream order', () => {
-    const missing = {
-      ...entry,
-      name: 'Unknown',
-      card: null,
-      decks: null,
-      inclusion: null,
-      synergy: null,
-    };
-    const cards = [missing, entry];
-    for (const field of ['price', 'decks', 'inclusion', 'synergy'])
-      expect(sortExplore(cards, field)[0]).toBe(entry);
-    expect(cards[0]).toBe(missing);
-    expect(sortExplore(cards, 'name')[0]).toBe(entry);
   });
 });

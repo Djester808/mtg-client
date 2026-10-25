@@ -9,12 +9,14 @@ export class ForumApiService {
 
   constructor(private http: HttpClient) {}
 
-  getPosts(): Observable<ForumPostSummary[]> {
-    return this.http.get<ForumPostSummary[]>(this.base);
+  getPosts(offset = 0): Observable<ForumPostSummary[]> {
+    return this.http.get<ForumPostSummary[]>(this.base, { params: { offset, limit: 50 } });
   }
 
-  getPost(id: string): Observable<ForumPostDetail> {
-    return this.http.get<ForumPostDetail>(`${this.base}/${id}`);
+  getPost(id: string, commentOffset = 0): Observable<ForumPostDetail> {
+    return this.http.get<ForumPostDetail>(`${this.base}/${id}`, {
+      params: { commentOffset, commentLimit: 50 },
+    });
   }
 
   publishDeck(deckId: string, description: string | null): Observable<ForumPostSummary> {

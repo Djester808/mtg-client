@@ -150,3 +150,12 @@
   @include empty-state;
   padding: 40px 16px;
 }
+
+@include upto($bp-phone) {
+  // The whole label toggles manual play; keep that touch target at the shared minimum.
+  .gl-field:has(input[name='honour']) {
+    min-height: $tap-min;
+    justify-content: center;
+    cursor: pointer;
+  }
+}

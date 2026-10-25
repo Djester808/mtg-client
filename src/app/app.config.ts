@@ -1,13 +1,14 @@
 import { GameEffects } from './store/game/game.effects';
 import { ApplicationConfig, APP_INITIALIZER, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, RouteReuseStrategy } from '@angular/router';
+import { DetailRouteReuseStrategy } from './shared/detail-route-reuse.strategy';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideStore, Store } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { routes } from './app.routes';
-import { appReducers } from './store';
+import { appReducers, appMetaReducers } from './store';
 import { CollectionEffects } from './store/collection/collection.effects';
 import { AuthEffects } from './store/auth/auth.effects';
 import { DeckEffects } from './store/deck/deck.effects';
@@ -34,9 +35,10 @@ export function loadKeywordLinks(keywords: KeywordLinkService) {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
+    { provide: RouteReuseStrategy, useClass: DetailRouteReuseStrategy },
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimations(),
-    provideStore(appReducers),
+    provideStore(appReducers, { metaReducers: appMetaReducers }),
     provideEffects([GameEffects, CollectionEffects, AuthEffects, DeckEffects, ForumEffects]),
     // Dev builds only: devtools keeps 50 deep state snapshots and re-enters the
     // zone per message — none of which belongs in production.

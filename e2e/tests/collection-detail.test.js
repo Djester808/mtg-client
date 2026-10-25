@@ -34,22 +34,22 @@ describe('Collection Detail — Cards, Filters, Qty Controls, Modal', () => {
     await driver.sleep(500);
     collectionCreated = true;
 
-    // Navigate into the newly created collection
-    const cards = await driver.findElements(By.css('.collection-card'));
-    for (const card of cards) {
-      const nameEls = await card.findElements(By.css('.col-name, .collection-name, h3, .deck-name'));
-      for (const nameEl of nameEls) {
-        const text = await nameEl.getText();
-        if (text.trim() === TEST_COLLECTION) {
-          await card.click();
-          await listPage.waitForUrlToContain('/collection/', 5000);
-          collectionUrl = await driver.getCurrentUrl();
-          break;
+    // Wait for the newly created row, then for its loaded detail route.
+    await driver.wait(async () => {
+      const cards = await driver.findElements(By.css('.collection-card'));
+      for (const card of cards) {
+        const names = await card.findElements(By.css('.col-name, .collection-name, h3, .deck-name'));
+        for (const name of names) {
+          if ((await name.getText()).trim() === TEST_COLLECTION) {
+            await card.click();
+            return true;
+          }
         }
       }
-      if (collectionUrl) break;
-    }
-
+      return false;
+    }, 10000, 'Created collection did not appear');
+    await listPage.waitForUrlToContain('/collection/', 10000);
+    collectionUrl = await driver.getCurrentUrl();
     // Add two cards
     await page.searchAndAddCard('Sol Ring');
     await page.searchAndAddCard('Lightning Bolt');

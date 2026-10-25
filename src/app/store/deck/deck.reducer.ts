@@ -56,7 +56,10 @@ export const deckReducer = createReducer(
 
   on(
     DeckActions.updateDeckMeta,
-    (state, { id, name, coverUri, format, commanderOracleId, tags }) => ({
+    (
+      state,
+      { id, name, coverUri, format, commanderOracleId, secondaryCommanderOracleId, tags, notes },
+    ) => ({
       ...state,
       decks: state.decks.map((d) =>
         d.id === id ? { ...d, name, coverUri, format, commanderOracleId } : d,
@@ -69,7 +72,9 @@ export const deckReducer = createReducer(
               coverUri,
               format,
               commanderOracleId,
+              ...(secondaryCommanderOracleId !== undefined ? { secondaryCommanderOracleId } : {}),
               ...(tags !== undefined ? { tags } : {}),
+              ...(notes !== undefined ? { notes } : {}),
             }
           : state.activeDeck,
     }),
@@ -99,6 +104,7 @@ export const deckReducer = createReducer(
             commanderOracleId: deck.commanderOracleId,
             secondaryCommanderOracleId: deck.secondaryCommanderOracleId ?? null,
             tags: deck.tags,
+            notes: deck.notes,
           }
         : state.activeDeck,
   })),
@@ -113,8 +119,8 @@ export const deckReducer = createReducer(
   // dispatched in order (and the effect serialises them), the next click reads the
   // fresh value instead of racing on a stale one. Failures resync via refreshDeck.
   // Each dispatch bumps a per-card in-flight counter (see updateCardSuccess).
-  on(DeckActions.updateCard, (state, { cardId, request }) => {
-    if (!state.activeDeck) return state;
+  on(DeckActions.updateCard, (state, { deckId, cardId, request }) => {
+    if (state.activeDeck?.id !== deckId) return state;
     const pending = { ...(state.pendingCardUpdates ?? {}) };
     pending[cardId] = (pending[cardId] ?? 0) + 1;
     return {
@@ -136,8 +142,8 @@ export const deckReducer = createReducer(
     };
   }),
 
-  on(DeckActions.removeCard, (state, { cardId }) => {
-    if (!state.activeDeck) return state;
+  on(DeckActions.removeCard, (state, { deckId, cardId }) => {
+    if (state.activeDeck?.id !== deckId) return state;
     return {
       ...state,
       activeDeck: {
@@ -147,8 +153,8 @@ export const deckReducer = createReducer(
     };
   }),
 
-  on(DeckActions.addCardSuccess, (state, { card }) => {
-    if (!state.activeDeck) return state;
+  on(DeckActions.addCardSuccess, (state, { deckId, card }) => {
+    if (state.activeDeck?.id !== deckId) return state;
     const idx = state.activeDeck.cards.findIndex((c) => c.id === card.id);
     const cards =
       idx >= 0
@@ -157,8 +163,8 @@ export const deckReducer = createReducer(
     return { ...state, activeDeck: { ...state.activeDeck, cards } };
   }),
 
-  on(DeckActions.updateCardSuccess, (state, { card }) => {
-    if (!state.activeDeck) return state;
+  on(DeckActions.updateCardSuccess, (state, { deckId, card }) => {
+    if (state.activeDeck?.id !== deckId) return state;
     const pending = { ...(state.pendingCardUpdates ?? {}) };
     const remaining = (pending[card.id] ?? 0) - 1;
     // Only the LAST in-flight update for a card applies the server's authoritative
@@ -190,8 +196,8 @@ export const deckReducer = createReducer(
     };
   }),
 
-  on(DeckActions.removeCardSuccess, (state, { cardId }) => {
-    if (!state.activeDeck) return state;
+  on(DeckActions.removeCardSuccess, (state, { deckId, cardId }) => {
+    if (state.activeDeck?.id !== deckId) return state;
     return {
       ...state,
       activeDeck: {

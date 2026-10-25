@@ -71,10 +71,18 @@ export class DeckStatsService {
     const enchantments = countOf(CardType.Enchantment);
     const artifacts = countOf(CardType.Artifact);
     const planeswalkers = countOf(CardType.Planeswalker);
-    const other = Math.max(
-      0,
-      total - lands - creatures - instants - sorceries - enchantments - artifacts - planeswalkers,
-    );
+    const knownTypes = [
+      CardType.Land,
+      CardType.Creature,
+      CardType.Instant,
+      CardType.Sorcery,
+      CardType.Enchantment,
+      CardType.Artifact,
+      CardType.Planeswalker,
+    ];
+    const other = cards
+      .filter((c) => !knownTypes.some((t) => c.cardDetails?.cardTypes?.includes(t)))
+      .reduce((sum, c) => sum + this.cardCount(c), 0);
 
     const nonLandCards = cards.filter((c) => !this.isLand(c));
     const totalNL = nonLandCards.reduce((s, c) => s + this.cardCount(c), 0);

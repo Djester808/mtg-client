@@ -11,8 +11,8 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { EMPTY, Subject, Subscription } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CollectionCardDto, CardType } from '../../models/game.models';
 import {
   DeckDetailDto,
@@ -102,7 +102,7 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   fineTuneState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
   fineTuneResult: ManaFineTuneDto | null = null;
 
-  private readonly deckChange$ = new Subject<DeckDetailDto>();
+  private readonly deckChange$ = new Subject<DeckDetailDto | null>();
   private sub!: Subscription;
 
   constructor(
@@ -114,23 +114,39 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
     this.sub = this.deckChange$
       .pipe(
         debounceTime(1200),
-        distinctUntilChanged((a, b) => this.deckKey(a) === this.deckKey(b)),
+        distinctUntilChanged((a, b) => (a ? this.deckKey(a) : '') === (b ? this.deckKey(b) : '')),
         switchMap((deck) => {
-          const a = this.compute(deck);
-          if (a.isEmpty) return [];
+          const a = deck ? this.compute(deck) : this.empty();
+          if (!deck || a.isEmpty) {
+            this.fineTuneState = 'idle';
+            this.fineTuneResult = null;
+            this.cdr.markForCheck();
+            return EMPTY;
+          }
 
           this.fineTuneState = 'loading';
           this.fineTuneResult = null;
           this.cdr.markForCheck();
 
-          return this.deckApi.getManaFineTune({
-            format: deck.format ?? '',
-            deckCardNames: deck.cards.map((c) => c.cardDetails?.name ?? '').filter(Boolean),
-            currentLands: a.currentLands,
-            recommendedLands: a.recommendedLands,
-            avgCmc: a.avgCmc,
-            activeColors: a.colorSources.map((cs) => cs.color),
-          });
+          return this.deckApi
+            .getManaFineTune({
+              format: deck.format ?? '',
+              deckCardNames: deck.cards
+                .filter((c) => (c.board ?? 'main') === 'main')
+                .map((c) => c.cardDetails?.name ?? '')
+                .filter(Boolean),
+              currentLands: a.currentLands,
+              recommendedLands: a.recommendedLands,
+              avgCmc: a.avgCmc,
+              activeColors: a.colorSources.map((cs) => cs.color),
+            })
+            .pipe(
+              catchError(() => {
+                this.fineTuneState = 'error';
+                this.cdr.markForCheck();
+                return EMPTY;
+              }),
+            );
         }),
       )
       .subscribe({
@@ -153,7 +169,7 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['deck'] && this.deck) {
+    if (changes['deck']) {
       this.deckChange$.next(this.deck);
     }
   }
@@ -215,6 +231,7 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
   private deckKey(deck: DeckDetailDto): string {
     return (
       deck.cards
+        .filter((c) => (c.board ?? 'main') === 'main')
         .map(
           (c) =>
             `${c.cardDetails?.name ?? c.oracleId}:${c.quantity + c.quantityFoil + (c.quantityEtched ?? 0)}`,
@@ -239,13 +256,23 @@ export class ManaSuggestPanelComponent implements OnChanges, OnInit, OnDestroy {
     };
   }
 
+  private analysisMemo: { deck: DeckDetailDto; value: ManaAnalysis } | null = null;
+
   private compute(deck: DeckDetailDto): ManaAnalysis {
+    if (this.analysisMemo?.deck === deck) return this.analysisMemo.value;
+    const value = this.computeAnalysis(deck);
+    this.analysisMemo = { deck, value };
+    return value;
+  }
+
+  private computeAnalysis(deck: DeckDetailDto): ManaAnalysis {
+    const cards = deck.cards.filter((c) => (c.board ?? 'main') === 'main');
     const isLand = (c: CollectionCardDto) =>
       c.cardDetails?.cardTypes.includes(CardType.Land) ?? false;
     const qty = (c: CollectionCardDto) => c.quantity + c.quantityFoil + (c.quantityEtched ?? 0);
 
-    const nonLands = deck.cards.filter((c) => !isLand(c));
-    const lands = deck.cards.filter((c) => isLand(c));
+    const nonLands = cards.filter((c) => !isLand(c));
+    const lands = cards.filter((c) => isLand(c));
     const currentLands = lands.reduce((s, c) => s + qty(c), 0);
     const totalNL = nonLands.reduce((s, c) => s + qty(c), 0);
 

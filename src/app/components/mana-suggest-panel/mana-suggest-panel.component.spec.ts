@@ -312,6 +312,50 @@ describe('ManaSuggestPanelComponent — barPct', () => {
 describe('ManaSuggestPanelComponent — AI auto-trigger', () => {
   afterEach(() => TestBed.resetTestingModule());
 
+  it('continues after a request error and clears advice for an empty deck', fakeAsync(async () => {
+    const spy = makeApiSpy();
+    const result = { advice: ['Try more lands'], landSuggestions: [] };
+    spy.getManaFineTune.and.returnValues(
+      throwError(() => new Error('temporary')),
+      of(result),
+    );
+    const { component, fixture } = await setup(spy);
+    fixture.detectChanges();
+    component.deck = makeDeck({ cards: [makeSpell('First', '{G}', 1)] });
+    component.ngOnChanges({ deck: {} as any });
+    tick(1200);
+    expect(component.fineTuneState).toBe('error');
+    component.deck = makeDeck({ cards: [makeSpell('Second', '{G}', 1)] });
+    component.ngOnChanges({ deck: {} as any });
+    tick(1200);
+    expect(spy.getManaFineTune).toHaveBeenCalledTimes(2);
+    expect(component.fineTuneResult).toEqual(result);
+    component.deck = null;
+    component.ngOnChanges({ deck: {} as any });
+    tick(1200);
+    expect(component.fineTuneState).toBe('idle');
+    expect(component.fineTuneResult).toBeNull();
+  }));
+
+  it('uses only main-board cards for analysis and model advice', fakeAsync(async () => {
+    const spy = makeApiSpy();
+    spy.getManaFineTune.and.returnValue(of({ advice: [], landSuggestions: [] }));
+    const { component, fixture } = await setup(spy);
+    component.deck = makeDeck({
+      cards: [
+        makeSpell('Main', '{G}', 1),
+        { ...makeLand('Side'), board: 'side', quantity: 40 },
+        { ...makeSpell('Maybe', '{R}', 8), board: 'maybe' },
+      ],
+    });
+    fixture.detectChanges();
+    tick(1200);
+    expect(component.analysis.currentLands).toBe(0);
+    expect(component.analysis.avgCmc).toBe(1);
+    expect(component.analysis).toBe(component.analysis);
+    expect(spy.getManaFineTune.calls.mostRecent().args[0].deckCardNames).toEqual(['Main']);
+  }));
+
   it('calls getManaFineTune after 1200ms debounce when deck is set', fakeAsync(async () => {
     const spy = makeApiSpy();
     spy.getManaFineTune.and.returnValue(of({ advice: [], landSuggestions: [] }));

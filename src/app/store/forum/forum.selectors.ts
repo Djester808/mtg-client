@@ -10,3 +10,13 @@ export const selectForumLoading = createSelector(selectForumState, (s) => s.load
 export const selectForumPostLoading = createSelector(selectForumState, (s) => s.postLoading);
 export const selectForumPublishLoading = createSelector(selectForumState, (s) => s.publishLoading);
 export const selectForumError = createSelector(selectForumState, (s) => s.error);
+
+export const selectForumPagination = createSelector(selectForumState, (s) => ({
+  offset: s.postsOffset,
+  more: s.morePosts,
+}));
+export const selectForumCommentPagination = createSelector(selectForumState, (s) => ({
+  offset: s.commentsOffset,
+  more: s.moreComments,
+  loading: s.commentsLoading,
+}));

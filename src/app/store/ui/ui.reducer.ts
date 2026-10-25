@@ -95,6 +95,7 @@ const initialState: UIState = {
 
 export const uiReducer = createReducer(
   initialState,
+  on(GameActions.joinGame, GameActions.leaveGame, () => initialState),
 
   on(UIActions.beginCast, (state, { card }) => ({
     ...state,
@@ -158,7 +159,7 @@ export const uiReducer = createReducer(
     pendingTargetIds: [],
     variableValue: 0,
   })),
-  on(GameActions.joinGame, GameActions.connectionLost, (state) => ({
+  on(GameActions.connectionLost, (state) => ({
     ...state,
     castDraft: null,
     mode: 'idle' as UIMode,

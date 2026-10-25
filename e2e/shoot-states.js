@@ -241,14 +241,33 @@ async function toAbilityBoard(d) {
 
 /** Taps the named permanent on the local battlefield. */
 async function tapPermanent(d, name) {
-  await d.executeScript(
-    `const hit = [...document.querySelectorAll('.self-table .card-name')]
-       .find((n) => n.textContent.trim() === arguments[0]);
-     if (!hit) throw new Error('not on the board: ' + arguments[0]);
-     hit.closest('.card').click();`,
-    name,
-  );
-  await sleep(500);
+  const selectFromList = async () => {
+    for (const card of await d.findElements(By.css('.self-table dialog[open] .list-card'))) {
+      if ((await card.findElement(By.css('strong')).getText()).trim() === name) {
+        await card.click();
+        return true;
+      }
+    }
+    return false;
+  };
+  for (const card of await d.findElements(By.css('.self-table .flat-card'))) {
+    if ((await card.findElement(By.css('.card-name')).getText()).trim() !== name) continue;
+    await card.click();
+    if ((await d.findElements(By.css('.self-table dialog[open]'))).length) {
+      if (!await selectFromList()) throw Error('Missing permanent in opened pile: ' + name);
+    }
+    await sleep(500);
+    return;
+  }
+  // Compact battlefields group every land into a Lands chip; other overflow uses More.
+  for (const more of await d.findElements(By.css('.self-table .land-chip, .self-table .more-permanents'))) {
+    await more.click();
+    if (await selectFromList()) { await sleep(500); return; }
+    await d.findElement(By.css('.self-table dialog[open] [aria-label="Close permanent list"]')).click();
+  }
+  console.error('PERMANENT LOOKUP', name, await d.executeScript(`return [...document.querySelectorAll('.self-table button')].map(b=>({text:b.innerText, class:b.className, label:b.getAttribute('aria-label')}))`));
+  fs.writeFileSync(path.join(__dirname, 'screenshots', 'board-permanent-lookup-failure.png'), await d.takeScreenshot(), 'base64');
+  throw Error('Not on battlefield, in its Lands pile or overflow list: ' + name);
 }
 
 async function toOwnedCollection(d,needsCards=false){
@@ -347,7 +366,7 @@ const STATES = [
   {id:'board-roomy-stack-hidden',label:'Roomy hidden stack with Pass',root:'.board',extra:ROOMY_AUDIT,
     async drive(d){await toRoomyBoard(d,4);await d.findElement(By.css('.stack-toggle')).click();}},
   {id:'board-roomy-more',label:'Roomy battlefield overflow list',root:'.board',extra:ROOMY_AUDIT,
-    async drive(d){await toRoomyBoard(d,4,true);await d.findElement(By.css('.self-table .more-permanents')).click();}},
+    async drive(d){await toRoomyBoard(d,4,true);await d.findElement(By.css('.self-table .land-chip, .self-table .more-permanents')).click();}},
 
  {id:'explore-directory',label:'Commander directory filters',root:'app-commander-directory',async drive(d){await ensureSignedIn(d);await d.get(baseUrl+'/community/explore');await skipFeatureIntro(d);await d.wait(until.elementLocated(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')),20000);await d.findElement(By.xpath('//summary[normalize-space(.)="Browse the full commander directory"]')).click();await d.wait(until.elementLocated(By.css('app-commander-directory .directory-rows a')),60000);}},
  {id:'explore-insights',label:'Detailed community insights',root:'app-explore-insights',async drive(d){await ensureSignedIn(d);const id=await d.executeAsyncScript("const done=arguments[0];fetch('/api/cards/by-name?name=Atraxa%2C%20Praetors%27%20Voice',{headers:{Authorization:'Bearer '+localStorage.getItem('auth_token')}}).then(r=>r.json()).then(c=>done(c.oracleId)).catch(()=>done(null))");if(!id)throw Error('Commander fixture unavailable');await d.get(baseUrl+'/explore/commanders/'+id);await skipFeatureIntro(d);await d.wait(until.elementLocated(By.css('app-explore-insights summary')),60000);await d.findElement(By.css('app-explore-insights summary')).click();}},
@@ -481,6 +500,8 @@ const STATES = [
     };`,
     async drive(d) {
       await toAbilityBoard(d);
+      await d.findElement(By.css('.manual-dock > summary')).click();
+      await d.wait(until.elementIsVisible(await d.findElement(By.css('.manual-panel'))), 5000);
     },
   },
   {
@@ -504,7 +525,10 @@ const STATES = [
     };`,
     async drive(d) {
       await toAbilityBoard(d);
-      await d.executeScript(`document.querySelector('.mp-move-btn').click();`);
+      await d.findElement(By.css('.manual-dock > summary')).click();
+      await d.wait(until.elementIsVisible(await d.findElement(By.css('.manual-panel'))), 5000);
+      await d.findElement(By.css('.mp-move-btn')).click();
+      await d.executeScript(`const panel=document.querySelector('.manual-panel'), item=panel.querySelector('.mp-menu-item'); if(!item) throw Error('Move menu did not open'); panel.scrollTop += item.getBoundingClientRect().top-panel.getBoundingClientRect().top-8;`);
       await sleep(400);
     },
   },
@@ -1240,7 +1264,7 @@ const STATES = [
 ];
 
 function parseArgs(argv) {
-  const out = { dpr: 1, devices: ['iphone-se', 'pixel-8'], only: null };
+  const out = { dpr: 1, devices: ['iphone-se', 'pixel-8', 'board-landscape', 'board-desktop'], only: null };
   for (const a of argv.slice(2)) {
     const m = /^--([a-z]+)=(.*)$/.exec(a);
     if (!m) continue;
@@ -1295,6 +1319,13 @@ async function freshStateDriver(device,dpr) {
     let d = await freshStateDriver(device,args.dpr);
     try {
       for (const state of states) {
+        // Gameplay is landscape-only on phones. Photograph the portrait notice there,
+        // and exercise every interactive board state on landscape + desktop instead.
+        const boardDevice = device.id.startsWith('board-');
+        const portraitPhone = device.width <= 640 && device.height > 480;
+        if (state.id === 'board-portrait' && !portraitPhone) continue;
+        if (state.id.startsWith('board') && state.id !== 'board-portrait' && portraitPhone) continue;
+        if (!state.id.startsWith('board') && boardDevice) continue;
         // Draft restoration is real behavior. Each builder fixture uses a fresh temporary
         // Chrome profile so it starts from its own stage without deleting saved drafts.
         if(state.id.startsWith('ai-build-')) {await d.quit();d=await freshStateDriver(device,args.dpr);}
@@ -1302,6 +1333,8 @@ async function freshStateDriver(device,dpr) {
           await state.drive(d);
           await d.wait(async () => !(await d.findElements(By.css('.brand-intro'))).length, 12000);
           await d.wait(()=>d.executeScript("return document.getAnimations().filter(a=>a.playState==='running' && Number.isFinite(a.effect?.getComputedTiming().endTime)).length===0"),10000);
+          const visibleRoot = await d.wait(until.elementLocated(By.css(state.root)), 5000);
+          await d.wait(until.elementIsVisible(visibleRoot), 5000, 'Capture root is hidden: ' + state.root);
           const audit = await d.executeScript(AUDIT, state.root);
           const extra = state.extra ? await d.executeScript(state.extra) : null;
           const file = path.join(devDir, `state-${state.id}.png`);
@@ -1333,6 +1366,11 @@ async function freshStateDriver(device,dpr) {
             if (extra) console.log(`      ${JSON.stringify(extra)}`);
           }
         } catch (e) {
+          try {
+            const diagnostic = await d.executeScript(`return {url:location.pathname,authError:document.querySelector('.auth-error')?.textContent?.trim()??null,builderError:document.querySelector('.ab-error')?.textContent?.trim()??null,intro:!!document.querySelector('.brand-intro'),inert:document.querySelector('.app-shell')?.hasAttribute('inert'),shortlist:document.querySelectorAll('.ab-cmd').length,reviewRows:document.querySelectorAll('.ab-row-btn').length,replayHits:(window.__aiReplayHits??[]).filter(u=>u.includes('commander-suggestions')||u.includes('ai-build/plan/stream'))};`);
+            console.log('  Failure diagnostics '+JSON.stringify(diagnostic));
+            fs.writeFileSync(path.join(devDir, 'state-'+state.id+'-failure.png'),await d.takeScreenshot(),'base64');
+          } catch (diagnosticError) { console.log('  Failure capture unavailable: '+diagnosticError.message); }
           console.log(`  ${state.id.padEnd(24)} FAILED: ${e.message.split('\n')[0]}`);
           results.push({
             device: device.id,
@@ -1364,6 +1402,7 @@ async function freshStateDriver(device,dpr) {
   }
 
   fs.writeFileSync(statesFile, JSON.stringify(merged, null, 2));
+  if (results.some((r) => r.error || r.missing)) process.exitCode = 1;
   console.log(
     `
 Wrote ${results.length} state(s) to ${outDir}` +

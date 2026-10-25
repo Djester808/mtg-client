@@ -4,8 +4,9 @@ import {
   Component,
   Input,
   OnChanges,
-  OnInit,
+  OnDestroy,
 } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -29,7 +30,9 @@ type HistoryMode = 'bar-v' | 'area';
   templateUrl: './commander-charts.component.html',
   styleUrls: ['./commander-charts.component.scss'],
 })
-export class CommanderChartsComponent implements OnChanges, OnInit {
+export class CommanderChartsComponent implements OnChanges, OnDestroy {
+  private loadedId = '';
+  private readonly cancel$ = new Subject<void>();
   @Input() oracleId = '';
   @Input() cards: CommanderCardEntry[] = [];
   @Input() totalDecks = 0;
@@ -70,7 +73,7 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
     const w = 100,
       h = 80;
     const pts = this.history.map((p, i) => {
-      const x = (i / (this.history.length - 1)) * w;
+      const x = (i / Math.max(1, this.history.length - 1)) * w;
       const y = h - (p.deckCount / this.historyMax) * (h - 4);
       return { x, y };
     });
@@ -87,7 +90,7 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
       h = 80;
     return this.history
       .map((p, i) => {
-        const x = (i / (this.history.length - 1)) * w;
+        const x = (i / Math.max(1, this.history.length - 1)) * w;
         const y = h - (p.deckCount / this.historyMax) * (h - 4);
         return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
       })
@@ -122,37 +125,53 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
     private cdr: ChangeDetectorRef,
   ) {}
 
-  ngOnInit(): void {
-    if (this.oracleId) this.loadRemote();
+  ngOnDestroy(): void {
+    this.cancel$.next();
+    this.cancel$.complete();
   }
 
   ngOnChanges(): void {
+    if (this.oracleId && this.oracleId !== this.loadedId) {
+      this.loadedId = this.oracleId;
+      this.cancel$.next();
+      this.history = [];
+      this.similar = [];
+      this.historyLoading = true;
+      this.similarLoading = true;
+      this.loadRemote();
+    }
     this.buildLocalCharts();
   }
 
   private loadRemote(): void {
-    this.api.getCommanderHistory(this.oracleId).subscribe({
-      next: (h) => {
-        this.history = h;
-        this.historyLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.historyLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
-    this.api.getSimilarCommanders(this.oracleId).subscribe({
-      next: (s) => {
-        this.similar = s;
-        this.similarLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.similarLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .getCommanderHistory(this.oracleId)
+      .pipe(takeUntil(this.cancel$))
+      .subscribe({
+        next: (h) => {
+          this.history = h;
+          this.historyLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.historyLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+    this.api
+      .getSimilarCommanders(this.oracleId)
+      .pipe(takeUntil(this.cancel$))
+      .subscribe({
+        next: (s) => {
+          this.similar = s;
+          this.similarLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.similarLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private buildLocalCharts(): void {
@@ -209,7 +228,7 @@ export class CommanderChartsComponent implements OnChanges, OnInit {
     if (!nonLands.length) return 0;
     const sum = nonLands.reduce((s, e) => s + (e.card.manaValue ?? 0) * e.deckCount, 0);
     const total = nonLands.reduce((s, e) => s + e.deckCount, 0);
-    return Math.round((sum / total) * 100) / 100;
+    return total > 0 ? Math.round((sum / total) * 100) / 100 : 0;
   }
 
   colorClass(c: string): string {

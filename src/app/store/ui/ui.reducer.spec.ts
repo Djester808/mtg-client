@@ -13,6 +13,13 @@ import { GameActions } from '../game/game.actions';
  */
 describe('uiReducer — combat declarations', () => {
   const initial = uiReducer(undefined, { type: '@@init' });
+  it('discards pending choices when joining or leaving a table', () => {
+    const picked = uiReducer(initial, UIActions.enterAttackMode());
+    expect(
+      uiReducer(picked, GameActions.joinGame({ gameId: 'another', playerToken: 'seat' })),
+    ).toEqual(initial);
+    expect(uiReducer(picked, GameActions.leaveGame())).toEqual(initial);
+  });
 
   describe('attackers', () => {
     const withPicks = () => {

@@ -165,6 +165,13 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   ];
 
   private destroy$ = new Subject<void>();
+  private readonly moreReset$ = new Subject<void>();
+
+  private cancelMoreRequests(): void {
+    this.moreReset$.next();
+    this.moreLoading = false;
+    this.scoringInFlight = 0;
+  }
   private suggestionsCache = new Map<string, DeckSuggestionsDto>();
 
   constructor(
@@ -319,6 +326,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       this.scoredKey = key;
     }
 
+    this.cancelMoreRequests();
     this.moreCategory = cat;
     // Open on the whole pool. The focus still ranks themed cards to the top (it is sent as
     // the `focus` score input, not as a query), so seeding the search box with it only hard-
@@ -411,6 +419,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
 
   /** Any filter change restarts paging: offsets from the old result set are meaningless. */
   private reloadMore(): void {
+    this.cancelMoreRequests();
     this.moreCards = [];
     this.displayCards = [];
     this.moreTotal = 0;
@@ -422,6 +431,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
   }
 
   closeMore(): void {
+    this.cancelMoreRequests();
     this.moreCategory = null;
     if (this.loadbarHideTimer) {
       clearTimeout(this.loadbarHideTimer);
@@ -458,6 +468,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       )
       .pipe(
         takeUntil(this.destroy$),
+        takeUntil(this.moreReset$),
         catchError(() => of(null)),
       )
       .subscribe((page) => {
@@ -518,6 +529,7 @@ export class DeckSuggestionsPanelComponent implements OnDestroy {
       .analyzeSynergyBatch(oracleId, ids, this.activeFocus())
       .pipe(
         takeUntil(this.destroy$),
+        takeUntil(this.moreReset$),
         catchError(() => of([])),
       )
       .subscribe((scored) => {

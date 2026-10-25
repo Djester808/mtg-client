@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
@@ -22,7 +23,11 @@ describe('GameBoardComponent', () => {
   let router: Router;
   let signalr: jasmine.SpyObj<SignalRService>;
 
+  let routeParams: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   function setup(gameIdParam: string | null = 'game-abc'): Promise<void> {
+    routeParams = new BehaviorSubject(
+      convertToParamMap(gameIdParam ? { gameId: gameIdParam } : {}),
+    );
     return TestBed.configureTestingModule({
       imports: [GameBoardComponent],
       providers: [
@@ -32,7 +37,7 @@ describe('GameBoardComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: convertToParamMap(gameIdParam ? { gameId: gameIdParam } : {}) },
+            paramMap: routeParams,
           },
         },
       ],
@@ -538,5 +543,19 @@ describe('GameBoardComponent', () => {
     component.passPriority();
     expect(dispatch).toHaveBeenCalledWith(GameActions.passPriority());
     component.followTurn();
+  });
+  it('joins a different route on a reused board and leaves on destruction', async () => {
+    await setup('first');
+    const dispatch = spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    routeParams.next(convertToParamMap({ gameId: 'second' }));
+    expect(dispatch).toHaveBeenCalledWith(
+      GameActions.joinGame({ gameId: 'second', playerToken: '' }),
+    );
+    fixture.destroy();
+    expect(dispatch).toHaveBeenCalledWith(GameActions.leaveGame());
+    dispatch.calls.reset();
+    routeParams.next(convertToParamMap({ gameId: 'third' }));
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

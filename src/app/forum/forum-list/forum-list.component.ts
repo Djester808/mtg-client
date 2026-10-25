@@ -6,7 +6,11 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { AppState } from '../../store';
 import { ForumActions } from '../../store/forum/forum.actions';
-import { selectForumPosts, selectForumLoading } from '../../store/forum/forum.selectors';
+import {
+  selectForumPosts,
+  selectForumLoading,
+  selectForumPagination,
+} from '../../store/forum/forum.selectors';
 import { selectIsLoggedIn } from '../../store/auth/auth.selectors';
 import { ForumPostSummary } from '../../models/forum.models';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
@@ -28,6 +32,11 @@ export class ForumListComponent implements OnInit {
   posts$: Observable<ForumPostSummary[]>;
   loading$: Observable<boolean>;
   isLoggedIn$: Observable<boolean>;
+
+  readonly pagination$ = this.store.select(selectForumPagination);
+  loadMore(offset: number): void {
+    this.store.dispatch(ForumActions.loadMorePosts({ offset }));
+  }
 
   searchQuery = '';
   selectedColors = new Set<string>();
@@ -107,11 +116,21 @@ export class ForumListComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  private filterMemo?: { posts: ForumPostSummary[]; key: string; result: ForumPostSummary[] };
+
   filteredPosts(posts: ForumPostSummary[]): ForumPostSummary[] {
+    const key = JSON.stringify([
+      this.searchQuery.trim().toLowerCase(),
+      [...this.selectedColors].sort(),
+      [...this.selectedFormats].sort(),
+      this.sortBy,
+    ]);
+    if (this.filterMemo?.posts === posts && this.filterMemo.key === key)
+      return this.filterMemo.result;
     let result = posts;
 
     if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase();
+      const q = this.searchQuery.trim().toLowerCase();
       result = result.filter(
         (p) => p.deckName.toLowerCase().includes(q) || p.authorUsername.toLowerCase().includes(q),
       );
@@ -130,11 +149,13 @@ export class ForumListComponent implements OnInit {
       );
     }
 
-    return [...result].sort((a, b) => {
+    const sorted = [...result].sort((a, b) => {
       if (this.sortBy === 'comments') return b.commentCount - a.commentCount;
       if (this.sortBy === 'cards') return b.cardCount - a.cardCount;
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
+    this.filterMemo = { posts, key, result: sorted };
+    return sorted;
   }
 
   manaClass(c: string): string {

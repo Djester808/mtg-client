@@ -3,7 +3,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ElementRef, ChangeDetectorRef } from '@angular/core';
 import { provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { HomeComponent } from './home.component';
 import { GameApiService } from '../services/game-api.service';
 import { PrintingsService } from '../services/printings.service';
@@ -64,6 +64,24 @@ describe('HomeComponent — search flags', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   // ---- Initial state ------------------------------------------
+
+  it('cancels an old page when the query changes', fakeAsync(() => {
+    gameApi.searchCards.and.returnValue(of(makeCards(component.PAGE_SIZE)));
+    component.searchText.setValue('old');
+    tick(400);
+    const oldPage = new Subject<ReturnType<typeof makeCards>>();
+    gameApi.searchCards.and.returnValue(oldPage);
+    component.loadMore();
+    expect(oldPage.observed).toBeTrue();
+    const replacement = [makeCard({ name: 'Replacement', oracleId: 'replacement' })];
+    gameApi.searchCards.and.returnValue(of(replacement));
+    component.searchText.setValue('new');
+    tick(400);
+    expect(oldPage.observed).toBeFalse();
+    oldPage.next(makeCards(10));
+    expect(component.results).toEqual(replacement);
+    expect(component.loadingMore).toBeFalse();
+  }));
 
   it('defaults all flags to false', () => {
     expect(component.matchCase).toBeFalse();

@@ -5,7 +5,7 @@ import { BreakpointsService } from '../../shared/breakpoints.service';
 import { TestBed, ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { Observable, of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { CardSearchPanelComponent, setMenuPlacement } from './card-search-panel.component';
 import { GameApiService } from '../../services/game-api.service';
@@ -266,6 +266,25 @@ describe('CardSearchPanelComponent — pagination', () => {
   });
 
   afterEach(() => TestBed.resetTestingModule());
+
+  it('cancels an old page when the query changes', fakeAsync(() => {
+    initComponent(fixture);
+    gameApi.searchCards.and.returnValue(of(makeCards(component.PAGE_SIZE)));
+    component.searchText.setValue('old');
+    tick(400);
+    const oldPage = new Subject<ReturnType<typeof makeCards>>();
+    gameApi.searchCards.and.returnValue(oldPage);
+    component.loadMore();
+    expect(oldPage.observed).toBeTrue();
+    const replacement = [makeCard({ name: 'Replacement', oracleId: 'replacement' })];
+    gameApi.searchCards.and.returnValue(of(replacement));
+    component.searchText.setValue('new');
+    tick(400);
+    expect(oldPage.observed).toBeFalse();
+    oldPage.next(makeCards(10));
+    expect(component.results).toEqual(replacement);
+    expect(component.loadingMore).toBeFalse();
+  }));
 
   it('hasMore is false initially', fakeAsync(() => {
     initComponent(fixture);

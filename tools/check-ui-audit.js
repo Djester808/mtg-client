@@ -32,6 +32,19 @@ function load(name) {
 const routes = load('results.json');
 const states = load('states.json');
 
+// Failed captures contain no geometry: treating their absent fields as zero would
+// turn a broken state into a perfect score and could even bless it as a baseline.
+const failedCaptures = [...(routes ?? []), ...(states ?? [])].filter(
+  (row) => row.error || row.missing || row.audit?.missing,
+);
+if (failedCaptures.length) {
+  console.error('check-ui-audit: failed or missing captures must be rerun');
+  for (const row of failedCaptures)
+    console.error(`  ${row.device}:${row.state ?? row.route ?? row.id}: ${row.error ?? 'capture root missing'}`);
+  process.exit(1);
+}
+
+
 if (!routes && !states) {
   console.error(
     'check-ui-audit: no audit output. Run the captures first, with both servers up:\n' +

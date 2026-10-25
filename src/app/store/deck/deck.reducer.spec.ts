@@ -140,6 +140,7 @@ describe('deckReducer', () => {
     state = deckReducer(
       state,
       DeckActions.updateCardSuccess({
+        deckId: 'deck-1',
         card: makeDeckCard({ id: 'cc-1', quantity: 2, quantityFoil: 0 }),
       }),
     );
@@ -163,6 +164,7 @@ describe('deckReducer', () => {
     state = deckReducer(
       state,
       DeckActions.updateCardSuccess({
+        deckId: 'deck-1',
         card: makeDeckCard({ id: 'cc-1', quantity: 9999, quantityFoil: 0, notes: 'server' }),
       }),
     );
@@ -189,13 +191,14 @@ describe('deckReducer', () => {
     };
     const appended = deckReducer(
       base,
-      DeckActions.addCardSuccess({ card: makeDeckCard({ id: 'cc-2' }) }),
+      DeckActions.addCardSuccess({ deckId: 'deck-1', card: makeDeckCard({ id: 'cc-2' }) }),
     );
     expect(appended.activeDeck!.cards.map((c) => c.id)).toEqual(['cc-1', 'cc-2']);
 
     const replaced = deckReducer(
       base,
       DeckActions.addCardSuccess({
+        deckId: 'deck-1',
         card: makeDeckCard({ id: 'cc-1', quantity: 4 }),
       }),
     );
@@ -244,5 +247,16 @@ describe('deckReducer', () => {
       deckReducer(initialState(), DeckActions.removeCardFailure({ deckId: 'deck-1', error: 'c' }))
         .error,
     ).toBe('c');
+  });
+});
+
+describe('deck delayed mutation isolation', () => {
+  it('ignores an add response from a previously viewed destination', () => {
+    const state: DeckState = { ...initialState(), activeDeck: makeDeckDetail() };
+    const next = deckReducer(
+      state,
+      DeckActions.addCardSuccess({ deckId: 'another', card: makeDeckCard() }),
+    );
+    expect(next).toBe(state);
   });
 });

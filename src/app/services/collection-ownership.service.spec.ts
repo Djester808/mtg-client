@@ -16,6 +16,19 @@ describe('Global collection ownership', () => {
     TestBed.inject(HttpTestingController).verify();
     clearAuth();
   });
+  it('never exposes the previous owner counts before a new ensure call', () => {
+    const s = TestBed.inject(CollectionOwnershipService);
+    saveAuth('a', 'A');
+    s.ensure();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/collections/owned')
+      .flush([{ oracleId: 'o', quantity: 4, quantityFoil: 0 }]);
+    expect(s.count('o')?.normal).toBe(4);
+    saveAuth('b', 'B');
+    expect(s.count('o')).toBeNull();
+    clearAuth();
+    expect(s.count('o')).toBeNull();
+  });
   it('does not request private data while signed out', () => {
     const s = TestBed.inject(CollectionOwnershipService);
     s.ensure();

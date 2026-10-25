@@ -294,7 +294,12 @@
               <div *ngIf="editingCommentId !== c.id" class="comment-body">{{ c.content }}</div>
 
               <div *ngIf="editingCommentId === c.id" class="comment-edit">
-                <textarea class="comment-textarea" [(ngModel)]="editDraft" rows="3"></textarea>
+                <textarea
+                  class="comment-textarea"
+                  maxlength="4000"
+                  [(ngModel)]="editDraft"
+                  rows="3"
+                ></textarea>
                 <div class="comment-edit-actions">
                   <button class="comment-submit-btn" (click)="submitEdit(post.id, c.id)">
                     Save
@@ -305,6 +310,16 @@
             </div>
           </div>
 
+          <ng-container *ngIf="pagination$ | async as paging">
+            <button
+              class="comment-submit-btn"
+              *ngIf="paging.more"
+              [disabled]="paging.loading"
+              (click)="loadMoreComments(post.id, paging.offset)"
+            >
+              Load more comments
+            </button>
+          </ng-container>
           <div class="comment-form" *ngIf="isLoggedIn$ | async; else signInPrompt">
             <textarea
               class="comment-textarea"

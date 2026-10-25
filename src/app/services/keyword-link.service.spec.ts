@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { KeywordLinkService } from './keyword-link.service';
 import { KeywordLink } from './rules-api.service';
@@ -29,6 +29,15 @@ describe('KeywordLinkService', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('allows application startup to finish when the keyword request hangs', fakeAsync(() => {
+    let result: boolean | undefined;
+    service.load().subscribe((value) => (result = value));
+    http.expectOne('/api/rules/keyword-links');
+    tick(5000);
+    expect(result).toBeFalse();
+    expect(service.linkify('Flying')).toBe('Flying');
+  }));
 
   function load(links: KeywordLink[] = LINKS): void {
     service.load().subscribe();

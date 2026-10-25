@@ -105,8 +105,8 @@ export const collectionReducer = createReducer(
   // Optimistic quantity write — see deck.reducer for the full rationale. Failures
   // resync via refreshCollection; a per-card in-flight counter drives which success
   // applies the server's authoritative quantity.
-  on(CollectionActions.updateCard, (state, { cardId, request }) => {
-    if (!state.activeCollection) return state;
+  on(CollectionActions.updateCard, (state, { collectionId, cardId, request }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
     const pending = { ...(state.pendingCardUpdates ?? {}) };
     pending[cardId] = (pending[cardId] ?? 0) + 1;
     return {
@@ -128,8 +128,8 @@ export const collectionReducer = createReducer(
     };
   }),
 
-  on(CollectionActions.removeCard, (state, { cardId }) => {
-    if (!state.activeCollection) return state;
+  on(CollectionActions.removeCard, (state, { collectionId, cardId }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
     return {
       ...state,
       activeCollection: {
@@ -183,8 +183,8 @@ export const collectionReducer = createReducer(
   }),
 
   // Add card (upsert into activeCollection)
-  on(CollectionActions.addCardSuccess, (state, { card }) => {
-    if (!state.activeCollection) return state;
+  on(CollectionActions.addCardSuccess, (state, { collectionId, card }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
     const idx = state.activeCollection.cards.findIndex((c) => c.id === card.id);
     const cards =
       idx >= 0
@@ -195,8 +195,8 @@ export const collectionReducer = createReducer(
 
   // Update card — the last in-flight update applies the server's authoritative
   // quantity; earlier ones keep the optimistic value (see deck.reducer).
-  on(CollectionActions.updateCardSuccess, (state, { card }) => {
-    if (!state.activeCollection) return state;
+  on(CollectionActions.updateCardSuccess, (state, { collectionId, card }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
     const pending = { ...(state.pendingCardUpdates ?? {}) };
     const remaining = (pending[card.id] ?? 0) - 1;
     const authoritative = remaining <= 0;
@@ -224,8 +224,8 @@ export const collectionReducer = createReducer(
   }),
 
   // Remove card
-  on(CollectionActions.removeCardSuccess, (state, { cardId }) => {
-    if (!state.activeCollection) return state;
+  on(CollectionActions.removeCardSuccess, (state, { collectionId, cardId }) => {
+    if (state.activeCollection?.id !== collectionId) return state;
     return {
       ...state,
       activeCollection: {

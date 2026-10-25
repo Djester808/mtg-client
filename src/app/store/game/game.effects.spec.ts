@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Observable, of, firstValueFrom } from 'rxjs';
+import { Observable, of, firstValueFrom, Subject } from 'rxjs';
 import { Action } from '@ngrx/store';
 
 import { GameEffects } from './game.effects';
@@ -39,8 +39,6 @@ describe('GameEffects', () => {
       'passpriority',
       'castSpell',
       'playLand',
-      'activateMana',
-      'untapLand',
       'declareAttackers',
       'declareBlockers',
     ]);
@@ -486,5 +484,19 @@ describe('GameEffects', () => {
     expect(signalr.disconnect).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
     expect(localStorage.getItem('mtg_session')).toBe('retry-session');
+  });
+  it('cancels a pending REST join when the board is left', () => {
+    const actions = new Subject<Action>();
+    actions$ = actions;
+    const response = new Subject<ReturnType<typeof makeGameState>>();
+    api.joinGame.and.returnValue(response as never);
+    const emitted: Action[] = [];
+    const subscription = effects.joinGame$.subscribe((action) => emitted.push(action));
+    actions.next(GameActions.joinGame({ gameId: 'first', playerToken: '' }));
+    actions.next(GameActions.leaveGame());
+    response.next(makeGameState());
+    expect(signalr.connect).not.toHaveBeenCalled();
+    expect(emitted).toEqual([]);
+    subscription.unsubscribe();
   });
 });

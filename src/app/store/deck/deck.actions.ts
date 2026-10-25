@@ -49,7 +49,7 @@ export const DeckActions = createActionGroup({
 
     // Add card
     'Add Card': props<{ deckId: string; request: AddCardToCollectionRequest }>(),
-    'Add Card Success': props<{ card: CollectionCardDto }>(),
+    'Add Card Success': props<{ deckId: string; card: CollectionCardDto }>(),
     'Add Card Failure': props<{ deckId: string; error: string }>(),
 
     // Update card
@@ -58,12 +58,12 @@ export const DeckActions = createActionGroup({
       cardId: string;
       request: UpdateCollectionCardRequest;
     }>(),
-    'Update Card Success': props<{ card: CollectionCardDto }>(),
+    'Update Card Success': props<{ deckId: string; card: CollectionCardDto }>(),
     'Update Card Failure': props<{ deckId: string; error: string }>(),
 
     // Remove card
     'Remove Card': props<{ deckId: string; cardId: string }>(),
-    'Remove Card Success': props<{ cardId: string }>(),
+    'Remove Card Success': props<{ deckId: string; cardId: string }>(),
     'Remove Card Failure': props<{ deckId: string; error: string }>(),
   },
 });

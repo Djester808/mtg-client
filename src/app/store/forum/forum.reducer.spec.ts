@@ -10,6 +10,11 @@ function initialState(): ForumState {
     postLoading: false,
     publishLoading: false,
     error: null,
+    postsOffset: 0,
+    morePosts: false,
+    commentsOffset: 0,
+    moreComments: false,
+    commentsLoading: false,
   };
 }
 
@@ -190,7 +195,7 @@ describe('forumReducer', () => {
   it('appends comment to activePost on addCommentSuccess', () => {
     const base = { ...initialState(), activePost: makePostDetail({ comments: [] }) };
     const comment = makeComment();
-    const s = forumReducer(base, ForumActions.addCommentSuccess({ comment }));
+    const s = forumReducer(base, ForumActions.addCommentSuccess({ comment, postId: 'post-1' }));
     expect(s.activePost!.comments).toHaveSize(1);
     expect(s.activePost!.comments[0]).toEqual(comment);
   });
@@ -199,14 +204,17 @@ describe('forumReducer', () => {
     const c1 = makeComment({ id: 'c1' });
     const base = { ...initialState(), activePost: makePostDetail({ comments: [c1] }) };
     const c2 = makeComment({ id: 'c2' });
-    const s = forumReducer(base, ForumActions.addCommentSuccess({ comment: c2 }));
+    const s = forumReducer(base, ForumActions.addCommentSuccess({ postId: 'post-1', comment: c2 }));
     expect(s.activePost!.comments).toHaveSize(2);
     expect(base.activePost!.comments).toHaveSize(1); // original unchanged
   });
 
   it('returns same state reference on addCommentSuccess when activePost is null', () => {
     const base = initialState();
-    const s = forumReducer(base, ForumActions.addCommentSuccess({ comment: makeComment() }));
+    const s = forumReducer(
+      base,
+      ForumActions.addCommentSuccess({ postId: 'post-1', comment: makeComment() }),
+    );
     expect(s).toBe(base);
   });
 
@@ -216,7 +224,10 @@ describe('forumReducer', () => {
     const original = makeComment({ id: 'c1', content: 'original' });
     const base = { ...initialState(), activePost: makePostDetail({ comments: [original] }) };
     const updated = makeComment({ id: 'c1', content: 'updated' });
-    const s = forumReducer(base, ForumActions.updateCommentSuccess({ comment: updated }));
+    const s = forumReducer(
+      base,
+      ForumActions.updateCommentSuccess({ postId: 'post-1', comment: updated }),
+    );
     expect(s.activePost!.comments[0].content).toBe('updated');
     expect(s.activePost!.comments).toHaveSize(1);
   });
@@ -226,13 +237,19 @@ describe('forumReducer', () => {
     const c2 = makeComment({ id: 'c2', content: 'second' });
     const base = { ...initialState(), activePost: makePostDetail({ comments: [c1, c2] }) };
     const updatedC1 = makeComment({ id: 'c1', content: 'changed' });
-    const s = forumReducer(base, ForumActions.updateCommentSuccess({ comment: updatedC1 }));
+    const s = forumReducer(
+      base,
+      ForumActions.updateCommentSuccess({ postId: 'post-1', comment: updatedC1 }),
+    );
     expect(s.activePost!.comments[1].content).toBe('second');
   });
 
   it('returns same state reference on updateCommentSuccess when activePost is null', () => {
     const base = initialState();
-    const s = forumReducer(base, ForumActions.updateCommentSuccess({ comment: makeComment() }));
+    const s = forumReducer(
+      base,
+      ForumActions.updateCommentSuccess({ postId: 'post-1', comment: makeComment() }),
+    );
     expect(s).toBe(base);
   });
 
@@ -242,14 +259,54 @@ describe('forumReducer', () => {
     const c1 = makeComment({ id: 'c1' });
     const c2 = makeComment({ id: 'c2' });
     const base = { ...initialState(), activePost: makePostDetail({ comments: [c1, c2] }) };
-    const s = forumReducer(base, ForumActions.deleteCommentSuccess({ commentId: 'c1' }));
+    const s = forumReducer(
+      base,
+      ForumActions.deleteCommentSuccess({ postId: 'post-1', commentId: 'c1' }),
+    );
     expect(s.activePost!.comments).toHaveSize(1);
     expect(s.activePost!.comments[0].id).toBe('c2');
   });
 
   it('returns same state reference on deleteCommentSuccess when activePost is null', () => {
     const base = initialState();
-    const s = forumReducer(base, ForumActions.deleteCommentSuccess({ commentId: 'c1' }));
+    const s = forumReducer(
+      base,
+      ForumActions.deleteCommentSuccess({ postId: 'post-1', commentId: 'c1' }),
+    );
     expect(s).toBe(base);
+  });
+});
+
+describe('forum pagination and late writes', () => {
+  it('ignores a comment response for a different active post', () => {
+    const state = { ...initialState(), activePost: makePostDetail({ id: 'new-post' }) };
+    expect(
+      forumReducer(
+        state,
+        ForumActions.addCommentSuccess({ postId: 'old-post', comment: makeComment() }),
+      ),
+    ).toBe(state);
+  });
+  it('appends and deduplicates paged posts without hiding later pages', () => {
+    const posts = Array.from({ length: 50 }, (_, i) => makePost({ id: String(i) }));
+    const first = forumReducer(initialState(), ForumActions.loadPostsSuccess({ posts }));
+    expect(first.morePosts).toBeTrue();
+    expect(first.postsOffset).toBe(50);
+    const next = forumReducer(
+      first,
+      ForumActions.loadPostsSuccess({ posts: [posts[49], makePost({ id: '50' })], offset: 50 }),
+    );
+    expect(next.posts.length).toBe(51);
+    expect(next.morePosts).toBeFalse();
+    expect(next.postsOffset).toBe(52);
+  });
+  it('ignores a comment page after navigating to another post', () => {
+    const state = { ...initialState(), activePost: makePostDetail({ id: 'new' }) };
+    expect(
+      forumReducer(
+        state,
+        ForumActions.loadMoreCommentsSuccess({ id: 'old', comments: [makeComment()], offset: 50 }),
+      ),
+    ).toBe(state);
   });
 });

@@ -734,66 +734,6 @@
     "smallSelectors": 0,
     "truncated": 0
   },
-  "state:iphone-se:board": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1,
-    "truncated": 0
-  },
-  "state:iphone-se:board-ability-menu": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:board-announce-x": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:board-manual-controls": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:iphone-se:board-manual-move-menu": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:board": {
-    "overflows": false,
-    "smallTargets": 1,
-    "smallSelectors": 1,
-    "truncated": 0
-  },
-  "state:pixel-8:board-ability-menu": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:board-announce-x": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:board-manual-controls": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
-  "state:pixel-8:board-manual-move-menu": {
-    "overflows": false,
-    "smallTargets": 0,
-    "smallSelectors": 0,
-    "truncated": 0
-  },
   "state:iphone-se:card-disputes": {
     "overflows": false,
     "smallTargets": 0,
@@ -1136,6 +1076,510 @@
     "truncated": 0
   },
   "state:pixel-8:collection-export": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-library-mulligan": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-library-bottom": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-library-search": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-casting-payment": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-casting-targets": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-casting-review": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-casting-x": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-hover": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-text": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-hand-options": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-zone": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-library": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-exile": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-details": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-zone-return": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-hand-raised": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-2-focus": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-3-focus": {
+    "overflows": false,
+    "smallTargets": 22,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-4-focus": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-3-table": {
+    "overflows": false,
+    "smallTargets": 22,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-4-table": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-stack-hidden": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-roomy-more": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-desktop:board-ability-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-card-options": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-desktop:board-manual-controls": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 4,
+    "truncated": 0
+  },
+  "state:board-desktop:board-manual-move-menu": {
+    "overflows": false,
+    "smallTargets": 21,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:board-landscape:board-library-mulligan": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-library-bottom": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-library-search": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-casting-payment": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 7,
+    "truncated": 0
+  },
+  "state:board-landscape:board-casting-targets": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 7,
+    "truncated": 0
+  },
+  "state:board-landscape:board-casting-review": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 7,
+    "truncated": 0
+  },
+  "state:board-landscape:board-casting-x": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 7,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-hover": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 8,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-text": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-hand-options": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-zone": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-library": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-exile": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-details": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-zone-return": {
+    "overflows": false,
+    "smallTargets": 17,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-hand-raised": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-2-focus": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 8,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-3-focus": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-4-focus": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-3-table": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-4-table": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-stack-hidden": {
+    "overflows": false,
+    "smallTargets": 14,
+    "smallSelectors": 8,
+    "truncated": 0
+  },
+  "state:board-landscape:board-roomy-more": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 9,
+    "truncated": 0
+  },
+  "state:board-landscape:board": {
+    "overflows": false,
+    "smallTargets": 15,
+    "smallSelectors": 8,
+    "truncated": 0
+  },
+  "state:board-landscape:board-ability-menu": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-card-options": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-manual-controls": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:iphone-se:board-portrait": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:pixel-8:board-portrait": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-announce-x": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:board-library-mulligan": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-library-bottom": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-library-search": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-casting-payment": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-casting-targets": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-casting-review": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-casting-x": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-hover": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-text": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-hand-options": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-zone": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-library": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-exile": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-details": {
+    "overflows": false,
+    "smallTargets": 3,
+    "smallSelectors": 3,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-zone-return": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-hand-raised": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-2-focus": {
+    "overflows": false,
+    "smallTargets": 16,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-3-focus": {
+    "overflows": false,
+    "smallTargets": 23,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-4-focus": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-3-table": {
+    "overflows": false,
+    "smallTargets": 22,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-4-table": {
+    "overflows": false,
+    "smallTargets": 29,
+    "smallSelectors": 5,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-stack-hidden": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-roomy-more": {
+    "overflows": false,
+    "smallTargets": 30,
+    "smallSelectors": 6,
+    "truncated": 0
+  },
+  "state:desktop:board-card-options": {
+    "overflows": false,
+    "smallTargets": 0,
+    "smallSelectors": 0,
+    "truncated": 0
+  },
+  "state:board-landscape:board-manual-move-menu": {
     "overflows": false,
     "smallTargets": 0,
     "smallSelectors": 0,

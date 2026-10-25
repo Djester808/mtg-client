@@ -191,7 +191,8 @@ export class LifeCounterComponent {
       .subscribe({
         next: (result) => {
           this.filing.set(false);
-          this.counter.markRecorded();
+          // A rematch may have begun while the previous result was being filed.
+          if (this.counter.snapshot().startedAt === state.startedAt) this.counter.markRecorded();
           this.toasts.show(
             result.attributedUsernames.length > 0
               ? `Recorded for ${result.attributedUsernames.join(', ')}.`

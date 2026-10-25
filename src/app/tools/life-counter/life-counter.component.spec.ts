@@ -282,4 +282,16 @@ describe('LifeCounterComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-seat-sheet')).toBeNull();
   });
+  it('does not mark a new table recorded when an earlier filing completes', () => {
+    startTable(2);
+    counter.adjustLife(counter.seats()[1].id, -40);
+    component.recordResult();
+    const pending = http.expectOne('/api/matches');
+    const oldStarted = counter.snapshot().startedAt;
+    spyOn(Date.prototype, 'toISOString').and.returnValue('2099-01-01T00:00:00.000Z');
+    component.rematch();
+    expect(counter.snapshot().startedAt).not.toBe(oldStarted);
+    pending.flush({ matchId: 'old', attributedUsernames: [] });
+    expect(counter.recorded()).toBeFalse();
+  });
 });

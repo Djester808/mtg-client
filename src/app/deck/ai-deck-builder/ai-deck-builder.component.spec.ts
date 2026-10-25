@@ -110,6 +110,35 @@ describe('AiDeckBuilderComponent', () => {
     return fixture;
   }
 
+  it('deletes a newly created draft if its creation completes after leaving', () => {
+    const fixture = create();
+    fixture.componentInstance.buildAround(commander());
+    const request = http.expectOne('/api/decks');
+    fixture.destroy();
+    request.flush({ id: 'late-draft', name: 'Draft' });
+    const cleanup = http.expectOne('/api/decks/late-draft');
+    expect(cleanup.request.method).toBe('DELETE');
+    cleanup.flush(null);
+    http.expectNone((r) => r.url.includes('ai-build'));
+  });
+
+  it('cancels the previous card load and never reopens a closed modal', () => {
+    const page = create().componentInstance;
+    page.openCard('first');
+    const first = http.expectOne('/api/cards/first');
+    const firstPrintings = http.expectOne('/api/cards/first/printings');
+    page.openCard('second');
+    expect(first.cancelled).toBeTrue();
+    firstPrintings.flush([]);
+    const second = http.expectOne('/api/cards/second');
+    const secondPrintings = http.expectOne('/api/cards/second/printings');
+    page.closeCard();
+    expect(second.cancelled).toBeTrue();
+    secondPrintings.flush([]);
+    expect(page.modalCard).toBeNull();
+    expect(page.modalLoading).toBeFalse();
+  });
+
   it('restores a complete proposal without generating another paid plan', () => {
     localStorage.setItem('auth_token', 'x.' + btoa(JSON.stringify({ sub: 'plan-owner' })) + '.x');
     const first = create();

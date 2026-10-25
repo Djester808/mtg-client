@@ -1,3 +1,4 @@
+import { restartOnSessionChange } from '../session-boundary';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
@@ -30,6 +31,7 @@ export class DeckEffects {
           catchError((err) => of(DeckActions.loadDecksFailure({ error: describeHttpError(err) }))),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -42,6 +44,7 @@ export class DeckEffects {
           catchError((err) => of(DeckActions.loadDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -59,25 +62,27 @@ export class DeckEffects {
           catchError((err) => of(DeckActions.loadDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
   createDeck$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.createDeck),
-      switchMap(({ name, coverUri, format }) =>
+      concatMap(({ name, coverUri, format }) =>
         this.api.createDeck({ name, coverUri, format }).pipe(
           map((deck) => DeckActions.createDeckSuccess({ deck })),
           catchError((err) => of(DeckActions.createDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
   updateDeckMeta$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.updateDeckMeta),
-      switchMap(
+      concatMap(
         ({
           id,
           name,
@@ -105,6 +110,7 @@ export class DeckEffects {
               ),
             ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -117,6 +123,7 @@ export class DeckEffects {
           catchError((err) => of(DeckActions.deleteDeckFailure({ error: describeHttpError(err) }))),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -125,12 +132,13 @@ export class DeckEffects {
       ofType(DeckActions.addCard),
       mergeMap(({ deckId, request }) =>
         this.api.addCard(deckId, request).pipe(
-          map((card) => DeckActions.addCardSuccess({ card })),
+          map((card) => DeckActions.addCardSuccess({ deckId, card })),
           catchError((err) =>
             of(DeckActions.addCardFailure({ deckId, error: describeHttpError(err) })),
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -141,12 +149,13 @@ export class DeckEffects {
       ofType(DeckActions.updateCard),
       concatMap(({ deckId, cardId, request }) =>
         this.api.updateCard(deckId, cardId, request).pipe(
-          map((card) => DeckActions.updateCardSuccess({ card })),
+          map((card) => DeckActions.updateCardSuccess({ deckId, card })),
           catchError((err) =>
             of(DeckActions.updateCardFailure({ deckId, error: describeHttpError(err) })),
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 
@@ -155,12 +164,13 @@ export class DeckEffects {
       ofType(DeckActions.removeCard),
       concatMap(({ deckId, cardId }) =>
         this.api.removeCard(deckId, cardId).pipe(
-          map(() => DeckActions.removeCardSuccess({ cardId })),
+          map(() => DeckActions.removeCardSuccess({ deckId, cardId })),
           catchError((err) =>
             of(DeckActions.removeCardFailure({ deckId, error: describeHttpError(err) })),
           ),
         ),
       ),
+      restartOnSessionChange(this.actions$),
     ),
   );
 

@@ -114,6 +114,43 @@ describe('KbComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('recovers search after an error and cancels a query when cleared', () => {
+    setup();
+    flushIndex();
+    component.onSearch('flying');
+    http
+      .expectOne((r) => r.url === '/api/rules/search')
+      .flush('', { status: 503, statusText: 'Unavailable' });
+    component.onSearch('cascade');
+    const request = http.expectOne((r) => r.url === '/api/rules/search');
+    component.onSearch('');
+    expect(request.cancelled).toBeTrue();
+    expect(component.searching).toBeFalse();
+  });
+
+  it('cancels older selections and prevents a closed detail from reopening', () => {
+    setup();
+    flushIndex();
+    component.selectGroup(509);
+    const old = http.expectOne('/api/rules/groups/509');
+    component.selectKeyword('Flying');
+    const current = http.expectOne('/api/rules/keywords/Flying');
+    expect(old.cancelled).toBeTrue();
+    component.clearSelection();
+    expect(current.cancelled).toBeTrue();
+    expect(component.selected).toBeNull();
+  });
+
+  it('does not issue duplicate glossary pages on repeated clicks', () => {
+    setup();
+    flushIndex();
+    component.loadMoreGlossary();
+    component.loadMoreGlossary();
+    const request = http.expectOne((r) => r.url === '/api/rules/glossary');
+    request.flush({ entries: [{ term: 'Flying', definition: 'Evasion' }], total: 1 });
+    expect(component.glossary.length).toBe(1);
+  });
+
   // ---- Loading the document --------------------------------------
 
   describe('on load', () => {

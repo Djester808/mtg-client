@@ -2,7 +2,17 @@ import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
-import { tap, exhaustMap, switchMap, map, catchError, of, withLatestFrom, filter } from 'rxjs';
+import {
+  tap,
+  exhaustMap,
+  switchMap,
+  map,
+  catchError,
+  of,
+  withLatestFrom,
+  filter,
+  takeUntil,
+} from 'rxjs';
 import { GameActions } from './game.actions';
 import { UIActions } from '../ui/ui.actions';
 import { AppState } from '..';
@@ -30,8 +40,12 @@ export class GameEffects {
   joinGame$ = createEffect(() =>
     this.actions$.pipe(
       ofType(GameActions.joinGame),
+      tap(() => {
+        void this.signalr.disconnect();
+      }),
       switchMap(({ gameId, playerToken }) =>
         this.api.joinGame(gameId, playerToken).pipe(
+          takeUntil(this.actions$.pipe(ofType(GameActions.leaveGame))),
           tap(() => {
             this.signalr.connect(gameId, playerToken);
           }),
@@ -42,6 +56,17 @@ export class GameEffects {
         ),
       ),
     ),
+  );
+
+  leaveGame$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(GameActions.leaveGame),
+        tap(() => {
+          void this.signalr.disconnect();
+        }),
+      ),
+    { dispatch: false },
   );
 
   // Pass priority
@@ -105,17 +130,7 @@ export class GameEffects {
     { dispatch: false },
   );
 
-  // Activate mana
-  activateMana$ = createEffect(
-    () =>
-      this.actions$.pipe(
-        ofType(GameActions.activateMana),
-        tap(({ permanentId }) => this.signalr.activateMana(permanentId)),
-      ),
-    { dispatch: false },
-  );
-
-  // Untap land (undo mana activation)
+  // Activate an ability offered by the engine
   activateAbility$ = createEffect(
     () =>
       this.actions$.pipe(
@@ -123,15 +138,6 @@ export class GameEffects {
         tap(({ permanentId, abilityId, targetIds, variableValue }) =>
           this.signalr.activateAbility(permanentId, abilityId, targetIds, variableValue ?? 0),
         ),
-      ),
-    { dispatch: false },
-  );
-
-  untapLand$ = createEffect(
-    () =>
-      this.actions$.pipe(
-        ofType(GameActions.untapLand),
-        tap(({ permanentId }) => this.signalr.untapLand(permanentId)),
       ),
     { dispatch: false },
   );

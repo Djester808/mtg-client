@@ -2,12 +2,15 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   EventEmitter,
   Input,
   OnChanges,
   Output,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -53,6 +56,8 @@ interface CommanderSource {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SeatSheetComponent implements OnChanges {
+  private readonly destroyRef = inject(DestroyRef);
+  private recordRequest?: Subscription;
   private readonly counter = inject(LifeCounterService);
   private readonly auth = inject(AuthService);
   private readonly matches = inject(MatchApiService);
@@ -212,40 +217,45 @@ export class SeatSheetComponent implements OnChanges {
     this.signInError = null;
     this.cdr.markForCheck();
 
-    this.auth.login(username, this.password).subscribe({
-      next: (response) => {
-        this.signingIn = false;
-        this.password = '';
+    const seatId = this.seat.id;
+    this.auth
+      .login(username, this.password)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.signingIn = false;
+          this.password = '';
+          if (this.seat.id !== seatId) return;
 
-        if (this.counter.isSeated(response.username, this.seat.id)) {
-          // The server's spelling, not what was typed: login takes an email address too, so
-          // the same account can reach two seats looking like two different people.
-          this.signInError = `${response.username} is already sitting at this table.`;
+          if (this.counter.isSeated(response.username, this.seat.id)) {
+            // The server's spelling, not what was typed: login takes an email address too, so
+            // the same account can reach two seats looking like two different people.
+            this.signInError = `${response.username} is already sitting at this table.`;
+            this.cdr.markForCheck();
+            return;
+          }
+
+          const account = { username: response.username, token: response.token };
+          this.counter.signIn(this.seat.id, account);
+          this.signInOpen = false;
+          this.username = '';
+          // Passed in rather than read back off `this.seat`: the input still holds the seat as
+          // it was a moment ago, and the service replaces seats rather than mutating them.
+          this.loadRecord(account);
           this.cdr.markForCheck();
-          return;
-        }
-
-        const account = { username: response.username, token: response.token };
-        this.counter.signIn(this.seat.id, account);
-        this.signInOpen = false;
-        this.username = '';
-        // Passed in rather than read back off `this.seat`: the input still holds the seat as
-        // it was a moment ago, and the service replaces seats rather than mutating them.
-        this.loadRecord(account);
-        this.cdr.markForCheck();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.signingIn = false;
-        this.password = '';
-        // 401 gets its own wording: the shared helper says "Please sign in again", which is
-        // the right sentence everywhere except on the sign-in form itself.
-        this.signInError =
-          err.status === 401
-            ? 'That username or password is not right.'
-            : describeHttpError(err, 'Could not sign in.');
-        this.cdr.markForCheck();
-      },
-    });
+        },
+        error: (err: HttpErrorResponse) => {
+          this.signingIn = false;
+          this.password = '';
+          // 401 gets its own wording: the shared helper says "Please sign in again", which is
+          // the right sentence everywhere except on the sign-in form itself.
+          this.signInError =
+            err.status === 401
+              ? 'That username or password is not right.'
+              : describeHttpError(err, 'Could not sign in.');
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   signOut(): void {
@@ -261,20 +271,25 @@ export class SeatSheetComponent implements OnChanges {
    * filed, and re-opening the sheet mid-game should not go back to the server for it.
    */
   loadRecord(account: SeatAccount | null = this.seat.account): void {
-    if (!account || this.recordFor === account.username) return;
-
-    this.recordFor = account.username;
-    this.matches.myRecord(account.token).subscribe({
-      next: (record) => {
-        this.record = record;
-        this.cdr.markForCheck();
-      },
-      // Silent: a record is a nicety on this screen, and a failed fetch must not look like
-      // the sign-in itself went wrong.
-      error: () => {
-        this.recordFor = null;
-        this.cdr.markForCheck();
-      },
-    });
+    if (account && this.recordFor === account.username) return;
+    this.recordRequest?.unsubscribe();
+    this.record = null;
+    this.recordFor = account?.username ?? null;
+    if (!account) return;
+    this.recordRequest = this.matches
+      .myRecord(account.token)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (record) => {
+          this.record = record;
+          this.cdr.markForCheck();
+        },
+        // Silent: a record is a nicety on this screen, and a failed fetch must not look like
+        // the sign-in itself went wrong.
+        error: () => {
+          this.recordFor = null;
+          this.cdr.markForCheck();
+        },
+      });
   }
 }

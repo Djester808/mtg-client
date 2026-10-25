@@ -11,14 +11,17 @@ import {
   ChangeDetectorRef,
   HostListener,
   OnInit,
+  OnDestroy,
+  DestroyRef,
   inject,
   ViewChild,
   ElementRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, distinctUntilChanged } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../store';
 import {
   selectLocalPlayer,
@@ -92,7 +95,8 @@ import { ManualControlsService } from './manual-controls.service';
   styleUrls: ['./game-board.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GameBoardComponent implements OnInit {
+export class GameBoardComponent implements OnInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly libraryActions = inject(LibraryActionsService);
   private readonly libraryToasts = inject(ToastService);
   libraryRepositionBusy = false;
@@ -361,24 +365,29 @@ export class GameBoardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const gameId = this.route.snapshot.paramMap.get('gameId');
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('gameId')),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((gameId) => {
+        if (!gameId) {
+          void this.router.navigate(['/']);
+          return;
+        }
+        this.focus$.next(null);
+        this.selection.reset();
+        this.forgetAnnouncedValue();
+        this.store.dispatch(
+          GameActions.joinGame({ gameId, playerToken: readSessionToken(gameId) }),
+        );
+      });
+  }
 
-    if (!gameId) {
-      this.router.navigate(['/']);
-      return;
-    }
-
-    // The per-game token is read if it happens to be there and required from nowhere. Both
-    // things that could use it stopped: the join is a plain GET of /api/games/:id, and the hub
-    // authenticates with the account's own JWT and works out the seat from it. Demanding it
-    // meant a game started any way other than through /lobby - which is to say every game
-    // started by accepting an invitation - bounced off its own board.
-    this.store.dispatch(
-      GameActions.joinGame({
-        gameId,
-        playerToken: readSessionToken(gameId),
-      }),
-    );
+  ngOnDestroy(): void {
+    this.store.dispatch(GameActions.leaveGame());
+    this.focus$.complete();
   }
 
   // ---- Combat declaration ---------------------------------

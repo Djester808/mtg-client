@@ -39,6 +39,13 @@ import { GameView, ObjectView, PlayerView } from '../models/play.models';
 export class GameViewAdapter {
   /** The whole state, as the board's store expects it. */
   toGameState(view: GameView): GameStateDto {
+    const attachments = new Map<string, string[]>();
+    for (const object of view.battlefield) {
+      if (!object.attachedTo) continue;
+      const names = attachments.get(object.attachedTo) ?? [];
+      names.push(object.name);
+      attachments.set(object.attachedTo, names);
+    }
     return {
       gameId: view.gameId,
       lastReveal: this.disclosure(view.lastReveal),
@@ -59,9 +66,7 @@ export class GameViewAdapter {
       currentStep: this.stepOf(view.currentStep),
       result: this.resultOf(view),
       players: view.players.map((p) => this.player(p, view)),
-      battlefield: view.battlefield.map((o) =>
-        this.permanent(o, this.attachmentsOf(o.id, view.battlefield)),
-      ),
+      battlefield: view.battlefield.map((o) => this.permanent(o, attachments.get(o.id) ?? [])),
       // Reversed, because the two contracts disagree about which end is the top. The engine
       // sends index 0 as the next thing to resolve; the board's stack panel marks the *last*
       // entry as the top and lays them out column-reverse. Passed through as they came, the
@@ -169,19 +174,6 @@ export class GameViewAdapter {
       // table cannot notice. The other way round costs a refusal toast.
       enforced: o.enforced ?? false,
     };
-  }
-
-  /**
-   * Everything attached to one permanent, by name — for the label under it.
-   *
-   * `ObjectView.attachedTo` names the host from the attaching Aura or Equipment's side (CR
-   * 303.4, 704.5m), which is the direction the engine reasons in: an Aura that finds itself
-   * attached to nothing is put into its owner's graveyard, and a host has no opinion about what
-   * is stuck to it. The board wants the other direction — what is on this creature — so it is
-   * derived here, once per battlefield, rather than asked of the engine again per card.
-   */
-  private attachmentsOf(hostId: string, battlefield: ObjectView[]): string[] {
-    return battlefield.filter((o) => o.attachedTo === hostId).map((o) => o.name);
   }
 
   private withCounters(

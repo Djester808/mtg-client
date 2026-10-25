@@ -38,7 +38,7 @@ class CollectionDetailPage extends BasePage {
   }
 
   async openAddPanel() {
-    const btn = await this.driver.findElement(this.addBtn);
+    const btn = await this.waitForVisible(this.addBtn, 10000);
     const cls = await btn.getAttribute('class');
     if (!cls.includes('is-active')) {
       await this.driver.executeScript('arguments[0].click()', btn);

@@ -121,11 +121,13 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
   }
   private readonly collectionApi = inject(CollectionApiService);
   private resultOwned: CollectionCardDto[] = [];
-  private ownershipKey = '';
+  private ownershipVersion = 0;
   private loadResultOwnership(oracleIds: string[]): void {
-    if (!this.collectionId || !oracleIds.length) return;
-    const key = JSON.stringify([this.collectionId, oracleIds]);
-    this.ownershipKey = key;
+    const version = ++this.ownershipVersion;
+    if (!this.collectionId || !oracleIds.length) {
+      this.resultOwned = [];
+      return;
+    }
     const requests = Array.from({ length: Math.ceil(oracleIds.length / 100) }, (_, i) =>
       this.collectionApi.lookupRows(this.collectionId!, oracleIds.slice(i * 100, (i + 1) * 100)),
     );
@@ -133,12 +135,13 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
-          if (this.ownershipKey === key) {
+          if (this.ownershipVersion === version) {
             this.resultOwned = rows.flat();
             this.cdr.markForCheck();
           }
         },
         error: () => {
+          if (this.ownershipVersion !== version) return;
           this.resultOwned = [];
           this.cdr.markForCheck();
         },
@@ -377,6 +380,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
             a.useRegex === b.useRegex,
         ),
         switchMap(({ query, sortBy, sortDir, matchCase, matchWord, useRegex }) => {
+          this.resetPageRequests();
           if (!query.trim()) {
             this.loading = false;
             this.searched = false;
@@ -416,7 +420,7 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
     this.loadMore$
       .pipe(
         concatMap(() => {
-          if (!this.lastQuery || this.loadingMore) return of<CardDto[]>([]);
+          if (!this.lastQuery || this.loading || this.loadingMore) return of<CardDto[]>([]);
           this.loadingMore = true;
           this.currentOffset += this.PAGE_SIZE;
           this.cdr.markForCheck();
@@ -431,7 +435,10 @@ export class CardSearchPanelComponent extends CardSearchBase implements OnInit, 
               this.matchWord,
               this.useRegex,
             )
-            .pipe(catchError(() => of<CardDto[]>([])));
+            .pipe(
+              takeUntil(this.pageReset$),
+              catchError(() => of<CardDto[]>([])),
+            );
         }),
         takeUntil(this.destroy$),
       )

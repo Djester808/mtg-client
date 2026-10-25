@@ -1,9 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, forkJoin } from 'rxjs';
+import { Observable, Subscription, forkJoin } from 'rxjs';
 import { GameTableApiService } from '../game-table-api.service';
 import { GameTable, TableDeck } from '../../models/game-table.models';
 
@@ -16,6 +24,9 @@ import { GameTable, TableDeck } from '../../models/game-table.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameLobbyComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private refreshRequest?: Subscription;
+  private searchRequest?: Subscription;
   private readonly api = inject(GameTableApiService);
   private readonly router = inject(Router);
   readonly decks = signal<TableDeck[]>([]);
@@ -38,31 +49,38 @@ export class GameLobbyComponent implements OnInit {
   refresh(): void {
     if (this.busy()) return;
     this.loading.set(true);
-    forkJoin({ decks: this.api.decks(), tables: this.api.list() }).subscribe({
-      next: (result) => {
-        this.decks.set(result.decks);
-        this.tables.set(result.tables);
-        this.loading.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.loading.set(false);
-        this.fail(error);
-      },
-    });
+    this.refreshRequest?.unsubscribe();
+    this.refreshRequest = forkJoin({ decks: this.api.decks(), tables: this.api.list() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.decks.set(result.decks);
+          this.tables.set(result.tables);
+          this.loading.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loading.set(false);
+          this.fail(error);
+        },
+      });
   }
 
   searchPlayers(): void {
+    this.searchRequest?.unsubscribe();
     if (this.search.trim().length < 2) {
       this.players.set([]);
       return;
     }
     const query = this.search;
-    this.api.players(query).subscribe({
-      next: (players) => {
-        if (query === this.search) this.players.set(players);
-      },
-      error: (error: HttpErrorResponse) => this.fail(error),
-    });
+    this.searchRequest = this.api
+      .players(query)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (players) => {
+          if (query === this.search) this.players.set(players);
+        },
+        error: (error: HttpErrorResponse) => this.fail(error),
+      });
   }
 
   invite(player: { userId: string; username: string }): void {
@@ -102,17 +120,20 @@ export class GameLobbyComponent implements OnInit {
     if (this.busy()) return;
     this.busy.set(true);
     this.refusal.set(null);
-    this.api.start(table).subscribe({
-      next: (result) => {
-        this.busy.set(false);
-        this.open(result.gameId);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.busy.set(false);
-        this.fail(error);
-        this.refresh();
-      },
-    });
+    this.api
+      .start(table)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.busy.set(false);
+          this.open(result.gameId);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.busy.set(false);
+          this.fail(error);
+          this.refresh();
+        },
+      });
   }
 
   open(gameId: string): void {
@@ -134,7 +155,7 @@ export class GameLobbyComponent implements OnInit {
     if (this.busy()) return;
     this.busy.set(true);
     this.refusal.set(null);
-    request.subscribe({
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.busy.set(false);
         this.refresh();

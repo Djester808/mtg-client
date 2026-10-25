@@ -142,7 +142,10 @@ describe('collectionReducer', () => {
       activeCollection: makeCollectionDetail({ cards: [] }),
     };
     const card = makeCollectionCard({ id: 'cc-new' });
-    const state = collectionReducer(base, CollectionActions.addCardSuccess({ card }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.addCardSuccess({ collectionId: 'col-1', card }),
+    );
     expect(state.activeCollection!.cards).toHaveSize(1);
     expect(state.activeCollection!.cards[0].id).toBe('cc-new');
   });
@@ -154,7 +157,10 @@ describe('collectionReducer', () => {
       activeCollection: makeCollectionDetail({ cards: [existing] }),
     };
     const updated = makeCollectionCard({ id: 'cc-1', quantity: 3 });
-    const state = collectionReducer(base, CollectionActions.addCardSuccess({ card: updated }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.addCardSuccess({ collectionId: 'col-1', card: updated }),
+    );
     expect(state.activeCollection!.cards).toHaveSize(1);
     expect(state.activeCollection!.cards[0].quantity).toBe(3);
   });
@@ -162,7 +168,10 @@ describe('collectionReducer', () => {
   it('returns same state on addCardSuccess when activeCollection is null', () => {
     const card = makeCollectionCard();
     const base = initialState();
-    const state = collectionReducer(base, CollectionActions.addCardSuccess({ card }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.addCardSuccess({ collectionId: 'col-1', card }),
+    );
     expect(state).toBe(base);
   });
 
@@ -196,6 +205,7 @@ describe('collectionReducer', () => {
     state = collectionReducer(
       state,
       CollectionActions.updateCardSuccess({
+        collectionId: 'col-1',
         card: makeCollectionCard({ id: 'cc-1', quantity: 2, quantityFoil: 0 }),
       }),
     );
@@ -221,6 +231,7 @@ describe('collectionReducer', () => {
     state = collectionReducer(
       state,
       CollectionActions.updateCardSuccess({
+        collectionId: 'col-1',
         card: makeCollectionCard({ id: 'cc-1', quantity: 9999, quantityFoil: 0, notes: 'server' }),
       }),
     );
@@ -255,14 +266,20 @@ describe('collectionReducer', () => {
       ...initialState(),
       activeCollection: makeCollectionDetail({ cards: [card1, card2] }),
     };
-    const state = collectionReducer(base, CollectionActions.removeCardSuccess({ cardId: 'cc-1' }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.removeCardSuccess({ collectionId: 'col-1', cardId: 'cc-1' }),
+    );
     expect(state.activeCollection!.cards).toHaveSize(1);
     expect(state.activeCollection!.cards[0].id).toBe('cc-2');
   });
 
   it('returns same state on removeCardSuccess when activeCollection is null', () => {
     const base = initialState();
-    const state = collectionReducer(base, CollectionActions.removeCardSuccess({ cardId: 'cc-1' }));
+    const state = collectionReducer(
+      base,
+      CollectionActions.removeCardSuccess({ collectionId: 'col-1', cardId: 'cc-1' }),
+    );
     expect(state).toBe(base);
   });
 
@@ -490,5 +507,16 @@ describe('collectionReducer', () => {
       }),
     );
     expect(state.activeCollection).toBeNull();
+  });
+});
+
+describe('collection delayed mutation isolation', () => {
+  it('ignores an add response from a previously viewed destination', () => {
+    const state: CollectionState = { ...initialState(), activeCollection: makeCollectionDetail() };
+    const next = collectionReducer(
+      state,
+      CollectionActions.addCardSuccess({ collectionId: 'another', card: makeCollectionCard() }),
+    );
+    expect(next).toBe(state);
   });
 });

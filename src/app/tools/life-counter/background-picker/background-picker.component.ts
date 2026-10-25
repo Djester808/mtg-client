@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
+import { Subject, timer, of, EMPTY, catchError, switchMap, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CardDto } from '../../../models/game.models';
@@ -71,29 +71,40 @@ export class BackgroundPickerComponent implements OnDestroy {
   error: string | null = null;
   preparing = false;
 
+  private currentQuery = '';
   private readonly queries = new Subject<string>();
   private readonly destroyed = new Subject<void>();
 
   constructor() {
     this.queries
       .pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        // switchMap, not mergeMap: only the newest query's results should ever land, or a
-        // slow request for "sol" overwrites the one for "sol ring".
-        switchMap((q) => this.search(q)),
+        // Switch immediately, so clearing or replacing text also cancels an in-flight request.
+        switchMap((query) =>
+          query.length < 2
+            ? of([] as CardDto[])
+            : timer(300).pipe(
+                switchMap(() => this.search(query)),
+                catchError(() => {
+                  this.searching = false;
+                  this.searched = this.currentQuery.length >= 2;
+                  this.error = 'Card search is not answering.';
+                  this.cdr.markForCheck();
+                  return EMPTY;
+                }),
+              ),
+        ),
         takeUntil(this.destroyed),
       )
       .subscribe({
         next: (cards) => {
           this.results = cards;
           this.searching = false;
-          this.searched = true;
+          this.searched = this.currentQuery.length >= 2;
           this.cdr.markForCheck();
         },
         error: () => {
           this.searching = false;
-          this.searched = true;
+          this.searched = this.currentQuery.length >= 2;
           this.error = 'Card search is not answering.';
           this.cdr.markForCheck();
         },
@@ -103,8 +114,10 @@ export class BackgroundPickerComponent implements OnDestroy {
   onQuery(text: string): void {
     this.error = null;
     const query = text.trim();
+    this.currentQuery = query;
 
     if (query.length < 2) {
+      this.queries.next(query);
       this.results = [];
       this.searched = false;
       this.searching = false;

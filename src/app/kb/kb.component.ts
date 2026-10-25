@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   ElementRef,
@@ -9,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, switchMap } from 'rxjs';
+import { Subject, Subscription, switchMap, catchError, of, takeUntil, finalize } from 'rxjs';
 import { SearchInputComponent } from '../components/search-input/search-input.component';
 import { RuleBlockComponent } from '../components/rule-block/rule-block.component';
 import {
@@ -65,7 +66,10 @@ export interface KeywordCategoryGroup {
   styleUrls: ['./kb.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class KbComponent implements OnInit {
+export class KbComponent implements OnInit, OnDestroy {
+  private readonly destroyed = new Subject<void>();
+  private selectionRequest?: Subscription;
+  private glossaryLoading = false;
   @ViewChild('sidebar') sidebarRef?: ElementRef<HTMLElement>;
 
   meta: RulesMeta | null = null;
@@ -104,22 +108,39 @@ export class KbComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.searches.pipe(switchMap((q) => this.api.search(q))).subscribe({
-      next: (result) => {
-        this.searchHits = result.hits;
-        this.searchTotal = result.total;
-        this.searching = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.searchHits = [];
-        this.searchTotal = 0;
-        this.searching = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.searches
+      .pipe(
+        switchMap((q) =>
+          q.length < 2
+            ? of({ hits: [], total: 0 })
+            : this.api.search(q).pipe(catchError(() => of({ hits: [], total: 0 }))),
+        ),
+        takeUntil(this.destroyed),
+      )
+      .subscribe({
+        next: (result) => {
+          this.searchHits = result.hits;
+          this.searchTotal = result.total;
+          this.searching = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.searchHits = [];
+          this.searchTotal = 0;
+          this.searching = false;
+          this.cdr.markForCheck();
+        },
+      });
 
+    this.route.queryParamMap?.pipe(takeUntil(this.destroyed)).subscribe(() => {
+      if (this.meta) this.openFromRoute();
+    });
     this.load();
+  }
+  ngOnDestroy(): void {
+    this.selectionRequest?.unsubscribe();
+    this.destroyed.next();
+    this.destroyed.complete();
   }
 
   /**
@@ -137,21 +158,24 @@ export class KbComponent implements OnInit {
   }
 
   private load(): void {
-    this.api.index().subscribe({
-      next: (index) => {
-        this.meta = index.meta;
-        this.sections = index.sections;
-        this.keywordGroups = groupKeywords(index.keywords);
-        this.loading = false;
-        this.openFromRoute();
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.loading = false;
-        this.failed = true;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .index()
+      .pipe(takeUntil(this.destroyed))
+      .subscribe({
+        next: (index) => {
+          this.meta = index.meta;
+          this.sections = index.sections;
+          this.keywordGroups = groupKeywords(index.keywords);
+          this.loading = false;
+          this.openFromRoute();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loading = false;
+          this.failed = true;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   // ---- Navigation ------------------------------------------------
@@ -165,26 +189,34 @@ export class KbComponent implements OnInit {
   }
 
   selectGroup(number: number, highlight: string | null = null): void {
-    this.api.group(number).subscribe({
-      next: (group) => {
-        this.selected = { kind: 'group', group, highlight };
-        this.cdr.markForCheck();
-        this.revealSelection();
-      },
-      error: () => this.cdr.markForCheck(),
-    });
+    this.selectionRequest?.unsubscribe();
+    this.selectionRequest = this.api
+      .group(number)
+      .pipe(takeUntil(this.destroyed))
+      .subscribe({
+        next: (group) => {
+          this.selected = { kind: 'group', group, highlight };
+          this.cdr.markForCheck();
+          this.revealSelection();
+        },
+        error: () => this.cdr.markForCheck(),
+      });
   }
 
   selectKeyword(name: string): void {
-    this.api.keyword(name).subscribe({
-      next: (keyword) => {
-        this.tab = 'keywords';
-        this.selected = { kind: 'keyword', keyword };
-        this.cdr.markForCheck();
-        this.revealSelection();
-      },
-      error: () => this.cdr.markForCheck(),
-    });
+    this.selectionRequest?.unsubscribe();
+    this.selectionRequest = this.api
+      .keyword(name)
+      .pipe(takeUntil(this.destroyed))
+      .subscribe({
+        next: (keyword) => {
+          this.tab = 'keywords';
+          this.selected = { kind: 'keyword', keyword };
+          this.cdr.markForCheck();
+          this.revealSelection();
+        },
+        error: () => this.cdr.markForCheck(),
+      });
   }
 
   /**
@@ -206,6 +238,7 @@ export class KbComponent implements OnInit {
   }
 
   selectGlossaryEntry(entry: GlossaryEntry): void {
+    this.selectionRequest?.unsubscribe();
     this.selected = { kind: 'glossary', entry };
     this.cdr.markForCheck();
   }
@@ -217,16 +250,20 @@ export class KbComponent implements OnInit {
       return;
     }
     if (hit.kind === 'glossary') {
-      this.api.glossary(hit.ref, 1, 100).subscribe({
-        next: (result) => {
-          const entry = result.entries.find((e) => e.term === hit.ref) ?? result.entries[0];
-          if (entry) {
-            this.selected = { kind: 'glossary', entry };
-          }
-          this.cdr.markForCheck();
-        },
-        error: () => this.cdr.markForCheck(),
-      });
+      this.selectionRequest?.unsubscribe();
+      this.selectionRequest = this.api
+        .glossary(hit.ref, 1, 100)
+        .pipe(takeUntil(this.destroyed))
+        .subscribe({
+          next: (result) => {
+            const entry = result.entries.find((e) => e.term === hit.ref) ?? result.entries[0];
+            if (entry) {
+              this.selected = { kind: 'glossary', entry };
+            }
+            this.cdr.markForCheck();
+          },
+          error: () => this.cdr.markForCheck(),
+        });
       return;
     }
 
@@ -241,6 +278,7 @@ export class KbComponent implements OnInit {
    * beside it.
    */
   clearSelection(): void {
+    this.selectionRequest?.unsubscribe();
     this.selected = null;
     this.cdr.markForCheck();
   }
@@ -273,6 +311,7 @@ export class KbComponent implements OnInit {
 
     // The server requires two characters; below that there is nothing worth asking for.
     if (trimmed.length < 2) {
+      this.searches.next('');
       this.searchHits = [];
       this.searchTotal = 0;
       this.searching = false;
@@ -288,16 +327,26 @@ export class KbComponent implements OnInit {
   // ---- Glossary paging -------------------------------------------
 
   loadMoreGlossary(): void {
+    if (this.glossaryLoading) return;
+    this.glossaryLoading = true;
     const next = this.glossaryPage + 1;
-    this.api.glossary('', next).subscribe({
-      next: (result) => {
-        this.glossaryPage = next;
-        this.glossary = [...this.glossary, ...result.entries];
-        this.glossaryTotal = result.total;
-        this.cdr.markForCheck();
-      },
-      error: () => this.cdr.markForCheck(),
-    });
+    this.api
+      .glossary('', next)
+      .pipe(
+        takeUntil(this.destroyed),
+        finalize(() => {
+          this.glossaryLoading = false;
+        }),
+      )
+      .subscribe({
+        next: (result) => {
+          this.glossaryPage = next;
+          this.glossary = [...this.glossary, ...result.entries];
+          this.glossaryTotal = result.total;
+          this.cdr.markForCheck();
+        },
+        error: () => this.cdr.markForCheck(),
+      });
   }
 
   // ---- Template helpers (cheap: no allocation, no iteration) ------

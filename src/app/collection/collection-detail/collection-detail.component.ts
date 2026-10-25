@@ -1118,6 +1118,8 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
           }
         },
         error: () => {
+          if (this.selectedCard?.oracleId !== card.oracleId || request !== this.modalRowsRequest)
+            return;
           this.modalRows = [];
           this.cdr.markForCheck();
         },

@@ -1,8 +1,8 @@
-import { saveAuth, rememberSession } from './auth-storage';
+import { saveAuth, rememberSession, storedAuth } from './auth-storage';
 import { Injectable } from '@angular/core';
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Store } from '@ngrx/store';
-import { Observable, finalize, shareReplay, tap } from 'rxjs';
+import { Observable, finalize, shareReplay, tap, filter } from 'rxjs';
 import { AuthActions } from '../store/auth/auth.actions';
 
 interface RefreshedSession {
@@ -23,6 +23,7 @@ export class AuthRefreshService {
   }
   refresh(): Observable<RefreshedSession> {
     if (!this.pending) {
+      const startingToken = storedAuth('auth_token');
       this.pending = this.http
         .post<RefreshedSession>(
           '/api/auth/refresh',
@@ -30,6 +31,7 @@ export class AuthRefreshService {
           { withCredentials: true },
         )
         .pipe(
+          filter(() => storedAuth('auth_token') === startingToken),
           tap(({ token, username }) => {
             saveAuth(token, username);
             this.store.dispatch(AuthActions.restoreSession());

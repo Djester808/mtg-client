@@ -138,6 +138,18 @@ function matchesCmc(value: number, cmc: string | null): boolean {
   return cmc === '6+' ? value >= 6 : value === Number(cmc);
 }
 
+/** Price of the first finish actually present, shared by sorting and grouping. */
+function unitPrice(card: CollectionCardDto): number | null {
+  const prices = card.cardDetails?.prices;
+  return (
+    (card.quantity > 0
+      ? prices?.usd
+      : card.quantityFoil > 0
+        ? prices?.usdFoil
+        : prices?.usdEtched) ?? null
+  );
+}
+
 function count(card: CollectionCardDto): number {
   return card.quantity + card.quantityFoil + (card.quantityEtched ?? 0);
 }
@@ -325,9 +337,7 @@ export class CardGridFilterService {
               case 'rarity':
                 return RARITY_ORDER.indexOf(c.cardDetails?.rarity ?? '');
               case 'price':
-                return c.quantity > 0
-                  ? (c.cardDetails?.prices?.usd ?? null)
-                  : (c.cardDetails?.prices?.usdFoil ?? null);
+                return unitPrice(c);
               default:
                 return name(c);
             }
@@ -555,8 +565,7 @@ export class CardGridFilterService {
         return this.bySortedKey(
           cards,
           (c) => {
-            const price =
-              c.quantity > 0 ? c.cardDetails?.prices?.usd : c.cardDetails?.prices?.usdFoil;
+            const price = unitPrice(c);
             return price == null
               ? 'Unpriced'
               : price < 1

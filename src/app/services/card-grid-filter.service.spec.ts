@@ -39,6 +39,22 @@ describe('CardGridFilterService', () => {
   let svc: CardGridFilterService;
   beforeEach(() => (svc = new CardGridFilterService()));
 
+  it('sorts and groups etched-only rows by the etched price', () => {
+    const etched = card(
+      { id: 'etched', quantity: 0, quantityEtched: 1 },
+      { prices: { usd: 50, usdFoil: 30, usdEtched: 2 } },
+    );
+    const normal = card({ id: 'normal' }, { prices: { usd: 10 } });
+    expect(svc.apply([normal, etched], state({ sort: 'price' })).map((r) => r.id)).toEqual([
+      'etched',
+      'normal',
+    ]);
+    expect(svc.sections([etched], 'price')[0].label).not.toBe('Unpriced');
+    expect(svc.sections([etched], 'price')[0].label).toBe(
+      svc.sections([card({}, { prices: { usd: 2 } })], 'price')[0].label,
+    );
+  });
+
   it('filters independent finish conditions and tags on the same owned finish', () => {
     const rows = [
       card({

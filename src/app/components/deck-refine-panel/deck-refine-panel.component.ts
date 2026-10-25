@@ -5,7 +5,9 @@ import {
   EventEmitter,
   Input,
   Output,
+  OnDestroy,
 } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { AiBuilderApiService } from '../../services/ai-builder-api.service';
 import { CardSwap } from '../../models/ai-builder.models';
@@ -34,7 +36,13 @@ interface KeptSwap {
   styleUrls: ['./deck-refine-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DeckRefinePanelComponent {
+export class DeckRefinePanelComponent implements OnDestroy {
+  private readonly destroyed$ = new Subject<void>();
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+  }
   @Input({ required: true }) deckId!: string;
   @Input() bracket = 3;
 
@@ -105,6 +113,7 @@ export class DeckRefinePanelComponent {
         priceRange: this.previewPriceRange,
         maxSwaps: 10,
       })
+      .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: (result) => {
           // One card is the commander, which is never swappable.

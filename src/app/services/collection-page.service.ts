@@ -13,6 +13,11 @@ export class CollectionPageService {
   private timer: ReturnType<typeof setTimeout> | null = null;
   constructor(private queries: CollectionQueryState) {}
   bind(id: string, refresh: () => void): void {
+    this.destroy();
+    this.key = '';
+    this.index = 0;
+    this.total = 0;
+    this.acceptedPage = undefined;
     this.id = id;
     this.queries.reset();
     this.refresh = refresh;
@@ -60,6 +65,7 @@ export class CollectionPageService {
   }
   destroy(): void {
     if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
     this.refresh = null;
     this.queries.reset();
   }

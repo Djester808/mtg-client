@@ -2,7 +2,7 @@ import { saveAuth, clearAuth } from '../../services/auth-storage';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { catchError, map, of, switchMap, tap, takeUntil } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { AuthActions } from './auth.actions';
 import { describeHttpError } from '../../utils/http-error.utils';
@@ -14,6 +14,7 @@ export class AuthEffects {
       ofType(AuthActions.login),
       switchMap(({ username, password, rememberMe }) =>
         this.authService.login(username, password, rememberMe).pipe(
+          takeUntil(this.actions$.pipe(ofType(AuthActions.logout, AuthActions.register))),
           // The username comes from the RESPONSE, never from what was typed. Login accepts
           // either a username or an email address, so echoing the request put people's
           // email addresses in the navbar, in the avatar's colour hash, and into every
@@ -39,6 +40,7 @@ export class AuthEffects {
       ofType(AuthActions.register),
       switchMap(({ username, email, password, acceptedTerms }) =>
         this.authService.register(username, email, password, acceptedTerms).pipe(
+          takeUntil(this.actions$.pipe(ofType(AuthActions.logout, AuthActions.login))),
           // Same rule as login: the server's spelling of the username wins.
           map((res) => AuthActions.registerSuccess({ token: res.token, username: res.username })),
           catchError((err) =>
