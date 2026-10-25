@@ -9,7 +9,7 @@ export interface ZonePile {
   top: CardDto | null;
   color: string;
 }
-/** Public zone presentation, shared by piles and the viewer. Never reads a library. */
+/** Public zone presentation, shared by piles and the viewer. Only displays library cards explicitly authorized by the server. */
 @Injectable({ providedIn: 'root' })
 export class BoardZonesService {
   private cache = new WeakMap<PlayerStateDto, ZonePile[]>();
@@ -20,7 +20,9 @@ export class BoardZonesService {
     const result = zones.map((key) => {
       const cards =
         key === 'library'
-          ? []
+          ? player.topOfLibrary
+            ? [player.topOfLibrary]
+            : []
           : key === 'graveyard'
             ? [...player.graveyard]
             : [...(player[key] ?? [])].reverse();

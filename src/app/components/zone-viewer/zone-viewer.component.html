@@ -11,11 +11,16 @@
       <div>
         <h2 class="viewer-title">{{ vm.title }}</h2>
         <p class="viewer-count">
-          {{ vm.count }} cards<span *ngIf="vm.cards.length"> · newest first</span>
+          {{ vm.count }} cards<span *ngIf="vm.cards.length">
+            · {{ vm.zone === 'library' ? 'visible top card only' : 'newest first' }}</span
+          >
         </p>
       </div>
       <button class="viewer-close" aria-label="Close zone viewer" (click)="close()">×</button>
     </header>
+    <p *ngIf="libraryBusy || libraryStatus" class="library-status" role="status">
+      {{ libraryBusy ? 'Sending library action…' : libraryStatus }}
+    </p>
     <nav class="viewer-tabs" aria-label="Player zones">
       <button
         *ngFor="let pile of vm.piles; trackBy: trackZone"
@@ -26,6 +31,142 @@
         {{ pile.name }} {{ pile.count }}
       </button>
     </nav>
+    <div class="library-actions" *ngIf="vm.canManualLibrary" aria-label="Manual library actions">
+      <button
+        class="library-draw"
+        [disabled]="libraryBusy"
+        (click)="libraryAction('draw', vm.canManualLibrary)"
+      >
+        Draw a card
+      </button>
+      <button
+        class="library-shuffle"
+        [disabled]="libraryBusy"
+        (click)="libraryAction('shuffle', vm.canManualLibrary)"
+      >
+        Shuffle library
+      </button>
+      <button
+        class="library-look"
+        [disabled]="libraryBusy"
+        (click)="
+          libraryAction(vm.manualLibraryLookActive ? 'stopLooking' : 'look', vm.canManualLibrary)
+        "
+      >
+        {{ vm.manualLibraryLookActive ? 'Stop looking' : 'Look at library' }}
+      </button>
+      <button
+        class="library-arrange"
+        *ngIf="vm.canArrange && !arrangement.choice"
+        [disabled]="libraryBusy || vm.count < 2"
+        (click)="beginArrangement(vm.inspectedLibraryCards, vm.playerId, vm.canArrange)"
+      >
+        Arrange library
+      </button>
+      <span>Honour-system action</span>
+    </div>
+    <details class="library-search" *ngIf="vm.canManualLibrary && !arrangement.choice">
+      <summary>Search library</summary>
+      <form #searchForm="ngForm" (ngSubmit)="searchLibrary(vm.canManualLibrary)">
+        <div class="search-fields">
+          <label
+            >Up to cards<input
+              name="searchCount"
+              type="number"
+              min="0"
+              step="1"
+              required
+              [(ngModel)]="searchOptions.count"
+          /></label>
+          <label
+            >Destination<select name="searchDestination" [(ngModel)]="searchOptions.destination">
+              <option value="Hand">Hand</option>
+              <option value="Battlefield">Battlefield</option>
+              <option value="Graveyard">Graveyard</option>
+              <option value="Exile">Exile</option>
+              <option value="Library">Library</option>
+            </select></label
+          >
+          <label
+            >Card type<select name="searchType" [(ngModel)]="searchOptions.filter.types">
+              <option [ngValue]="undefined">Any type</option>
+              <option value="Land">Land</option>
+              <option value="Creature">Creature</option>
+              <option value="Artifact">Artifact</option>
+              <option value="Enchantment">Enchantment</option>
+              <option value="Instant">Instant</option>
+              <option value="Sorcery">Sorcery</option>
+              <option value="Planeswalker">Planeswalker</option>
+              <option value="Battle">Battle</option>
+            </select></label
+          >
+          <label
+            >Supertype<select name="searchSupertype" [(ngModel)]="searchOptions.filter.supertypes">
+              <option [ngValue]="undefined">Any supertype</option>
+              <option value="Basic">Basic</option>
+              <option value="Legendary">Legendary</option>
+              <option value="Snow">Snow</option>
+            </select></label
+          >
+          <label
+            >Subtypes (comma separated)<input
+              name="searchSubtypes"
+              [(ngModel)]="searchSubtypes"
+              placeholder="e.g. Forest, Island"
+          /></label>
+          <label *ngIf="searchOptions.destination === 'Library'"
+            >Placement<select name="searchPlacement" [(ngModel)]="searchOptions.where">
+              <option value="Default">Default</option>
+              <option value="Top">Top</option>
+              <option value="Bottom">Bottom</option>
+            </select></label
+          >
+        </div>
+        <div class="search-checks">
+          <label
+            ><input type="checkbox" name="searchReveal" [(ngModel)]="searchOptions.reveal" />Reveal
+            selected cards</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              name="searchShuffle"
+              [(ngModel)]="searchOptions.shuffleAfter"
+            />Shuffle after searching</label
+          >
+          <label *ngIf="searchOptions.destination === 'Battlefield'"
+            ><input type="checkbox" name="searchTapped" [(ngModel)]="searchOptions.tapped" />Enter
+            tapped</label
+          >
+        </div>
+        <button
+          class="library-search-submit"
+          type="submit"
+          [disabled]="libraryBusy || searchForm.invalid || !validSearchCount"
+        >
+          {{ libraryBusy ? 'Sending…' : 'Choose cards' }}
+        </button>
+      </form>
+    </details>
+    <section class="library-order-editor" *ngIf="arrangement.choice as order">
+      <h3>Library order · top to bottom</h3>
+      <p>
+        Move cards with the arrows, or start over and select them in order. Confirm applies the
+        whole order.
+      </p>
+      <app-choice-controls
+        [choice]="order"
+        [showSelectedOrder]="true"
+        [pending]="libraryBusy"
+        (pick)="pickArrangement($event)"
+        (clear)="clearArrangement()"
+        (confirm)="arrangeLibrary(vm.canArrange)"
+        (details)="inspectArrangementCard($event)"
+      />
+      <button class="library-order-cancel" [disabled]="libraryBusy" (click)="cancelArrangement()">
+        Cancel ordering
+      </button>
+    </section>
     <div class="viewer-body" *ngIf="vm.cards.length; else emptyZone">
       <div
         *ngFor="let card of vm.cards; trackBy: trackByCard; let first = first"
@@ -60,7 +201,7 @@
             >{{ card.cardTypes.join(' ')
             }}<span *ngIf="card.subtypes.length"> — {{ card.subtypes.join(' ') }}</span></span
           >
-          <span class="newest" *ngIf="first">Newest</span>
+          <span class="newest" *ngIf="first">{{ vm.zone === 'library' ? 'Top' : 'Newest' }}</span>
         </button>
         <button
           *ngIf="vm.isLocal && vm.zone === 'command'"

@@ -1,3 +1,4 @@
+import { ChoiceSubmissionControl } from '../../game/choices/choice-selection.service';
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
 import { GameStateDto, GameStateDiffDto, CardDto } from '../../models/game.models';
 
@@ -40,7 +41,7 @@ export const GameActions = createActionGroup({
 
     // Answering whatever the game has stopped to ask (CR 103.4, 510.1c, 603.3b). The picks are
     // option ids, in order, and an option may repeat when the answer is an amount.
-    Choose: props<{ picks: string[] }>(),
+    Choose: props<{ picks: string[]; control?: ChoiceSubmissionControl }>(),
 
     // Card cache (from Scryfall)
     'Card Loaded': props<{ card: CardDto }>(),

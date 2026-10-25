@@ -31,6 +31,18 @@ describe('CardModalComponent', () => {
   let component: CardModalComponent;
   let fixture: ComponentFixture<CardModalComponent>;
 
+  it('uses the existing placeholder after artwork fails without suppressing another face', () => {
+    component.card = makeCard({ imageUriNormal: '/broken.jpg', imageUriNormalBack: '/back.jpg' });
+    component.lensVisible = true;
+    component.onImageError();
+    expect(component.modalImage).toBeNull();
+    expect(component.lensVisible).toBeFalse();
+    component.flipped = true;
+    expect(component.modalImage).toBe('/back.jpg');
+    component.flipped = false;
+    expect(component.modalImage).toBeNull();
+  });
+
   beforeEach(async () => {
     const gameApi = jasmine.createSpyObj<GameApiService>('GameApiService', [
       'getCardRulings',

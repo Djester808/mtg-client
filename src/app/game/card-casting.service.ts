@@ -3,8 +3,9 @@ import { Store } from '@ngrx/store';
 import { AppState, GameActions, UIActions } from '../store';
 import { CardDto, CardType } from '../models/game.models';
 import { PlayLegalityService } from './play-legality.service';
+import { CastDraft } from '../store/ui/ui.reducer';
 
-/** Starts a permitted play through the same announcement and targeting flow in every zone. */
+/** One pending spell, shared by hand and public-zone actions. Mana is added before submission. */
 @Injectable({ providedIn: 'root' })
 export class CardCastingService {
   constructor(
@@ -12,18 +13,29 @@ export class CardCastingService {
     private legality: PlayLegalityService,
   ) {}
   start(card: CardDto): void {
-    if (card.cardTypes.includes(CardType.Land)) {
-      this.store.dispatch(GameActions.playLand({ cardId: card.cardId }));
-      return;
-    }
-    const targetCount = this.legality.targetsOnCast(card) ? (card.targetCount ?? 1) : 0;
-    if (card.announcesVariable) {
-      this.store.dispatch(UIActions.enterAnnounceMode({ sourceId: card.cardId, targetCount }));
-    } else if (targetCount > 0) {
-      this.store.dispatch(UIActions.enterTargetMode({ sourceCardId: card.cardId, targetCount }));
-    } else {
-      this.store.dispatch(GameActions.castSpell({ cardId: card.cardId, targetIds: [] }));
-      this.store.dispatch(UIActions.deselectCard());
-    }
+    this.store.dispatch(
+      card.cardTypes.includes(CardType.Land)
+        ? GameActions.playLand({ cardId: card.cardId })
+        : UIActions.beginCast({ card }),
+    );
+  }
+  cost(draft: CastDraft): string {
+    return draft.card.manaCost.replace(/\{X\}/gi, '{' + draft.x + '}');
+  }
+  targets(draft: CastDraft): number {
+    return this.legality.targetsOnCast(draft.card) ? (draft.card.targetCount ?? 1) : 0;
+  }
+  continue(draft: CastDraft): void {
+    const count = this.targets(draft);
+    if (count) {
+      this.store.dispatch(UIActions.setCastStage({ stage: 'targets' }));
+      this.store.dispatch(
+        UIActions.enterTargetMode({
+          sourceCardId: draft.card.cardId,
+          targetCount: count,
+          variableValue: draft.x,
+        }),
+      );
+    } else this.store.dispatch(UIActions.setCastTargets({ targets: [] }));
   }
 }

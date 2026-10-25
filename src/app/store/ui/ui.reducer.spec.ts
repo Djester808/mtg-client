@@ -1,3 +1,4 @@
+import { makeCard } from '../../testing/test-factories';
 import { uiReducer } from './ui.reducer';
 import { UIActions } from './ui.actions';
 import { GameActions } from '../game/game.actions';
@@ -118,5 +119,38 @@ describe('four-player attack and blocker drafts', () => {
     state = uiReducer(state, UIActions.assignBlocker({ blockerId: 'o3', attackerId: 'o1' }));
     expect(state.pendingBlockerAssignments).toEqual({ o3: 'o1' });
     expect(state.selectedBlockerId).toBeNull();
+  });
+});
+
+describe('Pending cast state', () => {
+  it('preserves the spell and X through payment, targeting and review, then cancels cleanly', () => {
+    const card = makeCard({ cardId: 'spell', announcesVariable: true });
+    let state = uiReducer(undefined, UIActions.beginCast({ card }));
+    state = uiReducer(state, UIActions.setCastX({ value: 3 }));
+    state = uiReducer(state, UIActions.enterTargetMode({ sourceCardId: 'spell', targetCount: 1 }));
+    state = uiReducer(state, UIActions.setCastTargets({ targets: ['p2'] }));
+    expect(state.castDraft?.x).toBe(3);
+    expect(state.castDraft?.stage).toBe('review');
+    expect(state.mode).toBe('casting');
+    state = uiReducer(state, UIActions.cancelCast());
+    expect(state.castDraft).toBeNull();
+    expect(state.pendingTargetIds).toEqual([]);
+    expect(state.mode).toBe('idle');
+  });
+  it('retains a rejected spell and targets for correction rather than losing the draft', () => {
+    let state = uiReducer(undefined, UIActions.beginCast({ card: makeCard() }));
+    state = uiReducer(state, UIActions.setCastTargets({ targets: ['bad'] }));
+    state = uiReducer(state, UIActions.markCastSubmitting());
+    state = uiReducer(state, UIActions.castFailed({ error: 'Invalid target' }));
+    expect(state.castDraft?.stage).toBe('review');
+    expect(state.castDraft?.targets).toEqual(['bad']);
+    expect(state.castDraft?.error).toBe('Invalid target');
+  });
+  it('clears stale casting state when the connection is lost', () => {
+    const state = uiReducer(
+      uiReducer(undefined, UIActions.beginCast({ card: makeCard() })),
+      GameActions.connectionLost(),
+    );
+    expect(state.castDraft).toBeNull();
   });
 });

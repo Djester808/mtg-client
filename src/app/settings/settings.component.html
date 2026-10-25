@@ -102,6 +102,37 @@
               <option value="expanded">Expanded sidebar</option>
             </select></label
           >
+          <div *ngSwitchCase="'library-layout'" class="layout-controls">
+            <button type="button" (click)="exportLayout()">Export library layout</button>
+            <label for="library-layout-file">Import library layout</label>
+            <input
+              #layoutFile
+              id="library-layout-file"
+              type="file"
+              accept=".json,application/json"
+              [disabled]="layoutBusy()"
+              (change)="importLayout(layoutFile)"
+            />
+            <p role="status" *ngIf="layoutStatus()">{{ layoutStatus() }}</p>
+          </div>
+          <div *ngSwitchCase="'library-shortcuts'">
+            <div *ngFor="let action of shortcutActions">
+              <label [for]="'shortcut-' + action.id">{{ action.label }}</label>
+              <input
+                class="shortcut-input"
+                [id]="'shortcut-' + action.id"
+                type="text"
+                readonly
+                [value]="preferences.state().libraryShortcuts[action.id] || 'Unassigned'"
+                (keydown)="captureShortcut(action.id, $event)"
+              />
+              <button type="button" (click)="clearShortcut(action.id)">
+                Unbind {{ action.label }}
+              </button>
+            </div>
+            <p role="alert" *ngIf="shortcutError()">{{ shortcutError() }}</p>
+            <button type="button" (click)="resetShortcuts()">Reset opening-hand shortcuts</button>
+          </div>
           <p *ngSwitchCase="'about'">
             Compleat · Browser app 0.1.0<br />Card data and artwork from Scryfall. Mana symbols from
             Mana (SIL Open Font License). Not affiliated with Wizards of the Coast.

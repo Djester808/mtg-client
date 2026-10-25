@@ -4,6 +4,7 @@ import { CardDto } from '../../models/game.models';
 import { UIActions } from './ui.actions';
 
 export type UIMode =
+  | 'casting'
   | 'idle'
   | 'targeting'
   | 'declaring-attackers'
@@ -11,7 +12,15 @@ export type UIMode =
   | 'choosing-ability'
   | 'announcing';
 
+export interface CastDraft {
+  card: CardDto;
+  stage: 'payment' | 'targets' | 'review' | 'submitting';
+  x: number;
+  targets: string[];
+  error: string | null;
+}
 export interface UIState {
+  castDraft?: CastDraft | null;
   mode: UIMode;
 
   // Selected card (hand or battlefield)
@@ -87,6 +96,74 @@ const initialState: UIState = {
 export const uiReducer = createReducer(
   initialState,
 
+  on(UIActions.beginCast, (state, { card }) => ({
+    ...state,
+    mode: 'casting' as UIMode,
+    castDraft: { card, stage: 'payment' as const, x: 0, targets: [], error: null },
+    selectedCardId: null,
+    selectedPermanentId: null,
+  })),
+  on(UIActions.setCastX, (state, { value }) => ({
+    ...state,
+    castDraft: state.castDraft
+      ? {
+          ...state.castDraft,
+          x: Math.max(0, Math.min(999, Math.floor(value) || 0)),
+          targets: [],
+          stage: 'payment' as const,
+        }
+      : null,
+  })),
+  on(UIActions.setCastStage, (state, { stage }) => ({
+    ...state,
+    mode: 'casting' as UIMode,
+    castDraft: state.castDraft ? { ...state.castDraft, stage, error: null } : null,
+  })),
+  on(UIActions.setCastTargets, (state, { targets }) => ({
+    ...state,
+    mode: 'casting' as UIMode,
+    targetSourceCardId: null,
+    pendingTargetIds: [],
+    targetCount: 0,
+    castDraft: state.castDraft
+      ? { ...state.castDraft, targets, stage: 'review' as const, error: null }
+      : null,
+  })),
+  on(UIActions.markCastSubmitting, (state) => ({
+    ...state,
+    castDraft: state.castDraft
+      ? {
+          ...state.castDraft,
+          stage: 'submitting' as const,
+          error: null,
+        }
+      : null,
+  })),
+  on(UIActions.castFailed, (state, { error }) =>
+    state.castDraft
+      ? {
+          ...state,
+          mode: 'casting' as UIMode,
+          castDraft: { ...state.castDraft, stage: 'review' as const, error },
+        }
+      : state,
+  ),
+  on(UIActions.cancelCast, (state) => ({
+    ...state,
+    mode: 'idle' as UIMode,
+    castDraft: null,
+    targetSourceCardId: null,
+    targetAbilityId: null,
+    targetCount: 0,
+    pendingTargetIds: [],
+    variableValue: 0,
+  })),
+  on(GameActions.joinGame, GameActions.connectionLost, (state) => ({
+    ...state,
+    castDraft: null,
+    mode: 'idle' as UIMode,
+  })),
+
   on(UIActions.selectCard, (state, { permanentId, cardId }) => ({
     ...state,
     selectedPermanentId: permanentId ?? null,
@@ -131,6 +208,7 @@ export const uiReducer = createReducer(
 
   on(UIActions.cancelTargetMode, (state) => ({
     ...state,
+    castDraft: null,
     mode: 'idle' as UIMode,
     targetSourceCardId: null,
     targetAbilityId: null,

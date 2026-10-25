@@ -1,3 +1,9 @@
+import { LibraryActionsService } from '../game/library-actions.service';
+import { ToastService } from '../services/toast.service';
+import { LibraryRevealComponent } from '../components/library-reveal/library-reveal.component';
+import { ChoiceControlsComponent } from '../components/choice-controls/choice-controls.component';
+import { ChoiceSelectionService } from '../game/choices/choice-selection.service';
+import { CastPromptComponent } from '../components/cast-prompt/cast-prompt.component';
 import { BreakpointsService } from '../shared/breakpoints.service';
 import {
   Component,
@@ -16,6 +22,7 @@ import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { AppState, GameActions, UIActions } from '../store';
 import {
   selectLocalPlayer,
+  selectGameReady,
   selectOutcomeSummary,
   selectTableSeats,
   selectAttackDefender,
@@ -32,6 +39,7 @@ import {
   selectUIMode,
   selectPendingAttackers,
   selectPreviewCard,
+  selectCastDraft,
   selectUIFeature,
   selectStack,
   selectZoneViewerOpen,
@@ -60,9 +68,12 @@ import { ManualControlsService } from './manual-controls.service';
 
 @Component({
   selector: 'app-game-board',
+  providers: [ChoiceSelectionService],
   standalone: true,
   imports: [
     CommonModule,
+    CastPromptComponent,
+    ChoiceControlsComponent,
     RouterLink,
     CardModalComponent,
     ManaCostComponent,
@@ -75,12 +86,32 @@ import { ManualControlsService } from './manual-controls.service';
     AttackArrowsComponent,
     OracleSymbolsPipe,
     ManualControlsComponent,
+    LibraryRevealComponent,
   ],
   templateUrl: './game-board.component.html',
   styleUrls: ['./game-board.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameBoardComponent implements OnInit {
+  private readonly libraryActions = inject(LibraryActionsService);
+  private readonly libraryToasts = inject(ToastService);
+  libraryRepositionBusy = false;
+  async repositionLibrary(action: { cardId: string; position: number }): Promise<void> {
+    if (this.libraryRepositionBusy) return;
+    this.libraryRepositionBusy = true;
+    try {
+      await this.libraryActions.reposition(action.cardId, action.position);
+    } catch {
+      this.libraryToasts.show(
+        'Library move was not confirmed. Retry to check it safely.',
+        'warn',
+        4000,
+      );
+    } finally {
+      this.libraryRepositionBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
   readonly breakpoints = inject(BreakpointsService);
   get shownOpponentView(): 'focus' | 'table' {
     return this.breakpoints.isShortViewport() ? 'focus' : this.opponentView;
@@ -101,17 +132,14 @@ export class GameBoardComponent implements OnInit {
    * stayed at 2 however many points you assigned — the buttons updated, because the template
    * calls back into the component, and the sentence above them did not.
    */
-  private readonly picks$ = new BehaviorSubject<string[]>([]);
+  private readonly selection = inject(ChoiceSelectionService);
+  private readonly picks$ = this.selection.picks$;
 
   /** The honour system: which objects its panel is for, and what each of its controls sends. */
   private readonly manual = inject(ManualControlsService);
 
   get picks(): string[] {
-    return this.picks$.value;
-  }
-
-  private setPicks(picks: string[]): void {
-    this.picks$.next(picks);
+    return this.selection.picks;
   }
 
   opponentView: 'focus' | 'table' = 'focus';
@@ -150,6 +178,8 @@ export class GameBoardComponent implements OnInit {
     return item.id;
   }
 
+  libraryReady$ = this.store.select(selectGameReady);
+  casting$ = this.store.select(selectCastDraft);
   quickCard$ = this.store.select(selectUIFeature).pipe(map((ui) => ui.hoveredCard));
 
   vm$ = combineLatest([
@@ -327,7 +357,7 @@ export class GameBoardComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private route: ActivatedRoute,
-    private signalr: SignalRService,
+    readonly signalr: SignalRService,
   ) {}
 
   ngOnInit(): void {
@@ -453,6 +483,10 @@ export class GameBoardComponent implements OnInit {
     this.store.dispatch(GameActions.passPriority());
   }
 
+  previewChoiceCard(cardId: string): void {
+    this.store.dispatch(UIActions.selectCard({ cardId }));
+  }
+
   closePreview(): void {
     this.store.dispatch(UIActions.deselectCard());
   }
@@ -489,65 +523,45 @@ export class GameBoardComponent implements OnInit {
   // blockers (CR 510.1c), what order simultaneous triggers go on the stack (CR 603.3b). The
   // three are the same interaction with different rules about how many times you may pick.
 
-  /** A single-pick decision has nothing to confirm — the tap is the answer. */
   pick(choice: ChoiceDto, optionId: string): void {
-    if (choice.maxPicks === 1) {
-      this.store.dispatch(GameActions.choose({ picks: [optionId] }));
-      this.setPicks([]);
-      return;
+    const answer = this.selection.select(choice, optionId);
+    if (answer) {
+      this.store.dispatch(GameActions.choose({ picks: answer, control: 'option' }));
+      if (choice.kind !== 'search') this.selection.reset();
     }
-
-    if (choice.isDivision) {
-      // Dividing damage is answered by picking a blocker once per point, so the same option is
-      // picked repeatedly — a mistake everywhere else and the whole mechanism here.
-      if (this.picks.length < choice.totalToDivide) {
-        this.setPicks([...this.picks, optionId]);
-      }
-      return;
-    }
-
-    this.setPicks(
-      this.picks.includes(optionId)
-        ? this.picks.filter((id) => id !== optionId)
-        : [...this.picks, optionId],
-    );
   }
 
-  submitChoice(): void {
-    this.store.dispatch(GameActions.choose({ picks: this.picks }));
-    this.setPicks([]);
+  placeOnTop(choice: ChoiceDto, optionId: string): void {
+    const answer = this.selection.placeOnTop(choice, optionId);
+    if (answer) this.store.dispatch(GameActions.choose({ picks: answer, control: 'option' }));
   }
 
+  submitChoice(choice: ChoiceDto): void {
+    if (!this.selection.canSubmit(choice)) return;
+    this.store.dispatch(GameActions.choose({ picks: [...this.picks], control: 'confirm' }));
+    if (choice.kind !== 'search') this.selection.reset();
+  }
   skipChoice(choice: ChoiceDto): void {
     if (choice.minPicks !== 0) return;
-    this.store.dispatch(GameActions.choose({ picks: [] }));
-    this.setPicks([]);
+    this.store.dispatch(GameActions.choose({ picks: [], control: 'skip' }));
+    this.selection.reset();
   }
 
   clearPicks(): void {
-    this.setPicks([]);
+    this.selection.reset();
   }
-
-  /** Where this option sits in the answer, for an ordering (CR 603.3b). */
   pickOrder(optionId: string): number {
-    return this.picks.indexOf(optionId) + 1;
+    return this.selection.order(optionId);
   }
-
-  /** How much has been assigned to this option, for a division (CR 510.1c). */
   assigned(optionId: string): number {
-    return this.picks.filter((id) => id === optionId).length;
+    return this.selection.assigned(optionId);
   }
-
   leftToDivide(choice: ChoiceDto): number {
-    return Math.max(0, choice.totalToDivide - this.picks.length);
+    return this.selection.remaining(choice);
   }
-
   canSubmit(choice: ChoiceDto): boolean {
-    return choice.isDivision
-      ? this.picks.length === choice.totalToDivide
-      : this.picks.length >= choice.minPicks && this.picks.length <= choice.maxPicks;
+    return this.selection.canSubmit(choice);
   }
-
   /**
    * What the board is in the middle of asking, or null when it is asking nothing.
    *

@@ -31,6 +31,7 @@ export const DeckActions = createActionGroup({
       coverUri: string | null;
       format: string | null;
       commanderOracleId: string | null;
+      secondaryCommanderOracleId?: string | null;
       tags?: string[];
       notes?: string | null;
     }>(),

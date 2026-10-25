@@ -119,6 +119,7 @@ export class PlayLegalityService {
     card: CardDto,
     timing: CastingWindow,
     pool: ManaPoolDto | undefined,
+    requireMana = true,
   ): string | null {
     if (!timing.uiIsIdle) return 'Finish or cancel the current decision first.';
     if (!timing.hasPriority) return 'Wait until you have priority.';
@@ -130,7 +131,7 @@ export class PlayLegalityService {
     }
     if (land)
       return timing.hasPlayedLandThisTurn ? 'You have already played a land this turn.' : null;
-    return this.canAfford(card.manaCost, pool)
+    return !requireMana || this.canAfford(card.manaCost, pool)
       ? null
       : 'Add enough mana of the required colors before casting this spell.';
   }

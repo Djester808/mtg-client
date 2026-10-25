@@ -151,9 +151,7 @@ describe('HandComponent', () => {
 
     component.onCardDblClick(component.orderedCards[0]);
 
-    expect(spy).toHaveBeenCalledWith(
-      UIActions.enterTargetMode({ sourceCardId: 'b', targetCount: 1 }),
-    );
+    expect(spy).toHaveBeenCalledWith(UIActions.beginCast({ card: bolt }));
   });
 
   it('does not ask for a target when a creature spell mentions one', () => {
@@ -167,7 +165,7 @@ describe('HandComponent', () => {
 
     component.onCardDblClick(component.orderedCards[0]);
 
-    expect(spy).toHaveBeenCalledWith(GameActions.castSpell({ cardId: 'bb', targetIds: [] }));
+    expect(spy).toHaveBeenCalledWith(UIActions.beginCast({ card: beetle }));
     expect(spy).not.toHaveBeenCalledWith(
       UIActions.enterTargetMode({ sourceCardId: 'bb', targetCount: 1 }),
     );
@@ -227,7 +225,7 @@ describe('HandComponent', () => {
     expect(component.orderedCards[0].isCastable).toBeTrue();
   });
 
-  it('marks creature as not castable without enough mana', () => {
+  it('allows beginning a cast before mana is added', () => {
     const creature = makeCard('c1', [CardType.Creature], '3GGG');
     store.overrideSelector(selectLocalPlayer, {
       ...makePlayer([creature]),
@@ -235,7 +233,7 @@ describe('HandComponent', () => {
     });
     store.refreshState();
 
-    expect(component.orderedCards[0].isCastable).toBeFalse();
+    expect(component.orderedCards[0].isCastable).toBeTrue();
   });
 
   it('marks land as castable when active, main phase, land not yet played', () => {
@@ -470,15 +468,13 @@ describe('HandComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(GameActions.playLand({ cardId: 'land-1' }));
   });
 
-  it('dispatches castSpell on double-click of castable spell', () => {
+  it('begins a pending cast on double-click of castable spell', () => {
     spyOn(store, 'dispatch');
     const creatureCard = makeCard('c1', [CardType.Creature], '1G');
     const hc = { card: creatureCard, isCastable: true, isSelected: false };
     component.onCardDblClick(hc);
 
-    expect(store.dispatch).toHaveBeenCalledWith(
-      GameActions.castSpell({ cardId: 'c1', targetIds: [] }),
-    );
+    expect(store.dispatch).toHaveBeenCalledWith(UIActions.beginCast({ card: creatureCard }));
   });
 
   it('asks for X before casting a spell whose cost is counted with one (CR 601.2b)', () => {
@@ -488,9 +484,7 @@ describe('HandComponent', () => {
     const pyre = { ...makeCard('pyre', [CardType.Instant], '1R'), announcesVariable: true };
     component.onCardDblClick({ card: pyre, isCastable: true, isSelected: false });
 
-    expect(store.dispatch).toHaveBeenCalledWith(
-      UIActions.enterAnnounceMode({ sourceId: 'pyre', targetCount: 0 }),
-    );
+    expect(store.dispatch).toHaveBeenCalledWith(UIActions.beginCast({ card: pyre }));
     expect(store.dispatch).not.toHaveBeenCalledWith(
       GameActions.castSpell({ cardId: 'pyre', targetIds: [] }),
     );
@@ -525,9 +519,7 @@ describe('HandComponent', () => {
     });
     const dispatch = spyOn(store, 'dispatch');
     component.onCardDblClick({ card, isCastable: true, isSelected: false });
-    expect(dispatch).toHaveBeenCalledWith(
-      UIActions.enterTargetMode({ sourceCardId: 'two-targets', targetCount: 2 }),
-    );
+    expect(dispatch).toHaveBeenCalledWith(UIActions.beginCast({ card }));
   });
 
   it('keeps drag ownership with the initiating pointer and clears canceled touch drags', () => {

@@ -1,4 +1,14 @@
 import {
+  LibraryAction,
+  LibrarySearchRequest,
+  LIBRARY_ACTION_COMMANDS,
+} from '../game/library-action';
+import {
+  ChoiceSubmission,
+  ChoiceSubmissionControl,
+} from '../game/choices/choice-selection.service';
+import { UIActions } from '../store/ui/ui.actions';
+import {
   EngineView,
   EngineLegal,
   EngineArtwork,
@@ -6,7 +16,7 @@ import {
   engineCommand,
 } from '../game/engine-transport';
 import { storedAuth } from './auth-storage';
-import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, inject, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import * as signalR from '@microsoft/signalr';
 import { GameActions } from '../store/game/game.actions';
@@ -44,10 +54,18 @@ export class SignalRService implements OnDestroy {
 
   /** The last view the engine sent, for the command translations that need to read it. */
   private latest: GameView | null = null;
+  private choiceWarning: { gameId: string; choiceId: string; toastId: number } | null = null;
+
+  get libraryRequestScope(): string | null {
+    return this.gameId && this.latest?.gameId === this.gameId
+      ? JSON.stringify([this.gameId, this.latest.viewer])
+      : null;
+  }
 
   // ---- Connect to game hub --------------------------------
   async connect(gameId: string, _playerToken: string): Promise<void> {
     this.gameId = gameId;
+    this.latest = null;
 
     this.hub = new signalR.HubConnectionBuilder()
       // The account's own JWT, not a per-game token: the rebuilt engine authenticates the hub
@@ -61,10 +79,14 @@ export class SignalRService implements OnDestroy {
 
     this.registerHandlers();
 
-    this.hub.onclose(() => this.zone.run(() => this.store.dispatch(GameActions.connectionLost())));
-    this.hub.onreconnecting(() =>
-      this.zone.run(() => this.store.dispatch(GameActions.connectionLost())),
-    );
+    this.hub.onclose(() => {
+      this.latest = null;
+      this.zone.run(() => this.store.dispatch(GameActions.connectionLost()));
+    });
+    this.hub.onreconnecting(() => {
+      this.latest = null;
+      this.zone.run(() => this.store.dispatch(GameActions.connectionLost()));
+    });
     this.hub.onreconnected(() => {
       // Joining again is how the engine is asked for the current view; there is no separate
       // sync call, and the board may have missed pushes while the socket was down.
@@ -88,7 +110,7 @@ export class SignalRService implements OnDestroy {
       'ViewUpdated',
       (raw: EngineView, legal: EngineLegal, artwork?: EngineArtwork | null) => {
         const view = engineView(raw, this.gameId ?? '', legal, artwork ?? undefined);
-        this.latest = view;
+        this.updateLatest(view);
         this.zone.run(() =>
           this.store.dispatch(
             GameActions.stateSynced({ gameState: this.adapter.toGameState(view) }),
@@ -99,7 +121,7 @@ export class SignalRService implements OnDestroy {
     // The engine pushes a whole view rather than a diff. That is a simplification for this
     // side: the old GameStateDiff path is never exercised, and the board folds a full state.
     this.hub.on('State', (view: GameView) => {
-      this.latest = view;
+      this.updateLatest(view);
       this.zone.run(() =>
         this.store.dispatch(GameActions.stateSynced({ gameState: this.adapter.toGameState(view) })),
       );
@@ -117,7 +139,10 @@ export class SignalRService implements OnDestroy {
     // side could compose, because it names the rule: "A land is played during your main phase
     // with an empty stack (CR 505.6b)."
     this.hub.on('Refused', (message: string) => {
-      this.zone.run(() => this.toasts.show(message, 'warn', 5000));
+      this.zone.run(() => {
+        this.toasts.show(message, 'warn', 5000);
+        this.store.dispatch(UIActions.castFailed({ error: message }));
+      });
     });
   }
 
@@ -232,8 +257,30 @@ export class SignalRService implements OnDestroy {
   }
 
   /** Answers whatever decision the engine is waiting on (CR 103.4, 510.1c, 603.3b). */
-  choose(picks: string[]): Promise<void> {
-    return this.invoke('Choose', picks);
+  private readonly pendingChoice = signal<(ChoiceSubmission & { key: string }) | null>(null);
+  choiceSubmission(choiceId: string): ChoiceSubmission | null {
+    const pending = this.pendingChoice();
+    return pending?.key === `${this.gameId}:${choiceId}` ? pending : null;
+  }
+  isChoicePending(choiceId: string): boolean {
+    return this.choiceSubmission(choiceId) !== null;
+  }
+
+  private readonly choiceRequests = new Map<string, Promise<void>>();
+
+  choose(picks: string[], control: ChoiceSubmissionControl | null = null): Promise<void> {
+    const key = `${this.gameId}:${this.latest?.choice?.id}`;
+    const pending = this.choiceRequests.get(key);
+    if (pending) return pending;
+    this.pendingChoice.set({ key, control, picks: Object.freeze([...picks]) });
+    const request = this.invoke('Choose', picks).finally(() => {
+      this.choiceRequests.delete(key);
+      this.zone.run(() => {
+        if (this.pendingChoice()?.key === key) this.pendingChoice.set(null);
+      });
+    });
+    this.choiceRequests.set(key, request);
+    return request;
   }
 
   // ---- The honour system ----------------------------------------------------------------
@@ -291,6 +338,21 @@ export class SignalRService implements OnDestroy {
   }
 
   /** Moves one player's life total by hand (the engine's `ManualLife`, CR 119.3). */
+  manualLibrary(action: LibraryAction, requestId: string): Promise<void> {
+    return this.invoke(LIBRARY_ACTION_COMMANDS[action], requestId);
+  }
+
+  manualLibrarySearch(requestId: string, options: LibrarySearchRequest): Promise<void> {
+    return this.invoke('ManualLibrarySearch', requestId, options);
+  }
+  manualLibraryArrange(requestId: string, order: readonly string[]): Promise<void> {
+    return this.invoke('ManualLibraryArrange', requestId, order);
+  }
+
+  manualLibraryReposition(requestId: string, cardId: string, position: number): Promise<void> {
+    return this.invoke('ManualLibraryReposition', requestId, cardId, position);
+  }
+
   manualLife(targetPlayerId: string, delta: number): Promise<void> {
     return this.invoke('ManualLife', targetPlayerId, delta);
   }
@@ -325,30 +387,70 @@ export class SignalRService implements OnDestroy {
     return them?.playerId ?? '';
   }
 
+  private updateLatest(view: GameView): void {
+    this.latest = view;
+    const warning = this.choiceWarning;
+    if (warning && (warning.gameId !== this.gameId || warning.choiceId !== view.choice?.id)) {
+      this.toasts.dismiss(warning.toastId);
+      this.choiceWarning = null;
+    }
+  }
   private async invoke(method: string, ...args: unknown[]): Promise<void> {
+    const libraryAction = method.startsWith('ManualLibrary');
     if (!this.hub || this.hub.state !== signalR.HubConnectionState.Connected || !this.gameId) {
       if (method === 'Concede') {
         this.toasts.show('Reconnect before conceding.', 'warn', 3000);
         throw Error('Not connected.');
       }
+      if (method === 'CastSpell')
+        this.store.dispatch(
+          UIActions.castFailed({ error: 'Not connected. Reconnect before casting.' }),
+        );
       console.warn(`SignalR: cannot invoke ${method} — not connected`);
+      if (libraryAction) throw Error('Not connected.');
       return;
     }
+    const sentGameId = this.gameId;
+    const sentChoiceId = this.latest?.choice?.id;
     try {
       // Every command on this hub takes the game id first.
       if (!this.latest) {
+        if (libraryAction) throw Error('Waiting for the game state.');
         this.toasts.show('Waiting for the game state.', 'warn', 3000);
         return;
       }
-      await this.hub.invoke('Command', this.gameId, engineCommand(method, args, this.latest));
+      const snapshot = this.latest;
+      const command = engineCommand(method, args, snapshot);
+      await this.hub.invoke('Command', this.gameId, command);
     } catch (err) {
+      if (method === 'CastSpell')
+        this.store.dispatch(
+          UIActions.castFailed({
+            error: 'Could not send the spell. Check the connection and try again.',
+          }),
+        );
       console.error(`SignalR invoke ${method} failed:`, err);
-      this.toasts.show(
-        'The action could not be sent. Check the connection and try again.',
-        'warn',
-        5000,
-      );
-      if (method === 'Concede') throw err;
+      if (method === 'Choose') {
+        if (
+          sentChoiceId &&
+          this.gameId === sentGameId &&
+          this.latest?.choice?.id === sentChoiceId
+        ) {
+          if (this.choiceWarning) this.toasts.dismiss(this.choiceWarning.toastId);
+          this.choiceWarning = {
+            gameId: sentGameId,
+            choiceId: sentChoiceId,
+            toastId: this.toasts.show('Choice status unknown. Reload to sync.', 'warn', 5000),
+          };
+        }
+      } else if (!libraryAction) {
+        this.toasts.show(
+          'The action could not be sent. Check the connection and try again.',
+          'warn',
+          5000,
+        );
+      }
+      if (method === 'Concede' || libraryAction) throw err;
     }
   }
 

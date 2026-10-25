@@ -41,7 +41,13 @@ export class GameViewAdapter {
   toGameState(view: GameView): GameStateDto {
     return {
       gameId: view.gameId,
+      lastReveal: this.disclosure(view.lastReveal),
+      lastLook: this.disclosure(view.lastLook),
+      inspectedLibraryCards: (view.inspectedLibraryCards ?? []).map((card) => this.card(card)),
+      manualLibraryActionsAllowed: view.manualLibraryActionsAllowed === true,
+      manualLibraryLookActive: view.manualLibraryLookActive === true,
       castableCards: view.castableCards ?? [],
+      playableLands: view.playableLands ?? [],
       outcome: view.outcome ?? null,
       turn: view.turnNumber,
       activePlayerId: view.activePlayerId,
@@ -78,6 +84,7 @@ export class GameViewAdapter {
       manaPool: this.manaPool(p.manaPool),
       handCount: p.handCount,
       libraryCount: p.libraryCount,
+      topOfLibrary: p.topOfLibrary ? this.card(p.topOfLibrary) : null,
       graveyardCount: p.graveyard.length,
       // One shared exile zone in the new view, split back out by who controls each card.
       exileCount: view.exile.filter((o) => (o.ownerId ?? o.controllerId) === p.playerId).length,
@@ -199,30 +206,34 @@ export class GameViewAdapter {
     };
   }
 
-  private card(o: ObjectView): CardDto {
+  private disclosure(value: GameView['lastReveal']): GameStateDto['lastReveal'] {
+    return value ? { by: value.by, cards: value.cards.map((card) => this.card(card)) } : null;
+  }
+
+  private card(o: Partial<ObjectView> & Pick<ObjectView, 'oracleId' | 'name'>): CardDto {
     const typeLine = o.typeLine ?? '';
     return {
-      cardId: o.id,
+      cardId: o.id ?? '',
       oracleId: o.oracleId,
       name: o.name,
-      manaCost: this.costFor(o.manaCost),
-      manaValue: this.manaValueOf(o.manaCost),
+      manaCost: this.costFor(o.manaCost ?? null),
+      manaValue: this.manaValueOf(o.manaCost ?? null),
       cardTypes: this.typesOf(typeLine, o),
       subtypes: this.subtypesOf(typeLine),
       supertypes: this.supertypesOf(typeLine),
       oracleText: o.oracleText ?? '',
-      power: o.printedPower,
-      toughness: o.printedToughness,
+      power: o.printedPower ?? null,
+      toughness: o.printedToughness ?? null,
       startingLoyalty: o.counters?.['loyalty'] ?? null,
       keywords: o.keywords ?? [],
       targetCount: o.targetCount,
-      imageUriNormal: o.imageUri,
-      imageUriLarge: o.imageUri,
+      imageUriNormal: o.imageUri ?? null,
+      imageUriLarge: o.imageUri ?? null,
       imageUriNormalBack: null,
-      imageUriSmall: o.imageUri,
-      imageUriArtCrop: o.artUri,
+      imageUriSmall: o.imageUri ?? null,
+      imageUriArtCrop: o.artUri ?? null,
       colorIdentity: this.colorsOf(o.colors),
-      ownerId: o.ownerId ?? o.controllerId,
+      ownerId: o.ownerId ?? o.controllerId ?? '',
       // The engine's answer, not a reading of `manaCost`: the X can be in an additional cost the
       // printed mana never mentions (Harvest Pyre is {1}{R} and exiles X cards).
       announcesVariable: o.announcesVariable ?? false,
@@ -279,7 +290,7 @@ export class GameViewAdapter {
   }
 
   /** The types on the card's type line, before the dash (CR 205.2). */
-  private typesOf(typeLine: string, o: ObjectView): CardType[] {
+  private typesOf(typeLine: string, o: Partial<ObjectView>): CardType[] {
     const front = typeLine.split('—')[0];
     const types = (Object.values(CardType) as CardType[]).filter((t) =>
       new RegExp('\\b' + t + '\\b').test(front),
@@ -328,11 +339,7 @@ export class GameViewAdapter {
     return {
       stackObjectId: o.id,
       sourceCard: this.card(o),
-      // A card on the stack is a spell (CR 111.1); an object with no card behind it is an
-      // ability. The view does not distinguish activated from triggered, so this does not
-      // guess between them.
-      type:
-        (o.typeLine ?? '').length > 0 ? StackObjectType.Spell : StackObjectType.ActivatedAbility,
+      type: StackObjectType[o.stackKind ?? 'Spell'],
       controllerId: o.controllerId,
       sourceCardName: o.name,
       description: o.oracleText ?? '',
@@ -408,7 +415,13 @@ export class GameViewAdapter {
       isOrdering: choice.isOrdering,
       isDivision: choice.isDivision,
       totalToDivide: choice.totalToDivide,
-      options: choice.options ? choice.options.map((o) => ({ id: o.id, label: o.label })) : null,
+      options: choice.options
+        ? choice.options.map((o) => ({
+            id: o.id,
+            label: o.label,
+            ...(o.card ? { card: this.card(o.card) } : {}),
+          }))
+        : null,
     };
   }
 

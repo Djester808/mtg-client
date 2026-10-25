@@ -20,7 +20,16 @@ export interface AttackTarget {
 }
 
 export interface GameView {
+  manualLibraryActionsAllowed?: boolean;
+  manualLibraryLookActive?: boolean;
+  inspectedLibraryCards?: ObjectView[];
+  lastLook?: GameView['lastReveal'];
+  lastReveal?: {
+    by: string;
+    cards: (Partial<ObjectView> & Pick<ObjectView, 'oracleId' | 'name'>)[];
+  } | null;
   castableCards?: string[];
+  playableLands?: string[];
   outcome?: { winners: string[]; draw: boolean; reason: string } | null;
   defendingPlayerIds?: string[];
   blockersDeclaredBy?: string[];
@@ -96,6 +105,7 @@ export interface ChoiceView {
 }
 
 export interface ChoiceOptionView {
+  card?: ObjectView;
   id: string;
   label: string;
 }
@@ -214,6 +224,7 @@ export interface CostChoiceView {
 }
 
 export interface ObjectView {
+  stackKind?: 'Spell' | 'ActivatedAbility' | 'TriggeredAbility' | null;
   announcedObjectTargets?: string[];
   announcedPlayerTargets?: string[];
   targetCount?: number;

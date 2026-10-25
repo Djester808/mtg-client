@@ -282,6 +282,10 @@ function parseArgs(argv) {
         try {
           // Each state starts from a clean deck page so panels do not stack up.
           await backToDeck(d, deckUrl);
+          for (const skip of await d.findElements(By.css('.intro-skip'))) {
+            if (await skip.isDisplayed()) await skip.click();
+          }
+          await sleep(500);
           await st.run(d);
           // Shots are taken from the top of the page. tap() scroll-into-views whatever
           // it clicks, which slid the board up and tucked the search bar under the
@@ -329,6 +333,14 @@ function parseArgs(argv) {
             };
           `);
           const file = path.join(devDir, `deckstate-${st.id}${args.suffix}.png`);
+          const intro = await d.findElements(By.css('.intro-skip'));
+          for (const skip of intro) if (await skip.isDisplayed()) await skip.click();
+          if (st.id === 'deck-commander') {
+            const selector = await d.findElement(By.css('app-secondary-commander'));
+            await d.executeScript('arguments[0].scrollIntoView({block:"center"});', selector);
+            await d.wait(until.elementIsVisible(selector), 5000);
+            await sleep(300);
+          }
           fs.writeFileSync(file, await d.takeScreenshot(), 'base64');
           results.push({
             device: device.id,

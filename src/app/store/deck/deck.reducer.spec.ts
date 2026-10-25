@@ -55,6 +55,21 @@ function makeDeckCard(overrides: Partial<CollectionCardDto> = {}): CollectionCar
 }
 
 describe('deckReducer', () => {
+  it('applies second commander save and clear responses to both deck views', () => {
+    let state: DeckState = {
+      ...initialState(),
+      decks: [makeDeckDto()],
+      activeDeck: makeDeckDetail(),
+    };
+    for (const secondaryCommanderOracleId of ['second', null]) {
+      state = deckReducer(
+        state,
+        DeckActions.updateDeckMetaSuccess({ deck: makeDeckDetail({ secondaryCommanderOracleId }) }),
+      );
+      expect(state.activeDeck?.secondaryCommanderOracleId).toBe(secondaryCommanderOracleId);
+      expect(state.decks[0].secondaryCommanderOracleId).toBe(secondaryCommanderOracleId);
+    }
+  });
   // ---- load ---------------------------------------------------------
 
   it('sets loading and clears active deck on loadDeck', () => {

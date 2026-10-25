@@ -10,7 +10,8 @@
   <div class="player-panel" *ngIf="isLocal || (!tableMode && showHeader)">
     <span class="seat-identity">{{ isLocal ? 'Your battlefield' : 'Opponent' }}</span>
     <button class="player-name" (click)="nameClick()">{{ player.name }}</button>
-    <span class="priority-tag" *ngIf="hasPriority">Priority</span>
+    <span class="priority-tag" *ngIf="hasPriority">Priority</span
+    ><span class="eliminated" *ngIf="player.hasLost" role="status">Eliminated</span>
     <div class="life-controls">
       <button *ngIf="isLocal" aria-label="Lose 1 life" [disabled]="lifePending" (click)="life(-1)">
         −

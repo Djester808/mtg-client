@@ -817,7 +817,6 @@
                     onListCardPointerDown(
                       group.key,
                       i,
-                      card,
                       $event,
                       getOrderedListCards(group.key, group.cards)
                     )
@@ -901,7 +900,6 @@
                     onListCardPointerDown(
                       group.key,
                       i,
-                      card,
                       $event,
                       getOrderedListCards(group.key, group.cards)
                     )
@@ -1028,7 +1026,7 @@
               [class.is-text-style]="textStyle && !col.width"
               [style.width.px]="col.width || null"
               (click)="$event.stopPropagation(); selectFreeCol(col.id)"
-              (dragover)="onColDragOver(col.id, $event)"
+              (dragover)="onColDragOver($event)"
               (drop)="onColDrop(col.id, $event)"
             >
               <!-- Column header -->
@@ -1276,6 +1274,12 @@
                        admit the deck is in a broken state. -->
                 </ng-template>
               </div>
+
+              <app-secondary-commander
+                [deck]="deck"
+                (selected)="setSecondaryCommander($event, deck)"
+                (details)="openCard($event)"
+              />
 
               <!-- Deck Notes -->
               <div class="cp-notes">

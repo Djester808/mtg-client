@@ -16,11 +16,13 @@ import {
   selectVariableValue,
   selectAnnouncement,
   selectBattlefield,
+  selectCastDraft,
+  selectLocalPlayer,
 } from '../selectors';
 import { SignalRService } from '../../services/signalr.service';
 import { GameApiService } from '../../services/game-api.service';
 import { GameResult } from '../../models/game.models';
-import { makeGameState, makePermanent } from '../../testing/test-factories';
+import { makeGameState, makePermanent, makeCard, makePlayer } from '../../testing/test-factories';
 
 describe('GameEffects', () => {
   let actions$: Observable<Action>;
@@ -55,6 +57,7 @@ describe('GameEffects', () => {
       ],
     });
 
+    TestBed.inject(MockStore).overrideSelector(selectCastDraft, null);
     effects = TestBed.inject(GameEffects);
     router = TestBed.inject(Router);
     localStorage.clear();
@@ -64,6 +67,71 @@ describe('GameEffects', () => {
 
   // ---- gameOverOnJoin$ ------------------------------------
 
+  describe('pending casting', () => {
+    it('stages the final target for review instead of sending a spell', async () => {
+      const store = TestBed.inject(MockStore);
+      store.overrideSelector(selectTargetSourceCardId, 'spell');
+      store.overrideSelector(selectPendingTargets, ['p2']);
+      store.overrideSelector(selectTargetCount, 1);
+      store.overrideSelector(selectTargetAbilityId, null);
+      store.overrideSelector(selectVariableValue, 2);
+      store.overrideSelector(selectCastDraft, {
+        card: makeCard({ cardId: 'spell' }),
+        stage: 'targets',
+        x: 2,
+        targets: [],
+        error: null,
+      });
+      actions$ = of(UIActions.addTarget({ targetId: 'p2' }));
+      expect(await firstValueFrom(effects.castWhenTargeted$)).toEqual(
+        UIActions.setCastTargets({ targets: ['p2'] }),
+      );
+      expect(signalr.castSpell).not.toHaveBeenCalled();
+    });
+    it('sends the reviewed targets and X only on explicit confirmation', () => {
+      const store = TestBed.inject(MockStore);
+      store.overrideSelector(selectCastDraft, {
+        card: makeCard({ cardId: 'spell' }),
+        stage: 'review',
+        x: 2,
+        targets: ['p2'],
+        error: null,
+      });
+      actions$ = of(UIActions.submitCast());
+      const sent: Action[] = [];
+      effects.submitCast$.subscribe((a) => sent.push(a));
+      expect(sent).toEqual([
+        UIActions.markCastSubmitting(),
+        GameActions.castSpell({ cardId: 'spell', targetIds: ['p2'], variableValue: 2 }),
+      ]);
+    });
+    it('does not send a second cast while already submitting', () => {
+      TestBed.inject(MockStore).overrideSelector(selectCastDraft, {
+        card: makeCard(),
+        stage: 'submitting',
+        x: 0,
+        targets: [],
+        error: null,
+      });
+      actions$ = of(UIActions.submitCast());
+      const sent: Action[] = [];
+      effects.submitCast$.subscribe((a) => sent.push(a));
+      expect(sent).toEqual([]);
+    });
+    it('clears the draft only after the authoritative view moves the card out of hand', async () => {
+      const store = TestBed.inject(MockStore);
+      store.overrideSelector(selectCastDraft, {
+        card: makeCard({ cardId: 'spell' }),
+        stage: 'submitting',
+        x: 0,
+        targets: [],
+        error: null,
+      });
+      store.overrideSelector(selectLocalPlayer, makePlayer([]));
+      actions$ = of(GameActions.stateSynced({ gameState: makeGameState() }));
+      expect(await firstValueFrom(effects.finishCast$)).toEqual(UIActions.cancelCast());
+    });
+  });
   describe('gameOverOnJoin$', () => {
     it('clears session and navigates to lobby when game is already over', () => {
       localStorage.setItem('mtg_session', JSON.stringify({ gameId: 'game-1', playerToken: 'tok' }));

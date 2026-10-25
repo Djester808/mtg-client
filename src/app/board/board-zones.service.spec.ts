@@ -2,6 +2,14 @@ import { ManaColor } from '../models/game.models';
 import { BoardZonesService } from './board-zones.service';
 import { makePlayer, makeCard } from '../testing/test-factories';
 describe('BoardZonesService', () => {
+  it('shows only an authorized top card and removes it with the next redacted snapshot', () => {
+    const service = new BoardZonesService();
+    const card = makeCard({ cardId: 'visible-top' });
+    const player = makePlayer([], { libraryCount: 92, topOfLibrary: card });
+    expect(service.piles(player)[0].cards).toEqual([card]);
+    expect(service.piles(player)[0].count).toBe(92);
+    expect(service.piles({ ...player, topOfLibrary: null })[0].cards).toEqual([]);
+  });
   it('keeps the top-first graveyard and reverses append-ordered exile without mutating either', () => {
     const newest = makeCard({ cardId: 'new', colors: [ManaColor.Green] });
     const oldest = makeCard({ cardId: 'old' });

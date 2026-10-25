@@ -24,6 +24,23 @@
     display: block;
     margin-bottom: 8px;
   }
+  .layout-controls {
+    display: grid;
+    gap: 12px;
+    justify-items: start;
+    min-width: 0;
+  }
+  input[type='file'] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: $tap-min;
+  }
+  .shortcut-input {
+    display: block;
+    margin: 8px 0;
+  }
+  .shortcut-input,
   input[type='search'],
   select {
     width: 100%;
@@ -52,6 +69,9 @@
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
     gap: 24px;
+  }
+  .settings-layout:not(:has(> nav)) {
+    grid-template-columns: minmax(0, 1fr);
   }
   nav {
     display: flex;

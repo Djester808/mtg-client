@@ -4,6 +4,14 @@ import { CardDto } from '../../models/game.models';
 export const UIActions = createActionGroup({
   source: 'UI',
   events: {
+    'Begin Cast': props<{ card: CardDto }>(),
+    'Set Cast X': props<{ value: number }>(),
+    'Set Cast Stage': props<{ stage: 'payment' | 'targets' | 'review' }>(),
+    'Set Cast Targets': props<{ targets: string[] }>(),
+    'Submit Cast': emptyProps(),
+    'Mark Cast Submitting': emptyProps(),
+    'Cast Failed': props<{ error: string }>(),
+    'Cancel Cast': emptyProps(),
     // Card selection
     'Select Card': props<{ permanentId?: string; cardId?: string }>(),
     'Deselect Card': emptyProps(),

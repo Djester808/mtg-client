@@ -165,8 +165,8 @@ export class HandComponent implements OnDestroy {
 
             const cards: HandCardVm[] = hand.map((card) => ({
               card,
-              isCastable: this.legality.isCastable(card, window, manaPool),
-              unavailableReason: this.legality.castingProblem(card, window, manaPool),
+              isCastable: this.legality.castingProblem(card, window, manaPool, false) === null,
+              unavailableReason: this.legality.castingProblem(card, window, manaPool, false),
               isSelected: card.cardId === selectedCardId,
             }));
 

@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockStore } from '@ngrx/store/testing';
 import { SignalRService } from './signalr.service';
+import { LibraryActionsService } from '../game/library-actions.service';
+import { ToastService } from './toast.service';
 import { GameView } from '../models/play.models';
 
 /**
@@ -74,6 +76,7 @@ describe('SignalRService engine commands', () => {
     service = TestBed.inject(SignalRService);
     sent.length = 0;
     (service as unknown as { latest: GameView }).latest = {
+      gameId: 'game-1',
       viewer: 'p0',
       players: [{ playerId: 'p0' }, { playerId: 'p1' }, { playerId: 'p2' }],
       stack: [{ id: 'o9' }],
@@ -95,6 +98,36 @@ describe('SignalRService engine commands', () => {
     expect(sent[0].length).toBe(3);
     return sent[0][2];
   };
+  it('preserves the library request identity through a real transport failure', async () => {
+    const actions = TestBed.inject(LibraryActionsService);
+    const warning = spyOn(TestBed.inject(ToastService), 'show');
+    const transport = (
+      service as unknown as { hub: { invoke: (...args: unknown[]) => Promise<void> } }
+    ).hub;
+    let fail = true;
+    transport.invoke = (...args: unknown[]) => {
+      sent.push(args);
+      return fail ? Promise.reject(new Error('Response lost')) : Promise.resolve();
+    };
+    await expectAsync(actions.perform('draw')).toBeRejected();
+    expect(warning).not.toHaveBeenCalled();
+    fail = false;
+    await actions.perform('draw');
+    expect(sent[1]).toEqual(sent[0]);
+    await actions.perform('draw');
+    expect(sent[2]).not.toEqual(sent[0]);
+  });
+  it('rejects library requests when disconnected or waiting for a snapshot', async () => {
+    const warning = spyOn(TestBed.inject(ToastService), 'show');
+    const transport = (service as unknown as { hub: { state: string } }).hub;
+    transport.state = 'Disconnected';
+    await expectAsync(service.manualLibrary('draw', 'request')).toBeRejected();
+    transport.state = 'Connected';
+    (service as unknown as { latest: GameView | null }).latest = null;
+    await expectAsync(service.manualLibrary('shuffle', 'request')).toBeRejected();
+    expect(warning).not.toHaveBeenCalled();
+    expect(sent).toEqual([]);
+  });
   it('sends a cast with separated object/player targets and announced X', async () => {
     await service.castSpell('o7', ['p1', 'o9', 'o8'], 4);
     expect(command()).toEqual({
@@ -144,6 +177,73 @@ describe('SignalRService engine commands', () => {
   it('answers the current choice', async () => {
     await service.choose(['keep']);
     expect(command()).toEqual({ kind: 'answer', choice: 4, answer: ['keep'] });
+  });
+  it('coalesces answers while the same choice is in flight and permits retry after failure', async () => {
+    const internals = service as unknown as {
+      hub: { invoke: (...args: unknown[]) => Promise<void> };
+    };
+    const rejectSends: ((reason: Error) => void)[] = [];
+    let calls = 0;
+    internals.hub.invoke = () => {
+      calls++;
+      return new Promise<void>((_, reject) => {
+        rejectSends.push(reject);
+      });
+    };
+    spyOn(console, 'error');
+    const picks = ['a'];
+    const first = service.choose(picks, 'confirm');
+    picks[0] = 'mutated';
+    const duplicate = service.choose(['b'], 'skip');
+    expect(service.choiceSubmission('c4')).toEqual(
+      jasmine.objectContaining({ control: 'confirm', picks: ['a'] }),
+    );
+    expect(service.choiceSubmission('c5')).toBeNull();
+    expect(calls).toBe(1);
+    expect(service.isChoicePending('c4')).toBeTrue();
+    expect(service.isChoicePending('c5')).toBeFalse();
+    rejectSends.forEach((reject) => reject(new Error('Connection interrupted')));
+    await Promise.all([first, duplicate]);
+    expect(service.isChoicePending('c4')).toBeFalse();
+    expect(service.choiceSubmission('c4')).toBeNull();
+    internals.hub.invoke = () => {
+      calls++;
+      return Promise.resolve();
+    };
+    await service.choose(['a']);
+    expect(calls).toBe(2);
+  });
+  it('does not warn about an answered choice when its late invocation fails', async () => {
+    const internals = service as any;
+    const toast = spyOn(TestBed.inject(ToastService), 'show');
+    spyOn(console, 'error');
+    internals.hub.invoke = async () => {
+      internals.latest = { ...internals.latest, choice: null };
+      throw Error('Accepted response lost');
+    };
+    await service.choose(['a']);
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('clears only its choice warning after a later authoritative view resolves the choice', async () => {
+    const internals = service as any;
+    const toasts = TestBed.inject(ToastService);
+    let messages: string[] = [];
+    const subscription = toasts.toasts$.subscribe(
+      (items) => (messages = items.map((item) => item.message)),
+    );
+    toasts.show('Unrelated warning', 'warn', 0);
+    spyOn(console, 'error');
+    internals.hub.invoke = async () => {
+      throw Error('Response lost');
+    };
+    await service.choose(['a']);
+    expect(messages).toContain('Choice status unknown. Reload to sync.');
+    internals.updateLatest({ ...internals.latest });
+    expect(messages).toContain('Choice status unknown. Reload to sync.');
+    internals.updateLatest({ ...internals.latest, choice: null });
+    expect(messages).toEqual(['Unrelated warning']);
+    subscription.unsubscribe();
   });
   it('sends manual movement defaults as values', async () => {
     await service.manualMove('o7', 'Graveyard');

@@ -298,6 +298,20 @@ export class ZonesComponent implements OnChanges, OnDestroy, AfterViewInit {
     }
     // Picking a target for a spell that is waiting on one (CR 601.2c). Either side's
     // permanents: what is a legal target is the engine's to judge, not the board's.
+    if (mode === 'casting') {
+      if (!this.isOpponent) {
+        const abilities = this.usableAbilities(permanent).filter((a) => a.isManaAbility);
+        if (abilities.length === 1)
+          this.store.dispatch(
+            GameActions.activateAbility({
+              permanentId: permanent.permanentId,
+              abilityId: abilities[0].id,
+              targetIds: [],
+            }),
+          );
+      }
+      return;
+    }
     if (mode === 'targeting') {
       this.store.dispatch(UIActions.addTarget({ targetId: permanent.permanentId }));
       return;

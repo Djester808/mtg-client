@@ -85,6 +85,7 @@ export const deckReducer = createReducer(
             coverUri: deck.coverUri,
             format: deck.format,
             commanderOracleId: deck.commanderOracleId,
+            secondaryCommanderOracleId: deck.secondaryCommanderOracleId ?? null,
           }
         : d,
     ),
@@ -96,6 +97,7 @@ export const deckReducer = createReducer(
             coverUri: deck.coverUri,
             format: deck.format,
             commanderOracleId: deck.commanderOracleId,
+            secondaryCommanderOracleId: deck.secondaryCommanderOracleId ?? null,
             tags: deck.tags,
           }
         : state.activeDeck,

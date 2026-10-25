@@ -65,6 +65,9 @@
   padding: 0 18px 10px;
   flex: none;
 }
+.library-order-cancel,
+.library-search-submit,
+.library-actions button,
 .viewer-tabs button,
 .viewer-cast {
   min-height: 44px;
@@ -176,4 +179,87 @@ button:focus-visible {
   border: 0;
   background: transparent;
   gap: 3px;
+}
+.library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px 10px;
+  flex: none;
+}
+.library-actions span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.viewer-panel {
+  overflow: auto;
+}
+.library-search {
+  padding: 0 18px 12px;
+  flex: none;
+  font-size: 12px;
+}
+.library-search summary {
+  min-height: $tap-min;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+}
+.search-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+}
+.search-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.search-fields input,
+.search-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: $tap-min;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+.search-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0;
+}
+.search-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: $tap-min;
+  cursor: pointer;
+}
+.library-search-submit {
+  width: 100%;
+}
+
+.library-order-editor {
+  padding: 0 18px 14px;
+  min-height: 0;
+  flex: none;
+  font-size: 12px;
+}
+.library-order-cancel {
+  margin-top: 8px;
+}
+
+.library-status {
+  margin: 12px 18px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
 }

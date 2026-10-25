@@ -1,3 +1,5 @@
+import { DeckCommanders } from '../deck-commanders';
+import { SecondaryCommanderComponent } from '../secondary-commander/secondary-commander.component';
 import { OwnerDraftsService } from '../../services/owner-drafts.service';
 import {
   Component,
@@ -94,6 +96,7 @@ function isFreeColumns(v: unknown): v is FreeColumn[] {
   selector: 'app-deck-detail',
   standalone: true,
   imports: [
+    SecondaryCommanderComponent,
     ReorderMotionDirective,
     CommonModule,
     FormsModule,
@@ -644,7 +647,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
 
     const extra: string[] = [];
     for (const card of deck.cards) {
-      if (deck.commanderOracleId && card.oracleId === deck.commanderOracleId) continue;
+      if (DeckCommanders.isSelected(deck, card)) continue;
       const gap = this.cardCount(card) - (assignedCounts.get(card.id) ?? 0);
       for (let i = 0; i < gap; i++) extra.push(card.id);
     }
@@ -686,8 +689,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   }
 
   getCardsForColumn(col: FreeColumn, deck: DeckDetailDto): CollectionCardDto[] {
-    const isCommander = (c: CollectionCardDto) =>
-      deck.commanderOracleId ? c.oracleId === deck.commanderOracleId : false;
+    const isCommander = (c: CollectionCardDto) => DeckCommanders.isSelected(deck, c);
     const cards = col.cardIds
       .map((id) => deck.cards.find((c) => c.id === id))
       .filter((c): c is CollectionCardDto => c != null && !isCommander(c));
@@ -1326,7 +1328,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  onColDragOver(colId: string, event: DragEvent): void {
+  onColDragOver(event: DragEvent): void {
     if (this.dragColId) return;
     const isSearch = event.dataTransfer?.types.includes('application/x-search-card');
     if (!isSearch) return;
@@ -2045,7 +2047,6 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
   onListCardPointerDown(
     groupKey: string,
     idx: number,
-    card: CollectionCardDto,
     event: PointerEvent,
     allCards: CollectionCardDto[],
   ): void {
@@ -2137,7 +2138,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     let cards = deck.cards.filter((c) => (c.board ?? 'main') === board);
     // The commander has its own panel; leaving it in the grid double-counts it.
     if (board === 'main' && deck.commanderOracleId) {
-      cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
+      cards = cards.filter((c) => !DeckCommanders.isSelected(deck, c));
     }
 
     this.boardCardsMemo = { deck, board, result: cards };
@@ -2332,7 +2333,7 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     if (m && m.deck === deck && m.board === this.activeBoard) return m.result;
     let cards = deck.cards.filter((c) => this.boardOf(c) === this.activeBoard);
     if (this.activeBoard === 'main' && deck.commanderOracleId) {
-      cards = cards.filter((c) => c.oracleId !== deck.commanderOracleId);
+      cards = cards.filter((c) => !DeckCommanders.isSelected(deck, c));
     }
     const result = [...cards].sort((a, b) => {
       const cmcA = a.cardDetails?.manaValue ?? 0;
@@ -2964,6 +2965,19 @@ export class DeckDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  setSecondaryCommander(oracleId: string | null, deck: DeckDetailDto): void {
+    this.store.dispatch(
+      DeckActions.updateDeckMeta({
+        id: this.deckId,
+        name: deck.name,
+        coverUri: deck.coverUri ?? null,
+        format: deck.format,
+        commanderOracleId: deck.commanderOracleId,
+        secondaryCommanderOracleId: oracleId,
+        tags: deck.tags,
+      }),
+    );
+  }
   saveNotes(deck: DeckDetailDto): void {
     this.store.dispatch(
       DeckActions.updateDeckMeta({

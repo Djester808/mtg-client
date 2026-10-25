@@ -4,8 +4,9 @@
 </div>
 <div
   class="board"
-  [class.hand-raised]="!handCollapsed"
+  [class.hand-raised]="!handCollapsed && (casting$ | async) === null"
   [class.stack-empty]="vm.stackCount === 0"
+  [class.is-casting]="(casting$ | async) !== null"
   [class.stack-collapsed]="stackCollapsed"
   [style.--stack-width.px]="stackCollapsed ? 84 : vm.stackCount > 1 ? 216 : 184"
   *ngIf="vm$ | async as vm"
@@ -129,14 +130,34 @@
       {{ stackCollapsed ? '‹' : '›' }} Stack · {{ vm.stackCount }}
     </button>
     <app-stack *ngIf="!stackCollapsed"></app-stack>
+    <p *ngIf="(libraryReady$ | async) === false" role="status">Waiting for game connection…</p>
+    <app-cast-prompt></app-cast-prompt>
+    <app-library-reveal
+      [localPlayerId]="vm.localPlayer?.playerId ?? null"
+      [repositionBusy]="libraryRepositionBusy"
+      [ready]="(libraryReady$ | async) === true"
+      [interactionIdle]="vm.uiMode === 'idle'"
+      (libraryReposition)="repositionLibrary($event)"
+      [picks]="picks"
+      [pending]="vm.choice ? signalr.isChoicePending(vm.choice.id) : false"
+      (choicePick)="pick($event.choice, $event.optionId)"
+      (choiceSkip)="skipChoice($event)"
+      (topPlacement)="placeOnTop($event.choice, $event.optionId)"
+    ></app-library-reveal>
     <div class="quick-card" *ngIf="quickCard$ | async as card">
       <img *ngIf="card.imageUriNormal" [src]="card.imageUriNormal" [alt]="card.name" />
       <strong>{{ card.name }}</strong>
       <p>{{ card.oracleText }}</p>
     </div>
-    <div class="stack-priority">
+    <div class="stack-priority" *ngIf="(casting$ | async) === null">
       <strong class="prompt-title">{{
-        vm.hasPriority ? 'Your action' : 'Waiting for opponent'
+        vm.localPlayer?.hasLost
+          ? 'You are eliminated'
+          : vm.isMyChoice
+            ? 'Your choice'
+            : vm.hasPriority
+              ? 'Your action'
+              : 'Waiting for opponent'
       }}</strong>
       <p
         class="prompt-help"
@@ -146,9 +167,11 @@
       <ng-template #idlePrompt
         ><p class="prompt-help">
           {{
-            vm.hasPriority
-              ? 'Play a card, activate an ability, or pass priority.'
-              : 'You can inspect cards while the opponent acts.'
+            vm.localPlayer?.hasLost
+              ? 'You can watch the remaining players finish the game.'
+              : vm.hasPriority
+                ? 'Play a card, activate an ability, or pass priority.'
+                : 'You can inspect cards while the opponent acts.'
           }}
         </p></ng-template
       >
@@ -199,12 +222,14 @@
   ==================================================== -->
   <div
     class="status-bar"
+    [class.has-choice]="vm.choice && vm.isMyChoice"
     *ngIf="
-      vm.choice ||
-      vm.uiMode !== 'idle' ||
-      vm.showDeclareAttackersBtn ||
-      vm.showDeclareBlockersBtn ||
-      vm.waitingDefenderName
+      (casting$ | async) === null &&
+      (vm.choice ||
+        vm.uiMode !== 'idle' ||
+        vm.showDeclareAttackersBtn ||
+        vm.showDeclareBlockersBtn ||
+        vm.waitingDefenderName)
     "
   >
     <div class="status-message" *ngIf="vm.step === 'DeclareBlockers' && vm.waitingDefenderName">
@@ -217,47 +242,18 @@
     ></div>
 
     <div class="status-actions">
-      <!-- The decision the game has stopped for. It is the same shape the bar already is — a
-           message and some buttons — so it goes here rather than in chrome of its own. -->
-      <ng-container *ngIf="vm.choice as choice">
-        <ng-container *ngIf="vm.isMyChoice">
-          <button
-            *ngFor="let option of choice.options; trackBy: trackId"
-            class="action-btn choice"
-            [class.is-picked]="
-              choice.isDivision ? assigned(option.id) > 0 : pickOrder(option.id) > 0
-            "
-            (click)="pick(choice, option.id)"
-          >
-            <span class="pick-count" *ngIf="choice.isOrdering && pickOrder(option.id) > 0">{{
-              pickOrder(option.id)
-            }}</span>
-            <span class="pick-count" *ngIf="choice.isDivision && assigned(option.id) > 0">{{
-              assigned(option.id)
-            }}</span>
-            {{ option.label }}
-          </button>
-
-          <button
-            *ngIf="choice.minPicks === 0"
-            class="action-btn cancel"
-            (click)="skipChoice(choice)"
-          >
-            {{ choice.kind === 'commander-return' ? 'Leave in current zone' : 'Choose none' }}
-          </button>
-          <ng-container *ngIf="choice.maxPicks > 1">
-            <button
-              class="action-btn confirm"
-              [disabled]="!canSubmit(choice)"
-              (click)="submitChoice()"
-            >
-              Confirm
-            </button>
-            <button class="action-btn cancel" (click)="clearPicks()">Start over</button>
-          </ng-container>
-        </ng-container>
-      </ng-container>
-
+      <app-choice-controls
+        *ngIf="vm.choice && vm.isMyChoice"
+        [choice]="vm.choice"
+        [ready]="(libraryReady$ | async) === true"
+        [pending]="signalr.isChoicePending(vm.choice.id)"
+        [submission]="signalr.choiceSubmission(vm.choice.id)"
+        (pick)="pick(vm.choice, $event)"
+        (details)="previewChoiceCard($event)"
+        (confirm)="submitChoice(vm.choice)"
+        (skip)="skipChoice(vm.choice)"
+        (clear)="clearPicks()"
+      ></app-choice-controls>
       <!-- Which of a permanent's abilities is meant (CR 602.1).
            One is activated by tapping the card and never reaches here. Two cannot be told apart
            by a tap, so each is offered with the text the engine wrote for it — the only place
@@ -384,10 +380,15 @@
        HAND
   ==================================================== -->
   <div class="hand-row">
-    <button class="hand-collapse" (click)="toggleHand()" [attr.aria-expanded]="!handCollapsed">
+    <button
+      class="hand-collapse"
+      [hidden]="(casting$ | async) !== null"
+      (click)="toggleHand()"
+      [attr.aria-expanded]="!handCollapsed"
+    >
       {{ handCollapsed ? 'Raise hand' : 'Lower hand' }}
     </button>
-    <app-hand [raised]="!handCollapsed"></app-hand>
+    <app-hand [raised]="!handCollapsed && (casting$ | async) === null"></app-hand>
   </div>
 
   <!-- ====================================================

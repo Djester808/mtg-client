@@ -26,7 +26,7 @@
           </div>
           <div class="stack-item-type">{{ typeLabel(obj) }}</div>
           <div class="stack-item-name">{{ obj.sourceCardName }}</div>
-          <div class="stack-item-controller">Cast by {{ obj.caster }}</div>
+          <div class="stack-item-controller">Controlled by {{ obj.caster }}</div>
           <div class="stack-targets" *ngIf="obj.targets.length">
             Target:
             <span *ngFor="let target of obj.targets; trackBy: trackTarget; let last = last"

@@ -371,6 +371,14 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
     return !!(p?.imageUriNormalBack ?? this.card?.imageUriNormalBack);
   }
 
+  private readonly failedImages = new Set<string>();
+
+  onImageError(): void {
+    const image = this.modalImage;
+    if (image) this.failedImages.add(image);
+    this.lensVisible = false;
+  }
+
   get modalImage(): string | null {
     const p = this.currentPrinting;
     const front =
@@ -380,7 +388,8 @@ export class CardModalComponent implements OnInit, OnChanges, OnDestroy {
       this.card?.imageUriNormal ??
       null;
     const back = p?.imageUriNormalBack ?? this.card?.imageUriNormalBack ?? null;
-    return this.flipped && back ? back : front;
+    const image = this.flipped && back ? back : front;
+    return image && !this.failedImages.has(image) ? image : null;
   }
 
   /** Active face name — handles DFC "Front // Back" format. */

@@ -18,12 +18,13 @@ export class ToastService {
   private _toasts$ = new BehaviorSubject<Toast[]>([]);
   toasts$ = this._toasts$.asObservable();
 
-  show(message: string, kind: ToastKind = 'info', durationMs = 3000): void {
+  show(message: string, kind: ToastKind = 'info', durationMs = 3000): number {
     const icon = this.iconFor(kind);
     const toast: Toast = { id: nextId++, kind, message, icon, durationMs };
     this._toasts$.next([...this._toasts$.value, toast]);
     // durationMs <= 0 means persistent — dismissed only by click.
     if (durationMs > 0) setTimeout(() => this.dismiss(toast.id), durationMs);
+    return toast.id;
   }
 
   error(message: string): void {

@@ -4,37 +4,48 @@ import { CardCastingService } from './card-casting.service';
 import { GameActions, UIActions } from '../store';
 import { makeCard } from '../testing/test-factories';
 import { CardType } from '../models/game.models';
+import { CastDraft } from '../store/ui/ui.reducer';
 describe('CardCastingService', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideMockStore()] }));
-  it('plays lands without putting them on the stack', () => {
+  it('plays lands as a special action', () => {
     const dispatch = spyOn(TestBed.inject(MockStore), 'dispatch');
     TestBed.inject(CardCastingService).start(
       makeCard({ cardId: 'land', cardTypes: [CardType.Land] }),
     );
-    expect(dispatch.calls.allArgs()).toEqual([[GameActions.playLand({ cardId: 'land' })]]);
+    expect(dispatch).toHaveBeenCalledOnceWith(GameActions.playLand({ cardId: 'land' }));
   });
-  it('asks for announced variables before choosing targets', () => {
+  it('stages a spell without sending it even when it has no targets', () => {
     const dispatch = spyOn(TestBed.inject(MockStore), 'dispatch');
-    TestBed.inject(CardCastingService).start(
-      makeCard({ cardId: 'spell', announcesVariable: true, targetCount: 2 }),
-    );
+    const card = makeCard({ targetCount: 0 });
+    TestBed.inject(CardCastingService).start(card);
+    expect(dispatch).toHaveBeenCalledOnceWith(UIActions.beginCast({ card }));
+  });
+  it('keeps X and actual target count through targeting, without casting', () => {
+    const dispatch = spyOn(TestBed.inject(MockStore), 'dispatch');
+    const draft: CastDraft = {
+      card: makeCard({ cardId: 'spell', targetCount: 2, manaCost: '{X}{X}{R}' }),
+      stage: 'payment',
+      x: 3,
+      targets: [],
+      error: null,
+    };
+    const service = TestBed.inject(CardCastingService);
+    expect(service.cost(draft)).toBe('{3}{3}{R}');
+    service.continue(draft);
     expect(dispatch.calls.allArgs()).toEqual([
-      [UIActions.enterAnnounceMode({ sourceId: 'spell', targetCount: 2 })],
+      [UIActions.setCastStage({ stage: 'targets' })],
+      [UIActions.enterTargetMode({ sourceCardId: 'spell', targetCount: 2, variableValue: 3 })],
     ]);
   });
-  it('preserves the actual target count', () => {
+  it('reviews an untargeted spell instead of sending it immediately', () => {
     const dispatch = spyOn(TestBed.inject(MockStore), 'dispatch');
-    TestBed.inject(CardCastingService).start(makeCard({ cardId: 'spell', targetCount: 2 }));
-    expect(dispatch.calls.allArgs()).toEqual([
-      [UIActions.enterTargetMode({ sourceCardId: 'spell', targetCount: 2 })],
-    ]);
-  });
-  it('casts untargeted spells and clears selection', () => {
-    const dispatch = spyOn(TestBed.inject(MockStore), 'dispatch');
-    TestBed.inject(CardCastingService).start(makeCard({ cardId: 'spell', targetCount: 0 }));
-    expect(dispatch.calls.allArgs()).toEqual([
-      [GameActions.castSpell({ cardId: 'spell', targetIds: [] })],
-      [UIActions.deselectCard()],
-    ]);
+    TestBed.inject(CardCastingService).continue({
+      card: makeCard({ targetCount: 0 }),
+      stage: 'payment',
+      x: 0,
+      targets: [],
+      error: null,
+    });
+    expect(dispatch).toHaveBeenCalledOnceWith(UIActions.setCastTargets({ targets: [] }));
   });
 });

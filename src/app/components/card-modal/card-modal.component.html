@@ -44,6 +44,7 @@
           class="modal-card-img"
           *ngIf="modalImage"
           [src]="modalImage"
+          (error)="onImageError()"
           [alt]="card?.name ?? ''"
           (mouseenter)="onImageMouseEnter()"
           (mousemove)="onImageMouseMove($event)"

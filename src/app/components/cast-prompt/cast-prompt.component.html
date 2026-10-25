@@ -1,0 +1,96 @@
+<section
+  class="cast-prompt"
+  [class.picking-targets]="vm.draft.stage === 'targets'"
+  *ngIf="vm$ | async as vm"
+  aria-label="Cast spell"
+  aria-live="polite"
+>
+  <span class="cast-kicker">Casting</span>
+  <strong class="cast-name">{{ vm.draft.card.name }}</strong>
+  <app-mana-cost [cost]="vm.cost"></app-mana-cost>
+  <ol class="cast-steps" aria-label="Casting progress">
+    <li [class.active]="vm.draft.stage === 'payment'">Mana</li>
+    <li [class.active]="vm.draft.stage === 'targets'">Targets</li>
+    <li [class.active]="vm.draft.stage === 'review' || vm.draft.stage === 'submitting'">Confirm</li>
+  </ol>
+  <p class="cast-error" *ngIf="vm.draft.error" role="alert">{{ vm.draft.error }}</p>
+  <p *ngIf="!vm.ready">Waiting for priority or the current game decision.</p>
+  <ng-container *ngIf="vm.draft.stage === 'payment'">
+    <label *ngIf="vm.draft.card.announcesVariable"
+      >Choose X
+      <input
+        aria-label="Casting X"
+        type="number"
+        min="0"
+        max="999"
+        [value]="vm.draft.x"
+        #x
+        (input)="setX(x.value)"
+    /></label>
+    <p>
+      {{
+        vm.affordable
+          ? 'Mana is ready. Continue to choose targets and review.'
+          : 'Add mana using your lands or the abilities below.'
+      }}
+    </p>
+    <div class="mana-sources">
+      <button
+        *ngFor="let source of vm.sources"
+        [disabled]="!vm.ready"
+        (click)="mana(source.id, source.ability)"
+      >
+        {{ source.label }}
+      </button>
+    </div>
+    <button class="cast-next" [disabled]="!vm.ready || !vm.affordable" (click)="next(vm.draft)">
+      {{ vm.targetCount ? 'Choose targets' : 'Review spell' }}
+    </button>
+  </ng-container>
+  <ng-container *ngIf="vm.draft.stage === 'targets'">
+    <p>
+      Choose {{ vm.targetCount }} target(s): select a card on the battlefield or stack, or a player
+      below.
+    </p>
+    <div class="player-targets">
+      <button
+        *ngFor="let player of vm.players"
+        (click)="target(player.playerId)"
+        [disabled]="!vm.ready"
+      >
+        Target {{ player.name }}
+      </button>
+    </div>
+    <div class="spell-targets" *ngIf="vm.spells.length">
+      <button *ngFor="let spell of vm.spells" (click)="target(spell.id)" [disabled]="!vm.ready">
+        Target spell: {{ spell.name }}
+      </button>
+    </div>
+  </ng-container>
+  <ul class="chosen-targets" *ngIf="vm.targets.length">
+    <li *ngFor="let name of vm.targets">Target: {{ name }}</li>
+  </ul>
+  <ng-container *ngIf="vm.draft.stage === 'review'">
+    <p>
+      {{
+        vm.targetCount
+          ? 'Review your targets before putting the spell on the stack.'
+          : 'This spell needs no targets.'
+      }}
+    </p>
+    <p *ngIf="!vm.affordable">More mana is needed. Go back to add mana.</p>
+    <button class="cast-submit" [disabled]="!vm.ready || !vm.affordable" (click)="submit()">
+      Cast {{ vm.draft.card.name }}
+    </button>
+  </ng-container>
+  <p *ngIf="vm.draft.stage === 'submitting'">Submitting spell…</p>
+  <p class="mana-pool">
+    Pool: <ng-container *ngFor="let pip of vm.pool">{{ pip[0] }} {{ pip[1] }} </ng-container
+    ><span *ngIf="!vm.pool.length">empty</span>
+  </p>
+  <div class="cast-controls" *ngIf="vm.draft.stage !== 'submitting'">
+    <button *ngIf="vm.draft.stage !== 'payment'" (click)="back()">Back</button
+    ><button class="cast-cancel" (click)="cancel()">Cancel cast</button>
+  </div>
+  <small *ngIf="vm.pool.length">Cancelling keeps mana already added to your pool.</small>
+</section>

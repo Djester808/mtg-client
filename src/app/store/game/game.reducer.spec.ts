@@ -42,13 +42,13 @@ describe('gameReducer', () => {
 
   // ---- gameJoined ----------------------------------------
 
-  it('sets connected and stores gameState on gameJoined', () => {
+  it('stores the REST snapshot without claiming the live connection is ready', () => {
     const gs = makeGameState();
     const state = gameReducer(
       initialState(),
       GameActions.gameJoined({ gameState: gs, localPlayerId: 'p1' }),
     );
-    expect(state.connected).toBeTrue();
+    expect(state.connected).toBeFalse();
     expect(state.loading).toBeFalse();
     expect(state.gameState).toBe(gs);
     expect(state.localPlayerId).toBe('p1');
@@ -82,6 +82,30 @@ describe('gameReducer', () => {
     expect(state.loading).toBeFalse();
   });
 
+  it('requires a fresh hub view after connection loss and clears stale connection errors', () => {
+    let state = gameReducer(stateWithGame(), GameActions.connectionLost());
+    state = gameReducer(
+      state,
+      GameActions.gameJoined({ gameState: makeGameState(), localPlayerId: 'p1' }),
+    );
+    expect(state.connected).toBeFalse();
+    state = gameReducer(state, GameActions.connectionError({ error: 'offline' }));
+    state = gameReducer(state, GameActions.stateSynced({ gameState: makeGameState() }));
+    expect(state.connected).toBeTrue();
+    expect(state.connectionError).toBeNull();
+    state = gameReducer(state, GameActions.joinGame({ gameId: 'next', playerToken: 'token' }));
+    expect(state.connected).toBeFalse();
+  });
+  it('does not overwrite an authoritative hub view with a late REST join response', () => {
+    const live = { ...makeGameState(), turn: 9 };
+    const joined = gameReducer(stateWithGame(), GameActions.stateSynced({ gameState: live }));
+    const state = gameReducer(
+      joined,
+      GameActions.gameJoined({ gameState: makeGameState(), localPlayerId: 'p1' }),
+    );
+    expect(state.gameState).toBe(live);
+    expect(state.connected).toBeTrue();
+  });
   // ---- cardLoaded ----------------------------------------
 
   it('adds card to cache on cardLoaded', () => {

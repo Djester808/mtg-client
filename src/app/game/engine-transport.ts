@@ -1,3 +1,4 @@
+import { LibrarySearchRequest } from './library-action';
 import { GameView, ObjectView, ChoiceView } from '../models/play.models';
 export interface EngineId {
   value: number;
@@ -11,11 +12,13 @@ interface EngineAbility {
   announcesVariable: boolean;
 }
 interface EngineObject {
+  stackKind?: ObjectView['stackKind'];
   targets?: EngineId[];
   targetPlayers?: EngineId[];
   id: EngineId;
   name: string;
   oracleId: string;
+  artworkKey?: string;
   owner: EngineId;
   controller: EngineId;
   tapped: boolean;
@@ -52,6 +55,7 @@ interface EnginePlayer {
   hasLost?: boolean;
   landsPlayedThisTurn?: number;
   revealedTopCard?: EngineObject | null;
+  lookableTopCard?: EngineObject | null;
 }
 interface EngineChoice {
   id: EngineId;
@@ -60,10 +64,23 @@ interface EngineChoice {
   prompt: string;
   min: number;
   max: number;
-  options: { id: string; label: string }[];
+  options: { id: string; label: string; object?: EngineId | null }[];
   context?: { extra?: Record<string, string> };
 }
 export interface EngineView {
+  manualLibraryActionsAllowed?: boolean;
+  manualLibraryLookActive?: boolean;
+  lastLook?: EngineView['lastReveal'];
+  lastReveal?: {
+    by: EngineId;
+    cards: {
+      oracleId: string;
+      name: string;
+      manaCost: string | null;
+      oracleText: string | null;
+      artworkKey: string;
+    }[];
+  } | null;
   outcome?: { winners: EngineId[]; draw: boolean; reason: string } | null;
   viewer: EngineId;
   turnNumber: number;
@@ -76,6 +93,8 @@ export interface EngineView {
   hand: EngineObject[];
   exile: EngineObject[];
   pending: EngineChoice | null;
+  inspectedLibraryCards?: EngineObject[];
+  choiceCards?: EngineObject[];
   combat?: {
     attackers: {
       attacker: EngineId;
@@ -91,6 +110,7 @@ export interface EngineView {
 }
 export interface EngineLegal {
   castable?: EngineId[];
+  playableLands?: EngineId[];
   activatable: { source: EngineId; abilityIndex: number; text: string }[];
   mayPass: boolean;
 }
@@ -127,10 +147,11 @@ export function engineView(
     controllerId: pid(o.controller),
     ownerId: pid(o.owner),
     manaCost: o.manaCost ?? null,
+    stackKind: o.stackKind,
     typeLine: o.types.join(' ') + (o.subtypes.length ? ' — ' + o.subtypes.join(' ') : ''),
     oracleText: o.oracleText ?? null,
-    artUri: artwork?.[o.oracleId]?.artUri ?? null,
-    imageUri: artwork?.[o.oracleId]?.imageUri ?? null,
+    artUri: artwork?.[o.artworkKey ?? o.oracleId]?.artUri ?? null,
+    imageUri: artwork?.[o.artworkKey ?? o.oracleId]?.imageUri ?? null,
     isPlaneswalker: o.types.includes('Planeswalker'),
     isCreature: o.types.includes('Creature'),
     isLand: o.types.includes('Land'),
@@ -181,16 +202,50 @@ export function engineView(
         prompt: pending.prompt,
         minPicks: pending.min,
         maxPicks: pending.max,
-        isOrdering: /order/i.test(pending.kind),
+        isOrdering:
+          ['mulligan-bottom', 'scry', 'surveil'].includes(pending.kind) ||
+          /order/i.test(pending.kind),
         isDivision: /division|divide/i.test(pending.kind),
         totalToDivide: Number(pending.context?.extra?.['total'] ?? 0),
-        options: pending.player.value === view.viewer.value ? pending.options : null,
+        options:
+          pending.player.value === view.viewer.value
+            ? pending.options.map((option) => {
+                const card = view.choiceCards?.find(
+                  (card) => !card.faceDown && card.id.value === option.object?.value,
+                );
+                return {
+                  id: option.id,
+                  label: option.label,
+                  ...(card ? { card: object(card) } : {}),
+                };
+              })
+            : null,
       }
     : null;
   const combat = view.combat;
+  const disclosure = (value: EngineView['lastReveal']) =>
+    value
+      ? {
+          by: pid(value.by),
+          cards: value.cards.map((card) => ({
+            oracleId: card.oracleId,
+            name: card.name,
+            manaCost: card.manaCost,
+            oracleText: card.oracleText,
+            imageUri: artwork?.[card.artworkKey]?.imageUri ?? null,
+            artUri: artwork?.[card.artworkKey]?.artUri ?? null,
+          })),
+        }
+      : null;
   return {
     gameId,
+    lastReveal: disclosure(view.lastReveal),
+    lastLook: disclosure(view.lastLook),
+    inspectedLibraryCards: (view.inspectedLibraryCards ?? []).map(object),
+    manualLibraryActionsAllowed: view.manualLibraryActionsAllowed === true,
+    manualLibraryLookActive: view.manualLibraryLookActive === true,
     castableCards: legal?.castable?.map(oid) ?? [],
+    playableLands: legal?.playableLands?.map(oid) ?? [],
     outcome: view.outcome ? { ...view.outcome, winners: view.outcome.winners.map(pid) } : null,
     viewer: pid(view.viewer),
     turnNumber: view.turnNumber,
@@ -219,7 +274,11 @@ export function engineView(
       life: p.life,
       poisonCounters: p.counters['poison'] ?? 0,
       libraryCount: p.libraryCount,
-      topOfLibrary: p.revealedTopCard ? object(p.revealedTopCard) : null,
+      topOfLibrary: p.revealedTopCard
+        ? object(p.revealedTopCard)
+        : p.lookableTopCard
+          ? object(p.lookableTopCard)
+          : null,
       handCount: p.handCount,
       hand: p.id.value === view.viewer.value ? view.hand.map(object) : null,
       revealedHand: [],
@@ -263,7 +322,8 @@ export function engineCommand(
   args: unknown[],
   view: GameView,
 ): Record<string, unknown> {
-  const candidateTargets = args[method === 'ActivateAbility' ? 2 : 1];
+  const candidateTargets =
+    method === 'ActivateAbility' ? args[2] : method === 'CastSpell' ? args[1] : undefined;
   const targets = (Array.isArray(candidateTargets) ? candidateTargets : []) as {
     kind: string;
     objectId: string | null;
@@ -318,7 +378,11 @@ export function engineCommand(
       };
     case 'Choose':
       if (!view.choice) throw Error('No choice is waiting.');
-      return { kind: 'answer', choice: number(view.choice.id), answer: args[0] };
+      return {
+        kind: 'answer',
+        choice: number(view.choice.id),
+        answer: args[0],
+      };
     case 'Concede':
       return { kind: 'concede' };
     case 'ManualTap':
@@ -329,6 +393,41 @@ export function engineCommand(
         object: number(args[0]),
         counterKind: args[1],
         delta: args[2],
+      };
+    case 'ManualLibraryDraw':
+      return { kind: 'manualLibraryDraw', requestId: args[0] };
+    case 'ManualLibraryShuffle':
+      return { kind: 'manualLibraryShuffle', requestId: args[0] };
+    case 'ManualLibraryLook':
+      return { kind: 'manualLibraryLook', requestId: args[0] };
+    case 'ManualLibraryStopLooking':
+      return { kind: 'manualLibraryStopLooking', requestId: args[0] };
+    case 'ManualLibrarySearch': {
+      const search = args[1] as LibrarySearchRequest;
+      return {
+        kind: 'manualLibrarySearch',
+        requestId: args[0],
+        count: search.count,
+        destination: search.destination,
+        filter: search.filter,
+        reveal: search.reveal,
+        shuffleAfter: search.shuffleAfter,
+        tapped: search.tapped,
+        where: search.where,
+      };
+    }
+    case 'ManualLibraryArrange':
+      return {
+        kind: 'manualLibraryArrange',
+        requestId: args[0],
+        order: (args[1] as string[]).map(number),
+      };
+    case 'ManualLibraryReposition':
+      return {
+        kind: 'manualLibraryReposition',
+        requestId: args[0],
+        card: number(args[1]),
+        position: args[2],
       };
     case 'ManualLife':
       return { kind: 'manualLife', target: number(args[0]), delta: args[1] };

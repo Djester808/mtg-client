@@ -31,15 +31,15 @@ export const gameReducer = createReducer(
     ...state,
     gameId,
     playerToken,
+    connected: false,
     loading: true,
     connectionError: null,
   })),
 
   on(GameActions.gameJoined, (state, { gameState, localPlayerId }) => ({
     ...state,
-    connected: true,
     loading: false,
-    gameState,
+    gameState: state.connected ? state.gameState : gameState,
     localPlayerId,
   })),
 
@@ -57,6 +57,8 @@ export const gameReducer = createReducer(
 
   on(GameActions.stateSynced, (state, { gameState }) => ({
     ...state,
+    connected: true,
+    connectionError: null,
     gameState,
     loading: false,
   })),

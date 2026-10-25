@@ -1,7 +1,8 @@
-import { NgIf } from '@angular/common';
+import { NgIf, NgFor } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   EventEmitter,
@@ -13,7 +14,7 @@ import {
 @Component({
   selector: 'app-card-options-menu',
   standalone: true,
-  imports: [NgIf],
+  imports: [NgIf, NgFor],
   template: `<div
     class="card-options"
     role="menu"
@@ -32,12 +33,22 @@ import {
     >
       {{ actionLabel }}
     </button>
+    <button
+      *ngFor="let item of extraActions"
+      role="menuitem"
+      [disabled]="actionDisabled"
+      (click)="$event.stopPropagation(); extraAction.emit(item.id)"
+    >
+      {{ item.label }}
+    </button>
     <button role="menuitem" (click)="$event.stopPropagation(); dismiss.emit()">Close</button>
   </div>`,
   styleUrls: ['./card-options-menu.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardOptionsMenuComponent implements AfterViewInit, OnDestroy {
+  @Input() extraActions: readonly { id: string; label: string }[] = [];
+  @Output() extraAction = new EventEmitter<string>();
   @Input() actionLabel = '';
   @Input() actionDisabled = false;
   @Output() action = new EventEmitter<void>();
@@ -47,12 +58,24 @@ export class CardOptionsMenuComponent implements AfterViewInit, OnDestroy {
   @Output() dismiss = new EventEmitter<void>();
   private frame: number | null = null;
   private opener: HTMLElement | null = null;
-  constructor(private host: ElementRef<HTMLElement>) {}
+  constructor(
+    private host: ElementRef<HTMLElement>,
+    private changes: ChangeDetectorRef,
+  ) {}
+  @HostListener('window:resize') onResize(): void {
+    this.changes.markForCheck();
+  }
   get left(): number {
     return Math.max(4, Math.min(this.x, innerWidth - 190));
   }
   get top(): number {
-    return Math.max(4, Math.min(this.y, innerHeight - (this.actionLabel ? 148 : 104)));
+    return Math.max(
+      4,
+      Math.min(
+        this.y,
+        innerHeight - ((this.actionLabel ? 148 : 104) + this.extraActions.length * 44),
+      ),
+    );
   }
   ngAfterViewInit(): void {
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;

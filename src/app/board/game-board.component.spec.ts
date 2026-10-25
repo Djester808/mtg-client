@@ -48,7 +48,11 @@ describe('GameBoardComponent', () => {
   }
 
   beforeEach(() => {
-    signalr = jasmine.createSpyObj<SignalRService>('SignalRService', ['disconnect']);
+    signalr = jasmine.createSpyObj<SignalRService>('SignalRService', [
+      'disconnect',
+      'isChoicePending',
+      'choiceSubmission',
+    ]);
     signalr.disconnect.and.returnValue(Promise.resolve());
     localStorage.clear();
   });
@@ -212,12 +216,13 @@ describe('GameBoardComponent', () => {
 
   // ---- closePreview / passPriority / combat ---------------
 
-  it('allows declining an optional choice and refuses skipping a required one', () => {
+  it('allows declining an optional choice and refuses skipping a required one', async () => {
+    await setup();
     const dispatch = spyOn(store, 'dispatch');
     component.skipChoice({ minPicks: 1 } as ChoiceDto);
     expect(dispatch).not.toHaveBeenCalled();
     component.skipChoice({ minPicks: 0 } as ChoiceDto);
-    expect(dispatch).toHaveBeenCalledOnceWith(GameActions.choose({ picks: [] }));
+    expect(dispatch).toHaveBeenCalledOnceWith(GameActions.choose({ picks: [], control: 'skip' }));
   });
   describe('answering the game (CR 103.4, 510.1c, 603.3b)', () => {
     // The engine this board now talks to stops and asks things the old one never did. A board
@@ -248,8 +253,35 @@ describe('GameBoardComponent', () => {
     it('answers a single-pick decision on the tap, with nothing to confirm', () => {
       component.pick(choice(), 'keep');
 
-      expect(store.dispatch).toHaveBeenCalledWith(GameActions.choose({ picks: ['keep'] }));
+      expect(store.dispatch).toHaveBeenCalledWith(
+        GameActions.choose({ picks: ['keep'], control: 'option' }),
+      );
       expect(component.picks).toEqual([]);
+    });
+
+    it('submits a full unordered search through the option owner and retains picks for recovery', () => {
+      const search = choice({ kind: 'search', maxPicks: 2 });
+      component.pick(search, 'keep');
+      expect(store.dispatch).not.toHaveBeenCalled();
+      component.pick(search, 'mulligan');
+      expect(store.dispatch).toHaveBeenCalledOnceWith(
+        GameActions.choose({ picks: ['keep', 'mulligan'], control: 'option' }),
+      );
+      expect(component.picks).toEqual(['keep', 'mulligan']);
+      component.pick(search, 'hidden');
+      expect(store.dispatch).toHaveBeenCalledTimes(1);
+    });
+    it('keeps search picks until the server replaces the choice, allowing retry', () => {
+      const search = choice({ kind: 'search', maxPicks: 2 });
+      component.pick(search, 'keep');
+      component.submitChoice(search);
+      expect(component.picks).toEqual(['keep']);
+      component.submitChoice(search);
+      expect(store.dispatch).toHaveBeenCalledWith(
+        GameActions.choose({ picks: ['keep'], control: 'confirm' }),
+      );
+      component.pick({ ...search, id: 'c2' }, 'mulligan');
+      expect(component.picks).toEqual(['mulligan']);
     });
 
     it('collects picks for a decision that takes several, and sends them in order', () => {
@@ -272,8 +304,10 @@ describe('GameBoardComponent', () => {
       expect(component.pickOrder('t2')).toBe(1);
       expect(component.pickOrder('t1')).toBe(2);
 
-      component.submitChoice();
-      expect(store.dispatch).toHaveBeenCalledWith(GameActions.choose({ picks: ['t2', 't1'] }));
+      component.submitChoice(ordering);
+      expect(store.dispatch).toHaveBeenCalledWith(
+        GameActions.choose({ picks: ['t2', 't1'], control: 'confirm' }),
+      );
     });
 
     it('lets a division pick the same option more than once, up to the amount', () => {

@@ -42,6 +42,27 @@ describe('DeckLegalityService', () => {
   let svc: DeckLegalityService;
   beforeEach(() => (svc = new DeckLegalityService()));
 
+  it('combines both commanders color identities', () => {
+    const first = makeDeckCard({
+      oracleId: 'red',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Red] }),
+    });
+    const second = makeDeckCard({
+      id: 'second',
+      oracleId: 'blue',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
+    });
+    const spell = makeDeckCard({
+      id: 'spell',
+      oracleId: 'spell',
+      cardDetails: makeCard({ colorIdentity: [ManaColor.Blue] }),
+    });
+    const deck = makeDeck([first, second, spell], {
+      commanderOracleId: 'red',
+      secondaryCommanderOracleId: 'blue',
+    });
+    expect(svc.colorIdentityViolations(deck)).toEqual([]);
+  });
   // ---- singleton ----------------------------------------------------
 
   it('flags a non-basic card appearing more than once by copies', () => {

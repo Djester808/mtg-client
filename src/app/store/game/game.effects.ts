@@ -20,6 +20,8 @@ import {
   selectVariableValue,
   selectAnnouncement,
   selectBattlefield,
+  selectCastDraft,
+  selectLocalPlayer,
 } from '../selectors';
 
 @Injectable()
@@ -64,6 +66,35 @@ export class GameEffects {
     { dispatch: false },
   );
 
+  submitCast$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(UIActions.submitCast),
+      withLatestFrom(this.store.select(selectCastDraft)),
+      filter(([, draft]) => !!draft && draft.stage === 'review'),
+      switchMap(([, draft]) => [
+        UIActions.markCastSubmitting(),
+        GameActions.castSpell({
+          cardId: draft!.card.cardId,
+          targetIds: draft!.targets,
+          variableValue: draft!.x,
+        }),
+      ]),
+    ),
+  );
+  finishCast$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(GameActions.stateSynced),
+      withLatestFrom(this.store.select(selectCastDraft), this.store.select(selectLocalPlayer)),
+      filter(
+        ([, draft, player]) =>
+          !!draft &&
+          draft.stage === 'submitting' &&
+          !!player &&
+          !player.hand.some((c) => c.cardId === draft.card.cardId),
+      ),
+      map(() => UIActions.cancelCast()),
+    ),
+  );
   // Play land
   playLand$ = createEffect(
     () =>
@@ -192,21 +223,26 @@ export class GameEffects {
         this.store.select(selectTargetCount),
         this.store.select(selectTargetAbilityId),
         this.store.select(selectVariableValue),
+        this.store.select(selectCastDraft),
       ),
       filter(([, cardId, targets, count]) => !!cardId && targets.length >= count),
       // An ability finishes by being activated, a spell by being cast. Everything used to end
       // in a cast, so pointing an Icy Manipulator would have tried to cast the Icy Manipulator.
-      switchMap(([, cardId, targets, , abilityId, variableValue]) => [
-        abilityId
-          ? GameActions.activateAbility({
-              permanentId: cardId!,
-              abilityId,
-              targetIds: targets,
-              variableValue,
-            })
-          : GameActions.castSpell({ cardId: cardId!, targetIds: targets, variableValue }),
-        UIActions.confirmTargets(),
-      ]),
+      switchMap(([, cardId, targets, , abilityId, variableValue, draft]) =>
+        draft
+          ? [UIActions.setCastTargets({ targets })]
+          : [
+              abilityId
+                ? GameActions.activateAbility({
+                    permanentId: cardId!,
+                    abilityId,
+                    targetIds: targets,
+                    variableValue,
+                  })
+                : GameActions.castSpell({ cardId: cardId!, targetIds: targets, variableValue }),
+              UIActions.confirmTargets(),
+            ],
+      ),
     ),
   );
 
@@ -290,7 +326,9 @@ export class GameEffects {
     () =>
       this.actions$.pipe(
         ofType(GameActions.choose),
-        tap(({ picks }) => this.signalr.choose(picks)),
+        tap(({ picks, control }) =>
+          control ? this.signalr.choose(picks, control) : this.signalr.choose(picks),
+        ),
       ),
     { dispatch: false },
   );

@@ -283,6 +283,27 @@ async function openRoomyZone(d, zone='graveyard') {
   await d.wait(until.elementLocated(By.css('.viewer-backdrop[open]')),5000);
 }
 const STATES = [
+  ...['mulligan', 'bottom', 'search'].map(kind => ({
+    id: 'board-library-' + kind, label: 'Library ' + kind, root: '.board',
+    async drive(d) {
+      const view = roomyFixture(4);
+      view.choice = { id: 'library-choice', playerId: view.viewer, kind, prompt: kind === 'mulligan' ? 'Keep this hand, or take a mulligan?' : kind === 'bottom' ? 'Choose two cards in bottom order.' : 'Search your library for a card.', minPicks: kind === 'search' ? 0 : kind === 'bottom' ? 2 : 1, maxPicks: kind === 'bottom' ? 2 : 1, isOrdering: kind === 'bottom', isDivision: false, totalToDivide: 0, options: kind === 'mulligan' ? [{id:'keep',label:'Keep'},{id:'mulligan',label:'Mulligan'}] : view.players[0].hand.map((card,i) => ({id: String(i), label: card.name})) };
+      await armGameReplay(d, view);
+      await d.get(baseUrl + '/game/' + ABILITY_GAME_ID);
+      await d.wait(until.elementLocated(By.css('app-choice-controls')),20000);
+      if(kind === 'bottom') { const options = await d.findElements(By.css('app-choice-controls .choice')); await options[1].click(); await options[0].click(); }
+      await sleep(400);
+    }
+  })),
+  ...['payment','targets','review','x'].map(stage => ({id:'board-casting-'+stage,label:'Pending spell '+stage,root:'.board',
+    async drive(d){const view=roomyFixture(2);view.activePlayerId=view.viewer;view.stack=[];const card=view.players[0].hand[0];card.targetCount=1;card.oracleText='Lightning Bolt deals 3 damage to any target.';if(stage==='payment')view.players[0].manaPool={};if(stage==='x'){card.manaCost='{X}{R}';card.announcesVariable=true;}
+      await armGameReplay(d,view);await d.get(baseUrl+'/game/'+ABILITY_GAME_ID);await d.wait(until.elementLocated(By.css('.hand-card-wrapper')),20000);
+      const raise=await d.findElement(By.css('.hand-collapse'));if(await d.executeScript('return innerHeight <= 480'))await raise.click();
+      await d.findElement(By.css('.hand-card-wrapper')).click();await d.wait(until.elementLocated(By.css('.cast-prompt')),5000);
+      if(stage==='targets'||stage==='review'){await d.findElement(By.css('.cast-next')).click();await d.wait(until.elementLocated(By.css('.player-targets')),5000);}
+      if(stage==='review'){const targets=await d.findElements(By.css('.player-targets button'));await targets[1].click();await d.wait(until.elementLocated(By.css('.cast-submit')),5000);}
+      await sleep(400);
+    }})),
   {id:'board-roomy-hover',label:'Quick card inspection during play',root:'.board',extra:ROOMY_AUDIT,
     async drive(d){await toRoomyBoard(d,2); if(await d.executeScript('return innerHeight <= 480')) return; const card=await d.findElement(By.css('.self-table .flat-card')); await d.actions().move({origin:card}).perform(); await d.wait(until.elementLocated(By.css('.quick-card img')),5000); await sleep(600);}},
   {id:'board-roomy-text',label:'Board with enlarged text',root:'.board',extra:ROOMY_AUDIT,

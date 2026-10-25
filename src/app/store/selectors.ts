@@ -1,13 +1,14 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { GameState } from './game/game.reducer';
 import { UIState } from './ui/ui.reducer';
-import { Phase, Step } from '../models/game.models';
+import { ChoiceDto, Phase, Step } from '../models/game.models';
 
 // ---- Feature selectors ------------------------------------
 export const selectGameFeature = createFeatureSelector<GameState>('game');
 export const selectUIFeature = createFeatureSelector<UIState>('ui');
 
 // ---- Game selectors ---------------------------------------
+export const selectGameReady = createSelector(selectGameFeature, (s) => s?.connected === true);
 export const selectGameState = createSelector(selectGameFeature, (s) => s.gameState);
 export const selectLocalPlayerId = createSelector(selectGameFeature, (s) => s.localPlayerId);
 
@@ -190,14 +191,23 @@ export const selectPreviewCard = createSelector(
   selectSelectedPermId,
   selectPlayers,
   selectStack,
-  (player, cardId, battlefield, permId, players, stack) => {
+  selectChoice,
+  (player, cardId, battlefield, permId, players, stack, choice: ChoiceDto | null = null) => {
     if (cardId) {
       return (
         player?.hand.find((c) => c.cardId === cardId) ??
         players
-          .flatMap((p) => [...p.graveyard, ...p.exile, ...(p.command ?? [])])
+          .flatMap((p) => [
+            ...p.graveyard,
+            ...p.exile,
+            ...(p.command ?? []),
+            ...(p.topOfLibrary ? [p.topOfLibrary] : []),
+          ])
           .find((c) => c.cardId === cardId) ??
         stack.find((o) => o.stackObjectId === cardId)?.sourceCard ??
+        (choice?.playerId === player?.playerId
+          ? choice?.options?.find((option) => option.card?.cardId === cardId)?.card
+          : null) ??
         null
       );
     }
@@ -252,3 +262,5 @@ export const selectOutcomeSummary = createSelector(selectGameState, (state) => {
         .map((id) => state.players.find((p) => p.playerId === id)?.name ?? id)
         .join(', ') + ' won';
 });
+
+export const selectCastDraft = createSelector(selectUIFeature, (ui) => ui?.castDraft ?? null);

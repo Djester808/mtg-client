@@ -179,6 +179,8 @@ export interface PlayerStateDto {
   manaPool: ManaPoolDto;
   handCount: number;
   libraryCount: number;
+  /** Only the top card authorized by the server for this viewer. */
+  topOfLibrary?: CardDto | null;
   graveyardCount: number;
   exileCount: number;
   hand: CardDto[]; // only populated for the local player
@@ -234,11 +236,17 @@ export interface ChoiceDto {
   isDivision: boolean;
   /** How much is being divided, for a division. */
   totalToDivide: number;
-  options: { id: string; label: string }[] | null;
+  options: { id: string; label: string; card?: CardDto }[] | null;
 }
 
 export interface GameStateDto {
+  manualLibraryActionsAllowed?: boolean;
+  manualLibraryLookActive?: boolean;
+  inspectedLibraryCards?: CardDto[];
+  lastLook?: GameStateDto['lastReveal'];
+  lastReveal?: { by: string; cards: CardDto[] } | null;
   castableCards?: string[];
+  playableLands?: string[];
   outcome?: { winners: string[]; draw: boolean; reason: string } | null;
   gameId: string;
   players: PlayerStateDto[];

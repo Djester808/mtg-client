@@ -77,22 +77,33 @@ export class DeckEffects {
   updateDeckMeta$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DeckActions.updateDeckMeta),
-      switchMap(({ id, name, coverUri, format, commanderOracleId, tags, notes }) =>
-        this.api
-          .updateDeck(id, {
-            name,
-            coverUri,
-            format,
-            commanderOracleId,
-            ...(tags !== undefined ? { tags } : {}),
-            ...(notes !== undefined ? { notes } : {}),
-          })
-          .pipe(
-            map((deck) => DeckActions.updateDeckMetaSuccess({ deck })),
-            catchError((err) =>
-              of(DeckActions.updateDeckMetaFailure({ error: describeHttpError(err) })),
+      switchMap(
+        ({
+          id,
+          name,
+          coverUri,
+          format,
+          commanderOracleId,
+          secondaryCommanderOracleId,
+          tags,
+          notes,
+        }) =>
+          this.api
+            .updateDeck(id, {
+              name,
+              coverUri,
+              format,
+              commanderOracleId,
+              secondaryCommanderOracleId,
+              ...(tags !== undefined ? { tags } : {}),
+              ...(notes !== undefined ? { notes } : {}),
+            })
+            .pipe(
+              map((deck) => DeckActions.updateDeckMetaSuccess({ deck })),
+              catchError((err) =>
+                of(DeckActions.updateDeckMetaFailure({ error: describeHttpError(err) })),
+              ),
             ),
-          ),
       ),
     ),
   );

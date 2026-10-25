@@ -1,0 +1,96 @@
+<ng-container *ngIf="selection.picks$ | async">
+  <div class="choice-search-header" *ngIf="choice.kind === 'search' && choice.options?.length">
+    <p *ngIf="choice.maxPicks > 1 && !pending" role="status">
+      {{ selection.remainingPicks(choice) }} remaining
+    </p>
+    <app-search-input
+      [(value)]="query"
+      placeholder="Filter available cards"
+      title="Filter available cards"
+    />
+  </div>
+  <div
+    class="choice-options"
+    [class.replacement-options]="choice.kind === 'replacement-order'"
+    role="group"
+    [attr.aria-label]="choice.prompt"
+  >
+    <div class="choice-option" *ngFor="let option of visibleOptions; trackBy: trackOption">
+      <button
+        class="action-btn choice"
+        [disabled]="!ready || pending"
+        [attr.aria-keyshortcuts]="shortcuts.key(choice, option.id)"
+        [attr.title]="
+          shortcuts.key(choice, option.id) ? 'Shortcut: ' + shortcuts.key(choice, option.id) : null
+        "
+        [class.is-picked]="selection.order(option.id) > 0"
+        [attr.aria-pressed]="selection.order(option.id) > 0"
+        (pointerdown)="beginPick($event, option.id)"
+        (pointercancel)="cancelPick()"
+        (click)="pickOption($event, option.id)"
+      >
+        <span *ngIf="choice.isOrdering && selection.order(option.id) > 0"
+          >{{ selection.order(option.id) }}.
+        </span>
+        <span *ngIf="choice.isDivision && selection.assigned(option.id) > 0"
+          >{{ selection.assigned(option.id) }} ×
+        </span>
+        <img *ngIf="option.card?.imageUriNormal as image" [src]="image" alt="" loading="lazy" />
+        {{ option.label }}
+      </button>
+      <div class="choice-order" *ngIf="choice.isOrdering && selection.order(option.id) > 0">
+        <button
+          [disabled]="!ready || pending || selection.order(option.id) === 1"
+          [attr.aria-label]="'Move ' + option.label + ' earlier'"
+          (click)="selection.move(choice, option.id, -1)"
+        >
+          ↑
+        </button>
+        <button
+          [disabled]="!ready || pending || selection.order(option.id) === selection.picks.length"
+          [attr.aria-label]="'Move ' + option.label + ' later'"
+          (click)="selection.move(choice, option.id, 1)"
+        >
+          ↓
+        </button>
+      </div>
+      <button
+        *ngIf="option.card as card"
+        class="choice-details"
+        (click)="details.emit(card.cardId)"
+        [title]="option.label"
+      >
+        Details
+      </button>
+    </div>
+  </div>
+  <div class="choice-actions">
+    <button
+      *ngIf="choice.minPicks === 0 && (!sendingLibraryAction || submission?.control === 'skip')"
+      class="action-btn cancel"
+      [disabled]="!ready || pending"
+      (click)="skip.emit()"
+    >
+      {{ choice.kind === 'commander-return' ? 'Leave in current zone' : 'Choose none' }}
+      <span *ngIf="sendingLibraryAction"> — Sending...</span>
+    </button>
+    <ng-container *ngIf="selection.requiresConfirmation(choice)">
+      <button
+        *ngIf="!sendingLibraryAction || submission?.control === 'confirm'"
+        class="action-btn confirm"
+        [disabled]="!ready || pending || !selection.canSubmit(choice)"
+        (click)="confirm.emit()"
+      >
+        {{ !ready ? 'Waiting for connection…' : pending ? 'Sending...' : 'Confirm' }}
+      </button>
+      <button
+        *ngIf="!sendingLibraryAction"
+        class="action-btn cancel"
+        [disabled]="!ready || pending"
+        (click)="clear.emit()"
+      >
+        Start over
+      </button>
+    </ng-container>
+  </div>
+</ng-container>

@@ -25,6 +25,30 @@ function makePermanent(permanentId: string, sourceCard: CardDto): PermanentDto {
 }
 
 describe('selectPreviewCard', () => {
+  it('expires a private choice preview when authorization ends', () => {
+    const player = makePlayer([], { playerId: 'p1' });
+    const card = makeCard({ cardId: 'private' });
+    const choice = {
+      id: 'choice',
+      playerId: 'p1',
+      kind: 'search',
+      prompt: '',
+      minPicks: 0,
+      maxPicks: 1,
+      isOrdering: false,
+      isDivision: false,
+      totalToDivide: 0,
+      options: [{ id: 'found', label: 'Card', card }],
+    };
+    expect(selectPreviewCard.projector(player, 'private', [], null, [], [], choice)).toBe(card);
+    expect(selectPreviewCard.projector(player, 'private', [], null, [], [], null)).toBeNull();
+    expect(
+      selectPreviewCard.projector(player, 'private', [], null, [], [], {
+        ...choice,
+        playerId: 'other',
+      }),
+    ).toBeNull();
+  });
   const projector = (
     player: PlayerStateDto | null,
     cardId: string | null,
@@ -32,7 +56,7 @@ describe('selectPreviewCard', () => {
     permId: string | null,
     players: PlayerStateDto[] = [],
     stack: StackObjectDto[] = [],
-  ) => selectPreviewCard.projector(player, cardId, battlefield, permId, players, stack);
+  ) => selectPreviewCard.projector(player, cardId, battlefield, permId, players, stack, null);
 
   it('returns null when nothing is selected', () => {
     expect(projector(null, null, [], null)).toBeNull();

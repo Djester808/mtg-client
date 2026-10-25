@@ -126,6 +126,11 @@
     *ngIf="contextCard"
     [x]="contextX"
     [y]="contextY"
+    [actionLabel]="isOpponent ? '' : 'Activate ability'"
+    [actionDisabled]="!ui.canAct"
+    (action)="
+      onCardClick(contextCard!, ui.mode, ui.isActive, ui.pendingAttackers, ui.blocker, ui.canAct)
+    "
     (inspect)="inspectContext()"
     (dismiss)="dismissOptions()"
   ></app-card-options-menu>

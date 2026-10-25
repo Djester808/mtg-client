@@ -48,11 +48,7 @@ import {
 } from '../../services/card-grid-filter.service';
 import { PreferencesApiService } from '../../services/preferences-api.service';
 import { CardFilters } from '../../models/card-filters';
-import {
-  printingOption,
-  printingOptions as buildPrintingOptions,
-  setCodeOption,
-} from '../../utils/printing-options';
+import { printingOption, setCodeOption } from '../../utils/printing-options';
 import { ManaCostComponent } from '../../components/mana-cost/mana-cost.component';
 import { OracleSymbolsPipe } from '../../pipes/oracle-symbols.pipe';
 import { CollectionMetadataComponent } from '../../components/collection-metadata/collection-metadata.component';
@@ -798,12 +794,6 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Printings as select-menu options, memoized per cached printings array. */
-  private printingOptionsCache = new Map<
-    string,
-    { src: PrintingDto[]; opts: SelectMenuOption[] }
-  >();
-
   printingOptions(card: CollectionCardDto): SelectMenuOption[] {
     // Grouped: the choice is which owned printing to show, so only those are offered.
     if (this.usesGroupedPicker(card.oracleId)) return this.groupPrintingOptions(card.oracleId);
@@ -833,23 +823,6 @@ export class CollectionDetailComponent implements OnInit, OnDestroy {
         ? [setCodeOption(value, card.cardDetails.setCode)]
         : [];
     this.ownedOptionCache.set(card.id, { row: card, printings: cached, opts });
-    return opts;
-  }
-
-  private allPrintingOptions(card: CollectionCardDto): SelectMenuOption[] {
-    const printings = this.printings.cached(card.oracleId);
-    if (!printings) {
-      // Not loaded yet. Return nothing rather than a stand-in for the owned printing:
-      // a one-entry menu is indistinguishable from "this card has one printing", so a
-      // card with several looked like it had only the one you already own. The empty
-      // list makes the menu show its loading label instead, and the button keeps its
-      // placeholder (the owned set code).
-      return [];
-    }
-    const hit = this.printingOptionsCache.get(card.oracleId);
-    if (hit && hit.src === printings) return hit.opts;
-    const opts = buildPrintingOptions(printings);
-    this.printingOptionsCache.set(card.oracleId, { src: printings, opts });
     return opts;
   }
 

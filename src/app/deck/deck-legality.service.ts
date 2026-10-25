@@ -1,3 +1,4 @@
+import { DeckCommanders } from './deck-commanders';
 import { Injectable } from '@angular/core';
 import { CollectionCardDto, CardType } from '../models/game.models';
 import { DeckDetailDto } from '../services/deck-api.service';
@@ -63,12 +64,16 @@ export class DeckLegalityService {
 
     // Color identity outside the commander's.
     const cmdr = this.commanderCard(deck);
+    const identity = [
+      ...new Set(
+        DeckCommanders.cards(deck).flatMap((card) => card.cardDetails?.colorIdentity ?? []),
+      ),
+    ];
     const colorId = cmdr?.cardDetails
       ? mainCards.filter(
           (c) =>
             c.oracleId !== cmdr.oracleId &&
-            identityViolations(c.cardDetails?.colorIdentity, cmdr.cardDetails!.colorIdentity)
-              .length > 0,
+            identityViolations(c.cardDetails?.colorIdentity, identity).length > 0,
         )
       : [];
 

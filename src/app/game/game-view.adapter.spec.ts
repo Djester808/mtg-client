@@ -467,6 +467,13 @@ describe('GameViewAdapter', () => {
     });
   });
 
+  it('uses the authoritative stack category despite the source card type', () => {
+    for (const kind of ['Spell', 'ActivatedAbility', 'TriggeredAbility'] as const) {
+      const state = adapter.toGameState(view({ stack: [object({ stackKind: kind })] }));
+      expect(state.stack[0].type).toBe(kind);
+    }
+  });
+
   it('hands the stack over with the top last, which is where the board looks for it', () => {
     // The two contracts disagree about which end is the top. The engine sends index 0 as the
     // next thing to resolve (CR 405.1); the board's panel marks the *last* entry as the top and
@@ -582,6 +589,11 @@ describe('GameViewAdapter', () => {
 });
 
 describe('casting offer adaptation', () => {
+  it('preserves separate playable-land offers and defaults missing offers to empty', () => {
+    const adapter = new GameViewAdapter();
+    expect(adapter.toGameState(view({ playableLands: ['o10'] })).playableLands).toEqual(['o10']);
+    expect(adapter.toGameState(view()).playableLands).toEqual([]);
+  });
   it('preserves server casting offers for public-zone controls', () => {
     expect(
       new GameViewAdapter().toGameState(view({ castableCards: ['o9'] })).castableCards,

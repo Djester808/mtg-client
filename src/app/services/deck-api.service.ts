@@ -1,6 +1,6 @@
 import { CollectionUndoService } from './collection-undo.service';
 import { inject } from '@angular/core';
-import { map, tap } from 'rxjs';
+import { map, switchMap, tap } from 'rxjs';
 import { storedAuth } from './auth-storage';
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -23,6 +23,7 @@ export interface DeckDto {
   coverUri: string | null;
   format: string | null;
   commanderOracleId: string | null;
+  secondaryCommanderOracleId?: string | null;
   cardCount: number;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,7 @@ export interface DeckDetailDto {
   coverUri: string | null;
   format: string | null;
   commanderOracleId: string | null;
+  secondaryCommanderOracleId?: string | null;
   tags: string[];
   notes: string | null;
   isPublished: boolean;
@@ -47,6 +49,7 @@ export interface CreateDeckRequest {
   coverUri?: string | null;
   format?: string | null;
   commanderOracleId?: string | null;
+  secondaryCommanderOracleId?: string | null;
 }
 
 export interface UpdateDeckRequest {
@@ -54,6 +57,7 @@ export interface UpdateDeckRequest {
   coverUri?: string | null;
   format?: string | null;
   commanderOracleId?: string | null;
+  secondaryCommanderOracleId?: string | null;
   tags?: string[];
   notes?: string | null;
 }
@@ -181,7 +185,21 @@ export class DeckApiService {
   }
 
   updateDeck(id: string, req: UpdateDeckRequest): Observable<DeckDetailDto> {
-    return this.http.put<DeckDetailDto>(`${this.base}/${id}`, req);
+    if (req.secondaryCommanderOracleId === undefined && req.format === 'commander') {
+      return this.getDeck(id).pipe(
+        switchMap((deck) =>
+          this.updateDeck(id, {
+            ...req,
+            secondaryCommanderOracleId: deck.secondaryCommanderOracleId ?? null,
+          }),
+        ),
+      );
+    }
+    return this.http.put<DeckDetailDto>(`${this.base}/${id}`, {
+      ...req,
+      secondaryCommanderOracleId:
+        req.format === 'commander' ? (req.secondaryCommanderOracleId ?? null) : null,
+    });
   }
 
   deleteDeck(id: string): Observable<void> {

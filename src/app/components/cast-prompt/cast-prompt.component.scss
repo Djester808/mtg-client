@@ -1,0 +1,134 @@
+@use '../../../styles/breakpoints' as *;
+:host {
+  display: contents;
+}
+.cast-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #7aa9b6;
+  border-radius: 9px;
+  background: var(--bg-raised);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: auto;
+  min-height: 0;
+}
+.cast-name {
+  font-size: 14px;
+}
+.cast-kicker {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+p {
+  margin: 0;
+}
+small {
+  color: var(--text-secondary);
+}
+button,
+input {
+  min-height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  padding: 5px 8px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.cast-steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.active {
+  color: #a5d6e4;
+  border-bottom: 2px solid #7aa9b6;
+}
+.mana-sources,
+.player-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cast-controls {
+  display: flex;
+  gap: 5px;
+}
+.cast-controls button {
+  flex: 1;
+}
+.chosen-targets {
+  padding-left: 16px;
+  margin: 0;
+}
+.cast-submit,
+.cast-next {
+  border-color: #7aa9b6;
+  background: #29454f;
+}
+.cast-error {
+  color: var(--mana-R);
+}
+input {
+  width: 70px;
+}
+.mana-pool {
+  font-variant-numeric: tabular-nums;
+}
+@include short-viewport {
+  .cast-prompt {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 260px;
+    max-height: calc(100dvh - 40px);
+    z-index: 105;
+    box-shadow: 0 8px 30px #0009;
+  }
+}
+
+.spell-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+@include short-viewport {
+  .cast-prompt.picking-targets {
+    width: 96px;
+    padding: 4px;
+    font-size: 10px;
+  }
+  .picking-targets .cast-steps,
+  .picking-targets .cast-kicker,
+  .picking-targets .mana-pool,
+  .picking-targets small {
+    display: none;
+  }
+  .picking-targets .cast-controls {
+    flex-direction: column;
+  }
+  .picking-targets .cast-name {
+    font-size: 11px;
+  }
+}
